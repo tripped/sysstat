@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: fix.sh,v 1.6 2002-11-17 20:42:21 robert Exp $
+# $Id: fix.sh,v 1.7 2003-07-02 21:36:37 robert Exp $
 
 set -e 
 
@@ -18,7 +18,7 @@ fi
 dir="debian/$1"
 
 if [ ! -d "$dir" ] ; then
-	echo "Directory $dir does not exists!" 1>&2
+	echo "Directory $dir does not exist!" 1>&2
 	exit 1
 fi
 

@@ -47,8 +47,8 @@
 long interval = 0, count = 0;
 unsigned int sar_actflag = 0;
 unsigned int flags = 0;
-unsigned int irq_bitmap[(NR_IRQS / 32) + 1];
-unsigned int cpu_bitmap[(NR_CPUS / 32) + 1];
+unsigned char irq_bitmap[(NR_IRQS / 8) + 1];
+unsigned char cpu_bitmap[(NR_CPUS / 8) + 1];
 int kb_shift = 0;
 
 struct stats_sum asum;
@@ -101,11 +101,11 @@ void usage(char *progname)
  * Init irqs array
  ***************************************************************************
  */
-void init_irq_bitmap(unsigned int value)
+void init_irq_bitmap(unsigned char value)
 {
    register int i;
 
-   for (i = 0; i <= NR_IRQS >> 5; i++)
+   for (i = 0; i <= NR_IRQS >> 3; i++)
      irq_bitmap[i] = value;
 }
 
@@ -115,11 +115,11 @@ void init_irq_bitmap(unsigned int value)
  * Init CPUs array
  ***************************************************************************
  */
-void init_cpu_bitmap(unsigned int value)
+void init_cpu_bitmap(unsigned char value)
 {
    register int i;
 
-   for (i = 0; i <= NR_CPUS >> 5; i++)
+   for (i = 0; i <= NR_CPUS >> 3; i++)
      cpu_bitmap[i] = value;
 }
 
@@ -173,7 +173,7 @@ void salloc(int i, char *ltemp)
  * (only on SMP machines)
  ***************************************************************************
  */
-void salloc_cpu(int nr_cpu)
+void salloc_cpu(unsigned int nr_cpu)
 {
    int i;
 
@@ -213,7 +213,7 @@ void salloc_serial(int nr_serial)
  * Allocate stats_irq_cpu structures
  ***************************************************************************
  */
-void salloc_irqcpu(int nr_cpus, int nr_irqcpu)
+void salloc_irqcpu(unsigned int nr_cpus, unsigned int nr_irqcpu)
 {
    int i;
 
@@ -233,7 +233,7 @@ void salloc_irqcpu(int nr_cpus, int nr_irqcpu)
  * Allocate stats_net_dev structures
  ***************************************************************************
  */
-void salloc_net_dev(int nr_iface)
+void salloc_net_dev(unsigned int nr_iface)
 {
    int i;
 
@@ -332,22 +332,19 @@ int datecmp(struct tm *loc_time, struct tstamp *tse)
  * This routine is called only if we are *not* reading stats from a file.
  ***************************************************************************
  */
-void check_smp_option(int cpu_nr)
+void check_smp_option(unsigned int cpu_nr)
 {
-   unsigned int cpu_max, j = 0;
-   int i;
+   unsigned int j = 0, i;
 
    if (cpu_nr == 0) {
       fprintf(stderr, _("Not an SMP machine...\n"));
       exit(1);
    }
 
-   cpu_max = 1 << ((cpu_nr + 1) & 0x1f);
+   for (i = (cpu_nr + 1); i < NR_CPUS; i++)
+      j |= cpu_bitmap[i >> 3] & (1 << (i & 0x07));
 
-   for (i = (cpu_max >> 5) + 1; i <= NR_CPUS >> 5; i++)
-      j |= cpu_bitmap[i];
-
-   if (j || (cpu_bitmap[cpu_nr >> 5] >= cpu_max)) {
+   if (j) {
       fprintf(stderr, _("Not that many processors!\n"));
       exit(1);
    }
@@ -360,18 +357,18 @@ void check_smp_option(int cpu_nr)
  * Called only if reading stats sent by the data collector.
  ***************************************************************************
  */
-void prep_smp_option(int cpu_nr)
+void prep_smp_option(unsigned int cpu_nr)
 {
-   int i;
+   unsigned int i;
 
    if (WANT_PER_PROC(flags)) {
       if (WANT_ALL_PROC(flags))
-	 for (i = cpu_nr + 1; i < ((NR_CPUS / 32) + 1) * 32; i++)
+	 for (i = cpu_nr + 1; i < ((NR_CPUS >> 3) + 1) << 3; i++)
 	    /*
 	     * Reset every bit for proc > cpu_nr
-	     * (only done when -U ALL entered on the command line)
+	     * (only done when -P ALL entered on the command line)
 	     */
-	    cpu_bitmap[i >> 5] &= ~(1 << (i & 0x1f));
+	    cpu_bitmap[i >> 3] &= ~(1 << (i & 0x07));
       check_smp_option(cpu_nr);
    }
 }
@@ -597,10 +594,11 @@ void init_timestamp(short curr, char *cur_time, int len)
  * This is what we try to guess here.
  ***************************************************************************
  */
-int check_iface_reg(struct stats_net_dev *st_net_dev[], short curr, short ref, int pos)
+unsigned int check_iface_reg(struct stats_net_dev *st_net_dev[], short curr, short ref,
+			     unsigned int pos)
 {
    struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
-   int index = 0;
+   unsigned int index = 0;
 
    st_net_dev_i = st_net_dev[curr] + pos;
 
@@ -840,7 +838,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 unsigned long pc_itv;
 	
 	 for (i = 0; i <= file_hdr.sa_proc; i++) {
-	    if (cpu_bitmap[i >> 5] & (1 << (i & 0x1f))) {
+	    if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
 
 	       printf("%-11s       %3d", curr_string, i);
 	       st_cpu_i = st_cpu[curr] + i;
@@ -885,7 +883,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 
       /* Print number of interrupts per second */
       for (i = 0; i < NR_IRQS; i++) {
-	 if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
+	 if (irq_bitmap[i >> 3] & (1 << (i & 0x07))) {
 
 	    printf("%-11s       %3d", curr_string, i);
 
@@ -996,7 +994,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 
 	 st_serial_i = st_serial[curr] + i;
 	 st_serial_j = st_serial[prev] + i;
-	 if (st_serial_i->line == 0xff)
+	 if (st_serial_i->line == ~0)
 	    continue;
 	
 	 printf("%-11s       %3d", curr_string, st_serial_i->line);
@@ -1041,7 +1039,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
       }
 
       for (k = 0; k <= file_hdr.sa_proc; k++) {
-	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
+	 if (cpu_bitmap[k >> 3] & (1 << (k & 0x07))) {
 
 	    printf("%-11s  %3d", curr_string, k);
 
@@ -1568,7 +1566,7 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
       unsigned long pc_itv;
 
       for (i = 0; i <= file_hdr.sa_proc; i++) {
-	 if (cpu_bitmap[i >> 5] & (1 << (i & 0x1f))) {
+	 if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
 
 	    st_cpu_i = st_cpu[curr]  + i;
 	    st_cpu_j = st_cpu[!curr] + i;
@@ -1611,7 +1609,7 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 
    if (GET_ONE_IRQ(act)) {
       for (i = 0; i < NR_IRQS; i++) {
-	 if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
+	 if (irq_bitmap[i >> 3] & (1 << (i & 0x07))) {
 
 	    printf("%s\t%ld\t%s\ti%03d\tintr/s\t%.2f\n",
 		   file_hdr.sa_nodename, dt, cur_time, i,
@@ -1698,7 +1696,7 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 
 	 st_serial_i = st_serial[curr]  + i;
 	 st_serial_j = st_serial[!curr] + i;
-	 if (st_serial_i->line == 0xff)
+	 if (st_serial_i->line == ~0)
 	    continue;
 	
 	 if (st_serial_i->line == st_serial_j->line) {
@@ -1751,7 +1749,7 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
       int offset;
 
       for (k = 0; k <= file_hdr.sa_proc; k++) {
-	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
+	 if (cpu_bitmap[k >> 3] & (1 << (k & 0x07))) {
 
 	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
 	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
@@ -2012,7 +2010,7 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
       unsigned long pc_itv;
 
       for (i = 0; i <= file_hdr.sa_proc; i++) {
-	 if (cpu_bitmap[i >> 5] & (1 << (i & 0x1f))) {
+	 if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
 
 	    st_cpu_i = st_cpu[curr]  + i;
 	    st_cpu_j = st_cpu[!curr] + i;
@@ -2046,7 +2044,7 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    if (GET_ONE_IRQ(act)) {
       for (i = 0; i < NR_IRQS; i++) {
-	 if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
+	 if (irq_bitmap[i >> 3] & (1 << (i & 0x07))) {
 
 	    printf("%s;%ld;%s;%d;%.2f\n",
 		   file_hdr.sa_nodename, dt, cur_time, i,
@@ -2102,7 +2100,7 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
 	 st_serial_i = st_serial[curr]  + i;
 	 st_serial_j = st_serial[!curr] + i;
-	 if (st_serial_i->line == 0xff)
+	 if (st_serial_i->line == ~0)
 	    continue;
 	
 	 if (st_serial_i->line == st_serial_j->line) {
@@ -2139,7 +2137,7 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
       int offset;
 
       for (k = 0; k <= file_hdr.sa_proc; k++) {
-	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
+	 if (cpu_bitmap[k >> 3] & (1 << (k & 0x07))) {
 
 	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
 	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
@@ -2500,7 +2498,7 @@ void read_stat_bunch(short curr)
  * Read stats for current activity from file
  ***************************************************************************
  */
-void read_curr_act_stats(int ifd, off_t fpos, short curr, long *cnt, int *eosaf,
+void read_curr_act_stats(int ifd, off_t fpos, short *curr, long *cnt, int *eosaf,
 			 int rows, unsigned int act, int *reset)
 {
    short dis = 1;
@@ -2518,7 +2516,7 @@ void read_curr_act_stats(int ifd, off_t fpos, short curr, long *cnt, int *eosaf,
     * Restore the first stats collected.
     * Used to compute the rate displayed on the first line.
     */
-   copy_structures(!curr, 2, USE_SA_FILE);
+   copy_structures(!(*curr), 2, USE_SA_FILE);
 	
    lines = 0;
    davg  = 0;
@@ -2526,13 +2524,13 @@ void read_curr_act_stats(int ifd, off_t fpos, short curr, long *cnt, int *eosaf,
 
    do {
       /* Display count lines of stats */
-      *eosaf = sa_fread(ifd, &file_stats[curr],
+      *eosaf = sa_fread(ifd, &file_stats[*curr],
 			file_hdr.sa_st_size, SOFT_SIZE);
-      rtype = file_stats[curr].record_type;
+      rtype = file_stats[*curr].record_type;
 	
       if (!(*eosaf) && (rtype != R_DUMMY))
 	 /* Read the extra fields since it's not a DUMMY record */
-	 read_extra_stats(curr, ifd);
+	 read_extra_stats(*curr, ifd);
 
       dis = !(lines++ % rows);
 
@@ -2540,16 +2538,16 @@ void read_curr_act_stats(int ifd, off_t fpos, short curr, long *cnt, int *eosaf,
 
 	 /* next is set to 1 when we were close enough to desired interval */
 	 if (USE_H_OPTION(flags) || USE_DB_OPTION(flags))
-	    next = write_parsable_stats(curr, act, *reset, cnt,
+	    next = write_parsable_stats(*curr, act, *reset, cnt,
 					tm_start.use, tm_end.use);
 	 else
-	    next = write_stats(curr, dis, act, USE_SA_FILE, cnt,
+	    next = write_stats(*curr, dis, act, USE_SA_FILE, cnt,
 			       tm_start.use, tm_end.use, *reset, ST_IMMEDIATE);
 	 if (next && ((*cnt) > 0))
 	    (*cnt)--;
 	 if (next) {
 	    davg++;
-	    curr ^=1;
+	    *curr ^=1;
 	 }
 	 else
 	    lines--;
@@ -2559,7 +2557,8 @@ void read_curr_act_stats(int ifd, off_t fpos, short curr, long *cnt, int *eosaf,
    while ((*cnt) && !(*eosaf) && (rtype != R_DUMMY));
 
    if (davg && !USE_H_OPTION(flags) && !USE_DB_OPTION(flags))
-      write_stats_avg(!curr, dis, act, USE_SA_FILE);
+      write_stats_avg(!(*curr), dis, act, USE_SA_FILE);
+
    *reset = TRUE;
 }
 
@@ -2672,14 +2671,14 @@ void read_stats_from_file(char from_file[])
 	    if ((act == A_IRQ) && WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)) {
 	       /* Distinguish -I SUM activity from IRQs per processor activity */
 	       flags &= ~F_PER_PROC;
-	       read_curr_act_stats(ifd, fpos, curr, &cnt, &eosaf, rows, act, &reset);
+	       read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows, act, &reset);
 	       flags |= F_PER_PROC;
 	       flags &= ~F_ALL_PROC;
-	       read_curr_act_stats(ifd, fpos, curr, &cnt, &eosaf, rows, act, &reset);
+	       read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows, act, &reset);
 	       flags |= F_ALL_PROC;
 	    }
 	    else
-	       read_curr_act_stats(ifd, fpos, curr, &cnt, &eosaf, rows, act, &reset);
+	       read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows, act, &reset);
 	 }
       }
 
@@ -2713,7 +2712,7 @@ void read_stats(void)
 {
    short curr = 1, dis = 1;
    unsigned long lines = 0;
-   int rows = 23, more = 1;
+   unsigned int rows = 23, more = 1;
 
    /* Read stats header */
    if (sa_read(&file_hdr, FILE_HDR_SIZE))
@@ -2724,7 +2723,7 @@ void read_stats(void)
       exit(3);
    }
 
-   /* Force '-U ALL' flag if -A option is used on SMP machines */
+   /* Force '-P ALL' flag if -A option is used on SMP machines */
    if (USE_A_OPTION(flags) && file_hdr.sa_proc) {
       init_cpu_bitmap(~0);
       flags |= F_ALL_PROC + F_PER_PROC;
@@ -2764,7 +2763,7 @@ void read_stats(void)
       lines = rows;
    }
 
-   /* Check use of -U option */
+   /* Check use of -P option */
    prep_smp_option(file_hdr.sa_proc);
 
    /*
@@ -2888,7 +2887,8 @@ int main(int argc, char **argv)
 	       if (!strcmp(argv[opt], K_ALL)) {
 		  dis_hdr = 9;
 		  /* Set bit for the first 16 irq */
-		  irq_bitmap[0] = 0x0000ffff;
+		  irq_bitmap[0] = 0xff;
+		  irq_bitmap[1] = 0xff;
 	       }
 	       else if (!strcmp(argv[opt], K_XALL)) {
 		  dis_hdr = 9;
@@ -2904,7 +2904,7 @@ int main(int argc, char **argv)
 		  i = atoi(argv[opt]);
 		  if ((i < 0) || (i >= NR_IRQS))
 		     usage(argv[0]);
-		  irq_bitmap[i >> 5] |= 1 << (i & 0x1f);
+		  irq_bitmap[i >> 3] |= 1 << (i & 0x07);
 	       }
 	    }
 	    opt++;
@@ -2931,10 +2931,9 @@ int main(int argc, char **argv)
 	       if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
 		  usage(argv[0]);
 	       i = atoi(argv[opt]);	/* Get cpu number */
-	       /* Assume NR_CPUS <= 256... */
 	       if ((i < 0) || (i >= NR_CPUS))
 		  usage(argv[0]);
-	       cpu_bitmap[i >> 5] |= 1 << (i & 0x1f);
+	       cpu_bitmap[i >> 3] |= 1 << (i & 0x07);
 	    }
 	    opt++;
 	 }

@@ -47,7 +47,7 @@
 
 /* Nb of processors on the machine. A value of 1 means two processors */
 int cpu_nr = -1;
-int serial_used = 0, irqcpu_used = 0, iface_used = 0, disk_used = 0;
+unsigned int serial_used = 0, iface_used = 0, irqcpu_used = 0, disk_used = 0;
 unsigned int sadc_actflag;
 long interval = 0;
 int kb_shift = 0;
@@ -123,7 +123,7 @@ void salloc_cpu(int nr_cpus)
  * Allocate stats_serial structures
  ***************************************************************************
  */
-void salloc_serial(int nr_serial)
+void salloc_serial(unsigned int nr_serial)
 {
    if ((st_serial = (struct stats_serial *) malloc(STATS_SERIAL_SIZE * nr_serial)) == NULL) {
       perror("malloc");
@@ -139,7 +139,7 @@ void salloc_serial(int nr_serial)
  * Allocate stats_irq_cpu structures
  ***************************************************************************
  */
-void salloc_irqcpu(int nr_cpus, int nr_irqcpu)
+void salloc_irqcpu(int nr_cpus, unsigned int nr_irqcpu)
 {
    /*
     * st_irq_cpu->irq:       IRQ#-A
@@ -168,7 +168,7 @@ void salloc_irqcpu(int nr_cpus, int nr_irqcpu)
  * Allocate stats_net_dev structures
  ***************************************************************************
  */
-void salloc_net_dev(int nr_iface)
+void salloc_net_dev(unsigned int nr_iface)
 {
    if ((st_net_dev = (struct stats_net_dev *) malloc(STATS_NET_DEV_SIZE * nr_iface)) == NULL) {
       perror("malloc");
@@ -184,7 +184,7 @@ void salloc_net_dev(int nr_iface)
  * Allocate disk_stats structures
  ***************************************************************************
  */
-void salloc_disk(int nr_disks)
+void salloc_disk(unsigned int nr_disks)
 {
    if ((st_disk = (struct disk_stats *) malloc(DISK_STATS_SIZE * nr_disks)) == NULL) {
       perror("malloc");
@@ -331,11 +331,11 @@ void get_pid_list(void)
  * Find number of serial lines that support tx/rx accounting
  ***************************************************************************
  */
-void get_serial_lines(int *serial_used)
+void get_serial_lines(unsigned int *serial_used)
 {
    FILE *serfp;
    char line[256];
-   int sl = 0;
+   unsigned int sl = 0;
 
 #ifdef SMP_RACE
    /*
@@ -376,11 +376,11 @@ void get_serial_lines(int *serial_used)
  * (see linux source file linux/net/core/dev.c)
  ***************************************************************************
  */
-void get_net_dev(int *iface_used)
+void get_net_dev(unsigned int *iface_used)
 {
    FILE *devfp;
    char line[128];
-   int dev = 0;
+   unsigned int dev = 0;
 
    /* Open network device file */
    if ((devfp = fopen(NET_DEV, "r")) == NULL) {
@@ -406,11 +406,11 @@ void get_net_dev(int *iface_used)
  * Called on SMP machines only.
  ***************************************************************************
  */
-void get_irqcpu_nb(int *irqcpu_used, unsigned int max_nr_irqcpu)
+void get_irqcpu_nb(unsigned int *irqcpu_used, unsigned int max_nr_irqcpu)
 {
    FILE *irqfp;
    char line[16];
-   int irq = 0;
+   unsigned int irq = 0;
 
    /* Open interrupts file */
    if ((irqfp = fopen(INTERRUPTS, "r")) == NULL) {
@@ -844,7 +844,7 @@ void read_proc_stat(void)
       }
 
       else if (!strncmp(line, "disk_io: ", 9)) {
-	 int dsk = 0;
+	 unsigned int dsk = 0;
 	
 	 file_stats.dk_drive = 0;
 	 file_stats.dk_drive_rio  = file_stats.dk_drive_wio  = 0;
@@ -1059,8 +1059,8 @@ void read_serial_stat(void)
    FILE *serfp;
    struct stats_serial *st_serial_i;
    static char line[256];
-   int sl = 0;
-   int tty;
+   unsigned int sl = 0;
+   unsigned int tty;
    char *p;
 
 
@@ -1096,7 +1096,7 @@ void read_serial_stat(void)
        * with more serial lines than are actually available now.
        */
       st_serial_i = st_serial + sl++;
-      st_serial_i->line = 0xff;
+      st_serial_i->line = ~0;
    }
 }
 
@@ -1110,7 +1110,7 @@ void read_interrupts_stat(void)
 {
    FILE *irqfp;
    static char line[1024];	/* Should depend on the nb of processors */
-   int irq = 0, cpu;
+   unsigned int irq = 0, cpu;
    struct stats_irq_cpu *p;
 
    /* Open interrupts file */
@@ -1240,7 +1240,7 @@ void read_net_dev_stat(void)
    FILE *devfp;
    struct stats_net_dev *st_net_dev_i;
    static char line[256];
-   int dev = 0;
+   unsigned int dev = 0;
 
    /* Open network device file */
    if ((devfp = fopen(NET_DEV, "r")) != NULL) {
@@ -1485,7 +1485,7 @@ int main(int argc, char **argv)
 	    /* Get PID list */
 	    get_pid_list();
 	 sadc_actflag |= A_PID;
-	 if (!strcmp(argv[opt], K_ALL)) {
+	 if (!strcmp(argv[++opt], K_ALL)) {
 	    set_pflag(strcmp(argv[opt - 1], "-x"), 0);
 		    continue;	/* Next option */
 	 }

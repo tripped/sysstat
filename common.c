@@ -204,11 +204,11 @@ int get_sysfs_dev_nr(int flags)
  * "disk_io:" line in /proc/stat.
  ***************************************************************************
  */
-int get_disk_io_nr(void)
+unsigned int get_disk_io_nr(void)
 {
    FILE *statfp;
    char line[8192];
-   int dsk = 0;
+   unsigned int dsk = 0;
    int pos;
 
    /* Open /proc/stat file */

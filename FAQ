@@ -1,5 +1,8 @@
 This is sysstat's Frequently Asked Questions!
 Be sure to read this carefully before asking for help...
+If you don't find the solution of your problem here then send me a mail
+(please remember to include sysstat's version number, a sample output
+showing the bug, and the contents of the /proc/stat file of your system).
 
 #################
 
@@ -177,7 +180,7 @@ lrwxrwxrwx   1 root     root            8 May  5 18:31 /usr/src/linux/include/as
 
 #################
 
-Q> I cannot see all my disks when I use the iostat command...
+Q> I cannot see all my disks when I use the sar/iostat command...
 
 A> Yes. This is a kernel limit. At the present time Linux doesn't maintain
 statistics for every devices. Old kernels (2.2.x for instance) used to

@@ -31,11 +31,6 @@ The following people have contributed to 'sysstat' in one way or another:
 	packages. He also included a short initialization script for sar
 	to start it as a daemon on boot.
 
-	Mario Vanoni <vanonim@dial.eunet.ch> is the originator of the 2.x
-	to 3.x version transition. Thanks to his numerous advice and his
-	experience on UN*X systems, he helped me to make what I think
-	today is a true system monitoring program.
-
 	Jason (Jay) R. Fink <jay_rf@exis.net> set up and maintained the
 	first web site for sysstat.
 
@@ -65,6 +60,9 @@ The following people have contributed to 'sysstat' in one way or another:
 
 	Wilhelm Nuesser <wilhelm.nuesser@sap.com> sent me a patch to
 	fix average wait times and service times displayed by iostat -x.
+
+	Rick Lindsley <ricklind@us.ibm.com> has played a great part in
+	making sysstat work on kernels 2.5 and above.
 
 
 I would also thank the following people for their hints or bug reports

@@ -1,6 +1,6 @@
 /*
  * iostat: report I/O statistics
- * (C) 1998-2002 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1998-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -126,19 +126,25 @@ void read_stat(int curr, int flags)
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
-	  * Read the number of jiffies spent in user, nice, system and idle mode
-	  * and compute system uptime in jiffies (1/100ths of a second if HZ=100)
+	  * Read the number of jiffies spent in user, nice, system, idle
+	  * and iowait mode and compute system uptime in jiffies (1/100ths
+	  * of a second if HZ=100).
 	  */
-	 sscanf(line + 5, "%u %u %u %lu",
+	 comm_stats[curr].cpu_iowait = 0;	/* For non 2.5 machines */
+	 sscanf(line + 5, "%u %u %u %lu %lu",
 	        &(comm_stats[curr].cpu_user), &(comm_stats[curr].cpu_nice),
-		&(comm_stats[curr].cpu_system), &(comm_stats[curr].cpu_idle));
+		&(comm_stats[curr].cpu_system), &(comm_stats[curr].cpu_idle),
+		&(comm_stats[curr].cpu_iowait));
 
 	 /*
 	  * Compute system uptime in jiffies.
 	  * Uptime is multiplied by the number of processors.
 	  */
-	 comm_stats[curr].uptime = comm_stats[curr].cpu_user   + comm_stats[curr].cpu_nice +
-	                           comm_stats[curr].cpu_system + comm_stats[curr].cpu_idle;
+	 comm_stats[curr].uptime = comm_stats[curr].cpu_user   +
+	                           comm_stats[curr].cpu_nice +
+	                           comm_stats[curr].cpu_system +
+	                           comm_stats[curr].cpu_idle +
+	                           comm_stats[curr].cpu_iowait;
       }
 
       else if (DISPLAY_EXTENDED(flags))
@@ -325,12 +331,13 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
    if (!DISPLAY_DISK_ONLY(flags)) {
 
-      printf(_("avg-cpu:  %%user   %%nice    %%sys   %%idle\n"));
+      printf(_("avg-cpu:  %%user   %%nice    %%sys %%iowait   %%idle\n"));
 
-      printf("         %6.2f  %6.2f  %6.2f",
+      printf("         %6.2f  %6.2f  %6.2f  %6.2f",
 	     SP_VALUE(comm_stats[!curr].cpu_user,   comm_stats[curr].cpu_user,   itv),
 	     SP_VALUE(comm_stats[!curr].cpu_nice,   comm_stats[curr].cpu_nice,   itv),
-	     SP_VALUE(comm_stats[!curr].cpu_system, comm_stats[curr].cpu_system, itv));
+	     SP_VALUE(comm_stats[!curr].cpu_system, comm_stats[curr].cpu_system, itv),
+	     SP_VALUE(comm_stats[!curr].cpu_iowait, comm_stats[curr].cpu_iowait, itv));
 
       if (comm_stats[curr].cpu_idle < comm_stats[!curr].cpu_idle)
 	 printf("    %.2f", 0.0);

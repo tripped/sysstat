@@ -20,3 +20,18 @@ Here are the things I would like (or I should) do for the next releases:
 * Implement a "-P" option for sar to display all statistics on a per-processor
   basis.
 
+* Use ./configure to configure sysstat.
+
+* Add support for hotplug CPU ?
+
+* Check I/O wait type (long int?, int?) read in /proc/stat.
+
+* Update translations.
+
+* One should be able to enter the device for which stats are needed even
+  if option -x is not used with iostat.
+
+* Make the code more rock solid by avoiding assumptions.
+
+* SMP race workaround should no longer be enabled by default.
+

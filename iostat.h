@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1999-2002 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2003 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
 #ifndef _IOSTAT_H
@@ -21,7 +21,7 @@
 #define D_TIMESTAMP	0x04
 #define D_EXTENDED	0x08
 #define D_EXTENDED_ALL	0x10
-#define D_KILOBYTES	0x10
+#define D_KILOBYTES	0x20
 
 #define DISPLAY_CPU_ONLY(m)	(((m) & D_CPU_ONLY) == D_CPU_ONLY)
 #define DISPLAY_DISK_ONLY(m)	(((m) & D_DISK_ONLY) == D_DISK_ONLY)
@@ -33,6 +33,7 @@
 
 struct comm_stats {
    unsigned long uptime				__attribute__ ((aligned (8)));
+   unsigned long cpu_iowait			__attribute__ ((aligned (8)));
    unsigned long cpu_idle			__attribute__ ((aligned (8)));
    unsigned int  cpu_user			__attribute__ ((aligned (8)));
    unsigned int  cpu_nice			__attribute__ ((packed));
@@ -41,7 +42,7 @@ struct comm_stats {
 };
 
 #define COMM_STATS_SIZE	(sizeof(int)  * 4 + \
-			 SIZEOF_LONG  * 2)
+			 SIZEOF_LONG  * 3)
 
 
 struct disk_hdr_stats {

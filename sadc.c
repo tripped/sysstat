@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2002 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -717,7 +717,7 @@ void read_proc_stat(void)
    struct disk_stats *st_disk_i;
    static char line[2560];
    unsigned int cc_user, cc_nice, cc_system;
-   unsigned long cc_idle;
+   unsigned long cc_idle, cc_iowait;
    unsigned int v_tmp[5], v_major, v_index;
    int proc_nb, i, pos;
 
@@ -731,12 +731,15 @@ void read_proc_stat(void)
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
-	  * Read the number of jiffies spent in user, nice, system and idle mode among all proc.
+	  * Read the number of jiffies spent in user, nice, system, idle and
+	  * iowait mode among all proc.
 	  * CPU usage is not reduced to one processor to avoid rounding problems.
 	  */
-	 sscanf(line + 5, "%u %u %u %lu",
+	 file_stats.cpu_iowait = 0;	/* in case it isn't 2.5 */
+	 sscanf(line + 5, "%u %u %u %lu %lu",
 		&(file_stats.cpu_user),   &(file_stats.cpu_nice),
-		&(file_stats.cpu_system), &(file_stats.cpu_idle));
+		&(file_stats.cpu_system), &(file_stats.cpu_idle),
+		&(file_stats.cpu_iowait));
 
 	 /*
 	  * Compute the uptime of the system in jiffies (1/100ths of a second if HZ=100).
@@ -748,22 +751,26 @@ void read_proc_stat(void)
 	  * 124 days on a quad processor...
 	  */
 	 file_stats.uptime = file_stats.cpu_user   + file_stats.cpu_nice +
-	                     file_stats.cpu_system + file_stats.cpu_idle;
+	                     file_stats.cpu_system + file_stats.cpu_idle +
+	                     file_stats.cpu_iowait;
       }
 
       else if (!strncmp(line, "cpu", 3)) {
 	 if (proc_used > 0) {
 	    /*
-	     * Read the number of jiffies spent in user, nice, system and idle mode for current proc.
+	     * Read the number of jiffies spent in user, nice, system, idle and
+	     * iowait mode for current proc.
 	     * This is done only on SMP machines.
 	     * Warning: st_cpu struct is _not_ allocated even if the kernel has SMP support enabled.
 	     */
-	    sscanf(line + 3, "%d %u %u %u %lu", &proc_nb, &cc_user, &cc_nice, &cc_system, &cc_idle);
+	    sscanf(line + 3, "%d %u %u %u %lu %lu",
+		   &proc_nb, &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
 	    st_cpu_i = st_cpu + proc_nb;
 	    st_cpu_i->per_cpu_user   = cc_user;
 	    st_cpu_i->per_cpu_nice   = cc_nice;
 	    st_cpu_i->per_cpu_system = cc_system;
 	    st_cpu_i->per_cpu_idle   = cc_idle;
+	    st_cpu_i->per_cpu_iowait = cc_iowait;
 	 }
       }
 

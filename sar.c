@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2002 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -744,16 +744,17 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
    if (GET_CPU(act) || GET_ONE_CPU(act)) {
       if (dis)
-	 printf(_("\nAverage:          CPU     %%user     %%nice   %%system     %%idle\n"));
+	 printf(_("\nAverage:          CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"));
 
       if (GET_CPU(act)) {
 	
 	 printf(_("Average:          all"));
 
-	 printf("    %6.2f    %6.2f    %6.2f",
+	 printf("    %6.2f    %6.2f    %6.2f    %6.2f",
 		SP_VALUE(file_stats[2].cpu_user,   file_stats[curr].cpu_user,   itv0),
 		SP_VALUE(file_stats[2].cpu_nice,   file_stats[curr].cpu_nice,   itv0),
-		SP_VALUE(file_stats[2].cpu_system, file_stats[curr].cpu_system, itv0));
+		SP_VALUE(file_stats[2].cpu_system, file_stats[curr].cpu_system, itv0),
+		SP_VALUE(file_stats[2].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
 
 	 if (file_stats[curr].cpu_idle < file_stats[2].cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	    printf("      %.2f\n", 0.0);
@@ -770,10 +771,11 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	       st_cpu_i = st_cpu[curr] + i;
 	       st_cpu_j = st_cpu[2]    + i;
 	
-	       printf("    %6.2f    %6.2f    %6.2f",
+	       printf("    %6.2f    %6.2f    %6.2f    %6.2f",
 		      SP_VALUE(st_cpu_j->per_cpu_user,   st_cpu_i->per_cpu_user,   itv),
 		      SP_VALUE(st_cpu_j->per_cpu_nice,   st_cpu_i->per_cpu_nice,   itv),
-		      SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv));
+		      SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv),
+		      SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, itv));
 
 	       if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)	/* Handle buggy RTC (or kernels?) */
 		  printf("      %.2f\n", 0.0);
@@ -1198,15 +1200,17 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Print CPU usage */
    if (GET_CPU(act) || GET_ONE_CPU(act)) {
       if (dis)
-	 printf(_("\n%-11s       CPU     %%user     %%nice   %%system     %%idle\n"), cur_time[!curr]);
+	 printf(_("\n%-11s       CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"),
+		cur_time[!curr]);
 
       if (GET_CPU(act)) {
 	 printf(_("%-11s       all"), cur_time[curr]);
 
-	 printf("    %6.2f    %6.2f    %6.2f",
+	 printf("    %6.2f    %6.2f    %6.2f    %6.2f",
 		SP_VALUE(file_stats[!curr].cpu_user,   file_stats[curr].cpu_user,   itv0),
 		SP_VALUE(file_stats[!curr].cpu_nice,   file_stats[curr].cpu_nice,   itv0),
-		SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0));
+		SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0),
+		SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
 
 	 if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	    printf("      %.2f\n", 0.0);
@@ -1223,10 +1227,11 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 	       st_cpu_i = st_cpu[curr]  + i;
 	       st_cpu_j = st_cpu[!curr] + i;
 	
-	       printf("    %6.2f    %6.2f    %6.2f",
+	       printf("    %6.2f    %6.2f    %6.2f    %6.2f",
 		      SP_VALUE(st_cpu_j->per_cpu_user,   st_cpu_i->per_cpu_user,   itv),
 		      SP_VALUE(st_cpu_j->per_cpu_nice,   st_cpu_i->per_cpu_nice,   itv),
-		      SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv));
+		      SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv),
+		      SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, itv));
 
 	       if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)	/* Handle buggy RTC (or kernels?) */
 		  printf("      %.2f\n", 0.0);
@@ -1725,6 +1730,8 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 	     SP_VALUE(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, itv0));
       printf("%s\t%ld\t%s\tall\t%%system\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
 	     SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0));
+      printf("%s\t%ld\t%s\tall\t%%iowait\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+	     SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
       printf("%s\t%ld\t%s\tall\t%%idle\t", file_hdr.sa_nodename, dt, cur_time);
       if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	 printf("%.2f\n", 0.0);
@@ -1747,6 +1754,8 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 		   SP_VALUE(st_cpu_j->per_cpu_nice, st_cpu_i->per_cpu_nice, itv));
 	    printf("%s\t%ld\t%s\tcpu%d\t%%system\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i,
 		   SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv));
+	    printf("%s\t%ld\t%s\tcpu%d\t%%iowait\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i,
+		   SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, itv));
 
 	    if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	       printf("%s\t%ld\t%s\tcpu%d\t%%idle\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i, 0.0);
@@ -2102,10 +2111,11 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    /* Print CPU usage */
    if (GET_CPU(act)) {
-      printf("%s;%ld;%s;-1;%.2f;%.2f;%.2f;", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s;%ld;%s;-1;%.2f;%.2f;%.2f;%.2f;", file_hdr.sa_nodename, dt, cur_time,
 	     SP_VALUE(file_stats[!curr].cpu_user, file_stats[curr].cpu_user, itv0),
 	     SP_VALUE(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, itv0),
-	     SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0));
+	     SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0),
+	     SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
       if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	 printf("%.2f\n", 0.0);
       else
@@ -2121,10 +2131,11 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	    st_cpu_i = st_cpu[curr]  + i;
 	    st_cpu_j = st_cpu[!curr] + i;
 	
-	    printf("%s;%ld;%s;%d;%.2f;%.2f;%.2f;", file_hdr.sa_nodename, dt, cur_time, i,
+	    printf("%s;%ld;%s;%d;%.2f;%.2f;%.2f;%.2f;", file_hdr.sa_nodename, dt, cur_time, i,
 		   SP_VALUE(st_cpu_j->per_cpu_user, st_cpu_i->per_cpu_user, itv),
 		   SP_VALUE(st_cpu_j->per_cpu_nice, st_cpu_i->per_cpu_nice, itv),
-		   SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv));
+		   SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv),
+		   SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, itv));
 
 	    if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	       printf("%.2f\n", 0.0);
@@ -2868,12 +2879,12 @@ int main(int argc, char **argv)
 	       sar_actflag |= A_IRQ_CPU;
 	    else {
 	       sar_actflag |= A_ONE_IRQ;
-	       if (!strcmp(argv[opt], K_ALL) || !strcmp(argv[opt], "-1")) {
+	       if (!strcmp(argv[opt], K_ALL)) {
 		  dis_hdr = 9;
 		  /* Set bit for the first 16 irq */
 		  irq_bitmap[0] = 0x0000ffff;
 	       }
-	       else if (!strcmp(argv[opt], K_XALL) || !strcmp(argv[opt], "-2")) {
+	       else if (!strcmp(argv[opt], K_XALL)) {
 		  dis_hdr = 9;
 		  /* Set every bit */
 		  init_irq_bitmap(~0);
@@ -2900,7 +2911,7 @@ int main(int argc, char **argv)
 	 if (argv[++opt]) {
 	    sar_actflag |= A_ONE_CPU;
 	    dis_hdr++;
-	    if (!strcmp(argv[opt], K_ALL) || !strcmp(argv[opt], "-1")) {
+	    if (!strcmp(argv[opt], K_ALL)) {
 	       dis_hdr = 9;
 	       /*
 		* Set bit for every processor.

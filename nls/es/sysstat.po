@@ -29,8 +29,8 @@ msgstr "sysstat versión %s\n"
 "[ <intervalo> [ <número_de_muestras> ] ]\n"
 
 #: mpstat.c:123
-msgid "\nAverage:     CPU   %%user   %%nice %%system   %%idle    intr/s\n"
-msgstr "\nMedia:       CPU   %%user   %%nice %%system   %%idle    intr/s\n"
+msgid "\nAverage:     CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
+msgstr "\nMedia:       CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
 
 #: mpstat.c:132
 msgid "Average:     all"
@@ -41,8 +41,8 @@ msgid "Average:    %4d"
 msgstr "Media:      %4d"
 
 #: mpstat.c:207
-msgid "\n%-11s  CPU   %%user   %%nice %%system   %%idle    intr/s\n"
-msgstr "\n%-11s  CPU   %%user   %%nice %%system   %%idle    intr/s\n"
+msgid "\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
+msgstr "\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
 
 #: mpstat.c:216
 msgid "%-11s  all"
@@ -63,8 +63,8 @@ msgstr "sysstat versión %s\n"
 "[ <intervalo> [ <número_de_muestras> ] ]\n"
 
 #: iostat.c:534
-msgid "avg-cpu:  %%user   %%nice    %%sys   %%idle\n"
-msgstr "cpu-med:  %%user   %%nice    %%sys   %%idle\n"
+msgid "avg-cpu:  %%user   %%nice    %%sys %%iowait   %%idle\n"
+msgstr "cpu-med:  %%user   %%nice    %%sys %%iowait   %%idle\n"
 
 #: iostat.c:555
 msgid "Time: %s\n"
@@ -177,8 +177,8 @@ msgid "\nAverage:      cswch/s\n"
 msgstr "\nMedia:        cswch/s\n"
 
 #: sar.c:554
-msgid "\nAverage:          CPU     %%user     %%nice   %%system     %%idle\n"
-msgstr "\nMedia:            CPU     %%user     %%nice   %%system     %%idle\n"
+msgid "\nAverage:          CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"
+msgstr "\nMedia:            CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"
 
 #: sar.c:557
 msgid "Average:          all"
@@ -321,8 +321,8 @@ msgid "\n%-11s   cswch/s\n"
 msgstr "\n%-11s   cswch/s\n"
 
 #: sar.c:1063
-msgid "\n%-11s       CPU     %%user     %%nice   %%system     %%idle\n"
-msgstr "\n%-11s       CPU     %%user     %%nice   %%system     %%idle\n"
+msgid "\n%-11s       CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"
+msgstr "\n%-11s       CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"
 
 #: sar.c:1066
 msgid "%-11s       all"

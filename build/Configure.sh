@@ -1,6 +1,6 @@
 #!/bin/sh
 # Configuration script for sysstat
-# (C) 2000-2002 Sebastien GODARD <sebastien.godard@wanadoo.fr>
+# (C) 2000-2003 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 ASK="sh build/Ask.sh"
 

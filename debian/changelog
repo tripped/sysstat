@@ -1,3 +1,14 @@
+sysstat (4.1.6-1) unstable; urgency=low
+
+  * UNRELEASED
+  * New upstream version:
+    + daily data files format has changed again.
+  * Standards-Version: 3.6.1 (no changes).
+  * TODO: po bugs!!!!
+  
+
+ -- Robert Luberda <robert@debian.org>  Sun, 31 Aug 2003 12:21:00 +0200
+
 sysstat (4.1.5-2) unstable; urgency=low
 
   * Fix a typo in fr.po (closes: #203481). 

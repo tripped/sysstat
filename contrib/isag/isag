@@ -888,7 +888,7 @@ proc fngr {l} {
 #	return "/tmp/gp_$l[pid]"
 	global fngr_files
 	if {0 == [info exists fngr_files($l)]} {
-		set fngr_files($l) [exec mktemp ".gp_$l.XXXXXX"]
+		set fngr_files($l) [exec mktemp -t "gp_$l.XXXXXX"]
 #		file delete fngr_files($l)
 	}
 	return $fngr_files($l)
@@ -1138,7 +1138,7 @@ proc sag_prepare_datafile {l} {
 	set sag_if_last_time ""
 
 #	set fn "/tmp/sag_$l[pid]"
-	set fn [exec mktemp "./sag_$l.XXXXXXXX"]
+	set fn [exec mktemp -t "sag_$l.XXXXXXXX"]
 	set fp [open $fn w]
 	puts $fp "#!$sh"
 	puts $fp " "

@@ -1,0 +1,50 @@
+# sysstat (debconf) translation to Catalan.
+# Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004 Free Software Foundation, Inc.
+# Aleix Badia i Bosch <abadia@ica.es> 2004
+msgid ""
+msgstr ""
+"Project-Id-Version: sysstat_4.1.5-2_templates\n"
+"POT-Creation-Date: 2003-03-22 21:55+0100\n"
+"PO-Revision-Date: 2004-01-31 20:03GMT\n"
+"Last-Translator: Aleix Badia i Bosch <abadia@ica.es>\n"
+"Language-Team: Debian L10n Catalan <debian-l10n-catalan@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Description
+#: ../sysstat.templates:3
+msgid "WARNING: daily data files format has changed!"
+msgstr "Avís: el format dels fitxers diaris de dades ha canviat"
+
+#. Description
+#: ../sysstat.templates:3
+msgid ""
+"Format of daily data statistics files has changed in version ${s_version} of "
+"sysstat and is *not* compatible with the previous one!"
+msgstr "El format dels fitxers d'estadístiques de dades diaris ha canviat en la versió de sysstat ${s_version} ; *no* és compatible amb l'anterior."
+
+#. Description
+#: ../sysstat.templates:3
+msgid "Existing data files need to be deleted."
+msgstr "Cal suprimir els fitxers de dades existents."
+
+#. Description
+#: ../sysstat.templates:12
+msgid "Do you want post-installation script to remove these data files?"
+msgstr "Voleu que la seqüència posterior a la instal·lació suprimeixi tot aquests fitxers de dades ?"
+
+#. Description
+#: ../sysstat.templates:12
+msgid ""
+"If you activate this option, any existing data files in /var/log/sysstat/ "
+"directory will be deleted."
+msgstr "Si activeu aquesta opció es suprimirà qualsevol fitxers de dades present al directori /var/log/sysstat/."
+
+#. Description
+#: ../sysstat.templates:12
+msgid ""
+"If you don't want to remove them automatically, please remove them by hand "
+"later, in order to the sar command work properly."
+msgstr "Si no voleu que es suprimeixi automàticament feu-ho, posteriorment, manualment per comprovar el correcte funcionament de l'ordre sar."
+

@@ -142,7 +142,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x215a
+#define SA_MAGIC	0x215b
 
 /*
  * Attributes such as 'aligned' and 'packed' have been defined for every
@@ -236,7 +236,6 @@ struct file_stats {
    unsigned int  file_used			__attribute__ ((packed));
    unsigned int  file_max			__attribute__ ((packed));
    unsigned int  inode_used			__attribute__ ((packed));
-   unsigned int  inode_max			__attribute__ ((packed));
    unsigned int  super_used			__attribute__ ((packed));
    unsigned int  super_max			__attribute__ ((packed));
    unsigned int  dquot_used			__attribute__ ((packed));
@@ -245,14 +244,12 @@ struct file_stats {
    unsigned int  rtsig_max			__attribute__ ((packed));
    unsigned int  sock_inuse			__attribute__ ((packed));
    unsigned int  tcp_inuse			__attribute__ ((packed));
-   unsigned int  tcp_highestinuse		__attribute__ ((packed));
    unsigned int  udp_inuse			__attribute__ ((packed));
-   unsigned int  udp_highestinuse		__attribute__ ((packed));
    unsigned int  raw_inuse			__attribute__ ((packed));
-   unsigned int  raw_highestinuse		__attribute__ ((packed));
+   unsigned int  frag_inuse			__attribute__ ((packed));
 };
 
-#define FILE_STATS_SIZE	(sizeof(int)  * 33 + \
+#define FILE_STATS_SIZE	(sizeof(int)  * 30 + \
 			 sizeof(char) *  4 + \
 			 SIZEOF_LONG  * 13)
 
@@ -361,12 +358,10 @@ struct stats_sum {
    unsigned long tcp_inuse			__attribute__ ((packed));
    unsigned long udp_inuse			__attribute__ ((packed));
    unsigned long raw_inuse			__attribute__ ((packed));
-   unsigned long tcp_highestinuse		__attribute__ ((packed));
-   unsigned long udp_highestinuse		__attribute__ ((packed));
-   unsigned long raw_highestinuse		__attribute__ ((packed));
+   unsigned long frag_inuse			__attribute__ ((packed));
 };
 
-#define STATS_SUM_SIZE	(sizeof(long) * 20)
+#define STATS_SUM_SIZE	(sizeof(long) * 18)
 
 struct tstamp {
    int tm_sec;

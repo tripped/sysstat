@@ -5,11 +5,9 @@
 PREFIX =
 
 DFLAGS =
-IOS_DFLAGS =
 SAS_DFLAGS =
 
 ENABLE_NLS =
-ENABLE_PATCH =
 ENABLE_SMP_WRKARD =
 
 ifeq ($(ENABLE_NLS),y)
@@ -18,11 +16,6 @@ REQUIRE_NLS = -DUSE_NLS -DPACKAGE=\"$(PACKAGE)\" -DLOCALEDIR=\"$(PREFIX)/share/l
 endif
 ifdef REQUIRE_NLS
    DFLAGS += $(REQUIRE_NLS)
-endif
-
-ifeq ($(ENABLE_PATCH),y)
-# Use this if you have applied my disk accounting patch
-IOS_DFLAGS += -DHAS_DISK_ACCT
 endif
 
 ifeq ($(ENABLE_SMP_WRKARD),y)

@@ -5,7 +5,6 @@
 PREFIX = /usr
 
 DFLAGS =
-IOS_DFLAGS =
 SAS_DFLAGS =
 
 # NLS (National Language Support)
@@ -13,9 +12,6 @@ REQUIRE_NLS = -DUSE_NLS -DPACKAGE=\"$(PACKAGE)\" -DLOCALEDIR=\"$(PREFIX)/share/l
 ifdef REQUIRE_NLS
    DFLAGS += $(REQUIRE_NLS)
 endif
-
-# Uncomment this if you have applied my disk accounting patch
-#IOS_DFLAGS += -DHAS_DISK_ACCT
 
 # Uncomment this to enable workaround for Linux kernel SMP race condition
 SAS_DFLAGS += -DSMP_RACE

@@ -855,7 +855,7 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
    if (GET_KTABLES(act)) {
       if (dis)
-	 printf(_("\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"));
+	 printf(_("\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"));
 
       printf(_("Average:    %9lu"), asum.dentry_stat / asum.count);
 
@@ -868,12 +868,6 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	 printf("      0%c00", dp);
 
       printf(" %9lu", asum.inode_used / asum.count);
-      if (file_stats[curr].inode_max)
-	 printf("    %3lu%c%02lu",
-		INT_VAL(asum.inode_used / asum.count, file_stats[curr].inode_max), dp,
-		DEC_VAL(asum.inode_used / asum.count, file_stats[curr].inode_max));
-      else
-	 printf("      0%c00", dp);
 
       printf(" %9lu", asum.super_used / asum.count);
       if (file_stats[curr].super_max)
@@ -969,13 +963,14 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
    if (GET_NET_SOCK(act)) {
 
       if (dis)
-	 printf(_("\nAverage:       totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"));
+	 printf(_("\nAverage:       totsck    tcpsck    udpsck    rawsck   ip-frag\n"));
 
-      printf(_("Average:    %9lu %9lu %9lu %9lu %9lu %9lu %9lu\n"),
+      printf(_("Average:    %9lu %9lu %9lu %9lu %9lu\n"),
 	     asum.sock_inuse / asum.count,
-	     asum.tcp_inuse / asum.count, asum.tcp_highestinuse / asum.count,
-	     asum.udp_inuse / asum.count, asum.udp_highestinuse / asum.count,
-	     asum.raw_inuse / asum.count, asum.raw_highestinuse / asum.count);
+	     asum.tcp_inuse  / asum.count,
+	     asum.udp_inuse  / asum.count,
+	     asum.raw_inuse  / asum.count,
+	     asum.frag_inuse / asum.count);
    }
 
    if (read_from_file)
@@ -1447,7 +1442,7 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    if (GET_KTABLES(act)) {
 
       if (dis)
-	 printf(_("\n%-11s dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"),
+	 printf(_("\n%-11s dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"),
 		cur_time[!curr]);
 
       printf("%-11s %9u", cur_time[curr], file_stats[curr].dentry_stat);
@@ -1461,12 +1456,6 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 	 printf("      0%c00", dp);
 
       printf(" %9u", file_stats[curr].inode_used);
-      if (file_stats[curr].inode_max)
-	 printf("    %3u%c%02u",
-		INT_VAL(file_stats[curr].inode_used, file_stats[curr].inode_max), dp,
-		DEC_VAL(file_stats[curr].inode_used, file_stats[curr].inode_max));
-      else
-	 printf("      0%c00", dp);
 
       printf(" %9u", file_stats[curr].super_used);
       if (file_stats[curr].super_max)
@@ -1579,22 +1568,21 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    if (GET_NET_SOCK(act)) {
 
       if (dis)
-	 printf(_("\n%-11s    totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"), cur_time[!curr]);
+	 printf(_("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag\n"), cur_time[!curr]);
 
-      printf("%-11s %9u %9u %9u %9u %9u %9u %9u\n", cur_time[curr],
+      printf("%-11s %9u %9u %9u %9u %9u\n", cur_time[curr],
 	     file_stats[curr].sock_inuse,
-	     file_stats[curr].tcp_inuse, file_stats[curr].tcp_highestinuse,
-	     file_stats[curr].udp_inuse, file_stats[curr].udp_highestinuse,
-	     file_stats[curr].raw_inuse, file_stats[curr].raw_highestinuse);
+	     file_stats[curr].tcp_inuse,
+	     file_stats[curr].udp_inuse,
+	     file_stats[curr].raw_inuse,
+	     file_stats[curr].frag_inuse);
 
       /* Will be used to compute the average */
       asum.sock_inuse        += file_stats[curr].sock_inuse;
       asum.tcp_inuse         += file_stats[curr].tcp_inuse;
-      asum.tcp_highestinuse  += file_stats[curr].tcp_highestinuse;
       asum.udp_inuse         += file_stats[curr].udp_inuse;
-      asum.udp_highestinuse  += file_stats[curr].udp_highestinuse;
       asum.raw_inuse         += file_stats[curr].raw_inuse;
-      asum.raw_highestinuse  += file_stats[curr].raw_highestinuse;
+      asum.frag_inuse        += file_stats[curr].frag_inuse;
    }
 
    /* Check time (3) */
@@ -1902,13 +1890,6 @@ int write_stats_for_ppc(short curr, unsigned int act, int reset, long *cnt,
 
       printf("%s\t%ld\t%s\t-\tinode-sz\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].inode_used);
-      printf("%s\t%ld\t%s\t-\t%%inode-sz\t", file_hdr.sa_nodename, dt, cur_time);
-      if (file_stats[curr].inode_max)
-	 printf("%u.%02u\n",
-		INT_VAL(file_stats[curr].inode_used, file_stats[curr].inode_max),
-		DEC_VAL(file_stats[curr].inode_used, file_stats[curr].inode_max));
-      else
-	 printf("0.00\n");
 
       printf("%s\t%ld\t%s\t-\tsuper-sz\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].super_used);
@@ -2037,16 +2018,12 @@ int write_stats_for_ppc(short curr, unsigned int act, int reset, long *cnt,
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].sock_inuse);
       printf("%s\t%ld\t%s\t-\ttcpsck\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].tcp_inuse);
-      printf("%s\t%ld\t%s\t-\thi-tcpsck\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].tcp_highestinuse);
       printf("%s\t%ld\t%s\t-\tudpsck\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].udp_inuse);
-      printf("%s\t%ld\t%s\t-\thi-udpsck\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].udp_highestinuse);
       printf("%s\t%ld\t%s\t-\trawsck\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].raw_inuse);
-      printf("%s\t%ld\t%s\t-\thi-rawsck\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].raw_highestinuse);
+      printf("%s\t%ld\t%s\t-\tip-frag\t%u\n",
+	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].frag_inuse);
    }
 
    /* Check time (3) */

@@ -63,15 +63,6 @@ char dp = '.';    /* Decimal point */
  */
 void usage(char *progname)
 {
-#ifdef HAS_DISK_ACCT
-   fprintf(stderr, _("sysstat version %s\n"
-		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-	           "Usage: %s [ options... ]\n"
-		   "Options are:\n"
-		   "[ -c | -d ] [ -p | -l ] [ -t ] [ -V ] [ -o <filename> | -f <filename> ]\n"
-		   "[ <interval> [ <count> ] ]\n"),
-	   VERSION, progname);
-#else		
    fprintf(stderr, _("sysstat version %s\n"
 		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 	           "Usage: %s [ options... ]\n"
@@ -79,7 +70,6 @@ void usage(char *progname)
 		   "[ -c | -d ] [ -t ] [ -V ] [ -o <filename> | -f <filename> ]\n"
 		   "[ <interval> [ <count> ] ]\n"),
 	   VERSION, progname);
-#endif		
    exit(1);
 }
 
@@ -132,12 +122,6 @@ int next_slice(int curr)
    pt1 = (( file_stats[curr].uptime / 100) / interval)      * interval;
    pt2 = (((file_stats[curr].uptime / 100) / interval) + 1) * interval;
 
-#ifdef DEBUG
-   printf("uptime[curr]= %ld  last_uptime= %ld\n", file_stats[curr].uptime, last_uptime);
-   printf("min= %d  max= %d  pt1= %d  pt2= %d  file_interval= %ld\n",
-	  min, max, pt1, pt2, file_interval);
-#endif
-
    return (((pt1 >= min) && (pt1 < max)) || ((pt2 >= min) && (pt2 < max)) || (min == max));
 }
 
@@ -171,7 +155,7 @@ void close_files(int read_file, int write_file, int from_fd, int to_fd)
 {
    if (read_file)
       close(from_fd);
-   if(write_file)
+   if (write_file)
       close(to_fd);
 }
 
@@ -201,12 +185,6 @@ void rw_io_header(int read_from_file, int write_to_file, int from_fd, int to_fd)
    else if (write_to_file){
 
       file_hdr.io_magic = IO_MAGIC;
-
-#ifdef HAS_DISK_ACCT
-      file_hdr.io_patch = (char) 1;
-#else
-      file_hdr.io_patch = (char) 0;
-#endif
 
       file_hdr.io_day   = (char) loc_time.tm_mday;	/* Store date in file */
       file_hdr.io_month = (char) loc_time.tm_mon;
@@ -274,9 +252,6 @@ void read_stat(int curr)
    char line[128];
    unsigned int cc_user, cc_nice, cc_system;
    unsigned long cc_idle;
-#ifdef CPU_WAIT
-   unsigned int cc_wait;
-#endif
 
 
    /* Open stat file */
@@ -292,18 +267,9 @@ void read_stat(int curr)
 	  * Read the number of jiffies spent in user, nice, system and idle mode
 	  * and compute system uptime in jiffies (1/100ths of a second)
 	  */
-#ifdef CPU_WAIT	
-	 sscanf(line, "%s  %u %u %u %lu %u",
-	        resource_name, &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_wait);
-	 file_stats[curr].cpu_wait = cc_wait   / (proc_used + 1);
-
-	 file_stats[curr].uptime = cc_wait;
-#else	
 	 sscanf(line, "%s  %u %u %u %lu",
 	        resource_name, &cc_user, &cc_nice, &cc_system, &cc_idle);
 
-	 file_stats[curr].uptime = 0L;
-#endif
 	 /* Note that CPU usage is *not* reduced to one processor */
 	 file_stats[curr].cpu_user   = cc_user;
 	 file_stats[curr].cpu_nice   = cc_nice;
@@ -314,7 +280,7 @@ void read_stat(int curr)
 	  * Compute system uptime in jiffies (1/100ths of a second).
 	  * Uptime is multiplied by the number of processors.
 	  */
-	 file_stats[curr].uptime += cc_user + cc_nice + cc_system + cc_idle;
+	 file_stats[curr].uptime = cc_user + cc_nice + cc_system + cc_idle;
       }
 
       else if (!strncmp(line, "disk_rblk ", 10))
@@ -339,28 +305,6 @@ void read_stat(int curr)
 	 sscanf(line, "%s %u %u %u %u",
 		resource_name, &(file_stats[curr].dk_drive[0]), &(file_stats[curr].dk_drive[1]),
 		&(file_stats[curr].dk_drive[2]), &(file_stats[curr].dk_drive[3]));
-
-#ifdef TTY
-      else if (!strncmp(line, "tty ", 4))
-	 /* Read the number of characters read and written for all the ttys */
-	 sscanf(line, "%s %lu %lu",
-		resource_name, &(file_stats[curr].tty_in), &(file_stats[curr].tty_out));
-#endif
-
-#ifdef HAS_DISK_ACCT
-      /* The following exists only if the disk accounting patch has been applied */
-      else if (!strncmp(line, "disk_pgin ", 10))
-	 /* Read the number of 512-byte blocks read from disk */
-	 sscanf(line, "%s %u %u %u %u",
-		resource_name, &(file_stats[curr].dk_drive_pgin[0]), &(file_stats[curr].dk_drive_pgin[1]),
-		&(file_stats[curr].dk_drive_pgin[2]), &(file_stats[curr].dk_drive_pgin[3]));
-
-      else if (!strncmp(line, "disk_pgout ", 11))
-	 /* Read the number of 512-byte blocks written to disk */
-	 sscanf(line, "%s %u %u %u %u",
-		resource_name, &(file_stats[curr].dk_drive_pgout[0]), &(file_stats[curr].dk_drive_pgout[1]),
-		&(file_stats[curr].dk_drive_pgout[2]), &(file_stats[curr].dk_drive_pgout[3]));
-#endif
    }
 
    /* Close stat file */
@@ -415,28 +359,17 @@ int write_stat(int curr, int disp, int write_to_file, int to_fd, int read_from_f
       printf(_("Time: %s\n"), timestamp);
    }
 
+   /*
+    * itv is multiplied by the number of processors.
+    * This is OK to compute CPU usage since the number of jiffies spent in the different
+    * modes (user, nice, etc.) is the sum for all the processors.
+    * But itv should be reduced to one processor before displaying disk utilization.
+    */
    itv = file_stats[curr].uptime - file_stats[!curr].uptime;	/* uptime in jiffies */
 
    if (!DISPLAY_DISK_ONLY(disp)) {
 
-#ifdef TTY
-      printf(_("tty:     tin       tout   "));
-#endif
-
-      printf(_("avg-cpu:  %%user   %%nice    %%sys   %%idle"));
-
-#ifdef CPU_WAIT
-      printf(_("  %%iowait"));
-#endif
-
-      printf("\n");
-
-
-#ifdef TTY	
-      printf("  %10lu %10lu   ",
-	     (file_stats[curr].tty_in  - file_stats[!curr].tty_in),
-	     (file_stats[curr].tty_out - file_stats[!curr].tty_out));
-#endif	
+      printf(_("avg-cpu:  %%user   %%nice    %%sys   %%idle\n"));
 
       udec_part = DEC_PART(file_stats[curr].cpu_user,   file_stats[!curr].cpu_user,   itv);
       ndec_part = DEC_PART(file_stats[curr].cpu_nice,   file_stats[!curr].cpu_nice,   itv);
@@ -446,12 +379,6 @@ int write_stat(int curr, int disp, int write_to_file, int to_fd, int read_from_f
 	     INT_PART(file_stats[curr].cpu_user,   file_stats[!curr].cpu_user,   itv), dp, udec_part,
 	     INT_PART(file_stats[curr].cpu_nice,   file_stats[!curr].cpu_nice,   itv), dp, ndec_part,
 	     INT_PART(file_stats[curr].cpu_system, file_stats[!curr].cpu_system, itv), dp, sdec_part);
-
-#ifdef CPU_WAIT
-      wdec_part = DEC_PART(file_stats[curr].cpu_wait, file_stats[!curr].cpu_wait, itv);
-      printf("  %3lu%c%02lu",
-	     INT_PART(file_stats[curr].cpu_wait, file_stats[!curr].cpu_wait, itv), dp, wdec_part);
-#endif
 
       if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
 	 printf("    0%c%02lu", dp, (400 - (udec_part + ndec_part + sdec_part + wdec_part)) % 100);
@@ -464,61 +391,33 @@ int write_stat(int curr, int disp, int write_to_file, int to_fd, int read_from_f
       printf("\n");
    }
 
+   itv /= (proc_used + 1); /* See note above */
+
    if (!DISPLAY_CPU_ONLY(disp)) {
 
-      if (!DISPLAY_LOGICAL_IO(disp)) {
+      printf(_("Disks:         tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
 
-	 /* Only if DISK ACCOUNTING patch applied... */
-	 printf(_("Disks:         tps    KB_read/s    KB_wrtn/s    KB_read    KB_wrtn\n"));
+      for (disk_index = 0; disk_index < NR_DISKS; disk_index++) {
 
-	 for (disk_index = 0; disk_index < NR_DISKS; disk_index++) {
-
-	    printf(_("hdisk%d %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n"),
-		   disk_index,
-		   INT_PART(file_stats[curr].dk_drive[disk_index], file_stats[!curr].dk_drive[disk_index], itv),
-		   dp,
-		   DEC_PART(file_stats[curr].dk_drive[disk_index], file_stats[!curr].dk_drive[disk_index], itv),
-		   INT_PART(file_stats[curr].dk_drive_pgin[disk_index]   / 2,
-			    file_stats[!curr].dk_drive_pgin[disk_index]  / 2, itv),
-		   dp,
-		   DEC_PART(file_stats[curr].dk_drive_pgin[disk_index]   / 2,
-			    file_stats[!curr].dk_drive_pgin[disk_index]  / 2, itv),
-		   INT_PART(file_stats[curr].dk_drive_pgout[disk_index]  / 2,
-			    file_stats[!curr].dk_drive_pgout[disk_index] / 2, itv),
-		   dp,
-		   DEC_PART(file_stats[curr].dk_drive_pgout[disk_index]  /2,
-			    file_stats[!curr].dk_drive_pgout[disk_index] /2, itv),
-		   (file_stats[curr].dk_drive_pgin[disk_index]  / 2) - (file_stats[!curr].dk_drive_pgin[disk_index]  / 2),
-		   (file_stats[curr].dk_drive_pgout[disk_index] / 2) - (file_stats[!curr].dk_drive_pgout[disk_index] / 2));
-	 }
-      }
-
-      else {
-
-	 printf(_("Disks:         tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
-
-	 for (disk_index = 0; disk_index < NR_DISKS; disk_index++) {
-
-	    printf(_("hdisk%d %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n"),
-		   disk_index,
-		   INT_PART(file_stats[curr].dk_drive[disk_index],
-			    file_stats[!curr].dk_drive[disk_index], itv),
-		   dp,
-		   DEC_PART(file_stats[curr].dk_drive[disk_index],
-			    file_stats[!curr].dk_drive[disk_index], itv),
-		   INT_PART(file_stats[curr].dk_drive_rblk[disk_index],
-			    file_stats[!curr].dk_drive_rblk[disk_index], itv),
-		   dp,
-		   DEC_PART(file_stats[curr].dk_drive_rblk[disk_index],
-			    file_stats[!curr].dk_drive_rblk[disk_index], itv),
-		   INT_PART(file_stats[curr].dk_drive_wblk[disk_index],
-			    file_stats[!curr].dk_drive_wblk[disk_index], itv),
-		   dp,
-		   DEC_PART(file_stats[curr].dk_drive_wblk[disk_index],
-			    file_stats[!curr].dk_drive_wblk[disk_index], itv),
-		   (file_stats[curr].dk_drive_rblk[disk_index] - file_stats[!curr].dk_drive_rblk[disk_index]),
-		   (file_stats[curr].dk_drive_wblk[disk_index] - file_stats[!curr].dk_drive_wblk[disk_index]));
-	 }
+	 printf(_("hdisk%d %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n"),
+		disk_index,
+		INT_PART(file_stats[curr].dk_drive[disk_index],
+			 file_stats[!curr].dk_drive[disk_index], itv),
+		dp,
+		DEC_PART(file_stats[curr].dk_drive[disk_index],
+			 file_stats[!curr].dk_drive[disk_index], itv),
+		INT_PART(file_stats[curr].dk_drive_rblk[disk_index],
+			 file_stats[!curr].dk_drive_rblk[disk_index], itv),
+		dp,
+		DEC_PART(file_stats[curr].dk_drive_rblk[disk_index],
+			 file_stats[!curr].dk_drive_rblk[disk_index], itv),
+		INT_PART(file_stats[curr].dk_drive_wblk[disk_index],
+			 file_stats[!curr].dk_drive_wblk[disk_index], itv),
+		dp,
+		DEC_PART(file_stats[curr].dk_drive_wblk[disk_index],
+			 file_stats[!curr].dk_drive_wblk[disk_index], itv),
+		(file_stats[curr].dk_drive_rblk[disk_index] - file_stats[!curr].dk_drive_rblk[disk_index]),
+		(file_stats[curr].dk_drive_wblk[disk_index] - file_stats[!curr].dk_drive_wblk[disk_index]));
       }
       printf("\n");
    }
@@ -554,10 +453,6 @@ int main(int argc, char **argv)
    /* Init stat counters */
    init_stats();
 
-#ifndef HAS_DISK_ACCT
-   disp = D_LOGICAL_IO;		/* Display logical I/O block stats */
-#endif
-
    /* How many processors on this machine ? */
    get_nb_proc_used(&proc_used, ~0);
 
@@ -592,16 +487,6 @@ int main(int argc, char **argv)
 	     case 'd':
 	       disp |= D_DISK_ONLY;	/* Display disk utilization only	*/
 	       break;
-	
-#ifdef HAS_DISK_ACCT
-	     case 'l':
-	       disp |= D_LOGICAL_IO;	/* Display logical I/O block stats	*/
-	       break;
-
-	     case 'p':
-	       disp &= ~D_LOGICAL_IO;	/* Display physical I/O block stats	*/
-	       break;
-#endif
 	
 	     case 't':
 	       disp |= D_TIMESTAMP;	/* Display timestamp	       		*/

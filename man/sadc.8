@@ -1,8 +1,8 @@
-.TH SADC 8 "AUGUST 2003" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "JANUARY 2004" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
-.B /usr/lib/sa/sadc [ -F ] [ -I ] [ -V ] [ -x
+.B /usr/lib/sa/sadc [ -F ] [ -I ] [ -L ] [ -V ] [ -x
 .I pid
 .B ] [ -X
 .I pid
@@ -72,6 +72,24 @@ Tell
 to report statistics for all system interrupts. By default,
 .B sadc
 only reports statistics for the total number of interrupts.
+.IP -L
+.B sadc
+will try to get an exclusive lock on the
+.I outfile
+before writing to it or truncating it. Failure to get the lock is fatal,
+except in the case of trying to write a normal (i.e. not a dummy and not
+a header) record to an existing file, in which case
+.B sadc
+will try again at the next interval. Usually, the only reason a lock
+would fail would be if another
+.B sadc
+process were also writing to the file. This can happen when cron is used
+to launch
+.B sadc .
+If the system is under heavy load, an old
+.B sadc
+might still be running when cron starts a new one. Without locking,
+this situation can result in a corrupted system activity file.
 .IP -V
 Print version number and usage then exit.
 .IP "-x pid"

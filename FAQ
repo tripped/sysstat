@@ -13,7 +13,7 @@ Also tell me what the version of your kernel is).
 1.2. When I try to compile sysstat, it fails and says it cannot find some
      include files.
      
-2. QUESTIONS RELATING TO SAR
+2. QUESTIONS RELATING TO SAR/SADC
 
 2.1. The sar command complains with the following message:
      "Invalid system activity file".
@@ -34,6 +34,8 @@ Also tell me what the version of your kernel is).
      options -s and -e. Unfortunately, I have nothing displayed at all.
 2.10. I cannot see all my disks when I use the sar -d command...
 2.11. Do you know a tool that can graphically plot the data collected by sar?
+2.12. When I launch sadc, I get the error message:
+      "flock: Resource temporarily unavailable".
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -235,8 +237,20 @@ them and there must still be some way for improvement...
 You can find among others: isag (a Perl script included in sysstat package),
 sarvant (a Python script that you can find at http://sarvant.sourceforge.net),
 sar2gp (http://sar2gp.berlios.de)...
+I also have heard of commercial tools using sysstat: PerfMan comes to mind,
+among others.
 If you find other ones that you think are of real interest, please let me
 know so that I can update this list.
+
+~~~
+
+2.12. When I launch sadc, I get the error message:
+      "flock: Resource temporarily unavailable"
+
+You are launching sadc using -L option. With this option, sadc tries to
+get an exclusive lock on the output file. The above error message indicates
+that another sadc process was running and had already locked the same output
+file. Stop all sadc instances and try again.
 
 
 3. QUESTIONS RELATING TO IOSTAT
@@ -245,7 +259,7 @@ know so that I can update this list.
 3.1. I cannot see all my disks when I use the iostat command...
 
 Yes. This is a kernel limit. At the present time Linux doesn't maintain
-statistics for every devices. Old kernels (2.2.x for instance) used to
+statistics for every device. Old kernels (2.2.x for instance) used to
 maintain stats for the first four devices.
 The accounting code has changed in 2.4 kernels, and the result may (or
 may not) be better for your system. Indeed, Linux 2.4 maintains the stats

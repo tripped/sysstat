@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2004 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <dirent.h>
+#include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
@@ -489,6 +490,36 @@ void sa_sys_init(unsigned int *flags)
 
 /*
  ***************************************************************************
+ * If -L option used, request a non-blocking, exclusive lock on the file.
+ * If lock would block, then another process (possibly sadc) has already
+ * opened that file => exit.
+ ***************************************************************************
+ */
+int ask_for_flock(int fd, unsigned int *flags, int fatal)
+{
+
+   /* Option -L may be used only if an outfile was specified on the command line */
+   if (USE_L_OPTION(*flags)) {
+      /* Yes: try to lock file */
+      if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
+	 if (((errno == EWOULDBLOCK) && (fatal == FATAL)) ||
+	      (errno != EWOULDBLOCK)) {
+	    perror("flock");
+	    exit(1);
+	 }
+	 /* Was unable to lock file: lock would have blocked... */
+	 return 1;
+      }
+      else
+	 /* File successfully locked */
+	 *flags |= F_FILE_LCK;
+   }
+   return 0;
+}
+
+
+/*
+ ***************************************************************************
  * Fill system activity file header, then print it
  ***************************************************************************
  */
@@ -545,10 +576,14 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
  * before the cron daemon is started to avoid conflict with sa1/sa2 scripts.
  ***************************************************************************
  */
-void write_dummy_record(int ofd, size_t file_stats_size)
+void write_dummy_record(int ofd, size_t file_stats_size, unsigned int *flags)
 {
    int nb;
    struct tm loc_time;
+
+   /* Check if file is locked */
+   if (!FILE_LOCKED(*flags))
+      ask_for_flock(ofd, flags, FATAL);
 
    /* Reset the structure (not compulsory, but a bit cleaner */
    memset(&file_stats, 0, FILE_STATS_SIZE);
@@ -579,9 +614,16 @@ void write_dummy_record(int ofd, size_t file_stats_size)
  * -> device stats for sar -d (kernels 2.4 and newer only)
  ***************************************************************************
  */
-void write_stats(int ofd, size_t file_stats_size)
+void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
 {
    int nb;
+
+   /* Try to lock file */
+   if (!FILE_LOCKED(*flags)) {
+      if (ask_for_flock(ofd, flags, NON_FATAL))
+	 /* Unable to lock file: wait for next iteration to try again to save data */
+	 return;
+   }
 
    if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
       p_write_error();
@@ -623,10 +665,20 @@ void write_stats(int ofd, size_t file_stats_size)
  * Create a system activity daily data file
  ***************************************************************************
  */
-void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size)
+void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size,
+		    unsigned int *flags)
 {
-   if ((*ofd = open(ofile, O_CREAT | O_WRONLY | O_TRUNC,
+   if ((*ofd = open(ofile, O_CREAT | O_WRONLY,
 		    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+      fprintf(stderr, _("Cannot open %s: %s\n"), ofile, strerror(errno));
+      exit(2);
+   }
+
+   /* Try to lock file */
+   ask_for_flock(*ofd, flags, FATAL);
+
+   /* Truncate file */
+   if (ftruncate(*ofd, 0) < 0) {
       fprintf(stderr, _("Cannot open %s: %s\n"), ofile, strerror(errno));
       exit(2);
    }
@@ -641,7 +693,7 @@ void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size)
  * Get file descriptor for output
  ***************************************************************************
  */
-void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int flags)
+void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *flags)
 {
    ssize_t size;
 
@@ -649,26 +701,27 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int fl
       /* Does file exist? */
       if (access(ofile, F_OK) < 0)
 	 /* NO: create it */
-	 create_sa_file(ofd, ofile, file_stats_size);
+	 create_sa_file(ofd, ofile, file_stats_size, flags);
       else {
 	 /* YES: append data to it if possible */
 	 if ((*ofd = open(ofile, O_APPEND | O_RDWR)) < 0) {
 	    fprintf(stderr, _("Cannot open %s: %s\n"), ofile, strerror(errno));
 	    exit(2);
 	 }
+	
 	 /* Read file header */
 	 size = read(*ofd, &file_hdr, FILE_HDR_SIZE);
 	 if (!size) {
 	    close(*ofd);
 	    /* This is an empty file: create it again */
-	    create_sa_file(ofd, ofile, file_stats_size);
+	    create_sa_file(ofd, ofile, file_stats_size, flags);
 	    return;
 	 }
 	 if ((size != FILE_HDR_SIZE) || (file_hdr.sa_magic != SA_MAGIC)) {
 	    close(*ofd);
-	    if (USE_F_OPTION(flags)) {
+	    if (USE_F_OPTION(*flags)) {
 	       /* -F option used: Truncate file */
-	       create_sa_file(ofd, ofile, file_stats_size);
+	       create_sa_file(ofd, ofile, file_stats_size, flags);
 	       return;
 	    }
 	    fprintf(stderr, _("Invalid system activity file\n"));
@@ -685,8 +738,8 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int fl
 
 	 if (file_hdr.sa_proc != cpu_nr) {
 	    close(*ofd);
-	    if (USE_F_OPTION(flags)) {
-	       create_sa_file(ofd, ofile, file_stats_size);
+	    if (USE_F_OPTION(*flags)) {
+	       create_sa_file(ofd, ofile, file_stats_size, flags);
 	       return;
 	    }
 	    fprintf(stderr, _("Cannot append data to that file\n"));
@@ -762,9 +815,9 @@ void read_proc_stat(void)
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
-	  * Read the number of jiffies spent in user, nice, system, idle and
-	  * iowait mode among all proc. CPU usage is not reduced to one
-	  * processor to avoid rounding problems.
+	  * Read the number of jiffies spent in the different modes
+	  * (user, nice, etc.) among all proc. CPU usage is not reduced
+	  * to one processor to avoid rounding problems.
 	  */
 	 file_stats.cpu_iowait = 0;	/* For pre 2.5 kernels */
 	 cc_hardirq = cc_softirq = 0;
@@ -797,8 +850,8 @@ void read_proc_stat(void)
       else if (!strncmp(line, "cpu", 3)) {
 	 if (cpu_nr > 0) {
 	    /*
-	     * Read the number of jiffies spent in user, nice, system, idle
-	     * and iowait mode for current proc.
+	     * Read the number of jiffies spent in the different modes
+	     * (user, nice, etc) for current proc.
 	     * This is done only on SMP machines.
 	     * Warning: st_cpu_i struct is _not_ allocated even if the kernel
 	     * has SMP support enabled.
@@ -1465,7 +1518,7 @@ void read_diskstats_stat(void)
  * and display them.
  ***************************************************************************
  */
-void rw_sa_stat_loop(unsigned int flags, long count, struct tm *loc_time,
+void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
 		     int ofd, size_t file_stats_size, char ofile[], char new_ofile[])
 {
 
@@ -1491,7 +1544,7 @@ void rw_sa_stat_loop(unsigned int flags, long count, struct tm *loc_time,
       read_proc_vmstat();
       read_ktables_stat();
       read_net_sock_stat();
-      if (HAS_DISKSTATS(flags))	/* Implies (disk_used > 0) */
+      if (HAS_DISKSTATS(*flags))	/* Implies (disk_used > 0) */
 	 read_diskstats_stat();
       if (pid_nr)
  	 read_pid_stat();
@@ -1503,14 +1556,14 @@ void rw_sa_stat_loop(unsigned int flags, long count, struct tm *loc_time,
 	 read_net_dev_stat();
 
       /* Write stats */
-      write_stats(ofd, file_stats_size);
+      write_stats(ofd, file_stats_size, flags);
 
-      if DO_SA_ROTAT(flags) {
+      if DO_SA_ROTAT(*flags) {
 	 /*
 	  * Stats are written at the end of previous file *and* at the
 	  * beginning of the new one.
 	  */
-	 flags &= ~F_DO_SA_ROTAT;
+	 *flags &= ~F_DO_SA_ROTAT;
 	 if (fdatasync(ofd) < 0) {	/* Flush previous file */
 	    perror("fdatasync");
 	    exit(4);
@@ -1520,7 +1573,7 @@ void rw_sa_stat_loop(unsigned int flags, long count, struct tm *loc_time,
 	 /* Open and init new file */
 	 open_ofile(&ofd, ofile, &file_stats_size, flags);
 	 /* Write stats again */
-	 write_stats(ofd, file_stats_size);
+	 write_stats(ofd, file_stats_size, flags);
       }
 
       /* Flush data */
@@ -1537,7 +1590,7 @@ void rw_sa_stat_loop(unsigned int flags, long count, struct tm *loc_time,
 	 pause();
 
       /* Rotate activity file if necessary */
-      if (WANT_SA_ROTAT(flags)) {
+      if (WANT_SA_ROTAT(*flags)) {
 	 /* The user specified '-' as the filename to use */
 	 get_localtime(loc_time);
 	 snprintf(new_ofile, MAX_FILE_LEN,
@@ -1545,7 +1598,7 @@ void rw_sa_stat_loop(unsigned int flags, long count, struct tm *loc_time,
 	 new_ofile[MAX_FILE_LEN - 1] = '\0';
 
 	 if (strcmp(ofile, new_ofile))
-	    flags |= F_DO_SA_ROTAT;
+	    *flags |= F_DO_SA_ROTAT;
       }
    }
    while (count);
@@ -1611,6 +1664,9 @@ int main(int argc, char **argv)
 
       else if (!strcmp(argv[opt], "-F"))
 	 flags |= F_F_OPTION;
+
+      else if (!strcmp(argv[opt], "-L"))
+	 flags |= F_L_OPTION;
 
       else if (!strcmp(argv[opt], "-V"))
 	 usage(argv[0]);
@@ -1683,17 +1739,20 @@ int main(int argc, char **argv)
       pid_nr = 0;
       sadc_actflag &= ~A_PID;
    }
+   else
+      /* -L option ignored when writing to STDOUT */
+      flags &= ~F_L_OPTION;
 
    if (GET_PID(sadc_actflag))
       /* Count number of processes to display */
       pid_nr = count_pids();
 
    /* Open output file and write header */
-   open_ofile(&ofd, ofile, &file_stats_size, flags);
+   open_ofile(&ofd, ofile, &file_stats_size, &flags);
 
    if (!interval) {
       /* Interval (and count) not set: write a dummy record and exit */
-      write_dummy_record(ofd, file_stats_size);
+      write_dummy_record(ofd, file_stats_size, &flags);
       close(ofd);
       exit(0);
    }
@@ -1702,7 +1761,7 @@ int main(int argc, char **argv)
    alarm_handler(0);
 
    /* Main loop */
-   rw_sa_stat_loop(flags, count, &loc_time, ofd, file_stats_size,
+   rw_sa_stat_loop(&flags, count, &loc_time, ofd, file_stats_size,
 		   ofile, new_ofile);
 
    return 0;

@@ -1,8 +1,8 @@
 # Makefile to build sysstat commands
-# (C) 1999-2003 Sebastien GODARD <sebastien.godard@wanadoo.fr>
+# (C) 1999-2004 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 5.0.0
+VERSION = 5.0.1
 
 include build/CONFIG
 
@@ -282,6 +282,7 @@ ifdef REQUIRE_NLS
 	install -m 644 nls/pl/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES
 endif
 
+# NB: Leading minus sign tells make to ignore errors...
 install_all: install_base
 	$(CHOWN) $(CRON_OWNER) $(DESTDIR)$(SA_DIR)
 	-su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).save"

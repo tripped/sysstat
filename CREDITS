@@ -66,6 +66,9 @@ The following people have contributed to 'sysstat' in one way or another:
 	Rick Lindsley <ricklind@us.ibm.com> has played a great part in
 	making sysstat work on kernels 2.5 and above.
 
+	John Salmon <John.Salmon@cw.com> wrote a patch to enable file
+	locking for sadc (option -L).
+
 
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):

@@ -183,7 +183,7 @@ Changes:
 2000/11/19: Version 3.3.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	* sar now saves timestamps in its daily data files both in UST
 	  and in the user's timezone formats.
-	  WARNING: daily data files format has changed, and in *not*
+	  WARNING: daily data files format has changed, and is *not*
 	  compatible with the previous one!
 	* sar now displays timestamps in locale time when reading data
 	  from its daily data files. -t option has been added to sar,
@@ -194,4 +194,25 @@ Changes:
 	  mpstat command was wrong. This is now fixed.
 	* Makefile updated.
 	* Usage message updated.
+
+2000/12/31: Version 3.3.3 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	  WARNING: daily data files format has changed, and is *not*
+	  compatible with the previous one! Delete existing data files
+	  in /var/log/sa directory!
+	* Disk usage displayed by iostat on SMP machines was wrong. This
+	  is now fixed.
+	* iostat command cleaned: all the statistics not implemented in
+	  the standard Linux kernel have been removed (tty, iowait...).
+	* sar can now handle I/O and transfer rate statistics with both
+	  2.2.x and 2.4.x Linux kernels (-b option).
+	* Removed %inode-sz that was displayed by sar -v, since the file
+	  inode-max in /proc/sys/fs no longer exists in Linux 2.4.
+	  The new 2.4.x kernels now seem to be able to allocate inode
+	  structures dynamically, and to free them when necessary (see
+	  linux/fs/inode.c).
+	* Removed statistics on highest in-used sockets. Relevant
+	  counters have disappeared from sockstat file in /proc/net
+	  for 2.4 kernels (sar -n SOCK).
+	* Added statistics on IP datagram fragments (sar -n SOCK).
+	  Only available for 2.4 kernels.
 

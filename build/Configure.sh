@@ -17,13 +17,6 @@ NLS=`${ASK} 'Enable National Language Support (NLS)?' "y" "nls"`
 
 SMPRACE=`${ASK} 'Linux SMP race in serial driver workaround?' "n" "smp-race"`
 
-IOPATCH=`${ASK} 'Support for improved disk accounting? [EXPERIMENTAL]' "n" "iostat-patch"`
-grep ^disk_pgin /proc/stat >/dev/null 2>&1
-if [ $? -eq 1 -a "${IOPATCH}" = "y" ];
-then
-	echo "WARNING: kernel patch not applied!"
-fi
-
 grep ^man: /etc/group >/dev/null 2>&1
 if [ $? -eq 1 ];
 then
@@ -80,7 +73,6 @@ echo -n Creating CONFIG file now...
 sed <build/CONFIG.in >build/CONFIG \
 	-e "s+^\\(PREFIX =\\)\$+\\1 ${PREFIX}+" \
 	-e "s+^\\(ENABLE_NLS =\\)\$+\\1 ${NLS}+" \
-	-e "s+^\\(ENABLE_PATCH =\\)\$+\\1 ${IOPATCH}+" \
 	-e "s+^\\(ENABLE_SMP_WRKARD =\\)\$+\\1 ${SMPRACE}+" \
 	-e "s+^\\(MAN_GROUP =\\)\$+\\1 ${MAN}+" \
 	-e "s+^\\(RC_DIR =\\)\$+\\1 ${RC_DIR}+" \

@@ -330,19 +330,9 @@ Total number of used sockets.
 Number of TCP sockets currently in use.
 .RE
 
-.B hi-tcpsck
-.RS
-Maximum number of TCP sockets that were simultaneously opened.
-.RE
-
 .B udpsck
 .RS
 Number of UDP sockets currently in use.
-.RE
-
-.B hi-udpsck
-.RS
-Maximum number of UDP sockets that were simultaneously opened.
 .RE
 
 .B rawsck
@@ -350,9 +340,9 @@ Maximum number of UDP sockets that were simultaneously opened.
 Number of RAW sockets currently in use.
 .RE
 
-.B hi-rawsck
+.B ip-frag
 .RS
-Maximum number of RAW sockets that were simultaneously opened.
+Number of IP fragments currently in use.
 .RE
 
 The
@@ -385,6 +375,7 @@ Percentage of used memory.
 .B kbmemshrd
 .RS
 Amount of memory shared by the system in kilobytes.
+Always zero with 2.4 kernels.
 .RE
 
 .B kbbuffers
@@ -523,14 +514,6 @@ of file handles that the Linux kernel can allocate.
 .B inode-sz
 .RS
 Number of used inode handlers.
-.RE
-
-.B %inode-sz
-.RS
-Percentage of used inode handlers with regard to the maximum number
-of inode handlers that the Linux kernel can allocate.
-This can be slightly more than 100% because Linux allocates inodes
-one pageful at a time.
 .RE
 
 .B super-sz

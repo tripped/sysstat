@@ -42,20 +42,6 @@ msgstr "\n%-11s  CPU   %%user   %%nice %%system   %%idle    intr/s\n"
 msgid "%-11s  all"
 msgstr "%-11s  all"
 
-#: iostat.c:65
-msgid "sysstat version %s\n"
-"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-"Usage: %s [ options... ]\n"
-"Options are:\n"
-"[ -c | -d ] [ -p | -l ] [ -t ] [ -V ] [ -o <filename> | -f <filename> ]\n"
-"[ <interval> [ <count> ] ]\n"
-msgstr "sysstat versão %s\n"
-"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-"Utilização: %s [ opções... ]\n"
-"Opções são:\n"
-"[ -c | -d ] [ -p | -l ] [ -t ] [ -V ] [ -o <arquivo> | -f <arquivo> ]\n"
-"[ <intervalo> [ <número_de_vezes> ] ]\n"
-
 #: iostat.c:73
 msgid "sysstat version %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
@@ -93,25 +79,16 @@ msgstr "Impossível escrever no arquivo iostat: %s\n"
 # msgid "Cannot read %s file\n"
 # msgstr "Impossível ler o arquivo %s\n"
 
-#: iostat.c:531
-msgid "tty:     tin       tout   "
-msgstr "tty:     tin       tout   "
-
 #: iostat.c:534
-msgid "avg-cpu:  %%user   %%nice    %%sys   %%idle"
-msgstr "cpu-moy:  %%user   %%nice    %%sys   %%idle"
-
-#: iostat.c:537
-msgid "  %%iowait"
-msgstr "  %%iowait"
+msgid "avg-cpu:  %%user   %%nice    %%sys   %%idle\n"
+msgstr "cpu-moy:  %%user   %%nice    %%sys   %%idle\n"
 
 #: iostat.c:555
 msgid "Time: %s\n"
 msgstr "Hora: %s\n"
 
-#: iostat.c:580
-msgid "Disks:         tps    KB_read/s    KB_wrtn/s    KB_read    KB_wrtn\n"
-msgstr "Discos:        tps   KB_lidos/s   KB_escr./s   KB_lidos   KB_escr.\n"
+# msgid "Disks:         tps    KB_read/s    KB_wrtn/s    KB_read    KB_wrtn\n"
+# msgstr "Discos:        tps   KB_lidos/s   KB_escr./s   KB_lidos   KB_escr.\n"
 
 #: iostat.c:584
 msgid "hdisk%d %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n"
@@ -303,20 +280,20 @@ msgid "Average:     %3d"
 msgstr "Média:       %3d"
 
 #: sar.c:954
-msgid "\nAverage:       totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"
-msgstr "\nMédia:         totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"
+msgid "\nAverage:       totsck    tcpsck    udpsck    rawsck   ip-frag\n"
+msgstr "\nMédia:         totsck    tcpsck    udpsck    rawsck   ip-frag\n"
 
 #: sar.c:956
-msgid "Average:    %9lu %9lu %9lu %9lu %9lu %9lu %9lu\n"
-msgstr "Média:      %9lu %9lu %9lu %9lu %9lu %9lu %9lu\n"
+msgid "Average:    %9lu %9lu %9lu %9lu %9lu\n"
+msgstr "Média:      %9lu %9lu %9lu %9lu %9lu\n"
 
 #: sar.c:970
 msgid "Cannot write data to system activity file: %s\n"
 msgstr "Impossível escrever os dados no arquivo de atividade do sistema: %s\n"
 
 #: sar.c:871
-msgid "\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
-msgstr "\nMédia:      dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+msgid "\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+msgstr "\nMédia:      dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
 
 #: sar.c:873
 msgid "Average:    %9lu"
@@ -413,16 +390,16 @@ msgstr ""
 "(utilize a opção -f)\n"
 
 #: sar.c:1447
-msgid "\n%-11s dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
-msgstr "\n%-11s dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+msgid "\n%-11s dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+msgstr "\n%-11s dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
 
 #: sar.c:1493
 msgid "\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
 msgstr "\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
 
 #: sar.c:1524
-msgid "\n%-11s    totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"
-msgstr "\n%-11s    totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"
+msgid "\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag\n"
+msgstr "\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag\n"
 
 #: sar.c:1533
 msgid "\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"

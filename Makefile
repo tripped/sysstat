@@ -2,7 +2,7 @@
 # (C) 1999-2000 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 3.3.2
+VERSION = 3.3.3
 
 include build/CONFIG
 
@@ -48,10 +48,6 @@ else
 MANGRPARG =
 endif
 
-# At the present time, linux doesn't support iowait nor tty accounting...
-# IOS_DFLAGS += -DCPU_WAIT
-# IOS_DFLAGS += -DTTY
-
 # Run-command directories
 ifndef RC_DIR
 RC_DIR = /etc/rc.d
@@ -67,7 +63,6 @@ INITD_DIR = init.d
 endif
 
 all: sadc sa1 sa2 crontab sysstat sar iostat mpstat locales
-
 
 common.o: common.c common.h
 	$(CC) -c -o $@ $(CFLAGS) $(DFLAGS) $<

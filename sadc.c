@@ -665,7 +665,7 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 
 /*
  * Read stats from /proc/stat
- * (see linux source file linux/fs/proc/array.c)
+ * (see linux source file linux/fs/proc/proc_misc.c)
  */
 void read_proc_stat(void)
 {
@@ -674,6 +674,7 @@ void read_proc_stat(void)
    static char line[2560];
    unsigned int cc_user, cc_nice, cc_system;
    unsigned long cc_idle;
+   unsigned int v_tmp[5];
    int proc_nb, i, pos;
 
 
@@ -773,6 +774,25 @@ void read_proc_stat(void)
 	 }
       }
 
+      else if (!strncmp(line, "disk_io: ", 9)) {
+	 file_stats.dk_drive = 0;
+	 file_stats.dk_drive_rio  = file_stats.dk_drive_wio  = 0;
+	 file_stats.dk_drive_rblk = file_stats.dk_drive_wblk = 0;
+	 pos = 9;
+	
+	 /* Read disks I/O statistics (for 2.4 kernels) */
+	 while (pos < strlen(line)) {
+	    sscanf(line + pos, "(%*u,%*u):(%u,%u,%u,%u,%u) ",
+		   &v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3], &v_tmp[4]);
+	    file_stats.dk_drive += v_tmp[0];
+	    file_stats.dk_drive_rio  += v_tmp[1];
+	    file_stats.dk_drive_rblk += v_tmp[2];
+	    file_stats.dk_drive_wio  += v_tmp[3];
+	    file_stats.dk_drive_wblk += v_tmp[4];
+	    pos += strcspn(line + pos, " ") + 1;
+	 }
+      }
+
       else if (!strncmp(line, "ctxt ", 5))
 	 /* Read number of context switches */
 	 sscanf(line + 5, "%u", &(file_stats.context_swtch));
@@ -847,7 +867,7 @@ void read_meminfo_stat(void)
 
 /*
  * Read stats from /proc/<pid>/stat
- * (see get_stat() function in linux source file linux/fs/proc/array.c)
+ * (see linux source file linux/fs/proc/array.c)
  */
 void read_pid_stat(void)
 {
@@ -1016,25 +1036,14 @@ void read_ktables_stat(void)
       fclose(ktfp);
    }
 
-   /* Open /proc/sys/fs/inode-max file */
-   if ((ktfp = fopen(FINODE_MAX, "r")) == NULL) {
-      file_stats.inode_max  = 0;
+   /* Open /proc/sys/fs/inode-state file */
+   if ((ktfp = fopen(FINODE_STATE, "r")) == NULL)
       file_stats.inode_used = 0;
-   }
    else {
-      fscanf(ktfp, "%u\n",
-	     &(file_stats.inode_max));
+      fscanf(ktfp, "%u %u %*d %*d %*d %*d %*d\n",
+	     &(file_stats.inode_used), &parm);
       fclose(ktfp);
-
-      /* Open /proc/sys/fs/inode-state file */
-      if ((ktfp = fopen(FINODE_STATE, "r")) == NULL)
-	 file_stats.inode_used = 0;
-      else {
-	 fscanf(ktfp, "%u %u %*d %*d %*d %*d %*d\n",
-		&(file_stats.inode_used), &parm);
-	 fclose(ktfp);
-	 file_stats.inode_used -= parm;
-      }
+      file_stats.inode_used -= parm;
    }
 
    /* Open /proc/sys/fs/super-max file */
@@ -1160,6 +1169,12 @@ void read_net_sock_stat(void)
    static char line[96];
 
 
+   file_stats.sock_inuse = 0;
+   file_stats.tcp_inuse  = 0;
+   file_stats.udp_inuse  = 0;
+   file_stats.raw_inuse  = 0;
+   file_stats.frag_inuse = 0;
+
    /* Open /proc/net/sockstat file */
    if ((sockfp = fopen(NET_SOCKSTAT, "r")) != NULL) {
 
@@ -1172,28 +1187,21 @@ void read_net_sock_stat(void)
 	
 	    if (!strncmp(line, "TCP:", 4))
 	       /* TCP sockets */
-	       sscanf(line + 11, "%d %*s %d",
-		      &(file_stats.tcp_inuse), &(file_stats.tcp_highestinuse));
+	       sscanf(line + 11, "%d", &(file_stats.tcp_inuse));
 	    else if (!strncmp(line, "UDP:", 4))
 	       /* UDP sockets */
-	       sscanf(line + 11, "%d %*s %d",
-		      &(file_stats.udp_inuse), &(file_stats.udp_highestinuse));
+	       sscanf(line + 11, "%d", &(file_stats.udp_inuse));
 	    else if (!strncmp(line, "RAW:", 4))
 	       /* RAW sockets */
-	       sscanf(line + 11, "%d %*s %d",
-		      &(file_stats.raw_inuse), &(file_stats.raw_highestinuse));
+	       sscanf(line + 11, "%d", &(file_stats.raw_inuse));
+	    else if (!strncmp(line, "FRAG:", 5))
+	       /* FRAGments */
+	       sscanf(line + 12, "%d", &(file_stats.frag_inuse));
 	 }
       }
 
       /* Close socket file */
       fclose(sockfp);
-   }
-
-   else {
-      file_stats.sock_inuse = 0;
-      file_stats.tcp_inuse = file_stats.tcp_highestinuse = 0;
-      file_stats.udp_inuse = file_stats.udp_highestinuse = 0;
-      file_stats.raw_inuse = file_stats.raw_highestinuse = 0;
    }
 }
 

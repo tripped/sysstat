@@ -13,6 +13,8 @@ The following people have contributed to 'sysstat' in one way or another:
 	    <muralito@montevideo.com.uy>),
 	  * Frederic L. W. Meunier <0@pervalidus.net> for the
 	    portuguese translation.
+	  * Gert Brits <gbrits@techconcepts.co.za> for the translation
+	    in Afrikaans.
 
 	Carl-Christian Weber <ccweber@itz-koeln.de> helped me to make sar
 	work on SMP machines.
@@ -54,6 +56,7 @@ I would also thank the following people for their hints or bug reports
 	David Gesswein <djg@drs-esg.com>
 	Tatsuo Ito <tito@miraclelinux.com>
 	David S. Jackson <dsj@sylvester.dsj.net>
+	Jordan <ledzep37@home.com>	
 	Jurriaan <thunder7@xs4all.nl>
 	Robert Luberda <robert@debian.org>
 	Rodney J. Mertz <rjm@elvis.arh.ms.cdc.com>
@@ -62,6 +65,7 @@ I would also thank the following people for their hints or bug reports
 	Edouard G. Parmelan <edouard.parmelan@quadratec.fr>
 	Plattner(?) <Plattner.external@infineon.com>
 	Michel Simoni <m_simoni@club-internet.fr>
+	Rod Skinner <rod.skinner@intel.com>	
 	Graham Swallow <gps@trix.dircon.co.uk>
 	Mike Sweger <mikesw@whiterose.net>
 	Don Totten <dontotten@ibm.net>

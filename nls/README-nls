@@ -17,8 +17,8 @@ Beginning with sysstat release 3.2.2, NLS is now enabled by default.
 OK, BUT HOW DO I USE IT NOW?
 ------------------------------
 You have to set your LANG environment variable to the proper value (eg. fr_FR
-in France, de_DE in Germany, es_ES in Spain, pt_BR in Brazil, although other
-possibilities exist).
+in France, de_DE in Germany, es_ES in Spain, pt_BR in Brazil, af_ZA in South
+Africa although other possibilities exist).
 If you use bash and you want to configure your system for a french environment,
 enter:
 
@@ -60,7 +60,7 @@ Total:     1,03         4,37         0,65      28816       4340
 HOW CAN I ADD A NEW LANGUAGE TO SYSSTAT?
 ----------------------------------------
 At the present time, sysstat is translated in english, french, german,
-spanish and portuguese.
+spanish, portuguese and afrikaans.
 To add another language, copy an existing Portable Object file (.po) in one
 of your directories (you can copy the file named sysstat.po located in the
 nls/fr directory for instance).

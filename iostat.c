@@ -308,7 +308,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	 printf("  %6.2f",
 		S_VALUE(comm_stats[!curr].cpu_idle, comm_stats[curr].cpu_idle, itv));
 
-      printf("\n");
+      printf("\n\n");
    }
 
    itv /= (proc_used + 1); /* See note above */
@@ -370,7 +370,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
 	 for (disk_index = 0; disk_index < part_nr; disk_index++) {
 
-	    printf("%s %11.2f %12.2f %12.2f %10u %10u\n",
+	    printf("%-9s %8.2f %12.2f %12.2f %10u %10u\n",
 		   disk_hdr_stats[disk_index].name,
 		   S_VALUE(disk_stats[!curr][disk_index].dk_drive,      disk_stats[curr][disk_index].dk_drive,      itv),
 		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_rblk, disk_stats[curr][disk_index].dk_drive_rblk, itv),

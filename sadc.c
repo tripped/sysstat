@@ -50,6 +50,7 @@ int proc_used = -1;  /* Nb of processors on the machine. A value of 1 means two 
 int serial_used = 0, irqcpu_used = 0, iface_used = 0, disk_used = 0;
 unsigned int sadc_actflag;
 long interval = 0, count = 0;
+int kb_shift = 0;
 
 struct file_hdr file_hdr;
 struct file_stats file_stats;
@@ -1348,6 +1349,9 @@ int main(int argc, char **argv)
     */
    size_t file_stats_size = FILE_STATS_SIZE;
 
+   /* Compute page shift in kB */
+   kb_shift = get_kb_shift();
+
    ofile[0] = new_ofile[0] = '\0';
 
 #ifdef USE_NLS
@@ -1503,7 +1507,7 @@ int main(int argc, char **argv)
 
       /*
        * Resetting the structure is not needed since all the fields
-       * (that will be written) will be filled. In one of them is not
+       * (that will be written) will be filled. If one of them is not
        * filled, this is because its value cannot be read from /proc
        * with current kernel, which doesn't matter since the structure
        * has been set to zero at the beginning (see above).

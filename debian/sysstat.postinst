@@ -1,48 +1,81 @@
 #! /bin/sh
-
+# vim:ts=4:et
+set -e
 
 S_VERSION="4.1.7-1"
-set -e
+default="/etc/default/sysstat"
+enabled="false"
+
+create_default_file() {
+    enabled="$1"
+    cat > "$default" << EOF
+#
+# Default settings for /etc/init.d/sysstat and /etc/cron.d/sysstat
+#
+
+# Should sadc collect system activity informations? Valid values
+# are "true" and "false". Please do not put other values, they
+# will be overwritten by debconf!
+ENABLED="$enabled"
+
+# Options passed to sadc in the /etc/init.d/sysstat script.
+# See sadc(8) for more information
+OPTIONS="-F -L -"
+EOF
+    chmod 644 "$default"
+}
+
 
 . /usr/share/debconf/confmodule
 
 if [ "$1" = "configure" ] ; then
-  if dpkg --compare-versions "$2" lt-nl "$S_VERSION"; then
 
-	RET=""
-	db_get sysstat/remove_files || true
+    if dpkg --compare-versions "$2" lt-nl "$S_VERSION"; then
 
-	if [ "$RET" = "true" ]; then
-		echo "Removing old statistics from /var/log/sysstat." 1>&2 
-	 	rm -f /var/log/sysstat/sa[0-9]*
-	fi
-	
-  fi
+        RET=""
+        db_get sysstat/remove_files || true
 
-  # show notice & question next time
-  db_reset sysstat/notice || true
-  db_reset sysstat/remove_files || true
-  db_stop || true
+        if [ "$RET" = "true" ]; then
+            echo "Removing old statistics from /var/log/sysstat." 1>&2
+            rm -f /var/log/sysstat/sa[0-9]*
+        fi
+    fi
 
-  if dpkg --compare-versions "$2" lt-nl "4.0.0-2"; then
-  	# in older versions of sysstat some generated files
-  	# might be world writeable... (#95561)
-	chmod go-w /var/log/sysstat/sa* >/dev/null 2>&1 || true
-  fi
+    # show notice & question next time
+    db_reset sysstat/notice || true
+    db_reset sysstat/remove_files || true
 
-fi
+    db_get sysstat/enable || true
+    enabled="$RET"
+
+    db_stop || true
+
+    if [ -e "$default" ] ; then
+        perl -e '
+            $enabled="$ARGV[0]";
+            while (<STDIN>) {
+                $cnt += s/(^\s*ENABLED=).*(\s*)$/$1\"${enabled}\"$2/;
+                print;
+            }
+            print "ENABLED=\"$enabled\"\n" if ($cnt==0);
+          ' "$enabled" < "$default" > "$default.dpkg-tmp" &&
+        mv -f "$default.dpkg-tmp" "$default"
+    else
+        create_default_file "$enabled"
+    fi
 
 
-if [ "$1" = "configure" ] ; then
+    if ! update-alternatives --display sar | grep -q '^/usr/bin/sar\.sysstat'
+    then
+        update-alternatives --install /usr/bin/sar sar /usr/bin/sar.sysstat 0 \
+                            --slave /usr/share/man/man1/sar.1.gz sar.1.gz \
+                            /usr/share/man/man1/sar.sysstat.1.gz
+    fi
 
-  if ! update-alternatives --display sar | grep -q '^/usr/bin/sar\.sysstat' 
-  then
-       update-alternatives --install /usr/bin/sar sar /usr/bin/sar.sysstat 0 \
-		--slave /usr/share/man/man1/sar.1.gz sar.1.gz \
-					/usr/share/man/man1/sar.sysstat.1.gz
-  fi
 
-  [ -x /usr/lib/sysstat/sa1 ] && /usr/lib/sysstat/sa1 || true
+    [ "$enabled" = "true " ] && [ -x /usr/lib/sysstat/sa1 ] \
+                             && /usr/lib/sysstat/sa1 || true
+
 fi
 
 #DEBHELPER#

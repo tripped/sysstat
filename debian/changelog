@@ -1,3 +1,18 @@
+sysstat (5.0.3-1) unstable; urgency=low
+
+  * New upstream (stable) version:
+    + iostat now reads the number of sectors in /proc/diskstats 
+      or from sysfs as 64-bit unsigned values (closes: #237047).
+  * isag: reapplied changes with creating temporary directory and fixed 
+    sag_save_graph procedure which got broken in this upstream version.
+  * Gived to the administrator possibility to disable collecting statistics
+    by our cron and init scripts (closes: #194576):
+    + add /etc/default/sysstat, created by postinst
+    + introduced new debconf question: sysstat/enable
+    + modified cron.d and init.d scripts.
+
+ -- Robert Luberda <robert@debian.org>  Mon, 26 Apr 2004 19:41:11 +0200
+
 sysstat (5.0.2-1) unstable; urgency=high
 
   * New upstream (stable) version.

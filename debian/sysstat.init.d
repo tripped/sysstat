@@ -6,28 +6,38 @@ DAEMON=/usr/lib/sysstat/sadc
 NAME=sadc
 DESC="the system activity data collector"
 
+test -f "$DAEMON" || exit 0
 umask 022
-DFILE=/var/log/sysstat/sa`date +%d`
 
-OPTIONS="-F -L"
+# our configuration file
+DEFAULT=/etc/default/sysstat
 
-test -f $DAEMON || exit 0
+# default settings...
+ENABLED="false"
+OPTIONS="-F -L -"
+
+# ...overriden in the configuration file
+test -r "$DEFAULT" && . "$DEFAULT"
 
 set -e
 
 case "$1" in
   start|restart|reload|force-reload)
-	echo -n "Starting $DESC: "
-	start-stop-daemon --start --quiet --exec $DAEMON -- $OPTIONS $DFILE
-	echo "$NAME."
-	;;
+        if "$ENABLED" = "true" ; then
+                echo -n "Starting $DESC: "
+                start-stop-daemon --start --quiet --exec $DAEMON -- $OPTIONS
+                echo "$NAME."
+        else
+                echo "$NAME not enabled in ${DEFAULT}, not starting."
+        fi
+        ;;
   stop)
-	;;
+        ;;
 
   *)
-	echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
-	exit 1
-	;;
+        echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+        exit 1
+        ;;
 esac
 
 exit 0

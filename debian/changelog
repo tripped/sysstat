@@ -1,3 +1,14 @@
+sysstat (4.1.1-1) unstable; urgency=low
+
+  * New upstream (development) release:
+    + Warning: Daily data files format has changed (again), and is 
+      *not* compatible with the previous one! Delete existing data
+      files in /var/log/sysstat directory!
+  * debian/systat.{postinst,config}: update $S_VERSION to show debconf
+    warning about above mentioned incompatibility.
+
+ -- Robert Luberda <robert@debian.org>  Sat, 18 Jan 2003 16:31:40 +0100
+
 sysstat (4.0.7-2) unstable; urgency=low
 
   * Aplied patches from Junichi Uekawa:

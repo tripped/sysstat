@@ -1,3 +1,11 @@
+sysstat (4.1.2-1) unstable; urgency=low
+
+  * UNRELEASD
+  * New upstream version (devel.):
+    + Daily data files format has changed once again.
+
+ -- Robert Luberda <robert@debian.org>  Tue, 28 Jan 2003 22:55:15 +0100
+
 sysstat (4.1.1-1) unstable; urgency=low
 
   * New upstream (development) release:

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 
-S_VERSION="4.1.1-1"
+S_VERSION="4.1.2-1"
 set -e
 
 . /usr/share/debconf/confmodule

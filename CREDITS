@@ -25,6 +25,8 @@ The following people have contributed to 'sysstat' in one way or another:
 	    translation.
 	  * Robert Luberda <robert [at] debian.org> for the translation into
 	    Polish.
+	  * Miroslav David <md20128 [at] decef.elf.stuba.sk> for the slovak
+	    translation.
 
 	Carl-Christian Weber <ccweber [at] itz-koeln.de> helped me to make sar
 	work on SMP machines.
@@ -71,6 +73,9 @@ The following people have contributed to 'sysstat' in one way or another:
 
 	John Salmon <John.Salmon [at] cw.com> wrote a patch to enable file
 	locking for sadc (option -L).
+
+	Jim W. Jaszewski <grok [at] sprint.ca> fixed several typos in
+	sysstat FAQ!
 
 
 I would also thank the following people for their hints or bug reports

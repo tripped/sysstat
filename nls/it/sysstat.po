@@ -116,8 +116,8 @@ msgid "Cannot open %s: %s\n"
 msgstr "Impossibile aprire %s: %s\n"
 
 #: sar.c:521
-msgid "Invalid system activity file\n"
-msgstr "File delle statistiche di sistema non valido\n"
+msgid "Invalid system activity file: %s\n"
+msgstr "File delle statistiche di sistema non valido: %s\n"
 
 #:
 msgid "Invalid data format\n"

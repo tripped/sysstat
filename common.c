@@ -28,6 +28,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/param.h>	/* for HZ */
 
 /*
  * For PAGE_SIZE (which may be itself a call to getpagesize()).
@@ -72,6 +73,9 @@ time_t get_localtime(struct tm *loc_time)
  * As far as I know, there are two possibilities for this:
  * 1) Use /proc/stat or 2) Use /proc/cpuinfo
  * (I haven't heard of a better method to guess it...)
+ * See kernel sources:
+ * 2.4: linux/fs/proc/proc_misc.c: kstat_read_proc()
+ * 2.6: linux/fs/proc/proc_misc.c: show_stat()
  ***************************************************************************
  */
 int get_cpu_nr(int *cpu_nr, unsigned int max_nr_cpus)
@@ -203,13 +207,16 @@ int get_sysfs_dev_nr(int flags)
 /*
  ***************************************************************************
  * Find number of devices and partitions available in /proc/diskstats
+ * See kernel sources:
+ * 2.6: linux/drivers/block/genhd.c: diskstats_show()
  ***************************************************************************
  */
 int get_diskstats_dev_nr(int count_part)
 {
    FILE *dstatsfp;
    char line[256];
-   int dev = 0, i, tmp[2];
+   int dev = 0, i;
+   unsigned int tmp[2];
 
    /* Open /proc/diskstats file */
    if ((dstatsfp = fopen(DISKSTATS, "r")) == NULL)
@@ -222,7 +229,7 @@ int get_diskstats_dev_nr(int count_part)
     */
    while (fgets(line, 256, dstatsfp) != NULL) {
       if (!count_part) {
-	 i = sscanf(line, "%*d %*d %*s %*d %*d %*d %d %d",
+	 i = sscanf(line, "%*d %*d %*s %*u %*u %*u %u %u",
 		    &tmp[0], &tmp[1]);
 	 if (i == 1)
 	    /* It was a partition and not a device */
@@ -241,14 +248,17 @@ int get_diskstats_dev_nr(int count_part)
 /*
  ***************************************************************************
  * Find number of devices and partitions that have statistics in
- * /proc/partitions
+ * /proc/partitions.
+ * See kernel sources:
+ * 2.6: linux/drivers/block/genhd.c: show_partition() (see sysfs instead)
  ***************************************************************************
  */
 int get_ppartitions_dev_nr(void)
 {
    FILE *ppartfp;
    char line[256];
-   int dev = 0, tmp;
+   int dev = 0;
+   unsigned int tmp;
 
    /* Open /proc/partitions file */
    if ((ppartfp = fopen(PPARTITIONS, "r")) == NULL)
@@ -256,7 +266,7 @@ int get_ppartitions_dev_nr(void)
       return 0;
 
    while (fgets(line, 256, ppartfp) != NULL) {
-      if (sscanf(line, "%*d %*d %*d %*s %d", &tmp) == 1)
+      if (sscanf(line, "%*u %*u %*u %*s %u", &tmp) == 1)
 	 /*
 	  * We have just read a line from /proc/partitions containing stats
 	  * for a device or a partition
@@ -398,3 +408,36 @@ int get_kb_shift(void)
 
    return shift;
 }
+
+
+/*
+ ***************************************************************************
+ * Handle overflow conditions properly for counters which are read as
+ * unsigned long long, but which can be unsigned long long or
+ * unsigned long only depending on the kernel version used.
+ * @value1 and @value2 being two values successively read for this
+ * counter, if @value2 < @value1 and @value1 <= 0xffffffff, then we can
+ * assume that the counter's type was unsigned long and has overflown, and
+ * so the difference @value2 - @value1 must be casted to this type.
+ ***************************************************************************
+ */
+double ll_sp_value(unsigned long long value1, unsigned long long value2,
+		   unsigned long long itv)
+{
+   if ((value2 < value1) && (value1 <= 0xffffffff))
+      /* Counter's type was unsigned long and has overflown */
+      return ((double) ((value2 - value1) & 0xffffffff)) / itv * 100;
+   else
+      return SP_VALUE(value1, value2, itv);
+}
+
+double ll_s_value(unsigned long long value1, unsigned long long value2,
+		  unsigned long long itv)
+{
+   if ((value2 < value1) && (value1 <= 0xffffffff))
+      /* Counter's type was unsigned long and has overflown */
+      return ((double) ((value2 - value1) & 0xffffffff)) / itv * HZ;
+   else
+      return S_VALUE(value1, value2, itv);
+}
+

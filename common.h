@@ -88,6 +88,10 @@ extern int	    get_diskstats_dev_nr(int);
 extern int	    get_ppartitions_dev_nr(void);
 extern int	    get_win_height(void);
 extern void	    init_nls(void);
+extern double       ll_s_value(unsigned long long, unsigned long long,
+			       unsigned long long);
+extern double       ll_sp_value(unsigned long long, unsigned long long,
+				unsigned long long);
 extern void	    print_gal_header(struct tm *, char *, char *, char *);
 
 #endif  /* _COMMON_H */

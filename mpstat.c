@@ -119,7 +119,7 @@ void write_stats_core(short prev, short curr, short dis,
 		      char *prev_string, char *curr_string)
 {
    struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
-   unsigned long itv;
+   unsigned long long itv;
    int cpu;
 
    /*
@@ -131,8 +131,19 @@ void write_stats_core(short prev, short curr, short dis,
       exit(6);
    }
 
-   /* Interval value in jiffies, multiplied by the number of proc */
-   itv = st_mp_tstamp[curr].uptime - st_mp_tstamp[prev].uptime;
+   /*
+    * Interval value in jiffies, multiplied by the number of proc.
+    * The interval should always be smaller than 0xffffffff (ULONG_MAX on
+    * 32-bit architectures), except perhaps if it is the interval since
+    * system startup (we want stats since boot time).
+    * Interval is and'ed with mask 0xffffffff to handle overflow conditions
+    * that may happen since uptime values are unsigned long long but are
+    * calculated as a sum of values that _may_ be unsigned long only...
+    */
+   if (WANT_BOOT_STATS(flags))
+      itv = st_mp_tstamp[curr].uptime;
+   else
+      itv = (st_mp_tstamp[curr].uptime - st_mp_tstamp[prev].uptime) & 0xffffffff;
 
    if (!itv)	/* Paranoia checking */
       itv = 1;
@@ -148,18 +159,18 @@ void write_stats_core(short prev, short curr, short dis,
       printf(_("%-11s  all"), curr_string);
 
       printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f",
-	     SP_VALUE(st_mp_cpu[prev]->cpu_user,    st_mp_cpu[curr]->cpu_user,    itv),
-	     SP_VALUE(st_mp_cpu[prev]->cpu_nice,    st_mp_cpu[curr]->cpu_nice,    itv),
-	     SP_VALUE(st_mp_cpu[prev]->cpu_system,  st_mp_cpu[curr]->cpu_system,  itv),
-	     SP_VALUE(st_mp_cpu[prev]->cpu_iowait,  st_mp_cpu[curr]->cpu_iowait,  itv),
-	     SP_VALUE(st_mp_cpu[prev]->cpu_hardirq, st_mp_cpu[curr]->cpu_hardirq, itv),
-	     SP_VALUE(st_mp_cpu[prev]->cpu_softirq, st_mp_cpu[curr]->cpu_softirq, itv));
+	     ll_sp_value(st_mp_cpu[prev]->cpu_user,    st_mp_cpu[curr]->cpu_user,    itv),
+ 	     ll_sp_value(st_mp_cpu[prev]->cpu_nice,    st_mp_cpu[curr]->cpu_nice,    itv),
+	     ll_sp_value(st_mp_cpu[prev]->cpu_system,  st_mp_cpu[curr]->cpu_system,  itv),
+	     ll_sp_value(st_mp_cpu[prev]->cpu_iowait,  st_mp_cpu[curr]->cpu_iowait,  itv),
+	     ll_sp_value(st_mp_cpu[prev]->cpu_hardirq, st_mp_cpu[curr]->cpu_hardirq, itv),
+	     ll_sp_value(st_mp_cpu[prev]->cpu_softirq, st_mp_cpu[curr]->cpu_softirq, itv));
 
       if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[prev]->cpu_idle)
 	 printf("    %.2f", 0.0);	/* Handle buggy kernels */
       else
 	 printf("  %6.2f",
-		SP_VALUE(st_mp_cpu[prev]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
+		ll_sp_value(st_mp_cpu[prev]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
    }
 
    /*
@@ -167,14 +178,17 @@ void write_stats_core(short prev, short curr, short dis,
     * using the uptime computed for proc#0.
     */
    if (cpu_nr) {
-      itv = st_mp_tstamp[curr].uptime0 - st_mp_tstamp[prev].uptime0;
+      if (WANT_BOOT_STATS(flags))
+	 itv = st_mp_tstamp[curr].uptime0;
+      else
+	 itv = (st_mp_tstamp[curr].uptime0 - st_mp_tstamp[prev].uptime0) & 0xffffffff;
       if (!itv)
 	 itv = 1;
    }
 
    if (*cpu_bitmap & 1) {
-      printf(" %9.2f\n",
-	  S_VALUE(st_mp_cpu[prev]->irq, st_mp_cpu[curr]->irq, itv));
+       printf(" %9.2f\n",
+	  ll_s_value(st_mp_cpu[prev]->irq, st_mp_cpu[curr]->irq, itv));
    }
 
    for (cpu = 1; cpu <= cpu_nr + 1; cpu++) {
@@ -189,21 +203,21 @@ void write_stats_core(short prev, short curr, short dis,
       st_mp_cpu_j = st_mp_cpu[prev] + cpu;
 
       printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f",
-	     SP_VALUE(st_mp_cpu_j->cpu_user,    st_mp_cpu_i->cpu_user,    itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_nice,    st_mp_cpu_i->cpu_nice,    itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_system,  st_mp_cpu_i->cpu_system,  itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_iowait,  st_mp_cpu_i->cpu_iowait,  itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_hardirq, st_mp_cpu_i->cpu_hardirq, itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_softirq, st_mp_cpu_i->cpu_softirq, itv));
+	     ll_sp_value(st_mp_cpu_j->cpu_user,    st_mp_cpu_i->cpu_user,    itv),
+	     ll_sp_value(st_mp_cpu_j->cpu_nice,    st_mp_cpu_i->cpu_nice,    itv),
+	     ll_sp_value(st_mp_cpu_j->cpu_system,  st_mp_cpu_i->cpu_system,  itv),
+	     ll_sp_value(st_mp_cpu_j->cpu_iowait,  st_mp_cpu_i->cpu_iowait,  itv),
+	     ll_sp_value(st_mp_cpu_j->cpu_hardirq, st_mp_cpu_i->cpu_hardirq, itv),
+	     ll_sp_value(st_mp_cpu_j->cpu_softirq, st_mp_cpu_i->cpu_softirq, itv));
 
       if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)
 	 printf("    %.2f", 0.0);
       else
 	 printf("  %6.2f",
-		SP_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
+		ll_sp_value(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
 
       printf(" %9.2f\n",
-	     S_VALUE(st_mp_cpu_j->irq, st_mp_cpu_i->irq, itv));
+	     ll_s_value(st_mp_cpu_j->irq, st_mp_cpu_i->irq, itv));
    }
 }
 
@@ -256,7 +270,9 @@ void write_stats(short curr, short dis, struct tm *loc_time)
 /*
  ***************************************************************************
  * Read stats from /proc/stat
- * (see linux source file linux/fs/proc/array.c)
+ * See kernel sources:
+ * 2.4: linux/fs/proc/proc_misc.c: kstat_read_proc()
+ * 2.6: linux/fs/proc/proc_misc.c: show_stat()
  ***************************************************************************
  */
 void read_proc_stat(short curr)
@@ -264,8 +280,8 @@ void read_proc_stat(short curr)
    FILE *statfp;
    struct mp_stats *st_mp_cpu_i;
    static char line[80];
-   unsigned long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
-   unsigned long cc_idle, cc_iowait;
+   unsigned long long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
+   unsigned long long cc_idle, cc_iowait;
    int proc_nb;
 
    /* Open stat file */
@@ -284,7 +300,8 @@ void read_proc_stat(short curr)
 	  */
 	 st_mp_cpu[curr]->cpu_iowait = 0;	/* For pre 2.5 kernels */
 	 cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 5, "%lu %lu %lu %lu %lu %lu %lu",
+	 /* CPU counters became unsigned long long with kernel 2.6.5 */
+	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu",
 		&(st_mp_cpu[curr]->cpu_user),
 		&(st_mp_cpu[curr]->cpu_nice),
 		&(st_mp_cpu[curr]->cpu_system),
@@ -314,7 +331,7 @@ void read_proc_stat(short curr)
 	  * This is done only on SMP machines.
 	  */
 	 cc_iowait = cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 3, "%d %lu %lu %lu %lu %lu %lu %lu",
+	 sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu",
 		&proc_nb,
 		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
 		&cc_hardirq, &cc_softirq);
@@ -345,8 +362,11 @@ void read_proc_stat(short curr)
       }
 
       else if (!strncmp(line, "intr ", 5))
-	 /* Read total number of interrupts received since system boot */
-	 sscanf(line + 5, "%lu", &(st_mp_cpu[curr]->irq));
+	 /*
+	  * Read total number of interrupts received since system boot.
+	  * Interrupts counter became unsigned long long with kernel 2.6.5.
+	  */
+	 sscanf(line + 5, "%llu", &(st_mp_cpu[curr]->irq));
    }
 
    /* Close stat file */
@@ -357,6 +377,9 @@ void read_proc_stat(short curr)
 /*
  ***************************************************************************
  * Read stats from /proc/interrupts
+ * See kernel sources:
+ * 2.4: linux/arch/{i386,...}/kernel/irq.c: get_irq_list()
+ * 2.6: linux/arch/{i386,...}/kernel/irq.c: show_interrupts()
  ***************************************************************************
  */
 void read_interrupts_stat(short curr)
@@ -542,6 +565,9 @@ int main(int argc, char **argv)
       rows = get_win_height();
       lines = rows;
    }
+   if (!interval)
+      /* Interval not set => display stats since boot time */
+      flags |= F_BOOT_STATS;
 
    /* Get time */
    get_localtime(&loc_time);
@@ -558,10 +584,9 @@ int main(int argc, char **argv)
    read_proc_stat(0);
    read_interrupts_stat(0);
 
-   if (!interval || WANT_BOOT_STATS(flags)) {
+   if (WANT_BOOT_STATS(flags)) {
       /* Display since boot time */
       st_mp_tstamp[1] = st_mp_tstamp[0];
-      st_mp_tstamp[1].uptime = st_mp_tstamp[1].uptime0 = 0;
 
       memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 2));
 

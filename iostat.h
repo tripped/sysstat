@@ -36,13 +36,13 @@
 
 
 struct comm_stats {
-   unsigned long uptime;
-   unsigned long uptime0;
-   unsigned long cpu_iowait;
-   unsigned long cpu_idle;
-   unsigned long cpu_user;
-   unsigned long cpu_nice;
-   unsigned long cpu_system;
+   unsigned long long uptime;
+   unsigned long long uptime0;
+   unsigned long long cpu_iowait;
+   unsigned long long cpu_idle;
+   unsigned long long cpu_user;
+   unsigned long long cpu_nice;
+   unsigned long long cpu_system;
 };
 
 #define COMM_STATS_SIZE	(sizeof(struct comm_stats))
@@ -67,7 +67,7 @@ struct io_stats {
    /* # of read requests merged */
    unsigned long rd_merges			__attribute__ ((packed));
    /* # of sectors read */
-   unsigned long rd_sectors			__attribute__ ((packed));
+   unsigned long long rd_sectors		__attribute__ ((packed));
    /* Time of read requests in queue */
    unsigned long rd_ticks			__attribute__ ((packed));
    /* # of write operations issued to the device */
@@ -75,7 +75,7 @@ struct io_stats {
    /* # of write requests merged */
    unsigned long wr_merges			__attribute__ ((packed));
    /* # of sectors written */
-   unsigned long wr_sectors			__attribute__ ((packed));
+   unsigned long long wr_sectors		__attribute__ ((packed));
    /* Time of write requests in queue */
    unsigned long wr_ticks			__attribute__ ((packed));
    /* # of I/Os in progress */

@@ -1,5 +1,22 @@
 Changes:
 
+2004/04/07: Version 5.0.3 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* iostat now reads the number of sectors in /proc/diskstats or
+	  from sysfs as 64-bit unsigned values.
+	* iostat and mpstat now read CPU data and the number of
+	  interrupts in /proc/stat as 64-bit unsigned values.
+	* sar uses "%u" instead of "%d" to read unsigned integer
+	  values _everywhere_.
+	* sar and sadc are now a little bit more verbose when dealing
+	  with invalid activity files.
+	* Network interface name size is now read from include file
+	  <net/if.h>.
+	* FAQ polished up.
+	* Slovak translation added. NLS updated.
+	* Typo fixed in iostat manual page.
+	* Makefile and CREDITS file updated.
+	* isag upgraded to version 1.26 (isag package release 0.81.0).
+
 2004/03/10: Version 5.0.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* iostat will _again_ look for statistics in /proc/partitions if
 	  available. Too many production servers are still using 2.2.x or

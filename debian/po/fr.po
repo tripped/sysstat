@@ -1,0 +1,68 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+#    Developers do not need to manually edit POT or PO files.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: sysstat 4.1.2-3\n"
+"POT-Creation-Date: 2003-03-22 21:55+0100\n"
+"PO-Revision-Date: 2003-05-07 17:44+0100\n"
+"Last-Translator: Christian Perrier <bubulle@debian.org>\n"
+"Language-Team: Debian french translation team <debian-l10n-french@lists."
+"debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=iso-8859-15\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Description
+#: ../sysstat.templates:3
+msgid "WARNING: daily data files format has changed!"
+msgstr "ATTENTION : le format des fichiers quotidiens a changé !"
+
+#. Description
+#: ../sysstat.templates:3
+msgid ""
+"Format of daily data statistics files has changed in version ${s_version} of "
+"sysstat and is *not* compatible with the previous one!"
+msgstr ""
+"Le format des fichiers quotidiens de statistiques a changé dans la version "
+"${s_version] de sysstat et n'est *pas* compatible avec le format antérieur !"
+
+#. Description
+#: ../sysstat.templates:3
+msgid "Existing data files need to be deleted."
+msgstr "Les fichiers de données existants doivent être effacés."
+
+#. Description
+#: ../sysstat.templates:12
+msgid "Do you want post-installation script to remove these data files?"
+msgstr ""
+"Souhaitez-vous que le script de post-installation efface ces fichiers ?"
+
+#. Description
+#: ../sysstat.templates:12
+msgid ""
+"If you activate this option, any existing data files in /var/log/sysstat/ "
+"directory will be deleted."
+msgstr ""
+"Si vous acceptez ici, tous les fichiers de données qui se trouvent dans le "
+"répertoire /var/log/sysstat seront effacés."
+
+#. Description
+#: ../sysstat.templates:12
+msgid ""
+"If you don't want to remove them automatically, please remove them by hand "
+"later, in order to the sar command work properly."
+msgstr ""
+"Si vous ne souhaitez pas les effacer automatiquement, veuillez les effacer "
+"manuellement plus tard afin que la commande « sar » puisse fonctionner "
+"correctement."

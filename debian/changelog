@@ -1,3 +1,12 @@
+sysstat (3.3.6-1) unstable; urgency=low
+
+  * New upstream version:
+    - Warning: format of daily statistics has changed again!
+    - isag shows only sa?? files in the file menu by default (closes: #86771).
+  * Standards-Version: 3.5.2 (no changes).
+
+ -- Robert Luberda <robert@debian.org>  Thu, 15 Mar 2001 19:51:51 +0100
+
 sysstat (3.3.5-1) unstable; urgency=low
 
   * New upstream version.

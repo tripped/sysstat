@@ -148,13 +148,9 @@ set graph_ht	400
 
 # specific paths and programs
 set sar_data_path "SA_DIR"
-<<<<<<< HEAD
-set sar "PREFIX/bin/sar.sysstat"
-=======
 set sar_data_mask "sa\[0-9\]\[0-9\]"
-set sar "PREFIX/bin/sar"
+set sar "PREFIX/bin/sar.sysstat"
 #set sar "/home/sarrep/source/sysstat-3.3.6/sar"
->>>>>>> upstream/3.3.6
 
 ###############################################################################
 #

@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
 Build-Depends: debhelper (>= 3), gettext, debconf-utils (>= 0.5)
 Build-Depends-Indep: debhelper (>= 3)
-Standards-Version: 3.5.0
+Standards-Version: 3.5.2
 
 Package: sysstat
 Architecture: any
@@ -28,7 +28,7 @@ Description: sar, iostat and mpstat - system performance tools for Linux
 
 Package: isag
 Architecture: all
-Depends: sysstat (>= 3.3.5), tk8.3|wish, gnuplot
+Depends: sysstat (>= 3.3.6), tk8.3|wish, gnuplot
 Description: Interactive System Activity Grapher for sysstat.
  This package includes the isag command, which graphically displays the 
  system activity data stored in a binary data produced by a sar command

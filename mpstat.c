@@ -15,7 +15,7 @@
  *                                                                         *
  * You should have received a copy of the GNU General Public License along *
  * with this program; if not, write to the Free Software Foundation, Inc., *
- * 675 Mass Ave, Cambridge, MA 02139, USA.                                 *
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA                   *
  ***************************************************************************
  */
 
@@ -150,7 +150,7 @@ void write_stats_core(short prev, short curr, short dis,
 
    /* Print stats */
    if (dis)
-      printf(_("\n%-11s  CPU   %%user   %%nice %%system %%iowait    %%irq   %%soft   %%idle    intr/s\n"),
+      printf(_("\n%-11s  CPU   %%user   %%nice    %%sys %%iowait    %%irq   %%soft   %%idle    intr/s\n"),
 	     prev_string);
 
    /* Check if we want global stats among all proc */

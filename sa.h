@@ -83,7 +83,7 @@
 #define F_FLT_INC	0x0004
 #define F_A_OPTION	0x0008
 #define F_F_OPTION	0x0010
-#define F_H_OPTION	0x0020
+#define F_PPC_OPTION	0x0020
 #define F_ORG_TIME	0x0040
 #define F_DEFAULT_COUNT	0x0080
 #define F_I_OPTION	0x0100
@@ -99,15 +99,15 @@
 #define FLT_ARE_INC(m)		(((m) & F_FLT_INC) == F_FLT_INC)
 #define USE_A_OPTION(m)		(((m) & F_A_OPTION) == F_A_OPTION)
 #define USE_F_OPTION(m)		(((m) & F_F_OPTION) == F_F_OPTION)
-#define USE_H_OPTION(m)		(((m) & F_H_OPTION) == F_H_OPTION)
-#define PRINT_ORG_TIME(m)	(((m) & F_ORG_TIME) == F_ORG_TIME)
 #define USE_DEFAULT_COUNT(m)	(((m) & F_DEFAULT_COUNT) == F_DEFAULT_COUNT)
 #define USE_I_OPTION(m)		(((m) & F_I_OPTION) == F_I_OPTION)
-#define USE_DB_OPTION(m)	(((m) & F_DB_OPTION) == F_DB_OPTION)
 #define DO_SA_ROTAT(m)		(((m) & F_DO_SA_ROTAT) == F_DO_SA_ROTAT)
 #define WANT_PER_PROC(m)	(((m) & F_PER_PROC) == F_PER_PROC)
 #define USE_L_OPTION(m)		(((m) & F_L_OPTION) == F_L_OPTION)
 #define FILE_LOCKED(m)		(((m) & F_FILE_LCK) == F_FILE_LCK)
+#define USE_PPC_OPTION(m)	(((m) & F_PPC_OPTION) == F_PPC_OPTION)
+#define PRINT_ORG_TIME(m)	(((m) & F_ORG_TIME) == F_ORG_TIME)
+#define USE_DB_OPTION(m)	(((m) & F_DB_OPTION) == F_DB_OPTION)
 
 /* Files */
 #define PROC		"/proc"
@@ -132,11 +132,11 @@
 #define LOADAVG		"/proc/loadavg"
 #define VMSTAT		"/proc/vmstat"
 
-#define NR_IRQS		256
-
 #define NR_IFACE_PREALLOC	2
 #define NR_SERIAL_PREALLOC	2
 #define NR_IRQPROC_PREALLOC	3
+
+#define NR_IRQS			256
 
 /* Maximum number of processes that can be monitored simultaneously */
 #define MAX_PID_NR	256
@@ -158,6 +158,8 @@
 #define NO_RESET	0
 #define NON_FATAL	0
 #define FATAL		1
+#define C_SAR		0
+#define C_SADF		1
 
 /* Record type */
 #define R_STATS		1
@@ -170,7 +172,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x2163
+#define SA_MAGIC	0x2164
 
 /*
  * IMPORTANT NOTE:
@@ -186,84 +188,77 @@
  * can be safely used.
  *
  * Structures are padded so that their length be a multiple of 8 bytes.
- * It seems better (although not compulsory) for structures written
+ * It is better (although not compulsory) for structures written
  * contiguously into daily data files and accessed the following way once
  * they are read into memory:
  * struct *foo2 = struct *foo1 + i;  (since i <=> sizeof(struct foo))
  */
+
 /* System activity data file header */
 struct file_hdr {
-   /* Activity flag */
-   unsigned int	 sa_actflag			__attribute__ ((aligned (8)));
-   /* System activity data file magic number */
-   short    int  sa_magic			__attribute__ ((packed));
-   /* file_stats structure size */
-   short    int  sa_st_size			__attribute__ ((packed));
-   /* Number of processes to monitor ( {-x | -X } ALL) */
-   unsigned int  sa_nr_pid			__attribute__ ((packed));
-   /* Number of interrupts per procesor: 2 means two interrupts */
-   unsigned int  sa_irqcpu			__attribute__ ((packed));
+   /* --- LONG --- */
    /* Time stamp in seconds since the epoch */
-   unsigned long sa_ust_time			__attribute__ ((aligned (8)));
+   unsigned long  sa_ust_time			__attribute__ ((aligned (8)));
+   /* --- INT --- */
+   /* Activity flag */
+   unsigned int	  sa_actflag			__attribute__ ((aligned (8)));
+   /* Number of processes to monitor ( {-x | -X } ALL) */
+   unsigned int   sa_nr_pid			__attribute__ ((packed));
+   /* Number of interrupts per procesor: 2 means two interrupts */
+   unsigned int   sa_irqcpu			__attribute__ ((packed));
    /* Number of disks */
-   unsigned int  sa_nr_disk			__attribute__ ((aligned (8)));
+   unsigned int   sa_nr_disk			__attribute__ ((packed));
    /* Number of processors: 1 means two proc */
-   unsigned int sa_proc 			__attribute__ ((packed));
+   unsigned int   sa_proc 			__attribute__ ((packed));
    /* Number of serial lines: 2 means two lines (ttyS00 and ttyS01) */
-   unsigned int sa_serial 			__attribute__ ((packed));
+   unsigned int   sa_serial 			__attribute__ ((packed));
    /* Number of network devices (interfaces): 2 means two lines */
-   unsigned int sa_iface 			__attribute__ ((packed));
+   unsigned int   sa_iface 			__attribute__ ((packed));
+   /* --- SHORT --- */
+   /* System activity data file magic number */
+   unsigned short sa_magic			__attribute__ ((packed));
+   /* file_stats structure size */
+   unsigned short sa_st_size			__attribute__ ((packed));
+   /* --- CHAR --- */
    /*
     * Current day, month and year.
     * No need to save DST (daylight saving time) flag, since it is not taken
     * into account by the strftime() function used to print the timestamp.
     */
-   unsigned char sa_day				__attribute__ ((packed));
-   unsigned char sa_month			__attribute__ ((packed));
-   unsigned char sa_year			__attribute__ ((packed));
+   unsigned char  sa_day			__attribute__ ((packed));
+   unsigned char  sa_month			__attribute__ ((packed));
+   unsigned char  sa_year			__attribute__ ((packed));
    /* Operating system name */
-   char          sa_sysname[UTSNAME_LEN]	__attribute__ ((packed));
+   char           sa_sysname[UTSNAME_LEN]	__attribute__ ((packed));
    /* Machine hostname */
-   char          sa_nodename[UTSNAME_LEN]	__attribute__ ((packed));
+   char           sa_nodename[UTSNAME_LEN]	__attribute__ ((packed));
    /* Operating system release number */
-   char          sa_release[UTSNAME_LEN]	__attribute__ ((packed));
+   char           sa_release[UTSNAME_LEN]	__attribute__ ((packed));
 };
 
 #define FILE_HDR_SIZE	(sizeof(struct file_hdr))
 
 struct file_stats {
-   /* Record type: R_STATS or R_DUMMY */
-   unsigned char record_type			__attribute__ ((aligned (8)));
-   /* Time stamp: hour, minute and second */
-   unsigned char hour		/* (0-23) */	__attribute__ ((packed));
-   unsigned char minute		/* (0-59) */	__attribute__ ((packed));
-   unsigned char second		/* (0-59) */	__attribute__ ((packed));
-   /* Nb of processes (set only when using '-x SUM') */
-   unsigned int  nr_processes			__attribute__ ((packed));
-   /* Time stamp (number of seconds since the epoch) */
-   unsigned long ust_time			__attribute__ ((aligned (8)));
+   /* --- LONG LONG --- */
    /* Machine uptime (multiplied by the # of proc) */
-   unsigned long uptime				__attribute__ ((aligned (8)));
+   unsigned long long uptime			__attribute__ ((aligned (16)));
    /* Uptime reduced to one processor. Set *only* on SMP machines */
-   unsigned long uptime0			__attribute__ ((aligned (8)));
-   /* Stats... */
+   unsigned long long uptime0			__attribute__ ((aligned (16)));
+   unsigned long long context_swtch		__attribute__ ((aligned (16)));
+   unsigned long long cpu_user			__attribute__ ((aligned (16)));
+   unsigned long long cpu_nice			__attribute__ ((aligned (16)));
+   unsigned long long cpu_system		__attribute__ ((aligned (16)));
+   unsigned long long cpu_idle			__attribute__ ((aligned (16)));
+   unsigned long long cpu_iowait		__attribute__ ((aligned (16)));
+   unsigned long long irq_sum			__attribute__ ((aligned (16)));
+   /* --- LONG --- */
+   /* Time stamp (number of seconds since the epoch) */
+   unsigned long ust_time			__attribute__ ((aligned (16)));
    unsigned long processes			__attribute__ ((aligned (8)));
-   unsigned int  context_swtch			__attribute__ ((aligned (8)));
-   unsigned int  cpu_user			__attribute__ ((packed));
-   unsigned int  cpu_nice			__attribute__ ((packed));
-   unsigned int  cpu_system			__attribute__ ((packed));
-   unsigned long cpu_idle			__attribute__ ((aligned (8)));
-   unsigned long cpu_iowait			__attribute__ ((aligned (8)));
-   unsigned long irq_sum			__attribute__ ((aligned (8)));
    unsigned long pgpgin				__attribute__ ((aligned (8)));
    unsigned long pgpgout			__attribute__ ((aligned (8)));
    unsigned long pswpin				__attribute__ ((aligned (8)));
    unsigned long pswpout			__attribute__ ((aligned (8)));
-   unsigned int  dk_drive			__attribute__ ((aligned (8)));
-   unsigned int  dk_drive_rio			__attribute__ ((packed));
-   unsigned int  dk_drive_wio			__attribute__ ((packed));
-   unsigned int  dk_drive_rblk			__attribute__ ((packed));
-   unsigned int  dk_drive_wblk			__attribute__ ((packed));
    /* Memory stats in Kb */
    unsigned long frmkb				__attribute__ ((aligned (8)));
    unsigned long bufkb				__attribute__ ((aligned (8)));
@@ -272,7 +267,18 @@ struct file_stats {
    unsigned long frskb				__attribute__ ((aligned (8)));
    unsigned long tlskb				__attribute__ ((aligned (8)));
    unsigned long caskb				__attribute__ ((aligned (8)));
-   unsigned int  file_used			__attribute__ ((aligned (8)));
+   unsigned long nr_running			__attribute__ ((aligned (8)));
+   unsigned long pgfault			__attribute__ ((aligned (8)));
+   unsigned long pgmajfault			__attribute__ ((aligned (8)));
+   /* --- INT --- */
+   /* Nb of processes (set only when using '-x SUM') */
+   unsigned int  nr_processes			__attribute__ ((aligned (8)));
+   unsigned int  dk_drive			__attribute__ ((packed));
+   unsigned int  dk_drive_rio			__attribute__ ((packed));
+   unsigned int  dk_drive_wio			__attribute__ ((packed));
+   unsigned int  dk_drive_rblk			__attribute__ ((packed));
+   unsigned int  dk_drive_wblk			__attribute__ ((packed));
+   unsigned int  file_used			__attribute__ ((packed));
    unsigned int  inode_used			__attribute__ ((packed));
    unsigned int  super_used			__attribute__ ((packed));
    unsigned int  super_max			__attribute__ ((packed));
@@ -285,51 +291,53 @@ struct file_stats {
    unsigned int  udp_inuse			__attribute__ ((packed));
    unsigned int  raw_inuse			__attribute__ ((packed));
    unsigned int  frag_inuse			__attribute__ ((packed));
-   unsigned long pgfault			__attribute__ ((aligned (8)));
-   unsigned long pgmajfault			__attribute__ ((aligned (8)));
-   unsigned int  dentry_stat			__attribute__ ((aligned (8)));
+   unsigned int  dentry_stat			__attribute__ ((packed));
    unsigned int  load_avg_1			__attribute__ ((packed));
    unsigned int  load_avg_5			__attribute__ ((packed));
    unsigned int  load_avg_15			__attribute__ ((packed));
-   unsigned int  nr_running			__attribute__ ((packed));
    unsigned int  nr_threads			__attribute__ ((packed));
+   /* --- CHAR --- */
+   /* Record type: R_STATS or R_DUMMY */
+   unsigned char record_type			__attribute__ ((packed));
+   /* Time stamp: hour, minute and second */
+   unsigned char hour		/* (0-23) */	__attribute__ ((packed));
+   unsigned char minute		/* (0-59) */	__attribute__ ((packed));
+   unsigned char second		/* (0-59) */	__attribute__ ((packed));
 };
 
 #define FILE_STATS_SIZE	(sizeof(struct file_stats))
 
 struct stats_one_cpu {
-   unsigned long per_cpu_idle			__attribute__ ((aligned (8)));
-   unsigned long per_cpu_iowait			__attribute__ ((aligned (8)));
-   unsigned int  per_cpu_user			__attribute__ ((aligned (8)));
-   unsigned int  per_cpu_nice			__attribute__ ((packed));
-   unsigned int  per_cpu_system			__attribute__ ((packed));
-   unsigned char pad[4]				__attribute__ ((packed));
-/*
- * IMPORTANT NOTE:
- * Structure must be a multiple of 8 bytes, since we use an array of structures.
- * Each structure is *aligned*, and we want the structures to be packed together.
- */
+   unsigned long long per_cpu_idle		__attribute__ ((aligned (16)));
+   unsigned long long per_cpu_iowait		__attribute__ ((aligned (16)));
+   unsigned long long per_cpu_user		__attribute__ ((aligned (16)));
+   unsigned long long per_cpu_nice		__attribute__ ((aligned (16)));
+   unsigned long long per_cpu_system		__attribute__ ((aligned (16)));
+   unsigned long long pad			__attribute__ ((aligned (16)));
 };
 
 #define STATS_ONE_CPU_SIZE	(sizeof(struct stats_one_cpu))
 
+/*
+ * Members do not need to be aligned since these stats are not written
+ * to daily data files.
+ */
 struct pid_stats {
    /* If pid is null, the process has been killed */
    unsigned long pid				__attribute__ ((aligned (8)));
-   unsigned long minflt				__attribute__ ((aligned (8)));
-   unsigned long majflt				__attribute__ ((aligned (8)));
-   unsigned long utime				__attribute__ ((aligned (8)));
-   unsigned long stime				__attribute__ ((aligned (8)));
-   unsigned long nswap				__attribute__ ((aligned (8)));
-   unsigned long cminflt			__attribute__ ((aligned (8)));
-   unsigned long cmajflt			__attribute__ ((aligned (8)));
-   unsigned long cutime				__attribute__ ((aligned (8)));
-   unsigned long cstime				__attribute__ ((aligned (8)));
-   unsigned long cnswap				__attribute__ ((aligned (8)));
-   unsigned int  processor			__attribute__ ((aligned (8)));
+   unsigned long minflt				__attribute__ ((packed));
+   unsigned long majflt				__attribute__ ((packed));
+   unsigned long utime				__attribute__ ((packed));
+   unsigned long stime				__attribute__ ((packed));
+   unsigned long nswap				__attribute__ ((packed));
+   unsigned long cminflt			__attribute__ ((packed));
+   unsigned long cmajflt			__attribute__ ((packed));
+   unsigned long cutime				__attribute__ ((packed));
+   unsigned long cstime				__attribute__ ((packed));
+   unsigned long cnswap				__attribute__ ((packed));
+   unsigned int  processor			__attribute__ ((packed));
    unsigned char flag				__attribute__ ((packed));
    unsigned char pad[3]				__attribute__ ((packed));
-   /* See IMPORTANT NOTE above */
 };
 
 #define PID_STATS_SIZE	(sizeof(struct pid_stats))
@@ -339,7 +347,6 @@ struct stats_serial {
    unsigned int  tx				__attribute__ ((packed));
    unsigned int  line				__attribute__ ((packed));
    unsigned char pad[4]				__attribute__ ((packed));
-   /* See IMPORTANT NOTE above */
 };
 
 #define STATS_SERIAL_SIZE	(sizeof(struct stats_serial))
@@ -363,7 +370,6 @@ struct stats_net_dev {
    unsigned long rx_frame_errors		__attribute__ ((aligned (8)));
    unsigned long tx_carrier_errors		__attribute__ ((aligned (8)));
    unsigned char interface[MAX_IFACE_LEN]	__attribute__ ((aligned (8)));
-   /* See IMPORTANT NOTE above */
 };
 
 #define STATS_NET_DEV_SIZE	(sizeof(struct stats_net_dev))
@@ -371,20 +377,18 @@ struct stats_net_dev {
 struct stats_irq_cpu {
    unsigned int interrupt			__attribute__ ((aligned (8)));
    unsigned int irq				__attribute__ ((packed));
-   /* See IMPORTANT NOTE above */
 };
 
 #define STATS_IRQ_CPU_SIZE	(sizeof(struct stats_irq_cpu))
 #define STATS_ONE_IRQ_SIZE	(sizeof(int) * NR_IRQS)
 
 struct disk_stats {
-   unsigned int  major				__attribute__ ((aligned (8)));
+   unsigned long long rd_sect			__attribute__ ((aligned (16)));
+   unsigned long long wr_sect			__attribute__ ((aligned (16)));
+   unsigned int  major				__attribute__ ((aligned (16)));
    unsigned int  index				__attribute__ ((packed));
    unsigned int  nr_ios				__attribute__ ((packed));
-   unsigned int  rd_sect			__attribute__ ((packed));
-   unsigned int  wr_sect			__attribute__ ((packed));
    unsigned char pad[4]				__attribute__ ((packed));
-   /* See IMPORTANT NOTE above */
 };
 
 #define DISK_STATS_SIZE		(sizeof(struct disk_stats))
@@ -433,5 +437,41 @@ struct tstamp {
 				close(_fd_[0]); \
 				close(_fd_[1]); \
 				} while (0)
+
+/* Functions */
+extern int check_disk_reg(struct file_hdr *, struct disk_stats * [],
+			  short, short, int);
+extern unsigned int check_iface_reg(struct file_hdr *, struct stats_net_dev * [],
+				    short, short, unsigned int);
+extern int datecmp(struct tm *, struct tstamp *);
+unsigned long long get_per_cpu_interval(struct stats_one_cpu *,
+					struct stats_one_cpu *);
+extern void init_bitmap(unsigned char [], unsigned char, unsigned int);
+extern void init_stats(struct file_stats [], unsigned int [][]);
+extern int next_slice(unsigned long long, unsigned long long,
+		      struct file_hdr *, int, long);
+extern int parse_sar_opt(char * [], int, unsigned int *, unsigned int *,
+			 short *, int);
+extern int parse_sar_I_opt(char * [], int *, unsigned int *, short *,
+			   unsigned char []);
+extern int parse_sa_P_opt(char * [], int *, unsigned int *, short *,
+			  unsigned char []);
+extern int parse_sar_n_opt(char * [], int *, unsigned int *, short *);
+extern int parse_timestamp(char * [], int *, struct tstamp *,
+			   const char *);
+extern void prep_file_for_reading(int *, char *, struct file_hdr *,
+				  unsigned int *, unsigned int);
+extern int prep_time(struct file_stats *, struct file_stats *,
+		     struct file_hdr *, struct tm *, struct tstamp *, int,
+		     unsigned long long *, unsigned long long *);
+extern void print_report_hdr(unsigned int, struct tm *,
+			     struct file_hdr *);
+extern int sa_fread(int, void *, int, int);
+extern void salloc_cpu_array(struct stats_one_cpu * [], unsigned int);
+extern void salloc_disk_array(struct disk_stats * [], int);
+extern void salloc_irqcpu_array(struct stats_irq_cpu * [],
+				unsigned int, unsigned int);
+extern void salloc_net_dev_array(struct stats_net_dev * [], unsigned int);
+extern void salloc_serial_array(struct stats_serial * [], int);
 
 #endif  /* _SA_H */

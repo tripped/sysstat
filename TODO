@@ -19,12 +19,7 @@ Here are the things I would like (or I should) do for the next releases:
 
 * Dynamically allocate structures for IRQs (just like for CPUs).
 
-* Check I/O wait type (long int?, int?) read in /proc/stat and in /sys/.../stat.
+* Add NFS stats to sar.
 
-* Cast cpu stats (user, nice, system) for sar, iostat and mpstat to unsigned
-  long instead of unsigned int (Greg Edwards <edwardsg [at] sgi.com>).
-  Idem for other stats.
-
-* Handle little/big endian architectures for sar daily data files
-  (Ferenci Daniel <Daniel.Ferenci [at] siemens.com>).
+* Add /proc/partitions support to sadc/sar.
 

@@ -15,7 +15,7 @@
  *                                                                         *
  * You should have received a copy of the GNU General Public License along *
  * with this program; if not, write to the Free Software Foundation, Inc., *
- * 675 Mass Ave, Cambridge, MA 02139, USA.                                 *
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA                   *
  ***************************************************************************
  */
 
@@ -343,7 +343,7 @@ void read_stat(int curr, int flags)
    FILE *statfp;
    char line[8192];
    int pos, i;
-   unsigned long v_tmp[3];
+   unsigned long v_tmp[4];
    unsigned int v_major, v_index;
    struct io_stats *st_iodev_tmp[4], *st_iodev_i;
    struct io_hdr_stats *st_hdr_iodev_i;
@@ -790,7 +790,7 @@ void read_ppartitions_stat(int curr, int flags)
  */
 void write_cpu_stat(int curr, unsigned long long itv)
 {
-   printf(_("avg-cpu:  %%user   %%nice    %%sys %%iowait   %%idle\n"));
+   printf(_("avg-cpu:  %%user   %%nice %%system %%iowait   %%idle\n"));
 
    printf("         %6.2f  %6.2f  %6.2f  %6.2f",
 	  ll_sp_value(comm_stats[!curr].cpu_user,   comm_stats[curr].cpu_user,   itv),

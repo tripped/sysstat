@@ -1,5 +1,32 @@
 Changes:
 
+2004/10/09: Version 5.1.1 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x2164]
+	* sar now reads CPU data, number of context switches, number
+	  of sectors and total number of interrupts as 64-bit unsigned
+	  values. It also reads the number of running processes as
+	  unsigned long instead of unsigned int.
+	* sadf - System activity data formatter command added.
+	* Options -h and -H removed from sar. "sar -h" is replaced by
+	  "sadf -p", and "sar -H" is replaced by "sadf -d". Read sadf
+	  manual page, as its syntax is a bit different from that of sar.
+	* Common code for sar and sadf moved to sa_common.c file.
+	* pid_stats members don't need to be aligned since these stats
+	  are not written to daily data files. Packing them saves some
+	  memory on 32-bit architectures.
+	* No longer indicate that -x and -X are possible options for sadc.
+	  They are only useful when used as options for sar, not sadc.
+	* Minor buffer overrun fixed in iostat.
+	* Updated CPU header for iostat and mpstat: CPU used while executing
+	  at the system level is displayed as '%system' by iostat (like sar)
+	  and as '%sys' by mpstat.
+	* sadf manual page added. Other manual pages updated.
+	* Updated the GPL notices (the address of the FSF was wrong).
+	* Makefile updated.
+	* NLS updated.
+	* README, FAQ and CREDITS files updated.
+
 2004/08/09: Version 5.0.6 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* The value for file-sz reported by sar -v was a number of free
 	  handles, and not a number of used ones! This is now fixed (and
@@ -8,7 +35,7 @@ Changes:
 	  be located. This may be useful for some systems where sadc
 	  needs to be installed in a specific location (e.g. on 64 bit
 	  s390 systems, the proper directory should be /usr/lib64/sa).
-	* sa1 script  updated: Use '-' to specify current daily data file
+	* sa1 script updated: Use '-' to specify current daily data file
 	  instead of guessing its name using current date.
 	* NLS updated: be consistent with GNU gettext standards.
 	* iostat manual page updated.

@@ -2,7 +2,7 @@
 # (C) 1999-2004 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 5.0.6
+VERSION = 5.1.1
 
 include build/CONFIG
 
@@ -37,7 +37,7 @@ NLS_DIR = $(PREFIX)/share/locale
 
 # Compiler flags
 CFLAGS = -Wall -Wstrict-prototypes -pipe -O2 -fno-strength-reduce
-LFLAGS = -L. -lsysstat -s
+LFLAGS = -L. -lsysstat -lsa -s
 SAS_DFLAGS += -DSA_DIR=\"$(SA_DIR)\"
 
 # NLS (National Language Support)
@@ -66,12 +66,19 @@ ifndef INITD_DIR
 INITD_DIR = init.d
 endif
 
-all: sa1 sa2 crontab sysstat sadc sar iostat mpstat locales
+all: sa1 sa2 crontab sysstat sadc sar sadf iostat mpstat locales
 
 common.o: common.c common.h
 	$(CC) -c -o $@ $(CFLAGS) $(DFLAGS) $<
 
+sa_common.o: sa_common.c sa.h common.h
+	$(CC) -c -o $@ $(CFLAGS) $(DFLAGS) $<
+
 libsysstat.a: common.o
+	$(AR) r $@ $<
+	$(AR) s $@
+
+libsa.a: sa_common.o
 	$(AR) r $@ $<
 	$(AR) s $@
 
@@ -81,10 +88,13 @@ version.h: version.in
 sapath.h: sapath.in
 	$(SED) s+ALTLOC+$(SA_LIB_DIR)+g $< > $@
 
-sadc: sadc.c sa.h common.h version.h libsysstat.a
+sadc: sadc.c sa.h common.h version.h libsysstat.a libsa.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $< $(LFLAGS)
 
-sar: sar.c sa.h common.h version.h sapath.h libsysstat.a
+sar: sar.c sa.h common.h version.h sapath.h libsysstat.a libsa.a
+	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $< $(LFLAGS)
+
+sadf: sadf.c sa.h common.h version.h libsysstat.a libsa.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $< $(LFLAGS)
 
 iostat: iostat.c iostat.h common.h version.h libsysstat.a
@@ -176,6 +186,8 @@ uninstall_base:
 	rm -f $(DESTDIR)$(MAN8_DIR)/sa2.8
 	rm -f $(DESTDIR)$(BIN_DIR)/sar
 	rm -f $(DESTDIR)$(MAN1_DIR)/sar.1
+	rm -f $(DESTDIR)$(BIN_DIR)/sadf
+	rm -f $(DESTDIR)$(MAN1_DIR)/sadf.1
 	rm -f $(DESTDIR)$(BIN_DIR)/iostat
 	rm -f $(DESTDIR)$(MAN1_DIR)/iostat.1
 	rm -f $(DESTDIR)$(BIN_DIR)/mpstat
@@ -235,7 +247,7 @@ uninstall_all: uninstall_base
 	rm -f $(DESTDIR)$(RC3_DIR)/S03sysstat
 	rm -f $(DESTDIR)$(RC5_DIR)/S03sysstat
 
-install_base: all man/sadc.8 man/sar.1 man/sa1.8 man/sa2.8 man/iostat.1
+install_base: all man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/iostat.1
 	mkdir -p $(DESTDIR)$(LIB_DIR)/sa
 	mkdir -p $(DESTDIR)$(MAN1_DIR)
 	mkdir -p $(DESTDIR)$(MAN8_DIR)
@@ -253,6 +265,8 @@ endif
 	install -m 644 $(MANGRPARG) man/sadc.8 $(DESTDIR)$(MAN8_DIR)
 	install -m 755 sar $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/sar.1 $(DESTDIR)$(MAN1_DIR)
+	install -m 755 sadf $(DESTDIR)$(BIN_DIR)
+	install -m 644 $(MANGRPARG) man/sadf.1 $(DESTDIR)$(MAN1_DIR)
 	install -m 755 iostat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
 	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
@@ -320,7 +334,7 @@ install: install_base
 endif
 
 clean:
-	rm -f sadc sa1 sa2 sysstat sar iostat mpstat *.o *.a core TAGS crontab
+	rm -f sadc sa1 sa2 sysstat sar sadf iostat mpstat *.o *.a core TAGS crontab
 	rm -f sapath.h version.h
 	find nls -name "*.gmo" -exec rm -f {} \;
 
@@ -340,6 +354,8 @@ config: clean
 squeeze:
 	sed 's/ *$$//g' sar.c > squeeze-file
 	mv squeeze-file sar.c
+	sed 's/ *$$//g' sadf.c > squeeze-file
+	mv squeeze-file sadf.c
 	sed 's/ *$$//g' sadc.c > squeeze-file
 	mv squeeze-file sadc.c
 	sed 's/ *$$//g' iostat.c > squeeze-file
@@ -348,6 +364,8 @@ squeeze:
 	mv squeeze-file mpstat.c
 	sed 's/ *$$//g' common.c > squeeze-file
 	mv squeeze-file common.c
+	sed 's/ *$$//g' sa_common.c > squeeze-file
+	mv squeeze-file sa_common.c
 	sed 's/ *$$//g' common.h > squeeze-file
 	mv squeeze-file common.h
 	sed 's/ *$$//g' iostat.h > squeeze-file

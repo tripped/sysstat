@@ -4,10 +4,11 @@
 #
 S_TIME_FORMAT=ISO ; export S_TIME_FORMAT
 umask 022
-DATE=`date +%d`
+DATE=`date --date YESTERDAY +%d`
 RPT=SA_DIR/sar${DATE}
 ENDIR=BIN_DIR
 DFILE=SA_DIR/sa${DATE}
+[ -f "$DFILE" ] || exit 0
 cd ${ENDIR}
 ${ENDIR}/sar.sysstat $* -f ${DFILE} > ${RPT}
 find SA_DIR \( -name 'sar??' -o -name 'sa??' \) -mtime +7 -exec rm -f {} \;

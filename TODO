@@ -1,5 +1,9 @@
 Here are the things I would like (or I should) do for the next releases:
 
+* sar -q should also display ldavg-15.
+
+* Remove kbmemshrd from sar -r.
+
 * Add a vmstat command (not sure about this, since it already exists in common
   Linux distributions).
 

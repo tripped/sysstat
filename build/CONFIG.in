@@ -4,7 +4,10 @@
 # Directories
 PREFIX =
 SA_DIR =
+MAN_DIR =
 CLEAN_SA_DIR =
+YESTERDAY =
+WANT_ISAG =
 
 DFLAGS =
 SAS_DFLAGS =

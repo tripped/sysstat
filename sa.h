@@ -87,6 +87,7 @@
 #define F_ORG_TIME	0x040
 #define F_DEFAULT_COUNT	0x080
 #define F_I_OPTION	0x100
+#define F_DB_OPTION	0x200
 
 #define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
 #define WANT_SA_ROTAT(m)	(((m) & F_SA_ROTAT) == F_SA_ROTAT)
@@ -96,6 +97,7 @@
 #define PRINT_ORG_TIME(m)	(((m) & F_ORG_TIME) == F_ORG_TIME)
 #define USE_DEFAULT_COUNT(m)	(((m) & F_DEFAULT_COUNT) == F_DEFAULT_COUNT)
 #define USE_I_OPTION(m)		(((m) & F_I_OPTION) == F_I_OPTION)
+#define USE_DB_OPTION(m)	(((m) & F_DB_OPTION) == F_DB_OPTION)
 
 /* Files */
 #define PROC		"/proc"
@@ -105,7 +107,6 @@
 #define SERIAL		"/proc/tty/driver/serial"
 #define FDENTRY_STATE	"/proc/sys/fs/dentry-state"
 #define FFILE_NR	"/proc/sys/fs/file-nr"
-#define FINODE_MAX	"/proc/sys/fs/inode-max"
 #define FINODE_STATE	"/proc/sys/fs/inode-state"
 #define FDQUOT_NR	"/proc/sys/fs/dquot-nr"
 #define FDQUOT_MAX	"/proc/sys/fs/dquot-max"

@@ -136,15 +136,15 @@ void write_stats_avg(short curr, short dis)
       st_mp_cpu_j = st_mp_cpu[2] + cpu;
 
       printf("  %6.2f  %6.2f  %6.2f",
-	     S_VALUE(st_mp_cpu_j->cpu_user,   st_mp_cpu_i->cpu_user,   itv),
-	     S_VALUE(st_mp_cpu_j->cpu_nice,   st_mp_cpu_i->cpu_nice,   itv),
-	     S_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv));
+	     SP_VALUE(st_mp_cpu_j->cpu_user,   st_mp_cpu_i->cpu_user,   itv),
+	     SP_VALUE(st_mp_cpu_j->cpu_nice,   st_mp_cpu_i->cpu_nice,   itv),
+	     SP_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv));
 
       if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	 printf("    %.2f", 0.0);
       else
 	 printf("  %6.2f",
-		S_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
+		SP_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
 
       if (!cpu) {
 	 itv /= (proc_used + 1);
@@ -211,15 +211,15 @@ void write_stats(short curr, short dis)
       st_mp_cpu_j = st_mp_cpu[!curr] + cpu;
 
       printf("  %6.2f  %6.2f  %6.2f",
-	     S_VALUE(st_mp_cpu_j->cpu_user,   st_mp_cpu_i->cpu_user,   itv),
-	     S_VALUE(st_mp_cpu_j->cpu_nice,   st_mp_cpu_i->cpu_nice,   itv),
-	     S_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv));
+	     SP_VALUE(st_mp_cpu_j->cpu_user,   st_mp_cpu_i->cpu_user,   itv),
+	     SP_VALUE(st_mp_cpu_j->cpu_nice,   st_mp_cpu_i->cpu_nice,   itv),
+	     SP_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv));
 
       if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	 printf("    %.2f", 0.0);
       else
 	 printf("  %6.2f",
-		S_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
+		SP_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
 
       if (!cpu) {
 	 itv /= (proc_used + 1);

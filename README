@@ -18,13 +18,7 @@ INSTALLATION
 The sysstat utilities are a collection of performance monitoring tools for
 Linux. These include mpstat, iostat, sar, isag and sa tools. 
 
-The current release of the sysstat package no longer contains a patch for the
-Linux kernel. I do not want to maintain it any more. The last patch (version 4)
-is still available on my web site (http://perso.wanadoo.fr/sebastien.godard/)
-for download.
-Anyway it is absolutely *not* compulsory to patch the kernel to use the
-sysstat tools.
-Yet the iostat command has been updated to take advantage of Stephen Tweedie's
+The iostat command has been updated to take advantage of Stephen Tweedie's
 kernel patch to display extended I/O statistics (option '-x' for iostat).
 You can find Stephen's patch here:
 ftp://ftp.uk.linux.org/pub/linux/sct/fs/profiling
@@ -114,15 +108,15 @@ MISCELLANEOUS
 The sar, mpstat and iostat commands are only front-ends to the kernel proc
 filesystem... They cannot display statistics that Linux does not
 provide, nor can they be more accurate than Linux is.
-The sysstat package has been tested on Linux kernels 2.0.x and 2.2.x,
+The sysstat package has been tested on Linux kernels 2.0.x, 2.2.x and 2.4.x,
 but since new statistics are added in sysstat, they are not necessarily
-present in old 2.0.x kernels.
+present in old kernels.
 
 It has been designed with National Language Support (NLS) in mind, using
 the GNU gettext package (available at http://www.gnu.org).
-At the present time, english, french, german, spanish, portuguese and
-afrikaans translations are available. You are welcome if you want to make
-other languages available ;-)
+At the present time, English, French, German, Spanish, Portuguese,
+Afrikaans and Norwegian translations are available. You are welcome if you
+want to make other languages available ;-)
 
 --
 Sebastien Godard <sebastien.godard@wanadoo.fr>

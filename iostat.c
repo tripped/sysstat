@@ -110,6 +110,11 @@ void read_stat(int curr, int flags)
    char line[1024];
    int pos, i;
    unsigned int v_tmp[3], v_major, v_index;
+#if 0
+   FILE *partfp;
+   unsigned int major, minor;
+   char pline[1024], disk_name[64];
+#endif
 
    /* Open stat file */
    if ((statfp = fopen(STAT, "r")) == NULL) {
@@ -182,11 +187,36 @@ void read_stat(int curr, int flags)
 	    if (i == part_nr) {
 	       /*
 		* New device registered.
-		* Assume that devices may be registered, but not unregistered...
+		* Assume that devices may be registered, but not unregistered dynamically...
 		*/
 	       disk_hdr_stats[i].major = v_major;
 	       disk_hdr_stats[i].minor = v_index;
 	       sprintf(disk_hdr_stats[i].name, "dev%d-%d", v_major, v_index);
+
+#if 0
+	       /* This part of the code tries to guess the real name of the device */
+	
+	       /* Open partitons file */
+	       if ((partfp = fopen(PARTITIONS, "r")) == NULL) {
+		  perror("fopen");
+		  exit(2);
+	       }
+
+	       fgets(pline, 1024, partfp);
+	       fgets(pline, 1024, partfp);
+
+	       while (fgets(pline, 1024, partfp) != NULL) {
+		  sscanf(pline, "%u %u %*u %63s", &major, &minor, disk_name);
+
+		  if (((minor & 0x0f) == 0) && (major == v_major) && ((minor >> 4) == v_index)) {
+		     sprintf(disk_hdr_stats[i].name, "/dev/%s", disk_name);
+		     break;
+		  }
+	       }
+
+	       /* Close partitions file */
+	       fclose(partfp);
+#endif	
 	       part_nr++;
 	    }
 	    disk_stats[curr][i].dk_drive      = v_tmp[0];
@@ -215,7 +245,7 @@ void read_ext_stat(int curr, int flags)
 {
    FILE *partfp;
    int i;
-   char line[256];
+   char line[1024];
    struct disk_stats part;
    struct disk_hdr_stats part_hdr;
 
@@ -225,7 +255,7 @@ void read_ext_stat(int curr, int flags)
       exit(2);
    }
 
-   while (fgets(line, 256, partfp) != NULL) {
+   while (fgets(line, 1024, partfp) != NULL) {
 
       if (sscanf(line, "%*d %*d %*d %63s %d %d %d %d %d %d %d %d %*d %d %d",
 	     part_hdr.name,	/* No need to read major and minor numbers */
@@ -298,15 +328,15 @@ int write_stat(int curr, int flags, struct tm *loc_time)
       printf(_("avg-cpu:  %%user   %%nice    %%sys   %%idle\n"));
 
       printf("         %6.2f  %6.2f  %6.2f",
-	     S_VALUE(comm_stats[!curr].cpu_user,   comm_stats[curr].cpu_user,   itv),
-	     S_VALUE(comm_stats[!curr].cpu_nice,   comm_stats[curr].cpu_nice,   itv),
-	     S_VALUE(comm_stats[!curr].cpu_system, comm_stats[curr].cpu_system, itv));
+	     SP_VALUE(comm_stats[!curr].cpu_user,   comm_stats[curr].cpu_user,   itv),
+	     SP_VALUE(comm_stats[!curr].cpu_nice,   comm_stats[curr].cpu_nice,   itv),
+	     SP_VALUE(comm_stats[!curr].cpu_system, comm_stats[curr].cpu_system, itv));
 
       if (comm_stats[curr].cpu_idle < comm_stats[!curr].cpu_idle)
 	 printf("    %.2f", 0.0);
       else
 	 printf("  %6.2f",
-		S_VALUE(comm_stats[!curr].cpu_idle, comm_stats[curr].cpu_idle, itv));
+		SP_VALUE(comm_stats[!curr].cpu_idle, comm_stats[curr].cpu_idle, itv));
 
       printf("\n\n");
    }
@@ -320,7 +350,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	 struct disk_stats current;
 	 double tput, util, await, svctm, arqsz, nr_ios;
 	
-	 printf(_("Device:  rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"));
+	 printf(_("Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"));
 	
 	 for (disk_index = 0; disk_index < part_nr; disk_index++) {
 
@@ -344,9 +374,9 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	       await  = nr_ios ? (current.rd_ticks + current.wr_ticks) / nr_ios * 1000.0 / HZ : 0.0;
 	       arqsz  = nr_ios ? (current.rd_sectors + current.wr_sectors) / nr_ios : 0.0;
 
-	       printf("%-8s", disk_hdr_stats[disk_index].name);
-	       if (strlen(disk_hdr_stats[disk_index].name) > 8)
-		  printf("\n        ");
+	       printf("/dev/%-5s", disk_hdr_stats[disk_index].name);
+	       if (strlen(disk_hdr_stats[disk_index].name) > 5)
+		  printf("\n          ");
 	       printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
 		      ((double) current.rd_merges) / itv * HZ, ((double) current.wr_merges) / itv * HZ,
 		      ((double) current.rd_ios) / itv * HZ, ((double) current.wr_ios) / itv * HZ,
@@ -355,23 +385,22 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 		      ((double) current.aveq) / itv,
 		      await,
 		      svctm * 1000.0,
-		      /*
-		       * The real formula used below is: "util * 100 * (HZ / 1000)".
-		       * Indeed, the ticks output in current sard patches is biased to output 1000 ticks per second.
-		       */
-		      util / 10 * HZ);
+		      /* NB: the ticks output in current sard patches is biased to output 1000 ticks per second */
+		      util * 10.0);
 	    }
 	 }
       }
 
       else {
 
-	 printf(_("Device:        tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
+	 printf(_("Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
 
 	 for (disk_index = 0; disk_index < part_nr; disk_index++) {
 
-	    printf("%-9s %8.2f %12.2f %12.2f %10u %10u\n",
-		   disk_hdr_stats[disk_index].name,
+	    printf("%-13s", disk_hdr_stats[disk_index].name);
+	    if (strlen(disk_hdr_stats[disk_index].name) > 13)
+	       printf("\n             ");
+	    printf(" %8.2f %12.2f %12.2f %10u %10u\n",
 		   S_VALUE(disk_stats[!curr][disk_index].dk_drive,      disk_stats[curr][disk_index].dk_drive,      itv),
 		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_rblk, disk_stats[curr][disk_index].dk_drive_rblk, itv),
 		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_wblk, disk_stats[curr][disk_index].dk_drive_wblk, itv),

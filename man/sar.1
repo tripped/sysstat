@@ -2,7 +2,7 @@
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
-.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -h ] [ -i
+.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i
 .I interval
 .B ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
 .B [ -n { DEV | EDEV | SOCK | FULL } ]
@@ -240,6 +240,14 @@ The output consists of columns separated by a tab. The columns are: The machine
 hostname, the interval value (or -1 if not applicable), the timestamp (UST time)
 in seconds from the epoch,
 the device name (or - if not applicable), the field name and its value.
+.IP -H
+When  reading data from a file, print its contents in a format that can easily
+be ingested by a relational database system. The output consists
+of fields separated by a semicolon. Each record contains
+the hostname of the host where sar was run, the interval value
+(or -1 if not applicable), the sar timestamp in a form easily acceptable by
+most databases, and additional semicolon separated data fields as specified
+by other sar command line options.
 .IP "-i interval"
 Select data records at seconds as close as possible to the number specified
 by the

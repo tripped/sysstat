@@ -83,6 +83,9 @@ The following people have contributed to 'sysstat' in one way or another:
 	fix known problems with sysstat. He also added the sysstat.ioconf
 	file support, and the -p option to sar.
 
+	Thomas Polliard <thomas@polliard.com> helped me define the XML
+	output format for sadf. He also wrote the corresponding DTD.
+
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
@@ -92,6 +95,7 @@ I would also thank the following people for their hints or bug reports
 	Jesse Brandeburg <jesse.brandeburg@int[...].com>
 	Jason Burnett <jason@jnj[...].org>
 	Mark J. Cox <mjc@red[...].com>
+	Jean Dagenais <jean.dagenais@integral.com>
 	Nicolas Denis <denisn@wan[...].fr>
 	Andrew Donkin <ard@wai[...].nz>
 	Greg Edwards <edwardsg@sgi[...].com>

@@ -1,15 +1,10 @@
 /*
  * sadf: System activity data formatter
- * (C) 1999-2004 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2005 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _SADF_H
 #define _SADF_H
-
-/* Define sadf flags */
-#define F_H_OPTION	0x0001
-
-#define USE_H_OPTION(m)	(((m) & F_H_OPTION) == F_H_OPTION)
 
 
 #define PT_NOFLAG  0x0000	/* Prevent undescribed '0' in render calls */
@@ -18,6 +13,9 @@
 
 #define NOVAL      0		/* For placeholder zeros */
 #define DNOVAL     0.0		/* Wilma!  */
+
+/* DTD version for XML output */
+#define XML_DTD_VERSION	"1.0"
 
 
 static char *seps[] =  {"\t", ";"};

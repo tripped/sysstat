@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1999-2004 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2005 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _IOSTAT_H
@@ -10,28 +10,34 @@
 
 #define MAX_NAME_LEN	72
 
-#define D_CPU_ONLY	0x001
-#define D_DISK_ONLY	0x002
-#define D_TIMESTAMP	0x004
-#define D_EXTENDED	0x008
-#define D_PART_ALL	0x010
-#define D_KILOBYTES	0x020
-#define F_HAS_SYSFS	0x040
-#define F_OLD_KERNEL	0x080
-#define D_UNFILTERED	0x100
-#define D_MEGABYTES	0x200
-/* 0x100000:0x800000 -> reserved (cf. common.h) */
+/* I_: iostat - D_: Display - F_: Flag */
+#define I_D_CPU_ONLY		0x0001
+#define I_D_DISK_ONLY		0x0002
+#define I_D_TIMESTAMP		0x0004
+#define I_D_EXTENDED		0x0008
+#define I_D_PART_ALL		0x0010
+#define I_D_KILOBYTES		0x0020
+#define I_F_HAS_SYSFS		0x0040
+#define I_F_OLD_KERNEL		0x0080
+#define I_D_UNFILTERED		0x0100
+#define I_D_MEGABYTES		0x0200
+#define I_D_PARTITIONS		0x0400
+#define I_F_HAS_DISKSTATS	0x0800
+#define I_F_HAS_PPARTITIONS	0x1000
 
-#define DISPLAY_CPU_ONLY(m)	(((m) & D_CPU_ONLY) == D_CPU_ONLY)
-#define DISPLAY_DISK_ONLY(m)	(((m) & D_DISK_ONLY) == D_DISK_ONLY)
-#define DISPLAY_TIMESTAMP(m)	(((m) & D_TIMESTAMP) == D_TIMESTAMP)
-#define DISPLAY_EXTENDED(m)	(((m) & D_EXTENDED) == D_EXTENDED)
-#define DISPLAY_PART_ALL(m)	(((m) & D_PART_ALL) == D_PART_ALL)
-#define DISPLAY_KILOBYTES(m)	(((m) & D_KILOBYTES) == D_KILOBYTES)
-#define DISPLAY_MEGABYTES(m)	(((m) & D_MEGABYTES) == D_MEGABYTES)
-#define HAS_SYSFS(m)		(((m) & F_HAS_SYSFS) == F_HAS_SYSFS)
-#define HAS_OLD_KERNEL(m)	(((m) & F_OLD_KERNEL) == F_OLD_KERNEL)
-#define DISPLAY_UNFILTERED(m)	(((m) & D_UNFILTERED) == D_UNFILTERED)
+#define DISPLAY_CPU_ONLY(m)	(((m) & I_D_CPU_ONLY) == I_D_CPU_ONLY)
+#define DISPLAY_DISK_ONLY(m)	(((m) & I_D_DISK_ONLY) == I_D_DISK_ONLY)
+#define DISPLAY_TIMESTAMP(m)	(((m) & I_D_TIMESTAMP) == I_D_TIMESTAMP)
+#define DISPLAY_EXTENDED(m)	(((m) & I_D_EXTENDED) == I_D_EXTENDED)
+#define DISPLAY_PART_ALL(m)	(((m) & I_D_PART_ALL) == I_D_PART_ALL)
+#define DISPLAY_KILOBYTES(m)	(((m) & I_D_KILOBYTES) == I_D_KILOBYTES)
+#define DISPLAY_MEGABYTES(m)	(((m) & I_D_MEGABYTES) == I_D_MEGABYTES)
+#define HAS_SYSFS(m)		(((m) & I_F_HAS_SYSFS) == I_F_HAS_SYSFS)
+#define HAS_OLD_KERNEL(m)	(((m) & I_F_OLD_KERNEL) == I_F_OLD_KERNEL)
+#define DISPLAY_UNFILTERED(m)	(((m) & I_D_UNFILTERED) == I_D_UNFILTERED)
+#define DISPLAY_PARTITIONS(m)	(((m) & I_D_PARTITIONS) == I_D_PARTITIONS)
+#define HAS_DISKSTATS(m)	(((m) & I_F_HAS_DISKSTATS) == I_F_HAS_DISKSTATS)
+#define HAS_PPARTITIONS(m)	(((m) & I_F_HAS_PPARTITIONS) == I_F_HAS_PPARTITIONS)
 
 #define DT_DEVICE	0
 #define DT_PARTITION	1

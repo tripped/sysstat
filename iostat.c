@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1998-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1998-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -245,7 +245,7 @@ void io_sys_init(int *flags)
 
    /* Get number of block devices and partitions in /proc/diskstats */
    if ((iodev_nr = get_diskstats_dev_nr(CNT_PART)) > 0) {
-      *flags |= F_HAS_DISKSTATS;
+      *flags |= I_F_HAS_DISKSTATS;
       iodev_nr += NR_DEV_PREALLOC;
    }
 
@@ -258,8 +258,8 @@ void io_sys_init(int *flags)
        */
 
       /* Get number of block devices (and partitions) in sysfs */
-      if ((iodev_nr = get_sysfs_dev_nr(*flags)) > 0) {
-	 *flags |= F_HAS_SYSFS;
+      if ((iodev_nr = get_sysfs_dev_nr(DISPLAY_PARTITIONS(*flags))) > 0) {
+	 *flags |= I_F_HAS_SYSFS;
 	 iodev_nr += NR_DEV_PREALLOC;
       }
       /*
@@ -267,7 +267,7 @@ void io_sys_init(int *flags)
        * those with statistics...
        */
       else if ((iodev_nr = get_ppartitions_dev_nr(CNT_PART)) > 0) {
-	 *flags |= F_HAS_PPARTITIONS;
+	 *flags |= I_F_HAS_PPARTITIONS;
 	 iodev_nr += NR_DEV_PREALLOC;
       }
       /* Get number of "disk_io:" entries in /proc/stat */
@@ -276,7 +276,7 @@ void io_sys_init(int *flags)
       else {
 	 /* Assume we have an old kernel: stats for 4 disks are in /proc/stat */
 	 iodev_nr = 4;
-	 *flags |= F_OLD_KERNEL;
+	 *flags |= I_F_OLD_KERNEL;
       }
    }
    /* Allocate structures for number of disks found */
@@ -820,21 +820,16 @@ void read_ppartitions_stat(int curr, int flags)
  */
 void write_cpu_stat(int curr, unsigned long long itv)
 {
-   printf(_("avg-cpu:  %%user   %%nice %%system %%iowait   %%idle\n"));
+   printf("avg-cpu:  %%user   %%nice %%system %%iowait   %%idle\n");
 
-   printf("         %6.2f  %6.2f  %6.2f  %6.2f",
+   printf("         %6.2f  %6.2f  %6.2f  %6.2f  %6.2f\n\n",
 	  ll_sp_value(comm_stats[!curr].cpu_user,   comm_stats[curr].cpu_user,   itv),
 	  ll_sp_value(comm_stats[!curr].cpu_nice,   comm_stats[curr].cpu_nice,   itv),
 	  ll_sp_value(comm_stats[!curr].cpu_system, comm_stats[curr].cpu_system, itv),
-	  ll_sp_value(comm_stats[!curr].cpu_iowait, comm_stats[curr].cpu_iowait, itv));
-
-   if (comm_stats[curr].cpu_idle < comm_stats[!curr].cpu_idle)
-      printf("    %.2f", 0.0);
-   else
-      printf("  %6.2f",
-	     ll_sp_value(comm_stats[!curr].cpu_idle, comm_stats[curr].cpu_idle, itv));
-
-   printf("\n\n");
+	  ll_sp_value(comm_stats[!curr].cpu_iowait, comm_stats[curr].cpu_iowait, itv),
+	  (comm_stats[curr].cpu_idle < comm_stats[!curr].cpu_idle) ?
+	  0.0 :
+	  ll_sp_value(comm_stats[!curr].cpu_idle, comm_stats[curr].cpu_idle, itv));
 }
 
 
@@ -847,14 +842,13 @@ void write_cpu_stat(int curr, unsigned long long itv)
 void write_ext_stat(int curr, unsigned long long itv, int flags)
 {
    int dev, i;
-   struct io_stats sdev;
    struct io_hdr_stats *st_hdr_iodev_i;
-   struct io_stats *st_iodev_i, *st_iodev_j;
+   struct io_stats *ioi, *ioj;
    struct io_dlist *st_dev_list_i;
    double tput, util, await, svctm, arqsz, nr_ios;
 	
-   printf(_("Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"));
-   /*       "xxxxxxxxxx 999.99 999.99 99.99 99.99 9999.99 9999.99 99999.99 99999.99 99999.99 99999.99 9999.99 999.99 %999.99\n" */
+   printf("Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n");
+   /*     "xxxxxxxxxx 999.99 999.99 99.99 99.99 9999.99 9999.99 99999.99 99999.99 99999.99 99999.99 9999.99 999.99 %999.99\n" */
 	
    for (i = 0; i < iodev_nr; i++) {
       st_hdr_iodev_i = st_hdr_iodev + i;
@@ -877,11 +871,11 @@ void write_ext_stat(int curr, unsigned long long itv, int flags)
 	       continue;
 	 }
 	
-	 st_iodev_i = st_iodev[curr] + i;
-	 st_iodev_j = st_iodev[!curr] + i;
+	 ioi = st_iodev[curr] + i;
+	 ioj = st_iodev[!curr] + i;
 
 	 if (!DISPLAY_UNFILTERED(flags)) {
-	    if (!st_iodev_i->rd_ios && !st_iodev_i->wr_ios)
+	    if (!ioi->rd_ios && !ioi->wr_ios)
 	       continue;
 	 }
 
@@ -894,52 +888,36 @@ void write_ext_stat(int curr, unsigned long long itv, int flags)
 	  * But the number of I/O in progress (field ios_pgr) happens to be
 	  * sometimes negative...
 	  */
-	 sdev.rd_ios     = st_iodev_i->rd_ios - st_iodev_j->rd_ios;
-	 sdev.wr_ios     = st_iodev_i->wr_ios - st_iodev_j->wr_ios;
-	 sdev.rd_ticks   = st_iodev_i->rd_ticks - st_iodev_j->rd_ticks;
-	 sdev.wr_ticks   = st_iodev_i->wr_ticks - st_iodev_j->wr_ticks;
-	 sdev.rd_merges  = st_iodev_i->rd_merges - st_iodev_j->rd_merges;
-	 sdev.wr_merges  = st_iodev_i->wr_merges - st_iodev_j->wr_merges;
-	 sdev.rd_sectors = st_iodev_i->rd_sectors - st_iodev_j->rd_sectors;
-	 sdev.wr_sectors = st_iodev_i->wr_sectors - st_iodev_j->wr_sectors;
-	 sdev.tot_ticks  = st_iodev_i->tot_ticks - st_iodev_j->tot_ticks;
-	 /*
-	  * Compare the two values before calculating the difference.
-	  * Hope this is the right way to handle this...
-	  */
-	 if (st_iodev_i->rq_ticks >= st_iodev_j->rq_ticks)
-	    sdev.rq_ticks   = st_iodev_i->rq_ticks - st_iodev_j->rq_ticks;
-	 else
-	    sdev.rq_ticks   = st_iodev_j->rq_ticks - st_iodev_i->rq_ticks;
-	
-	 nr_ios = sdev.rd_ios + sdev.wr_ios;
+	 nr_ios = (ioi->rd_ios - ioj->rd_ios) + (ioi->wr_ios - ioj->wr_ios);
 	 tput   = ((double) nr_ios) * HZ / itv;
-	 util   = ((double) sdev.tot_ticks) / itv * HZ;
+	 util = S_VALUE(ioj->tot_ticks, ioi->tot_ticks, itv);
 	 svctm  = tput ? util / tput : 0.0;
 	 /*
 	  * kernel gives ticks already in milliseconds for all platforms
 	  * => no need for further scaling.
 	  */
 	 await  = nr_ios ?
-	    (sdev.rd_ticks + sdev.wr_ticks) / nr_ios : 0.0;
+	    ((ioi->rd_ticks - ioj->rd_ticks) + (ioi->wr_ticks - ioj->wr_ticks)) /
+	    nr_ios : 0.0;
 	 arqsz  = nr_ios ?
-	    (sdev.rd_sectors + sdev.wr_sectors) / nr_ios : 0.0;
+	    ((ioi->rd_sectors - ioj->rd_sectors) + (ioi->wr_sectors - ioj->wr_sectors)) /
+	    nr_ios : 0.0;
 
 	 printf("%-10s", st_hdr_iodev_i->name);
 	 if (strlen(st_hdr_iodev_i->name) > 10)
 	    printf("\n          ");
 	 /*       rrq/s wrq/s   r/s   w/s  rsec  wsec   rkB   wkB  rqsz  qusz await svctm %util */
 	 printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
-		((double) sdev.rd_merges) / itv * HZ,
-		((double) sdev.wr_merges) / itv * HZ,
-		((double) sdev.rd_ios) / itv * HZ,
-		((double) sdev.wr_ios) / itv * HZ,
-		((double) sdev.rd_sectors) / itv * HZ,
-		((double) sdev.wr_sectors) / itv * HZ,
-		((double) sdev.rd_sectors) / itv * HZ / 2,
-		((double) sdev.wr_sectors) / itv * HZ / 2,
+		S_VALUE(ioj->rd_merges, ioi->rd_merges, itv),
+		S_VALUE(ioj->wr_merges, ioi->wr_merges, itv),
+		S_VALUE(ioj->rd_ios, ioi->rd_ios, itv),
+		S_VALUE(ioj->wr_ios, ioi->wr_ios, itv),
+		S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv),
+		S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv),
+		S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv) / 2,
+		S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv) / 2,
 		arqsz,
-		((double) sdev.rq_ticks) / itv * HZ / 1000.0,
+		S_VALUE(ioj->rq_ticks, ioi->rq_ticks, itv) / 1000.0,
 		await,
 		/* The ticks output is biased to output 1000 ticks per second */
 		svctm,
@@ -960,19 +938,19 @@ void write_basic_stat(int curr, unsigned long long itv, int flags)
    int fctr = 1;
    int i, j;
    struct io_hdr_stats *st_hdr_iodev_i;
-   struct io_stats *st_iodev_i, *st_iodev_j;
+   struct io_stats *ioi, *ioj;
    struct io_dlist *st_dev_list_j;
 
    if (DISPLAY_KILOBYTES(flags)) {
-      printf(_("Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n"));
+      printf("Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n");
       fctr = 2;
    }
    else if (DISPLAY_MEGABYTES(flags)) {
-      printf(_("Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn\n"));
+      printf("Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn\n");
       fctr = 2048;
    }
    else
-      printf(_("Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
+      printf("Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n");
 
    for (i = 0; i < iodev_nr; i++) {
       st_hdr_iodev_i = st_hdr_iodev + i;
@@ -995,16 +973,16 @@ void write_basic_stat(int curr, unsigned long long itv, int flags)
 	       continue;
 	 }
 	
-	 st_iodev_i = st_iodev[curr] + i;
-	 st_iodev_j = st_iodev[!curr] + i;
+	 ioi = st_iodev[curr] + i;
+	 ioj = st_iodev[!curr] + i;
 
 	 if (!DISPLAY_UNFILTERED(flags)) {
 	    if (HAS_SYSFS(flags) ||
 		HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) {
-	       if (!st_iodev_i->rd_ios && !st_iodev_i->wr_ios)
+	       if (!ioi->rd_ios && !ioi->wr_ios)
 		  continue;
 	    }
-	    else if (!st_iodev_i->dk_drive)
+	    else if (!ioi->dk_drive)
 	       continue;
 	 }
 	
@@ -1016,30 +994,22 @@ void write_basic_stat(int curr, unsigned long long itv, int flags)
 	     HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) {
 	    /* Print stats coming from /sys or /proc/{diskstats,partitions} */
 	    printf(" %8.2f %12.2f %12.2f %10llu %10llu\n",
-		   S_VALUE(st_iodev_j->rd_ios + st_iodev_j->wr_ios,
-			   st_iodev_i->rd_ios + st_iodev_i->wr_ios, itv),
-		   S_VALUE(st_iodev_j->rd_sectors,
-			   st_iodev_i->rd_sectors, itv) / fctr,
-		   S_VALUE(st_iodev_j->wr_sectors,
-			   st_iodev_i->wr_sectors, itv) / fctr,
-		   (unsigned long long) (st_iodev_i->rd_sectors -
-					 st_iodev_j->rd_sectors) / fctr,
-		   (unsigned long long) (st_iodev_i->wr_sectors -
-					 st_iodev_j->wr_sectors) / fctr);
+		   S_VALUE(ioj->rd_ios + ioj->wr_ios, ioi->rd_ios + ioi->wr_ios, itv),
+		   S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv) / fctr,
+		   S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv) / fctr,
+		   (unsigned long long) (ioi->rd_sectors -
+					 ioj->rd_sectors) / fctr,
+		   (unsigned long long) (ioi->wr_sectors -
+					 ioj->wr_sectors) / fctr);
 	 }
 	 else {
 	    /* Print stats coming from /proc/stat */
 	    printf(" %8.2f %12.2f %12.2f %10lu %10lu\n",
-		   S_VALUE(st_iodev_j->dk_drive,
-			   st_iodev_i->dk_drive, itv),
-		   S_VALUE(st_iodev_j->dk_drive_rblk,
-			   st_iodev_i->dk_drive_rblk, itv) / fctr,
-		   S_VALUE(st_iodev_j->dk_drive_wblk,
-			   st_iodev_i->dk_drive_wblk, itv) / fctr,
-		   (st_iodev_i->dk_drive_rblk -
-		    st_iodev_j->dk_drive_rblk) / fctr,
-		   (st_iodev_i->dk_drive_wblk -
-		    st_iodev_j->dk_drive_wblk) / fctr);
+		   S_VALUE(ioj->dk_drive, ioi->dk_drive, itv),
+		   S_VALUE(ioj->dk_drive_rblk, ioi->dk_drive_rblk, itv) / fctr,
+		   S_VALUE(ioj->dk_drive_wblk, ioi->dk_drive_wblk, itv) / fctr,
+		   (ioi->dk_drive_rblk - ioj->dk_drive_rblk) / fctr,
+		   (ioi->dk_drive_wblk - ioj->dk_drive_wblk) / fctr);
 	 }
       }
    }
@@ -1215,12 +1185,12 @@ int main(int argc, char **argv)
    while (opt < argc) {
 
       if (!strcmp(argv[opt], "-p")) {
-	 flags |= D_PARTITIONS;
+	 flags |= I_D_PARTITIONS;
 	 if (argv[++opt] && (strspn(argv[opt], DIGITS) != strlen(argv[opt])) &&
 	     (strncmp(argv[opt], "-", 1))) {
-	    flags |= D_UNFILTERED;
+	    flags |= I_D_UNFILTERED;
 	    if (!strcmp(argv[opt], K_ALL)) {
-	       flags |= D_PART_ALL;
+	       flags |= I_D_PART_ALL;
 	       opt++;
 	    }
 	    else {
@@ -1231,7 +1201,7 @@ int main(int argc, char **argv)
 	    }
 	 }
 	 else
-	    flags |= D_PART_ALL;
+	    flags |= I_D_PART_ALL;
       }
 
       else if (!strncmp(argv[opt], "-", 1)) {
@@ -1240,29 +1210,29 @@ int main(int argc, char **argv)
 	    switch (*(argv[opt] + i)) {
 
 	     case 'c':
-	       flags |= D_CPU_ONLY;	/* Display cpu usage only */
-	       flags &= ~D_DISK_ONLY;
+	       flags |= I_D_CPU_ONLY;	/* Display cpu usage only */
+	       flags &= ~I_D_DISK_ONLY;
 	       break;
 
 	     case 'd':
-	       flags |= D_DISK_ONLY;	/* Display disk utilization only */
-	       flags &= ~D_CPU_ONLY;
+	       flags |= I_D_DISK_ONLY;	/* Display disk utilization only */
+	       flags &= ~I_D_CPU_ONLY;
 	       break;
 	
 	     case 'k':
-	       flags |= D_KILOBYTES;	/* Display stats in kB/s */
+	       flags |= I_D_KILOBYTES;	/* Display stats in kB/s */
 	       break;
 
 	     case 'm':
-	       flags |= D_MEGABYTES;	/* Display stats in MB/s */
+	       flags |= I_D_MEGABYTES;	/* Display stats in MB/s */
 	       break;
 
 	     case 't':
-	       flags |= D_TIMESTAMP;	/* Display timestamp */
+	       flags |= I_D_TIMESTAMP;	/* Display timestamp */
 	       break;
 	
 	     case 'x':
-	       flags |= D_EXTENDED;	/* Display extended stats */
+	       flags |= I_D_EXTENDED;	/* Display extended stats */
 	       break;
 
 	     case 'V':			/* Print usage and exit	*/
@@ -1274,7 +1244,7 @@ int main(int argc, char **argv)
       }
 
       else if (!isdigit(argv[opt][0])) {
-	 flags |= D_UNFILTERED;
+	 flags |= I_D_UNFILTERED;
 	 if (strcmp(argv[opt], K_ALL))
 	    /* Store device name */
 	    update_dev_list(&dlist_idx, device_name(argv[opt++]));

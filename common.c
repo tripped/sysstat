@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -169,7 +169,7 @@ int get_dev_part_nr(char *dev_name)
  * directory), then find number of devices registered.
  ***************************************************************************
  */
-int get_sysfs_dev_nr(int flags)
+int get_sysfs_dev_nr(int display_partitions)
 {
    DIR *dir;
    struct dirent *drd;
@@ -192,7 +192,7 @@ int get_sysfs_dev_nr(int flags)
 	 /* Yep... */
 	 dev++;
 	
-	 if (DISPLAY_PARTITIONS(flags))
+	 if (display_partitions)
 	    /* We also want the number of partitions for this device */
 	    dev += get_dev_part_nr(drd->d_name);
       }

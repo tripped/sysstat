@@ -1,6 +1,6 @@
 /*
  * sysstat: System performance tools for Linux
- * (C) 1999-2004 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2005 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _COMMON_H
@@ -38,18 +38,6 @@
 
 #define NR_DEV_PREALLOC		4
 #define NR_DISK_PREALLOC	3
-
-/* Define flags */
-#define F_BOOT_STATS		0x100000
-#define D_PARTITIONS		0x200000
-#define F_HAS_DISKSTATS		0x400000
-#define F_HAS_PPARTITIONS	0x800000
-
-#define WANT_BOOT_STATS(m)	(((m) & F_BOOT_STATS) == F_BOOT_STATS)
-#define DISPLAY_PARTITIONS(m)	(((m) & D_PARTITIONS) == D_PARTITIONS)
-#define HAS_DISKSTATS(m)	(((m) & F_HAS_DISKSTATS) == F_HAS_DISKSTATS)
-#define HAS_PPARTITIONS(m)	(((m) & F_HAS_PPARTITIONS) == F_HAS_PPARTITIONS)
-
 
 #define CNT_DEV		0
 #define CNT_PART	1

@@ -1,3 +1,12 @@
+sysstat (4.0.7-1) unstable; urgency=low
+
+  * New upstream version.
+  * Don't run /etc/init.d/sysstat on package install/upgrade (use
+    `dh_installinit --no-start' for this).
+  * debian/rules, debian/fix.sh: minor changes in the build process.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 17 Nov 2002 21:30:45 +0100
+
 sysstat (4.0.6-2) unstable; urgency=low
 
   * Standards-Version: 3.5.7
@@ -152,5 +161,3 @@ sysstat (3.3.2-1) unstable; urgency=low
   * Rename (/usr/lib|/var/log)/sa to $1/sysstat.
 
  -- Robert Luberda <robert@debian.org>  Sun,  3 Dec 2000 23:33:02 +0100
-
-vim: et ts=2

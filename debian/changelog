@@ -1,10 +1,19 @@
-sysstat (5.0.3-2) unstable; urgency=low
+sysstat (5.0.4-1) unstable; urgency=low
 
-  * UNRELEASED
-  * Updated French tranalstion of debconf templates (closes: #247364).
+  * New upstream (stable) version:
+    + when trying to lock file, sadc now checks for both EWOULDBLOCK
+      and EAGAIN error codes to be portable (closes: #248772).
+
+  * Update French translation of debconf templates (closes: #247364).
     Thanks to Christian Perrier <bubulle@debian.org>.
+  * Add Italian translation of debconf templates (closes: #249174).
+    Thanks to Luca Monducci <luca.mo@tiscali.it>.
 
- -- Robert Luberda <robert@debian.org>  Sun, 16 May 2004 20:18:09 +0200
+  * Remove linitan override file for `shell-script-fails-syntax-check',
+    it's not needed for the newest lintian.
+  * Add lintian source overrides for `cvsignore-file-in-source'.
+
+ -- Robert Luberda <robert@debian.org>  Sat, 22 May 2004 15:14:36 +0200
 
 sysstat (5.0.3-1) unstable; urgency=low
 
@@ -13,7 +22,7 @@ sysstat (5.0.3-1) unstable; urgency=low
       or from sysfs as 64-bit unsigned values (closes: #237047).
   * isag: reapplied changes with creating temporary directory and fixed
     sag_save_graph procedure which got broken in this upstream version.
-  * Gived to the administrator possibility to disable collecting statistics
+  * Give the administrator capability to disable collecting statistics
     by our cron and init scripts (closes: #194576):
     + add /etc/default/sysstat, created by postinst
     + introduced new debconf question: sysstat/enable

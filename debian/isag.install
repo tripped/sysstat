@@ -1,3 +1,2 @@
 contrib/isag/isag.1 usr/share/man/man1
 contrib/isag/isag   usr/bin
-debian/lintian/isag usr/share/lintian/overrides

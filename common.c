@@ -113,13 +113,13 @@ int get_nb_proc_used(int *proc_used, unsigned int max_nr_cpus)
  */
 inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, char *nodename)
 {
-   char cur_date[11];
+   char cur_date[64];
    char *e;
 
    if (((e = getenv(TM_FMT_VAR)) != NULL) && !strcmp(e, K_ISO))
-      strftime(cur_date, 11, "%Y-%m-%d", loc_time);
+      strftime(cur_date, sizeof(cur_date), "%Y-%m-%d", loc_time);
    else
-      strftime(cur_date, 11, "%x", loc_time);
+      strftime(cur_date, sizeof(cur_date), "%x", loc_time);
 
    printf("%s %s (%s) \t%s\n", sysname, release, nodename, cur_date);
 }

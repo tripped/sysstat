@@ -1,5 +1,5 @@
 /*
- * sar, sadc, mpstat and iostat common routines.
+ * sar, sadc, sadf, mpstat and iostat common routines.
  * (C) 1999-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
@@ -15,7 +15,7 @@
  *                                                                         *
  * You should have received a copy of the GNU General Public License along *
  * with this program; if not, write to the Free Software Foundation, Inc., *
- * 675 Mass Ave, Cambridge, MA 02139, USA.                                 *
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA                   *
  ***************************************************************************
  */
 
@@ -419,6 +419,9 @@ int get_kb_shift(void)
  * counter, if @value2 < @value1 and @value1 <= 0xffffffff, then we can
  * assume that the counter's type was unsigned long and has overflown, and
  * so the difference @value2 - @value1 must be casted to this type.
+ * NOTE: These functions should no longer be necessary to handle a particular
+ * stat counter when we can assume that everybody is using a recent kernel
+ * (defining this counter as unsigned long long).
  ***************************************************************************
  */
 double ll_sp_value(unsigned long long value1, unsigned long long value2,
@@ -440,4 +443,3 @@ double ll_s_value(unsigned long long value1, unsigned long long value2,
    else
       return S_VALUE(value1, value2, itv);
 }
-

@@ -1,8 +1,8 @@
-.TH SAR 1 "JUNE 2004" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "AUGUST 2004" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
-.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i
+.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i
 .I interval
 .B ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
 .B [ -n { DEV | EDEV | SOCK | FULL } ]
@@ -111,10 +111,15 @@ The data can then be selectively displayed with the
 command using the
 .B -f
 option. Set the
+.I interval
+and
 .I count
-parameter to select records at
+parameters to select
 .I count
-second intervals. If this parameter is not set, all the records saved in the
+records at
+.I interval
+second intervals. If the
+.I count parameter is not set, all the records saved in the
 file will be selected.
 Collection of data in this manner is useful to characterize
 system usage over a period of time and determine peak usage hours.
@@ -242,9 +247,7 @@ or written to a file (options
 .B -f
 or
 .B -o
-). Note that if you also use
-.B -h
-option, ending time will have to be given in UTC (Coordinated Universal Time).
+).
 .IP "-f filename"
 Extract records from
 .I filename
@@ -255,24 +258,6 @@ flag). The default value of the
 parameter is the current daily data file, the
 .IR /var/log/sa/sa dd
 file. The -f option is exclusive of the -o option.
-.IP -h
-When  reading data from a file, print its contents in a format that can
-easily be handled by pattern processing commands like awk.
-The output consists of fields separated by a tab. Each record contains the
-hostname of the host where sar was run, the interval value (or -1 if not applicable), the
-timestamp (UTC value - Coordinated Universal Time) in seconds from the epoch,
-the device name (or - if not applicable), the field name and its value.
-.IP -H
-When  reading data from a file, print its contents in a format that can easily
-be ingested by a relational database system. The output consists
-of fields separated by a semicolon. Each record contains
-the hostname of the host where sar was run, the interval value
-(or -1 if not applicable), the sar timestamp in a form easily acceptable by
-most databases, and additional semicolon separated data fields as specified
-by other sar command line options.
-Note that the timestamp is displayed in UTC (Coordinated Universal Time)
-unless option -t is used. In this latter case, the timestamp is displayed
-in local time.
 .IP "-i interval"
 Select data records at seconds as close as possible to the number specified
 by the
@@ -281,7 +266,10 @@ parameter.
 .IP "-I irq | SUM | ALL | XALL"
 Report statistics for a given interrupt.
 .B irq
-is the interrupt number. The
+is the interrupt number. Specifying multiple
+.B -I irq
+parameters on the command line will look at multiple independent interrupts.
+The
 .B SUM
 keyword indicates that the total number of interrupts received per second
 is to be displayed. The
@@ -566,9 +554,7 @@ specified. The default starting time is 08:00.
 Hours must be given in 24-hour format. This option can be
 used only when data are read from a file (option
 .B -f
-). Note that if you also use
-.B -h
-option, starting time will have to be given in UTC (Coordinated Universal Time).
+).
 .IP -t
 When reading data from a daily data file, indicate that
 .B sar
@@ -576,9 +562,6 @@ should display the timestamps in the original locale time of
 the data file creator. Without this option, the
 .B sar
 command displays the timestamps in the user locale time.
-When this option is used together with option -H, the timestamp
-is displayed in local time instead of UTC (Coordinated Universal Time).
-This option is ignored when option -h is used.
 .IP -u
 Report CPU utilization. The following values are displayed:
 
@@ -703,6 +686,9 @@ process itself, whereas the
 keyword indicates that statistics are to be reported for all the system processes.
 All these statistics cannot be saved to a file.
 So this option will be ignored whenever -o option is used.
+Specifying multiple
+.B -x pid
+parameters on the command line will look at multiple independent processes.
 At the present time, no more than 256 processes can be monitored
 simultaneously.
 
@@ -756,6 +742,9 @@ keyword indicates that statistics are to be reported for all the child processes
 of all the system processes.
 All these statistics cannot be saved to a file.
 So this option will be ignored whenever -o option is used.
+Specifying multiple
+.B -X pid
+parameters on the command line will look at multiple independent processes.
 At the present time, no more than 256 processes can be monitored
 simultaneously.
 The following values are displayed:
@@ -866,6 +855,7 @@ Sebastien Godard (sysstat <at> wanadoo.fr)
 .BR sadc (8),
 .BR sa1 (8),
 .BR sa2 (8),
+.BR sadf (1),
 .BR isag (1),
 .BR mpstat (1),
 .BR iostat (1),

@@ -1,12 +1,8 @@
-.TH SADC 8 "MAY 2004" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "AUGUST 2004" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
-.B /usr/lib/sa/sadc [ -F ] [ -I ] [ -L ] [ -V ] [ -x
-.I pid
-.B ] [ -X
-.I pid
-.B ] [
+.B /usr/lib/sa/sadc [ -F ] [ -I ] [ -L ] [ -V ] [
 .I interval
 .B [
 .I count
@@ -55,8 +51,6 @@ Note: The
 .B sadc
 command only reports on local activities.
 
--x and -X options are ignored when writing data to a file.
-
 .SH OPTIONS
 .IP -F
 The creation of
@@ -92,20 +86,6 @@ might still be running when cron starts a new one. Without locking,
 this situation can result in a corrupted system activity file.
 .IP -V
 Print version number and usage then exit.
-.IP "-x pid"
-Tell
-.B sadc
-to report statistics for the process whose PID is
-.I pid.
-.IP "-X pid"
-Tell
-.B sadc
-to report statistics for the child processes of the process whose PID is
-.I pid.
-The SELF keyword indicates that statistics are to be reported for the
-child processes of the
-.B sadc
-process itself.
 
 .SH EXAMPLES
 .B /usr/lib/sa/sadc 1 10 /tmp/datafile
@@ -134,6 +114,7 @@ Sebastien Godard (sysstat <at> wanadoo.fr)
 .BR sar (1),
 .BR sa1 (8),
 .BR sa2 (8),
+.BR sadf (1),
 .BR mpstat (1),
 .BR iostat (1),
 .BR vmstat (8)

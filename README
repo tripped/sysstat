@@ -19,7 +19,7 @@ INSTALLATION
 ------------
 
 The sysstat utilities are a collection of performance monitoring tools for
-Linux. These include mpstat, iostat, sar and sa tools. 
+Linux. These include mpstat, iostat, sar, sadc, sadf and sa tools. 
 
 The first stage is to configure sysstat for your system:
 
@@ -65,12 +65,14 @@ ${PREFIX}/lib/sa/sadc
 ${PREFIX}/lib/sa/sa1
 ${PREFIX}/lib/sa/sa2
 ${PREFIX}/bin/sar
+${PREFIX}/bin/sadf
 ${PREFIX}/bin/iostat
 ${PREFIX}/bin/mpstat
 ${PREFIX}(/share)/man/man8/sadc.8
 ${PREFIX}(/share)/man/man8/sa1.8
 ${PREFIX}(/share)/man/man8/sa2.8
 ${PREFIX}(/share)/man/man1/sar.1
+${PREFIX}(/share)/man/man1/sadf.1
 ${PREFIX}(/share)/man/man1/iostat.1
 ${PREFIX}(/share)/man/man1/mpstat.1
 ${PREFIX}/share/locale/af/LC_MESSAGES/sysstat.mo

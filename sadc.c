@@ -15,7 +15,7 @@
  *                                                                         *
  * You should have received a copy of the GNU General Public License along *
  * with this program; if not, write to the Free Software Foundation, Inc., *
- * 675 Mass Ave, Cambridge, MA 02139, USA.                                 *
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA                   *
  ***************************************************************************
  */
 
@@ -84,7 +84,7 @@ void usage(char *progname)
 		   "(C) Sebastien Godard\n"
 	           "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
 		   "Options are:\n"
-		   "[ -x <pid> ] [ -X <pid> ] [ -F ] [ -I ] [ -V ]\n"),
+		   "[ -F ] [ -I ] [ -V ]\n"),
 	   VERSION, progname);
    exit(1);
 }
@@ -108,14 +108,14 @@ void alarm_handler(int sig)
  * (only on SMP machines)
  ***************************************************************************
  */
-void salloc_cpu(int nr_cpus)
+void salloc_cpu(int nr_cpu)
 {
-   if ((st_cpu = (struct stats_one_cpu *) malloc(STATS_ONE_CPU_SIZE * nr_cpus)) == NULL) {
+   if ((st_cpu = (struct stats_one_cpu *) malloc(STATS_ONE_CPU_SIZE * nr_cpu)) == NULL) {
       perror("malloc");
       exit(4);
    }
 
-   memset(st_cpu, 0, STATS_ONE_CPU_SIZE * nr_cpus);
+   memset(st_cpu, 0, STATS_ONE_CPU_SIZE * nr_cpu);
 }
 
 
@@ -140,7 +140,7 @@ void salloc_serial(unsigned int nr_serial)
  * Allocate stats_irq_cpu structures
  ***************************************************************************
  */
-void salloc_irqcpu(int nr_cpus, unsigned int nr_irqcpu)
+void salloc_irqcpu(int nr_cpu, unsigned int nr_irqcpu)
 {
    /*
     * st_irq_cpu->irq:       IRQ#-A
@@ -155,12 +155,12 @@ void salloc_irqcpu(int nr_cpus, unsigned int nr_irqcpu)
     * ...
     */
 
-   if ((st_irq_cpu = (struct stats_irq_cpu *) malloc(STATS_IRQ_CPU_SIZE * nr_cpus * nr_irqcpu)) == NULL) {
+   if ((st_irq_cpu = (struct stats_irq_cpu *) malloc(STATS_IRQ_CPU_SIZE * nr_cpu * nr_irqcpu)) == NULL) {
       perror("malloc");
       exit(4);
    }
 
-   memset(st_irq_cpu, 0, STATS_IRQ_CPU_SIZE * nr_cpus * nr_irqcpu);
+   memset(st_irq_cpu, 0, STATS_IRQ_CPU_SIZE * nr_cpu * nr_irqcpu);
 }
 
 
@@ -415,7 +415,7 @@ void get_net_dev(unsigned int *iface_used)
 void get_irqcpu_nb(unsigned int *irqcpu_used, unsigned int max_nr_irqcpu)
 {
    FILE *irqfp;
-   char line[16];
+   char line[256];
    unsigned int irq = 0;
 
    /* Open interrupts file */
@@ -424,7 +424,7 @@ void get_irqcpu_nb(unsigned int *irqcpu_used, unsigned int max_nr_irqcpu)
       return;
    }
 
-   while ((fgets(line, 16, irqfp) != NULL) && (irq < max_nr_irqcpu)) {
+   while ((fgets(line, 256, irqfp) != NULL) && (irq < max_nr_irqcpu)) {
       if (isdigit(line[2]))
 	 irq++;
    }
@@ -541,18 +541,18 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
    file_hdr.sa_ust_time = get_localtime(&loc_time);
 
    /* Ok, now fill the header */
-   file_hdr.sa_actflag = sadc_actflag;
-   file_hdr.sa_magic   = SA_MAGIC;
-   file_hdr.sa_st_size = FILE_STATS_SIZE;
-   file_hdr.sa_day     = loc_time.tm_mday;
-   file_hdr.sa_month   = loc_time.tm_mon;
-   file_hdr.sa_year    = loc_time.tm_year;
-   file_hdr.sa_proc    = cpu_nr;
-   file_hdr.sa_nr_pid  = pid_nr;
-   file_hdr.sa_serial  = serial_used;
-   file_hdr.sa_irqcpu  = irqcpu_used;
-   file_hdr.sa_iface   = iface_used;
-   file_hdr.sa_nr_disk = disk_used;
+   file_hdr.sa_actflag     = sadc_actflag;
+   file_hdr.sa_magic       = SA_MAGIC;
+   file_hdr.sa_st_size     = FILE_STATS_SIZE;
+   file_hdr.sa_day         = loc_time.tm_mday;
+   file_hdr.sa_month       = loc_time.tm_mon;
+   file_hdr.sa_year        = loc_time.tm_year;
+   file_hdr.sa_proc        = cpu_nr;
+   file_hdr.sa_nr_pid      = pid_nr;
+   file_hdr.sa_serial      = serial_used;
+   file_hdr.sa_irqcpu      = irqcpu_used;
+   file_hdr.sa_iface       = iface_used;
+   file_hdr.sa_nr_disk     = disk_used;
 
    *file_stats_size = FILE_STATS_SIZE;
 
@@ -807,8 +807,8 @@ void read_proc_stat(void)
    struct stats_one_cpu *st_cpu_i;
    struct disk_stats *st_disk_i;
    static char line[8192];
-   unsigned int cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
-   unsigned long cc_idle, cc_iowait;
+   unsigned long long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
+   unsigned long long cc_idle, cc_iowait;
    unsigned int v_tmp[5], v_major, v_index;
    int proc_nb, i, pos;
 
@@ -828,7 +828,7 @@ void read_proc_stat(void)
 	  */
 	 file_stats.cpu_iowait = 0;	/* For pre 2.5 kernels */
 	 cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 5, "%u %u %u %lu %lu %u %u",
+	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu",
 		&(file_stats.cpu_user),   &(file_stats.cpu_nice),
 		&(file_stats.cpu_system), &(file_stats.cpu_idle),
 		&(file_stats.cpu_iowait), &cc_hardirq, &cc_softirq);
@@ -865,7 +865,7 @@ void read_proc_stat(void)
 	     */
 	    cc_iowait = 0;	/* For pre 2.5 kernels */
 	    cc_hardirq = cc_softirq = 0;
-	    sscanf(line + 3, "%d %u %u %u %lu %lu %u %u",
+	    sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu",
 		   &proc_nb,
 		   &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
 		   &cc_hardirq, &cc_softirq);
@@ -938,7 +938,7 @@ void read_proc_stat(void)
 
       else if (!strncmp(line, "intr ", 5)) {
 	 /* Read total number of interrupts received since system boot */
-	 sscanf(line + 5, "%lu", &(file_stats.irq_sum));
+	 sscanf(line + 5, "%llu", &(file_stats.irq_sum));
 	 pos = strcspn(line + 5, " ") + 5;
 
 	 /* Read number of each interrupts received since system boot */
@@ -990,7 +990,7 @@ void read_proc_stat(void)
 
       else if (!strncmp(line, "ctxt ", 5))
 	 /* Read number of context switches */
-	 sscanf(line + 5, "%u", &(file_stats.context_swtch));
+	 sscanf(line + 5, "%llu", &(file_stats.context_swtch));
 
       else if (!strncmp(line, "processes ", 10))
 	 /* Read number of processes created since system boot */
@@ -1018,7 +1018,7 @@ void read_proc_loadavg(void)
    if ((loadfp = fopen(LOADAVG, "r")) != NULL) {
 
       /* Read load averages and queue length */
-      fscanf(loadfp, "%d.%d %d.%d %d.%d %d/%d %*d\n",
+      fscanf(loadfp, "%d.%d %d.%d %d.%d %ld/%d %*d\n",
 	     &(load_tmp[0]), &(file_stats.load_avg_1),
 	     &(load_tmp[1]), &(file_stats.load_avg_5),
 	     &(load_tmp[2]), &(file_stats.load_avg_15),
@@ -1501,24 +1501,25 @@ void read_diskstats_stat(void)
    static char line[256];
    int i, dsk = 0;
    struct disk_stats *st_disk_i;
-   unsigned int tmp[6];
+   unsigned int tmp[4];
+   unsigned long long l_tmp[2];
 
    /* Open /proc/diskstats file */
    if ((dstatsfp = fopen(DISKSTATS, "r")) != NULL) {
 
       while ((fgets(line, 256, dstatsfp) != NULL) && (dsk < disk_used)) {
 	
-	 i = sscanf(line, "%u %u %*s %u %*u %u %*u %u %*u %u",
-		    &tmp[0], &tmp[1], &tmp[2], &tmp[3], &tmp[4], &tmp[5]);
+	 i = sscanf(line, "%u %u %*s %u %*u %llu %*u %u %*u %llu",
+		    &tmp[0], &tmp[1], &tmp[2], &l_tmp[0], &tmp[3], &l_tmp[1]);
 
 	 if (i == 6) {
 	    /* It's a device */
 	    st_disk_i = st_disk + dsk;
 	    st_disk_i->major = tmp[0];
 	    st_disk_i->index = tmp[1];
-	    st_disk_i->nr_ios = tmp[2] + tmp[4];
-	    st_disk_i->rd_sect = tmp[3];
-	    st_disk_i->wr_sect = tmp[5];
+	    st_disk_i->nr_ios = tmp[2] + tmp[3];
+	    st_disk_i->rd_sect = l_tmp[0];
+	    st_disk_i->wr_sect = l_tmp[1];
 	    dsk++;
 	 }
       }

@@ -91,6 +91,8 @@ ${PREFIX}/share/locale/sk/LC_MESSAGES/sysstat.mo
 ${PREFIX}/doc/sysstat-x.y.z/*
 /var/log/sa
 ${INIT_DIR}/sysstat
+/etc/sysconfig/sysstat
+/etc/cron.d/sysstat
 ${RC_DIR}/rc2.d/S03sysstat
 ${RC_DIR}/rc3.d/S03sysstat
 ${RC_DIR}/rc5.d/S03sysstat

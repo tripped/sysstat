@@ -1,5 +1,36 @@
 Changes:
 
+2004/11/05: Version 5.1.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* sar -d now also uses /proc/partitions to get its data.
+	  From now on sar -d looks in the following files in that order:
+	  /proc/diskstats, /proc/partitions, /proc/stat.
+	* sadc writes disks data to file only if -d option is explicitly
+	  set on the command line.
+	* sadc now reads individual interrupts data from /proc/stat only
+	  if -I option was entered on the command line.
+	* 'sar -A' is now equivalent to 'sar -bBcdqrRuvwWy -I SUM -I XALL
+	  -n FULL -P ALL' (i.e. individual interrupts are also included
+	  in activities).
+	* Option -m now tells iostat to display statistics in megabytes
+	  per second instead of blocks per second.
+	* Make history (number of days to keep log files) configurable
+	  in /etc/sysconfig/sysstat file, which is used by sa2 script.
+	* Now use Vixie cron to launch sadc when possible.
+	* sadc, sa1 and sa2 may now be installed in another directory
+	  than ${PREFIX}/lib/sa. This is useful on 64-bit systems where
+	  the proper directory should be ${PREFIX}/lib64/sa.
+	* When uninstalling sysstat, always delete sysstat script,
+	  config file and links in /etc tree. Also always delete
+	  Vixie cron entry.
+	* sysstat script now returns real exit code.
+	* sar/sadc: Stricter syntax checking for -x and -X options use.
+	* sysstat "*.sh" files renamed in "*.in".
+	* Makefile updated.
+	* sadc and sar manual pages updated.
+	* NLS updated.
+	* FAQ updated.
+	* CREDITS and README files updated.
+
 2004/10/09: Version 5.1.1 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x2164]

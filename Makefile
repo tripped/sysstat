@@ -2,7 +2,7 @@
 # (C) 1999-2004 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 5.1.1
+VERSION = 5.1.2
 
 include build/CONFIG
 
@@ -26,7 +26,6 @@ SA_LIB_DIR = /usr/lib/sa
 endif
 DESTDIR = $(RPM_BUILD_ROOT)
 BIN_DIR = $(PREFIX)/bin
-LIB_DIR = $(PREFIX)/lib
 ifndef MAN_DIR
 MAN_DIR = $(PREFIX)/man
 endif
@@ -76,7 +75,8 @@ ifndef INITD_DIR
 INITD_DIR = init.d
 endif
 
-all: sa1 sa2 crontab sysstat sadc sar sadf iostat mpstat locales
+all: sa1 sa2 crontab sysstat sysstat.sysconfig sysstat.crond \
+	sadc sar sadf iostat mpstat locales
 
 common.o: common.c common.h
 	$(CC) -c -o $@ $(CFLAGS) $(DFLAGS) $<
@@ -113,31 +113,40 @@ iostat: iostat.c iostat.h common.h version.h libsysstat.a
 mpstat: mpstat.c mpstat.h common.h version.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $< $(LFLAGS)
 
-sa1: sa1.sh
-	$(SED) s+PREFIX+$(PREFIX)+g $< > $@
+sa1: sa1.in
+	$(SED) s+SA_LIB_DIR+$(SA_LIB_DIR)+g $< > $@
 	$(CHMOD) 755 $@
 
-sa2: sa2.sh
+sa2: sa2.in
 	$(SED) -e s+BIN_DIR+$(BIN_DIR)+g -e s+SA_DIR+$(SA_DIR)+g \
-		-e s+PREFIX+$(PREFIX)+g -e s+YESTERDAY+$(YESTERDAY)+g \
-		-e s+HISTORY+$(HISTORY)+g $< > $@
+		-e s+SA_LIB_DIR+$(SA_LIB_DIR)+g \
+		-e s+YESTERDAY+$(YESTERDAY)+g $< > $@
 	$(CHMOD) 755 $@
 
-sysstat: sysstat.sh
+sysstat.sysconfig: sysstat.sysconfig.in
+	$(SED) s+CONFIG_HISTORY+$(HISTORY)+g $< > $@
+
+sysstat: sysstat.in
 ifeq ($(INSTALL_CRON),y)
 ifeq ($(CRON_OWNER),root)
-	$(SED) -e s+PREFIX/+$(PREFIX)/+g -e 's+ QUOTE++g' $< > sysstat
+	$(SED) -e 's+SU ++g' -e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
+		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > sysstat
 else
-	$(SED) -e 's+PREFIX/+su $(CRON_OWNER) -c "$(PREFIX)/+g' \
-		-e 's+ QUOTE+"+g' $< > sysstat
+	$(SED) -e 's+SU SA_LIB_DIR/+su $(CRON_OWNER) -c "$(SA_LIB_DIR)/+g' \
+		-e 's+ QUOTE+"+g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > sysstat
 endif
 else
-	$(SED) -e s+PREFIX/+$(PREFIX)/+g -e 's+ QUOTE++g' $< > sysstat
+	$(SED) -e 's+SU ++g' -e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
+		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > sysstat
 endif
 	$(CHMOD) 755 sysstat
 	
 crontab: crontab.sample
-	$(SED) s+PREFIX/+$(PREFIX)/+g $< > $@
+	$(SED) s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
+
+sysstat.crond: sysstat.crond.in
+	$(SED) -e s+USER+$(CRON_OWNER)+g \
+		-e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
 
 ifdef REQUIRE_NLS
 locales: nls/af.gmo nls/de.gmo nls/es.gmo nls/fr.gmo nls/it.gmo nls/ja.gmo nls/nb_NO.gmo nls/nn_NO.gmo nls/pl.gmo nls/pt.gmo nls/ro.gmo nls/ru.gmo nls/sk.gmo
@@ -185,14 +194,15 @@ nls/sk.gmo: nls/sk.po
 	$(MSGFMT) -o nls/sk.gmo nls/sk.po
 
 # Phony targets
-.PHONY: clean distclean config install install_base install_all uninstall uninstall_base uninstall_all dist squeeze
+.PHONY: clean distclean config install install_base install_all uninstall \
+	uninstall_base uninstall_all dist bdist squeeze
 
 uninstall_base:
-	rm -f $(DESTDIR)$(LIB_DIR)/sa/sadc
+	rm -f $(DESTDIR)$(SA_LIB_DIR)/sadc
 	rm -f $(DESTDIR)$(MAN8_DIR)/sadc.8
-	rm -f $(DESTDIR)$(LIB_DIR)/sa/sa1
+	rm -f $(DESTDIR)$(SA_LIB_DIR)/sa1
 	rm -f $(DESTDIR)$(MAN8_DIR)/sa1.8
-	rm -f $(DESTDIR)$(LIB_DIR)/sa/sa2
+	rm -f $(DESTDIR)$(SA_LIB_DIR)/sa2
 	rm -f $(DESTDIR)$(MAN8_DIR)/sa2.8
 	rm -f $(DESTDIR)$(BIN_DIR)/sar
 	rm -f $(DESTDIR)$(MAN1_DIR)/sar.1
@@ -202,8 +212,17 @@ uninstall_base:
 	rm -f $(DESTDIR)$(MAN1_DIR)/iostat.1
 	rm -f $(DESTDIR)$(BIN_DIR)/mpstat
 	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1
-	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(LIB_DIR)/sa
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_LIB_DIR)
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)
+#	No need to keep sysstat script, config file and links since
+#	the binaries have been deleted.
+	rm -f $(DESTDIR)$(INIT_DIR)/sysstat
+	rm -f $(DESTDIR)/etc/sysconfig/sysstat
+	rm -f $(DESTDIR)$(RC2_DIR)/S03sysstat
+	rm -f $(DESTDIR)$(RC3_DIR)/S03sysstat
+	rm -f $(DESTDIR)$(RC5_DIR)/S03sysstat
+#	Vixie cron entries also can be safely deleted here
+	rm -f $(DESTDIR)/etc/cron.d/sysstat
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES/$(PACKAGE).mo
@@ -247,18 +266,15 @@ uninstall_base:
 	-rmdir $(DESTDIR)$(DOC_DIR)
 	@echo "Please ignore the errors above, if any."
 
+# NB: Leading minus sign tells make to ignore errors...
 uninstall_all: uninstall_base
 	-su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).old"
 	-$(CP) -a /tmp/crontab-$(CRON_OWNER).old ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.old
 	@echo "USER CRONTAB SAVED IN CURRENT DIRECTORY (WITH .old SUFFIX)."
 	-su $(CRON_OWNER) -c "crontab -r"
-	rm -f $(DESTDIR)$(INIT_DIR)/sysstat
-	rm -f $(DESTDIR)$(RC2_DIR)/S03sysstat
-	rm -f $(DESTDIR)$(RC3_DIR)/S03sysstat
-	rm -f $(DESTDIR)$(RC5_DIR)/S03sysstat
 
 install_base: all man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/iostat.1
-	mkdir -p $(DESTDIR)$(LIB_DIR)/sa
+	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
 	mkdir -p $(DESTDIR)$(MAN1_DIR)
 	mkdir -p $(DESTDIR)$(MAN8_DIR)
 	mkdir -p $(DESTDIR)$(SA_DIR)
@@ -267,11 +283,11 @@ ifeq ($(CLEAN_SA_DIR),y)
 endif
 	mkdir -p $(DESTDIR)$(BIN_DIR)
 	mkdir -p $(DESTDIR)$(DOC_DIR)
-	install -m 755 sa1 $(DESTDIR)$(LIB_DIR)/sa
+	install -m 755 sa1 $(DESTDIR)$(SA_LIB_DIR)
 	install -m 644 $(MANGRPARG) man/sa1.8 $(DESTDIR)$(MAN8_DIR)
-	install -m 755 sa2 $(DESTDIR)$(LIB_DIR)/sa
+	install -m 755 sa2 $(DESTDIR)$(SA_LIB_DIR)
 	install -m 644 $(MANGRPARG) man/sa2.8 $(DESTDIR)$(MAN8_DIR)
-	install -m 755 sadc $(DESTDIR)$(LIB_DIR)/sa
+	install -m 755 sadc $(DESTDIR)$(SA_LIB_DIR)
 	install -m 644 $(MANGRPARG) man/sadc.8 $(DESTDIR)$(MAN8_DIR)
 	install -m 755 sar $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/sar.1 $(DESTDIR)$(MAN1_DIR)
@@ -316,15 +332,21 @@ ifdef REQUIRE_NLS
 	install -m 644 nls/sk.gmo $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES/$(PACKAGE).mo
 endif
 
-# NB: Leading minus sign tells make to ignore errors...
 install_all: install_base
 	$(CHOWN) $(CRON_OWNER) $(DESTDIR)$(SA_DIR)
-	-su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).save"
-	-$(CP) -a /tmp/crontab-$(CRON_OWNER).save ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.save
-	@echo "USER PREVIOUS CRONTAB SAVED IN CURRENT DIRECTORY (USING .save SUFFIX)."
-	-su $(CRON_OWNER) -c "crontab crontab"
+	if [ -d /etc/cron.d ]; then \
+	   install -m 644 sysstat.crond $(DESTDIR)/etc/cron.d/sysstat; \
+	else \
+	   su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).save"; \
+	   $(CP) -a /tmp/crontab-$(CRON_OWNER).save ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.save; \
+	   echo "USER PREVIOUS CRONTAB SAVED IN CURRENT DIRECTORY (USING .save SUFFIX)."; \
+	   su $(CRON_OWNER) -c "crontab crontab"; \
+	fi
 	if [ -d $(DESTDIR)$(INIT_DIR) ]; then \
 	   install -m 755 sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
+	fi
+	if [ -d /etc/sysconfig ]; then \
+	   install -m 644 sysstat.sysconfig $(DESTDIR)/etc/sysconfig/sysstat; \
 	fi
 	cd $(DESTDIR)$(RC2_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
 	cd $(DESTDIR)$(RC3_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
@@ -345,7 +367,7 @@ endif
 
 clean:
 	rm -f sadc sa1 sa2 sysstat sar sadf iostat mpstat *.o *.a core TAGS crontab
-	rm -f sapath.h version.h
+	rm -f sapath.h version.h sysstat.sysconfig sysstat.crond
 	find nls -name "*.gmo" -exec rm -f {} \;
 
 distclean: clean

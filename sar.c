@@ -1211,7 +1211,7 @@ void read_stats_from_file(char from_file[])
 	 if (sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE))
 	    /* End of sa data file */
 	    return;
-	 
+	
 	 if (file_stats[0].record_type == R_DUMMY)
 	    write_dummy(0, tm_start.use, tm_end.use);
 	 else {
@@ -1562,6 +1562,8 @@ int main(int argc, char **argv)
 	       salloc(args_idx++, ltemp);
 	    }
 	 }
+	 else
+	    usage(argv[0]);
       }
 
       else if (!strcmp(argv[opt], "-n")) {
@@ -1628,7 +1630,7 @@ int main(int argc, char **argv)
       fprintf(stderr, _("-f and -o options are mutually exclusive\n"));
       exit(1);
    }
-   /* Use time start or options -i/-h/-H only when reading stats from a file */
+   /* Use time start or option -i only when reading stats from a file */
    if ((tm_start.use || USE_I_OPTION(flags)) && !from_file[0]) {
       fprintf(stderr,
 	      _("Not reading from a system activity file (use -f option)\n"));
@@ -1648,6 +1650,12 @@ int main(int argc, char **argv)
    if (to_file[0]) {
       sar_actflag &= ~A_PID;
       sar_actflag &= ~A_CPID;
+   }
+
+   /* If -A option is used, force '-I XALL' */
+   if (USE_A_OPTION(flags)) {
+      init_bitmap(irq_bitmap, ~0, NR_IRQS);
+      sar_actflag |= A_ONE_IRQ;
    }
 
    /* Default is CPU activity... */
@@ -1721,9 +1729,11 @@ int main(int argc, char **argv)
 	 salloc(args_idx++, ltemp);
       }
 
-      /* -I flag */
+      /* Flags to be passed to sadc */
       if (GET_ONE_IRQ(sar_actflag))
 	 salloc(args_idx++, "-I");
+      if (GET_DISK(sar_actflag))
+	 salloc(args_idx++, "-d");
 
       /* Outfile arg */
       if (to_file[0])

@@ -51,7 +51,7 @@
 void init_bitmap(unsigned char bitmap[], unsigned char value, unsigned int nr)
 {
    register int i;
-   
+
    for (i = 0; i <= nr >> 3; i++)
       bitmap[i] = value;
 }
@@ -241,14 +241,14 @@ int decode_timestamp(char timestamp[], struct tstamp *tse)
    tse->tm_sec  = atoi(&(timestamp[6]));
    tse->tm_min  = atoi(&(timestamp[3]));
    tse->tm_hour = atoi(timestamp);
-   
+
    if ((tse->tm_sec < 0) || (tse->tm_sec > 59) ||
        (tse->tm_min < 0) || (tse->tm_min > 59) ||
        (tse->tm_hour < 0) || (tse->tm_hour > 23))
       return 1;
-   
+
    tse->use = TRUE;
-   
+
    return 0;
 }
 
@@ -280,7 +280,7 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
 		    const char *def_timestamp)
 {
    char timestamp[9];
-   
+
    if ((argv[++(*opt)]) && (strlen(argv[*opt]) == 8))
       strcpy(timestamp, argv[(*opt)++]);
    else
@@ -306,7 +306,7 @@ int prep_time(struct file_stats *file_stats_curr,
 
    /* Interval value in jiffies */
    if (!file_stats_prev->uptime)
-      /* 
+      /*
        * Stats from boot time to be displayed: only in this case we admit
        * that the interval may be greater than 0xffffffff, else
        * it was an overflow.
@@ -315,7 +315,7 @@ int prep_time(struct file_stats *file_stats_curr,
    else
       *g_itv = (file_stats_curr->uptime - file_stats_prev->uptime)
 	 & 0xffffffff;
-   
+
    if (!(*g_itv))	/* Paranoia checking */
       *g_itv = 1;
 
@@ -325,7 +325,7 @@ int prep_time(struct file_stats *file_stats_curr,
       else
 	 *itv = (file_stats_curr->uptime0 - file_stats_prev->uptime0)
 	    & 0xffffffff;
-      
+
       if (!(*itv))
 	 *itv = 1;
    }
@@ -591,7 +591,7 @@ void prep_file_for_reading(int *ifd, char *dfile, struct file_hdr *file_hdr,
 			    unsigned int *actflag, unsigned int flags)
 {
    int nb;
-   
+
    /* Open sa data file */
    if ((*ifd = open(dfile, O_RDONLY)) < 0) {
       fprintf(stderr, _("Cannot open %s: %s\n"), dfile, strerror(errno));
@@ -640,7 +640,7 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 		  unsigned int *flags, short *dis_hdr, int caller)
 {
    int i;
-   
+
    for (i = 1; *(argv[opt] + i); i++) {
 
       switch (*(argv[opt] + i)) {
@@ -735,7 +735,7 @@ int parse_sar_n_opt(char *argv[], int *opt, unsigned int *actflag,
    }
    else
       return 1;
-   
+
    (*opt)++;
    return 0;
 }
@@ -750,7 +750,7 @@ int parse_sar_I_opt(char *argv[], int *opt, unsigned int *actflag,
 		    short *dis_hdr, unsigned char irq_bitmap[])
 {
    int i;
-   
+
    if (!strcmp(argv[*opt], K_SUM))
       *actflag |= A_IRQ;
    else {
@@ -792,7 +792,7 @@ int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags,
 		   short *dis_hdr, unsigned char cpu_bitmap[])
 {
    int i;
-   
+
    if (argv[++(*opt)]) {
       *flags |= F_PER_PROC;
       (*dis_hdr)++;

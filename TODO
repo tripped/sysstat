@@ -21,5 +21,3 @@ Here are the things I would like (or I should) do for the next releases:
 
 * Add NFS stats to sar.
 
-* Add /proc/partitions support to sadc/sar.
-

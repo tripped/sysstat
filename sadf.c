@@ -1117,7 +1117,7 @@ void read_stats_from_file(char dfile[])
 
    /* Prepare file for reading */
    prep_file_for_reading(&ifd, dfile, &file_hdr, &sadf_actflag, flags);
-   
+
    /* Perform required allocations */
    allocate_structures(USE_SA_FILE);
 
@@ -1131,7 +1131,7 @@ void read_stats_from_file(char dfile[])
 	 if (sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE))
 	    /* End of sa data file */
 	    return;
-	 
+	
 	 if (file_stats[0].record_type == R_DUMMY)
 	    write_dummy(0, tm_start.use, tm_end.use);
 	 else {
@@ -1283,7 +1283,7 @@ int main(int argc, char **argv)
 	    for (i = 1; *(argv[opt] + i); i++) {
 
 	       switch (*(argv[opt] + i)) {
-	    
+	
 		case 'd':
 		  flags |= F_DB_OPTION;
 		  break;
@@ -1301,7 +1301,7 @@ int main(int argc, char **argv)
 	 }
 	 opt++;
       }
-	 
+	
       /* Get data file name */
       else if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
 	 if (!dfile[0]) {
@@ -1384,7 +1384,7 @@ int main(int argc, char **argv)
       init_bitmap(cpu_bitmap, ~0, NR_CPUS);
       flags |= F_ALL_PROC + F_PER_PROC;
    }
-   
+
    /* Read stats from file */
    read_stats_from_file(dfile);
 

@@ -1,8 +1,10 @@
 sysstat (4.1.2-3) unstable; urgency=low
 
   * Update German and Russian translations of debconf templates from DDTP.
+  * Removed build dependency on po-debconf, as debhelper dpends on it.
+  * Standards-Version: 3.5.9.
 
- -- Robert Luberda <robert@debian.org>  Sat, 22 Mar 2003 21:57:23 +0100
+ -- Robert Luberda <robert@debian.org>  Sat, 22 Mar 2003 22:01:43 +0100
 
 sysstat (4.1.2-2) unstable; urgency=low
 

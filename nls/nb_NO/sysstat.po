@@ -89,7 +89,7 @@ msgid "sysstat version %s\n"
 "Options are:\n"
 "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i <interval> ] [ -q ]\n"
 "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <irq> | SUM | PROC | ALL | XALL } ] [ -U { <cpu> | ALL } ]\n"
+"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
 "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
 "[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
@@ -101,7 +101,7 @@ msgstr "sysstat versjon %s\n"
 "Mulige valg:\n"
 "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i <intervall> ] [ -q ]\n"
 "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <irq> | SUM | PROC | ALL | XALL } ] [ -U { <cpu> | ALL } ]\n"
+"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
 "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
 "[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 "[ -o [ <filnavn> ] | -f [ <filnavn> ] ]\n"
@@ -161,8 +161,8 @@ msgid "Average:    %9.0f %9.0f %9.0f %9.0f %9.0f\n"
 msgstr "Gj.snitt:   %9.0f %9.0f %9.0f %9.0f %9.0f\n"
 
 #: sar.c
-msgid "Average:    %9.0f %9.0f %9.2f %9.2f\n"
-msgstr "Gj.snitt:   %9.0f %9.0f %9.2f %9.2f\n"
+msgid "Average:    %9.0f %9.0f %9.2f %9.2f %9.2f\n"
+msgstr "Gj.snitt:   %9.0f %9.0f %9.2f %9.2f %9.2f\n"
 
 #: sar.c
 msgid "Average:    %9.2f %9.2f %9.2f %9.2f\n"
@@ -301,16 +301,16 @@ msgid "\n%-11s       DEV       tps    sect/s\n"
 msgstr "\n%-11s       DEV       tps    sect/s\n"
 
 #: sar.c
-msgid "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5\n"
-msgstr "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5\n"
+msgid "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"
+msgstr "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"
 
 #: sar.c
 msgid "\nAverage:          DEV       tps    sect/s\n"
 msgstr "\nGjennomsnitt:     DEV       tps    sect/s\n"
 
 #: sar.c
-msgid "\nAverage:      runq-sz  plist-sz   ldavg-1   ldavg-5\n"
-msgstr "\nGjennomsnitt: runq-sz  plist-sz   ldavg-1   ldavg-5\n"
+msgid "\nAverage:      runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"
+msgstr "\nGjennomsnitt: runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"
 
 #: sar.c:1043
 msgid "\n%-11s    proc/s\n"

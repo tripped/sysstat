@@ -248,7 +248,7 @@ Changes:
 2001/03/04: Version 3.3.6 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! Delete existing data files
-	  in /var/log/sa directory!
+	  in /var/log/sa directory! [0x215d]
 	* New paging statistics added (sar -B). Kernel 2.4 only.
 	* Load averages and queue length statistics added (option -q for sar).
 	* Per device statistics added (option -d for sar). Kernel 2.4 only.
@@ -369,7 +369,7 @@ Changes:
 2003/01/02: Version 4.1.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! Delete existing data files
-	  in /var/log/sa directory!
+	  in /var/log/sa directory! [0x215e]
 	* sar -u/-U, iostat and mpstat can now display time spent in
 	  I/O wait mode (with 2.5 kernels and above).
 	* Values like -1 and -2 are no longer aliases for keywords
@@ -381,4 +381,30 @@ Changes:
 	* NLS updated.
 	* CREDITS file updated.
 	* Typo removed in FAQ file.
+
+2003/01/24: Version 4.1.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! Delete existing data files
+	  in /var/log/sa directory! [0x215f]
+	* sar -q now also displays load average for the past 15 minutes.
+	* -P option added to sar. This option enables sar to display
+	  stats on a per processor basis. Options -U and '-I PROC' are
+	  deprecated. 'sar -U ALL' is replaced by 'sar -u -P ALL', and
+	  'sar -I PROC' by 'sar -I SUM -P ALL'.
+	* Fixed iowait value displayed by sar on SMP machines with pre 2.5
+	  kernels.
+	* When displaying CPU utilization on SMP machines, sar now
+	  recalculates the interval based on current CPU's tick count.
+	* Always check that the number of CPUs has not increased when
+	  reading /proc/stat (sadc, mpstat).
+	* sadc: Don't assume that the first line in /proc/net/sockstat
+	  concerns sockets. Check it!
+	* Serial lines are ignored by sadc for every kind of kernels
+	  (UP, SMP...) if SMP_RACE is defined.
+	  SMP_RACE is no longer defined by default in RPM packages.
+	* Code cleaned: Dead code removed in iostat.c, some lines longer
+	  than 80 chars folded, etc.
+	* sar manual page updated.
+	* FAQ updated.
+	* NLS updated.
 

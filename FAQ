@@ -146,6 +146,17 @@ database.
 
 #################
 
+Q> I tried to use the -h option of the sar command together with the options
+-s and -e. Unfortunately, I have nothing displayed at all. 
+
+A> This is because no data belong to the specified time interval!
+In fact, -h option makes sar display its timestamp as a UTC value (Coordinated
+Universal Time), as indicated in the manual page. The UTC value may be
+different from the value that sar displays when option -h is not used.
+The same remark concerns -H option.
+
+#################
+
 Q> When I try to compile sysstat, it fails and says it cannot find some
 include files:
 In file included from /usr/include/bits/errno.h:25,

@@ -1,5 +1,5 @@
 /*
- * iostat: report I/O statistics
+ * iostat: report CPU and I/O statistics
  * (C) 1998-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
@@ -52,8 +52,11 @@ struct comm_stats  comm_stats[2];
 struct tm loc_time;
 int part_nr = 0;	/* Nb of partitions */
 long int interval = 0;
-int proc_used = -1;	/* Nb of proc on the machine. A value of 1 means two procs... */
 unsigned char timestamp[64];
+/*
+ * Nb of proc on the machine. A value of 1 means two procs...
+ */
+int proc_used = -1;
 
 
 /*
@@ -110,11 +113,7 @@ void read_stat(int curr, int flags)
    char line[1024];
    int pos, i;
    unsigned int v_tmp[3], v_major, v_index;
-#if 0
-   FILE *partfp;
-   unsigned int major, minor;
-   char pline[1024], disk_name[64];
-#endif
+
 
    /* Open stat file */
    if ((statfp = fopen(STAT, "r")) == NULL) {
@@ -157,11 +156,14 @@ void read_stat(int curr, int flags)
       else if (!strncmp(line, "disk_rblk ", 10)) {
 	 /*
 	  * Read the number of blocks read from disk.
-	  * A block is of indeterminate size. The size may vary depending on the device type.
+	  * A block is of indeterminate size.
+	  * The size may vary depending on the device type.
 	  */
 	 sscanf(line + 10, "%u %u %u %u",
-		&(disk_stats[curr][0].dk_drive_rblk), &(disk_stats[curr][1].dk_drive_rblk),
-		&(disk_stats[curr][2].dk_drive_rblk), &(disk_stats[curr][3].dk_drive_rblk));
+		&(disk_stats[curr][0].dk_drive_rblk),
+		&(disk_stats[curr][1].dk_drive_rblk),
+		&(disk_stats[curr][2].dk_drive_rblk),
+		&(disk_stats[curr][3].dk_drive_rblk));
 
 	 /* Statistics handled for the first four disks with pre 2.4 kernels */
 	 part_nr = 4;
@@ -170,14 +172,18 @@ void read_stat(int curr, int flags)
       else if (!strncmp(line, "disk_wblk ", 10))
 	 /* Read the number of blocks written to disk */
 	 sscanf(line + 10, "%u %u %u %u",
-		&(disk_stats[curr][0].dk_drive_wblk), &(disk_stats[curr][1].dk_drive_wblk),
-		&(disk_stats[curr][2].dk_drive_wblk), &(disk_stats[curr][3].dk_drive_wblk));
+		&(disk_stats[curr][0].dk_drive_wblk),
+		&(disk_stats[curr][1].dk_drive_wblk),
+		&(disk_stats[curr][2].dk_drive_wblk),
+		&(disk_stats[curr][3].dk_drive_wblk));
 
       else if (!strncmp(line, "disk ", 5))
 	 /* Read the number of I/O done since the last reboot */
 	 sscanf(line + 5, "%u %u %u %u",
-		&(disk_stats[curr][0].dk_drive), &(disk_stats[curr][1].dk_drive),
-		&(disk_stats[curr][2].dk_drive), &(disk_stats[curr][3].dk_drive));
+		&(disk_stats[curr][0].dk_drive),
+		&(disk_stats[curr][1].dk_drive),
+		&(disk_stats[curr][2].dk_drive),
+		&(disk_stats[curr][3].dk_drive));
 
       else if (!strncmp(line, "disk_io: ", 9)) {
 	 pos = 9;
@@ -192,37 +198,13 @@ void read_stat(int curr, int flags)
 	       i++;
 	    if (i == part_nr) {
 	       /*
-		* New device registered.
-		* Assume that devices may be registered, but not unregistered dynamically...
+		* New device registered. Assume that devices may be registered,
+		* but not unregistered dynamically...
 		*/
 	       disk_hdr_stats[i].major = v_major;
 	       disk_hdr_stats[i].minor = v_index;
 	       sprintf(disk_hdr_stats[i].name, "dev%d-%d", v_major, v_index);
 
-#if 0
-	       /* This part of the code tries to guess the real name of the device */
-	
-	       /* Open partitons file */
-	       if ((partfp = fopen(PARTITIONS, "r")) == NULL) {
-		  perror("fopen");
-		  exit(2);
-	       }
-
-	       fgets(pline, 1024, partfp);
-	       fgets(pline, 1024, partfp);
-
-	       while (fgets(pline, 1024, partfp) != NULL) {
-		  sscanf(pline, "%u %u %*u %63s", &major, &minor, disk_name);
-
-		  if (((minor & 0x0f) == 0) && (major == v_major) && ((minor >> 4) == v_index)) {
-		     snprintf(disk_hdr_stats[i].name, MAX_NAME_LEN, "/dev/%s", disk_name);
-		     break;
-		  }
-	       }
-
-	       /* Close partitions file */
-	       fclose(partfp);
-#endif	
 	       part_nr++;
 	    }
 	    disk_stats[curr][i].dk_drive      = v_tmp[0];
@@ -285,7 +267,9 @@ void read_ext_stat(int curr, int flags)
 	    }
 	 }
 
-	 if ((i == part_nr) && DISPLAY_EXTENDED_ALL(flags) && (part_nr < MAX_PART) && part.ticks) {
+	 if ((i == part_nr) && DISPLAY_EXTENDED_ALL(flags)
+	     		    && (part_nr < MAX_PART)
+	     		    && part.ticks) {
 	    /* Allocate new partition */
 	    disk_stats[curr][part_nr] = part;
 	    disk_hdr_stats[part_nr].active = 1;
@@ -323,9 +307,10 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
    /*
     * itv is multiplied by the number of processors.
-    * This is OK to compute CPU usage since the number of jiffies spent in the different
-    * modes (user, nice, etc.) is the sum for all the processors.
-    * But itv should be reduced to one processor before displaying disk utilization.
+    * This is OK to compute CPU usage since the number of jiffies spent in the
+    * different modes (user, nice, etc.) is the sum for all the processors.
+    * But itv should be reduced to one processor before displaying disk
+    * utilization.
     */
    itv = comm_stats[curr].uptime - comm_stats[!curr].uptime;	/* uptime in jiffies */
 
@@ -364,22 +349,35 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
 	    if (disk_hdr_stats[disk_index].active) {
 	
-	       current.rd_ios     = disk_stats[curr][disk_index].rd_ios     - disk_stats[!curr][disk_index].rd_ios;
-	       current.wr_ios     = disk_stats[curr][disk_index].wr_ios     - disk_stats[!curr][disk_index].wr_ios;
-	       current.rd_ticks   = disk_stats[curr][disk_index].rd_ticks   - disk_stats[!curr][disk_index].rd_ticks;
-	       current.wr_ticks   = disk_stats[curr][disk_index].wr_ticks   - disk_stats[!curr][disk_index].wr_ticks;
-	       current.rd_merges  = disk_stats[curr][disk_index].rd_merges  - disk_stats[!curr][disk_index].rd_merges;
-	       current.wr_merges  = disk_stats[curr][disk_index].wr_merges  - disk_stats[!curr][disk_index].wr_merges;
-	       current.rd_sectors = disk_stats[curr][disk_index].rd_sectors - disk_stats[!curr][disk_index].rd_sectors;
-	       current.wr_sectors = disk_stats[curr][disk_index].wr_sectors - disk_stats[!curr][disk_index].wr_sectors;
-	       current.ticks      = disk_stats[curr][disk_index].ticks      - disk_stats[!curr][disk_index].ticks;
-	       current.aveq       = disk_stats[curr][disk_index].aveq       - disk_stats[!curr][disk_index].aveq;
+	       current.rd_ios     = disk_stats[curr][disk_index].rd_ios -
+		  		    disk_stats[!curr][disk_index].rd_ios;
+	       current.wr_ios     = disk_stats[curr][disk_index].wr_ios -
+		  		    disk_stats[!curr][disk_index].wr_ios;
+	       current.rd_ticks   = disk_stats[curr][disk_index].rd_ticks -
+		  		    disk_stats[!curr][disk_index].rd_ticks;
+	       current.wr_ticks   = disk_stats[curr][disk_index].wr_ticks -
+		  		    disk_stats[!curr][disk_index].wr_ticks;
+	       current.rd_merges  = disk_stats[curr][disk_index].rd_merges -
+		  		    disk_stats[!curr][disk_index].rd_merges;
+	       current.wr_merges  = disk_stats[curr][disk_index].wr_merges -
+		  		    disk_stats[!curr][disk_index].wr_merges;
+	       current.rd_sectors = disk_stats[curr][disk_index].rd_sectors -
+		  		    disk_stats[!curr][disk_index].rd_sectors;
+	       current.wr_sectors = disk_stats[curr][disk_index].wr_sectors -
+		  		    disk_stats[!curr][disk_index].wr_sectors;
+	       current.ticks      = disk_stats[curr][disk_index].ticks -
+		  		    disk_stats[!curr][disk_index].ticks;
+	       current.aveq       = disk_stats[curr][disk_index].aveq -
+		  		    disk_stats[!curr][disk_index].aveq;
 	
 	       nr_ios = current.rd_ios + current.wr_ios;
 	       tput   = nr_ios * HZ / itv;
 	       util   = ((double) current.ticks) / itv;
 	       svctm  = tput ? util / tput : 0.0;
-	       /* kernel gives ticks already in milliseconds for all platforms -> no need for further scaling */
+	       /*
+		* kernel gives ticks already in milliseconds for all platforms
+		* => no need for further scaling.
+		*/
 	       await  = nr_ios ? (current.rd_ticks + current.wr_ticks) / nr_ios : 0.0;
 	       arqsz  = nr_ios ? (current.rd_sectors + current.wr_sectors) / nr_ios : 0.0;
 
@@ -388,16 +386,23 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 		  printf("\n          ");
 	       /*       rrq/s wrq/s   r/s   w/s  rsec  wsec   rkB   wkB  rqsz  qusz await svctm %util */
 	       printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
-		      ((double) current.rd_merges) / itv * HZ, ((double) current.wr_merges) / itv * HZ,
-		      ((double) current.rd_ios) / itv * HZ, ((double) current.wr_ios) / itv * HZ,
-		      ((double) current.rd_sectors) / itv * HZ, ((double) current.wr_sectors) / itv * HZ,
-		      ((double) current.rd_sectors) / itv * HZ / 2, ((double) current.wr_sectors) / itv * HZ / 2,
+		      ((double) current.rd_merges) / itv * HZ,
+		      ((double) current.wr_merges) / itv * HZ,
+		      ((double) current.rd_ios) / itv * HZ,
+		      ((double) current.wr_ios) / itv * HZ,
+		      ((double) current.rd_sectors) / itv * HZ,
+		      ((double) current.wr_sectors) / itv * HZ,
+		      ((double) current.rd_sectors) / itv * HZ / 2,
+		      ((double) current.wr_sectors) / itv * HZ / 2,
 		      arqsz,
 		      ((double) current.aveq) / itv,
 		      await,
 		      /* again: ticks in milliseconds */
 		      svctm * 100.0,
-		      /* NB: the ticks output in current sard patches is biased to output 1000 ticks per second */
+		      /*
+		       * NB: the ticks output in current sard patches is biased
+		       * to output 1000 ticks per second.
+		       */
 		      util * 10.0);
 	    }
 	 }
@@ -418,11 +423,16 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	    if (strlen(disk_hdr_stats[disk_index].name) > 13)
 	       printf("\n             ");
 	    printf(" %8.2f %12.2f %12.2f %10u %10u\n",
-		   S_VALUE(disk_stats[!curr][disk_index].dk_drive,      disk_stats[curr][disk_index].dk_drive,      itv),
-		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_rblk, disk_stats[curr][disk_index].dk_drive_rblk, itv) / fct,
-		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_wblk, disk_stats[curr][disk_index].dk_drive_wblk, itv) / fct,
-		   (disk_stats[curr][disk_index].dk_drive_rblk - disk_stats[!curr][disk_index].dk_drive_rblk) / fct,
-		   (disk_stats[curr][disk_index].dk_drive_wblk - disk_stats[!curr][disk_index].dk_drive_wblk) / fct);
+		   S_VALUE(disk_stats[!curr][disk_index].dk_drive,
+			   disk_stats[curr][disk_index].dk_drive, itv),
+		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_rblk,
+			   disk_stats[curr][disk_index].dk_drive_rblk, itv) / fct,
+		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_wblk,
+			   disk_stats[curr][disk_index].dk_drive_wblk, itv) / fct,
+		   (disk_stats[curr][disk_index].dk_drive_rblk -
+		    disk_stats[!curr][disk_index].dk_drive_rblk) / fct,
+		   (disk_stats[curr][disk_index].dk_drive_wblk -
+		    disk_stats[!curr][disk_index].dk_drive_wblk) / fct);
 	 }
       }
       printf("\n");
@@ -457,12 +467,14 @@ int main(int argc, char **argv)
    while (opt < argc) {
 
       if (!strcmp(argv[opt], "-x")) {
-	 flags |= D_EXTENDED + D_EXTENDED_ALL;	/* Extended statistics		*/
+	 flags |= D_EXTENDED + D_EXTENDED_ALL;	/* Extended statistics */
 	 /* Get device names */
-	 while (argv[++opt] && strncmp(argv[opt], "-", 1) && !isdigit(argv[opt][0])) {
+	 while (argv[++opt] && strncmp(argv[opt], "-", 1)
+			    && !isdigit(argv[opt][0])) {
 	    flags &= ~D_EXTENDED_ALL;
 	    if (part_nr < MAX_PART)
-	       strncpy(disk_hdr_stats[part_nr++].name, device_name(argv[opt]), MAX_NAME_LEN - 1);
+	       strncpy(disk_hdr_stats[part_nr++].name,
+		       device_name(argv[opt]), MAX_NAME_LEN - 1);
 	 }
       }
 
@@ -472,24 +484,24 @@ int main(int argc, char **argv)
 	    switch (*(argv[opt] + i)) {
 
 	     case 'c':
-	       flags |= D_CPU_ONLY;	/* Display cpu usage only		*/
+	       flags |= D_CPU_ONLY;	/* Display cpu usage only */
 	       flags &= ~D_DISK_ONLY;
 	       break;
 
 	     case 'd':
-	       flags |= D_DISK_ONLY;	/* Display disk utilization only	*/
+	       flags |= D_DISK_ONLY;	/* Display disk utilization only */
 	       flags &= ~D_CPU_ONLY;
 	       break;
 	
 	     case 'k':
-	       flags |= D_KILOBYTES;	/* Display stats in kB/s       		*/
+	       flags |= D_KILOBYTES;	/* Display stats in kB/s */
 	       break;
 
 	     case 't':
-	       flags |= D_TIMESTAMP;	/* Display timestamp	       		*/
+	       flags |= D_TIMESTAMP;	/* Display timestamp */
 	       break;
 
-	     case 'V':			/* Print usage and exit			*/
+	     case 'V':			/* Print usage and exit	*/
 	     default:
 	       usage(argv[0]);
 	    }

@@ -26,11 +26,15 @@
 #include <errno.h>
 #include <unistd.h>	/* For STDOUT_FILENO */
 #include <sys/ioctl.h>
-#include <asm/page.h>	/* For PAGE_SIZE (which may be itself a call to getpagesize()).
-			 * PAGE_SHIFT no longer necessarily exists in <asm/page.h>. So
-			 * we use PAGE_SIZE to compute PAGE_SHIFT... */
-#include "common.h"
 
+/*
+ * For PAGE_SIZE (which may be itself a call to getpagesize()).
+ * PAGE_SHIFT no longer necessarily exists in <asm/page.h>. So
+ * we use PAGE_SIZE to compute PAGE_SHIFT...
+ */
+#include <asm/page.h>
+
+#include "common.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -68,7 +72,7 @@ int get_nb_proc_used(int *proc_used, unsigned int max_nr_cpus)
 {
    FILE *statfp;
    char line[16];
-   int proc_nb, smp_kernel;
+   int proc_nb, smp_box;
 
    *proc_used = -1;
 
@@ -92,7 +96,7 @@ int get_nb_proc_used(int *proc_used, unsigned int max_nr_cpus)
     * If proc_used < 0 then there is only one proc.
     * If proc_used = 0 then there is only one proc but this is an SMP kernel
     */
-   smp_kernel = (*proc_used >= 0);
+   smp_box = (*proc_used > 0);
    if (*proc_used < 0)
       *proc_used = 0;
 
@@ -104,7 +108,7 @@ int get_nb_proc_used(int *proc_used, unsigned int max_nr_cpus)
    /* Close file */
    fclose(statfp);
 
-   return smp_kernel;
+   return smp_box;
 }
 
 
@@ -148,8 +152,12 @@ void init_nls(void)
 int get_win_height(void)
 {
    struct winsize win;
-   /* This default value will be used whenever STDOUT is redirected to a pipe or a file */
+   /*
+    * This default value will be used whenever STDOUT
+    * is redirected to a pipe or a file
+    */
    int rows = 3600 * 24;
+
 
    if ((ioctl(STDOUT_FILENO, TIOCGWINSZ, &win) != -1) && (win.ws_row > 2))
       rows = win.ws_row - 2;
@@ -178,7 +186,7 @@ int get_kb_shift(void)
    int shift = 0;
    int size;
 
-   size = PAGE_SIZE >> 10;	/* Assume that a page has a minimum size of 1 kB */
+   size = PAGE_SIZE >> 10; /* Assume that a page has a minimum size of 1 kB */
    while (size > 1) {
       shift++;
       size >>= 1;

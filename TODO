@@ -1,7 +1,5 @@
 Here are the things I would like (or I should) do for the next releases:
 
-* sar -q should also display ldavg-15.
-
 * Remove kbmemshrd from sar -r.
 
 * Add more disk activity data to sar.
@@ -17,21 +15,16 @@ Here are the things I would like (or I should) do for the next releases:
   example), but I am rather reluctant to display them: There are too many of
   them and sar becomes bigger and bigger...
 
-* Implement a "-P" option for sar to display all statistics on a per-processor
-  basis.
-
 * Use ./configure to configure sysstat.
 
 * Add support for hotplug CPU ?
 
 * Check I/O wait type (long int?, int?) read in /proc/stat.
 
-* Update translations.
+* Update translations (RU).
 
 * One should be able to enter the device for which stats are needed even
   if option -x is not used with iostat.
 
 * Make the code more rock solid by avoiding assumptions.
-
-* SMP race workaround should no longer be enabled by default.
 

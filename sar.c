@@ -66,7 +66,8 @@ unsigned int interrupts[DIM][NR_IRQS];
 struct pid_stats *pid_stats[DIM][MAX_PID_NR];
 
 struct tm loc_time;
-struct tstamp tm_start, tm_end;	/* Contain the date specified by -s and -e options */
+/* Contain the date specified by -s and -e options */
+struct tstamp tm_start, tm_end;
 short dis_hdr = -1;
 int pid_nr = 0;
 char *args[MAX_ARGV_NR];
@@ -83,7 +84,7 @@ void usage(char *progname)
 	           "Options are:\n"
 	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i <interval> ] [ -q ]\n"
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-		   "[ -I { <irq> | SUM | PROC | ALL | XALL } ] [ -U { <cpu> | ALL } ]\n"
+		   "[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
 		   "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
 		   "[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 	           "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
@@ -295,9 +296,9 @@ int datecmp(struct tm *loc_time, struct tstamp *tse)
 
 
 /*
- * Check if the user has the right to use -U option.
+ * Check if the user has the right to use -P option.
  * Note that he may use this option when reading stats from a file,
- * even if its machine is not an SMP one...
+ * even if his machine is not an SMP one...
  * This routine is called only if we are *not* reading stats from a file.
  */
 void check_smp_option(int proc_used)
@@ -323,14 +324,14 @@ void check_smp_option(int proc_used)
 
 
 /*
- * Check the use of option -U.
+ * Check the use of option -P.
  * Called only if reading stats sent by the data collector.
  */
 void prep_smp_option(int proc_used)
 {
    int i;
 
-   if (GET_ONE_CPU(sar_actflag)) {
+   if (WANT_PER_PROC(flags)) {
       if (WANT_ALL_PROC(flags))
 	 for (i = proc_used + 1; i < ((NR_CPUS / 32) + 1) * 32; i++)
 	    /*
@@ -352,7 +353,8 @@ int next_slice(int curr, int reset)
    if (!last_uptime || reset)
       last_uptime = file_stats[2].uptime;
 
-   file_interval = ((file_stats[curr].uptime - last_uptime) / (file_hdr.sa_proc + 1)) / HZ;
+   file_interval =
+      ((file_stats[curr].uptime - last_uptime) / (file_hdr.sa_proc + 1)) / HZ;
    last_uptime = file_stats[curr].uptime;
 
    /*
@@ -367,12 +369,17 @@ int next_slice(int curr, int reset)
     *       (Pn * Iu) or (P'n * Iu) belongs to In
     * with  Pn = En / Iu and P'n = En / Iu + 1
     */
-   min = (((file_stats[curr].uptime - file_stats[2].uptime) / (file_hdr.sa_proc + 1)) / HZ) - (file_interval / 2);
-   max = (((file_stats[curr].uptime - file_stats[2].uptime) / (file_hdr.sa_proc + 1)) / HZ) + (file_interval / 2) +
-         (file_interval & 0x1);
+   min =
+      (((file_stats[curr].uptime - file_stats[2].uptime) / (file_hdr.sa_proc + 1)) / HZ)
+      - (file_interval / 2);
+   max =
+      (((file_stats[curr].uptime - file_stats[2].uptime) / (file_hdr.sa_proc + 1)) / HZ)
+      + (file_interval / 2) + (file_interval & 0x1);
 
-   pt1 = (((( file_stats[curr].uptime - file_stats[2].uptime) / (file_hdr.sa_proc + 1)) / HZ) / interval)      * interval;
-   pt2 = (((((file_stats[curr].uptime - file_stats[2].uptime) / (file_hdr.sa_proc + 1)) / HZ) / interval) + 1) * interval;
+   pt1 =
+      ((((file_stats[curr].uptime - file_stats[2].uptime) / (file_hdr.sa_proc + 1)) / HZ) / interval) * interval;
+   pt2 =
+      (((((file_stats[curr].uptime - file_stats[2].uptime) / (file_hdr.sa_proc + 1)) / HZ) / interval) + 1) * interval;
 
    return (((pt1 >= min) && (pt1 < max)) || ((pt2 >= min) && (pt2 < max)));
 }
@@ -487,7 +494,8 @@ void init_timestamp(short curr, char *cur_time, int len)
    /* NOTE: loc_time structure must have been init'ed before! */
    if (!USE_H_OPTION(flags) && !USE_DB_OPTION(flags)) {
 
-      if (PRINT_ORG_TIME(flags)) {	/* Check if option -t was specified on the command line */
+      /* Check if option -t was specified on the command line */
+      if (PRINT_ORG_TIME(flags)) {
 	 /* -t */
 	 loc_time.tm_hour = file_stats[curr].hour;
 	 loc_time.tm_min  = file_stats[curr].minute;
@@ -509,9 +517,9 @@ void init_timestamp(short curr, char *cur_time, int len)
 
       loc_time = *ltm;
       /*
-       * NB: Option -t is ignored when option -h is used, since option -h displays
-       * its timestamp as a long integer. This is type 'time_t', which is the number
-       * of seconds since 1970 _always_ expressed in UTC.
+       * NB: Option -t is ignored when option -h is used, since option -h
+       * displays its timestamp as a long integer. This is type 'time_t',
+       * which is the number of seconds since 1970 _always_ expressed in UTC.
        */
    }
 	
@@ -568,12 +576,12 @@ int check_iface_reg(struct stats_net_dev *st_net_dev[], short curr, short ref, i
 	     (st_net_dev_i->tx_fifo_errors < st_net_dev_j->tx_fifo_errors)) {
 
 	    /*
-	     * Special processing for rx_bytes (_packets) and tx_bytes (_packets) counters:
-	     * If the number of bytes (packets) has decreased, whereas the number
-	     * of packets (bytes) has increased, then assume that the relevant
-	     * counter has met an overflow condition, and that the interface
-	     * was not unregistered, which is all the more plausible that the
-	     * previous value for the counter was > ULONG_MAX/2.
+	     * Special processing for rx_bytes (_packets) and tx_bytes (_packets)
+	     * counters: If the number of bytes (packets) has decreased, whereas
+	     * the number of packets (bytes) has increased, then assume that the
+	     * relevant counter has met an overflow condition, and that the
+	     * interface was not unregistered, which is all the more plausible
+	     * that the previous value for the counter was > ULONG_MAX/2.
 	     * NB: the average value displayed will be wrong in this case...
 	     */
 	    unsigned long diff = 0;
@@ -612,7 +620,7 @@ int check_iface_reg(struct stats_net_dev *st_net_dev[], short curr, short ref, i
 	       f = 1;
 	    }
 	    if (!f) {
-	       /* OK: assume here that the device was actually unregistered... */
+	       /* OK: assume here that the device was actually unregistered */
 	       memset(st_net_dev_j, 0, STATS_NET_DEV_SIZE);
 	       strcpy(st_net_dev_j->interface, st_net_dev_i->interface);
 	    }
@@ -657,12 +665,14 @@ int check_disk_reg(struct disk_stats *st_disk[], short curr, short ref, int pos)
 
    while (index < file_hdr.sa_nr_disk) {
       st_disk_j = st_disk[ref] + index;
-      if ((st_disk_i->major == st_disk_j->major) && (st_disk_i->index == st_disk_j->index)) {
+      if ((st_disk_i->major == st_disk_j->major) &&
+	  (st_disk_i->index == st_disk_j->index)) {
 	 /*
 	  * Disk found.
 	  * If a counter has decreased, then we may assume that the
 	  * corresponding device was unregistered, then registered again.
-	  * NB: AFAIK, such a device cannot be unregistered with current Linux kernels.
+	  * NB: AFAIK, such a device cannot be unregistered with current
+	  * kernels.
 	  */
 	 if ((st_disk_i->dk_drive < st_disk_j->dk_drive) ||
 	     (st_disk_i->dk_drive_rwblk < st_disk_j->dk_drive_rwblk)) {
@@ -697,6 +707,26 @@ int check_disk_reg(struct disk_stats *st_disk[], short curr, short ref, int pos)
    st_disk_j->index = st_disk_i->index;
 
    return index;
+}
+
+
+/*
+ * Since ticks may vary slightly from cpu to cpu, we'll want
+ * to recalculate itv based on this cpu's tick count, rather
+ * than that reported by the "cpu" line.  Otherwise we
+ * occasionally end up with slightly skewed figures, with
+ * the skew being greater as the time interval grows shorter.
+ */
+unsigned long get_per_cpu_interval(struct stats_one_cpu *st_cpu_i,
+				   struct stats_one_cpu *st_cpu_j)
+{
+
+   return ((st_cpu_i->per_cpu_user + st_cpu_i->per_cpu_nice +
+	    st_cpu_i->per_cpu_system + st_cpu_i->per_cpu_iowait +
+	    st_cpu_i->per_cpu_idle) -
+	   (st_cpu_j->per_cpu_user + st_cpu_j->per_cpu_nice +
+	    st_cpu_j->per_cpu_system + st_cpu_j->per_cpu_iowait +
+	    st_cpu_j->per_cpu_idle));
 }
 
 
@@ -742,11 +772,12 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	     S_VALUE(file_stats[2].context_swtch, file_stats[curr].context_swtch, itv));
    }
 
-   if (GET_CPU(act) || GET_ONE_CPU(act)) {
+   if (GET_CPU(act)) {
       if (dis)
 	 printf(_("\nAverage:          CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"));
 
-      if (GET_CPU(act)) {
+      if (!WANT_PER_PROC(flags) ||
+	  (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags))) {
 	
 	 printf(_("Average:          all"));
 
@@ -756,14 +787,16 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 		SP_VALUE(file_stats[2].cpu_system, file_stats[curr].cpu_system, itv0),
 		SP_VALUE(file_stats[2].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
 
-	 if (file_stats[curr].cpu_idle < file_stats[2].cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	    printf("      %.2f\n", 0.0);
+	 if (file_stats[curr].cpu_idle < file_stats[2].cpu_idle)
+	    printf("      %.2f\n", 0.0);  /* Handle buggy RTC (or kernels?) */
 	 else
 	    printf("    %6.2f\n",
 		   SP_VALUE(file_stats[2].cpu_idle, file_stats[curr].cpu_idle, itv0));
       }
 
-      if (GET_ONE_CPU(act)) {
+      if (WANT_PER_PROC(flags) && file_hdr.sa_proc) {
+	 unsigned long pc_itv;
+	
 	 for (i = 0; i <= file_hdr.sa_proc; i++) {
 	    if (cpu_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
@@ -771,42 +804,49 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	       st_cpu_i = st_cpu[curr] + i;
 	       st_cpu_j = st_cpu[2]    + i;
 	
-	       printf("    %6.2f    %6.2f    %6.2f    %6.2f",
-		      SP_VALUE(st_cpu_j->per_cpu_user,   st_cpu_i->per_cpu_user,   itv),
-		      SP_VALUE(st_cpu_j->per_cpu_nice,   st_cpu_i->per_cpu_nice,   itv),
-		      SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv),
-		      SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, itv));
+	       /* Recalculate itv for current proc */
+	       pc_itv = get_per_cpu_interval(st_cpu_i, st_cpu_j);
 
-	       if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)	/* Handle buggy RTC (or kernels?) */
+	       printf("    %6.2f    %6.2f    %6.2f    %6.2f",
+		      SP_VALUE(st_cpu_j->per_cpu_user,   st_cpu_i->per_cpu_user,   pc_itv),
+		      SP_VALUE(st_cpu_j->per_cpu_nice,   st_cpu_i->per_cpu_nice,   pc_itv),
+		      SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, pc_itv),
+		      SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, pc_itv));
+
+	       if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)
 		  printf("      %.2f\n", 0.0);
 	       else
 		  printf("    %6.2f\n",
-			 SP_VALUE(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, itv));
+			 SP_VALUE(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, pc_itv));
 	    }
 	 }
       }
    }
 
-   if (GET_IRQ(act) || GET_ONE_IRQ(act)) {
-      if (dis)
-	 printf(_("\nAverage:         INTR    intr/s\n"));
+   if (GET_IRQ(act) &&
+       (!WANT_PER_PROC(flags) ||
+	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
 
-      if (GET_IRQ(act)) {
+	 if (dis)
+	    printf(_("\nAverage:         INTR    intr/s\n"));
+
 	 printf(_("Average:          sum"));
 
 	 printf(" %9.2f\n",
 		S_VALUE(file_stats[2].irq_sum, file_stats[curr].irq_sum, itv));
-      }
+   }
 
-      if (GET_ONE_IRQ(act)) {
-	 for (i = 0; i < NR_IRQS; i++) {
-	    if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
+   if (GET_ONE_IRQ(act)) {
+      if (dis)
+	 printf(_("\nAverage:         INTR    intr/s\n"));
 
-	       printf(_("Average:          %3d"), i);
+      for (i = 0; i < NR_IRQS; i++) {
+	 if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
-	       printf(" %9.2f\n",
-		      S_VALUE(interrupts[2][i], interrupts[curr][i], itv));
-	    }
+	    printf(_("Average:          %3d"), i);
+
+	    printf(" %9.2f\n",
+		   S_VALUE(interrupts[2][i], interrupts[curr][i], itv));
 	 }
       }
    }
@@ -850,10 +890,14 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	 printf(_("\nAverage:      frmpg/s   shmpg/s   bufpg/s   campg/s\n"));
 
       printf(_("Average:    %9.2f %9.2f %9.2f %9.2f\n"),
-	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[2].frmkb)) / itv * HZ,
-	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[2].shmkb)) / itv * HZ,
-	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[2].bufkb)) / itv * HZ,
-	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[2].camkb)) / itv * HZ);
+	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[2].frmkb))
+	     / itv * HZ,
+	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[2].shmkb))
+	     / itv * HZ,
+	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[2].bufkb))
+	     / itv * HZ,
+	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[2].camkb))
+	     / itv * HZ);
    }
 
    if (GET_PID(act)) {
@@ -870,7 +914,8 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 		S_VALUE(pid_stats[2][i]->majflt, pid_stats[curr][i]->majflt, itv),
 		S_VALUE(pid_stats[2][i]->utime,  pid_stats[curr][i]->utime,  itv),
 		S_VALUE(pid_stats[2][i]->stime,  pid_stats[curr][i]->stime,  itv),
-		((double) ((long) pid_stats[curr][i]->nswap - (long) pid_stats[2][i]->nswap)) / itv * HZ);
+		((double) ((long) pid_stats[curr][i]->nswap - (long) pid_stats[2][i]->nswap))
+		/ itv * HZ);
       }
    }
 
@@ -888,7 +933,8 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 		S_VALUE(pid_stats[2][i]->cmajflt, pid_stats[curr][i]->cmajflt, itv),
 		S_VALUE(pid_stats[2][i]->cutime,  pid_stats[curr][i]->cutime,  itv),
 		S_VALUE(pid_stats[2][i]->cstime,  pid_stats[curr][i]->cstime,  itv),
-		((double) ((long) pid_stats[curr][i]->cnswap - (long) pid_stats[2][i]->cnswap)) / itv * HZ);
+		((double) ((long) pid_stats[curr][i]->cnswap - (long) pid_stats[2][i]->cnswap))
+		/ itv * HZ);
       }
    }
 
@@ -960,7 +1006,7 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	 printf("      %.2f\n", 0.0);
    }
 
-   if (GET_IRQ_CPU(act)) {
+   if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
       int offset;
 
       if (dis) {
@@ -975,33 +1021,36 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
       }
 
       for (k = 0; k <= file_hdr.sa_proc; k++) {
-	 printf(_("Average:     %3d"), k);
+	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
+	
+	    printf(_("Average:     %3d"), k);
 
-	 for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	    p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
-	    if (p0->irq != ~0) {
-	       q0 = st_irq_cpu[2] + j;
-	       offset = j;
+	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
+	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
+	       if (p0->irq != ~0) {
+		  q0 = st_irq_cpu[2] + j;
+		  offset = j;
 
-	       if (p0->irq != q0->irq) {
-		  if (j)
-		     offset = j - 1;
-		  q0 = st_irq_cpu[2] + offset;
-		  if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-		     offset = j + 1;
-		  q0 = st_irq_cpu[2] + offset;
+		  if (p0->irq != q0->irq) {
+		     if (j)
+			offset = j - 1;
+		     q0 = st_irq_cpu[2] + offset;
+		     if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
+			offset = j + 1;
+		     q0 = st_irq_cpu[2] + offset;
+		  }
+		  if (p0->irq == q0->irq) {
+		     p = st_irq_cpu[curr] + k * file_hdr.sa_irqcpu + j;
+		     q = st_irq_cpu[2]    + k * file_hdr.sa_irqcpu + offset;
+		     printf(" %7.2f",
+			    S_VALUE(q->interrupt, p->interrupt, itv));
+		  }
+		  else
+		     printf("     N/A");
 	       }
-	       if (p0->irq == q0->irq) {
-		  p = st_irq_cpu[curr] + k * file_hdr.sa_irqcpu + j;
-		  q = st_irq_cpu[2]    + k * file_hdr.sa_irqcpu + offset;
-		  printf(" %7.2f",
-			 S_VALUE(q->interrupt, p->interrupt, itv));
-	       }
-	       else
-		  printf("     N/A");
 	    }
+	    printf("\n");
 	 }
-	 printf("\n");
       }
    }
 
@@ -1014,7 +1063,8 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
       printf(" %9.0f", (double) asum.file_used / asum.count);
       if (file_stats[curr].file_max)
 	 printf("    %6.2f",
-		((double) ((asum.file_used / asum.count) * 100)) / file_stats[curr].file_max);
+		((double) ((asum.file_used / asum.count) * 100))
+		/ file_stats[curr].file_max);
       else
 	 printf("      %.2f", 0.0);
 
@@ -1023,21 +1073,24 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
       printf(" %9.0f", (double) asum.super_used / asum.count);
       if (file_stats[curr].super_max)
 	 printf("    %6.2f",
-		((double) ((asum.super_used / asum.count) * 100)) / file_stats[curr].super_max);
+		((double) ((asum.super_used / asum.count) * 100))
+		/ file_stats[curr].super_max);
       else
 	 printf("      %.2f", 0.0);
 
       printf(" %9.0f", (double) asum.dquot_used / asum.count);
       if (file_stats[curr].dquot_max)
 	 printf("    %6.2f",
-		((double) ((asum.dquot_used / asum.count) * 100)) / file_stats[curr].dquot_max);
+		((double) ((asum.dquot_used / asum.count) * 100))
+		/ file_stats[curr].dquot_max);
       else
 	 printf("      %.2f", 0.0);
 
       printf(" %9.0f", (double) asum.rtsig_queued / asum.count);
       if (file_stats[curr].rtsig_max)
 	 printf("    %6.2f\n",
-		((double) ((asum.rtsig_queued / asum.count) * 100)) / file_stats[curr].rtsig_max);
+		((double) ((asum.rtsig_queued / asum.count) * 100))
+		/ file_stats[curr].rtsig_max);
       else
 	 printf("      %.2f\n", 0.0);
    }
@@ -1108,13 +1161,14 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
    if (GET_QUEUE(act)) {
       if (dis)
-	 printf(_("\nAverage:      runq-sz  plist-sz   ldavg-1   ldavg-5\n"));
+	 printf(_("\nAverage:      runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"));
 
-      printf(_("Average:    %9.0f %9.0f %9.2f %9.2f\n"),
-	     (double) asum.nr_running / asum.count,
-	     (double) asum.nr_threads / asum.count,
-	     (double) asum.load_avg_1 / (asum.count * 100),
-	     (double) asum.load_avg_5 / (asum.count * 100));
+      printf(_("Average:    %9.0f %9.0f %9.2f %9.2f %9.2f\n"),
+	     (double) asum.nr_running  / asum.count,
+	     (double) asum.nr_threads  / asum.count,
+	     (double) asum.load_avg_1  / (asum.count * 100),
+	     (double) asum.load_avg_5  / (asum.count * 100),
+	     (double) asum.load_avg_15 / (asum.count * 100));
    }
 
    if (GET_DISK(act)) {
@@ -1198,12 +1252,14 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    }
 
    /* Print CPU usage */
-   if (GET_CPU(act) || GET_ONE_CPU(act)) {
+   if (GET_CPU(act)) {
       if (dis)
 	 printf(_("\n%-11s       CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"),
 		cur_time[!curr]);
 
-      if (GET_CPU(act)) {
+      if (!WANT_PER_PROC(flags) ||
+	  (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags))) {
+
 	 printf(_("%-11s       all"), cur_time[curr]);
 
 	 printf("    %6.2f    %6.2f    %6.2f    %6.2f",
@@ -1212,14 +1268,16 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 		SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0),
 		SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
 
-	 if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	    printf("      %.2f\n", 0.0);
+	 if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
+	    printf("      %.2f\n", 0.0);  /* Handle buggy RTC (or kernels?) */
 	 else
 	    printf("    %6.2f\n",
 		   SP_VALUE(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, itv0));
       }
 
-      if (GET_ONE_CPU(act)) {
+      if (WANT_PER_PROC(flags) && file_hdr.sa_proc) {
+	 unsigned long pc_itv;
+	
 	 for (i = 0; i <= file_hdr.sa_proc; i++) {
 	    if (cpu_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
@@ -1227,43 +1285,51 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 	       st_cpu_i = st_cpu[curr]  + i;
 	       st_cpu_j = st_cpu[!curr] + i;
 	
+	       /* Recalculate itv for current proc */
+	       pc_itv = get_per_cpu_interval(st_cpu_i, st_cpu_j);
+	
 	       printf("    %6.2f    %6.2f    %6.2f    %6.2f",
-		      SP_VALUE(st_cpu_j->per_cpu_user,   st_cpu_i->per_cpu_user,   itv),
-		      SP_VALUE(st_cpu_j->per_cpu_nice,   st_cpu_i->per_cpu_nice,   itv),
-		      SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv),
-		      SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, itv));
+		      SP_VALUE(st_cpu_j->per_cpu_user,   st_cpu_i->per_cpu_user,   pc_itv),
+		      SP_VALUE(st_cpu_j->per_cpu_nice,   st_cpu_i->per_cpu_nice,   pc_itv),
+		      SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, pc_itv),
+		      SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, pc_itv));
 
-	       if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)	/* Handle buggy RTC (or kernels?) */
-		  printf("      %.2f\n", 0.0);
+	       if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)
+		  printf("      %.2f\n", 0.0);	/* Handle buggy RTC (or kernels?) */
 	       else
 		  printf("    %6.2f\n",
-			 SP_VALUE(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, itv));
+			 SP_VALUE(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, pc_itv));
 	    }
 	 }
       }
    }
 
-   if (GET_IRQ(act) || GET_ONE_IRQ(act)) {
-      if (dis)
-	 printf(_("\n%-11s      INTR    intr/s\n"), cur_time[!curr]);
+   if (GET_IRQ(act) &&
+       (!WANT_PER_PROC(flags) ||
+	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
 
-      /* Print number of interrupts per second */
-      if (GET_IRQ(act)) {
+	 if (dis)
+	    printf(_("\n%-11s      INTR    intr/s\n"), cur_time[!curr]);
+
+	 /* Print number of interrupts per second */
 	 printf(_("%-11s       sum"), cur_time[curr]);
 
 	 printf(" %9.2f\n",
 		S_VALUE(file_stats[!curr].irq_sum, file_stats[curr].irq_sum, itv));
-      }
+   }
 
-      if (GET_ONE_IRQ(act)) {
-	 for (i = 0; i < NR_IRQS; i++) {
-	    if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
+   if (GET_ONE_IRQ(act)) {
+      if (dis)
+	 printf(_("\n%-11s      INTR    intr/s\n"), cur_time[!curr]);
 
-	       printf("%-11s       %3d", cur_time[curr], i);
+      /* Print number of interrupts per second */
+      for (i = 0; i < NR_IRQS; i++) {
+	 if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
-	       printf(" %9.2f\n",
-		      S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
-	    }
+	    printf("%-11s       %3d", cur_time[curr], i);
+
+	    printf(" %9.2f\n",
+		   S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
 	 }
       }
    }
@@ -1271,7 +1337,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Print number of pages the system paged in and out */
    if (GET_PAGE(act)) {
       if (dis)
-	 printf(_("\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"), cur_time[!curr]);
+	 printf(_("\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"),
+		cur_time[!curr]);
 
       printf("%-11s %9.2f %9.2f %9u %9u %9u %9lu\n", cur_time[curr],
 	     S_VALUE(file_stats[!curr].pgpgin,  file_stats[curr].pgpgin,  itv),
@@ -1304,7 +1371,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Print I/O stats (no distinction made between disks) */
    if (GET_IO(act)) {
       if (dis)
-	 printf(_("\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n"), cur_time[!curr]);
+	 printf(_("\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n"),
+		cur_time[!curr]);
 
       printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f\n", cur_time[curr],
 	     S_VALUE(file_stats[!curr].dk_drive,      file_stats[curr].dk_drive,      itv),
@@ -1320,16 +1388,21 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 	 printf(_("\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"), cur_time[!curr]);
 
       printf("%-11s %9.2f %9.2f %9.2f %9.2f\n", cur_time[curr],
-	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb)) / itv * HZ,
-	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb)) / itv * HZ,
-	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb)) / itv * HZ,
-	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb)) / itv * HZ);
+	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb))
+	     / itv * HZ,
+	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb))
+	     / itv * HZ,
+	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb))
+	     / itv * HZ,
+	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb))
+	     / itv * HZ);
    }
 
    /* Print per-process statistics */
    if (GET_PID(act)) {
       if (dis)
-	 printf(_("\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s   CPU\n"), cur_time[!curr]);
+	 printf(_("\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s   CPU\n"),
+		cur_time[!curr]);
 
       for (i = 0; i < pid_nr; i++) {
 	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & 0x01))
@@ -1342,7 +1415,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 		S_VALUE(pid_stats[!curr][i]->majflt, pid_stats[curr][i]->majflt, itv),
 		S_VALUE(pid_stats[!curr][i]->utime,  pid_stats[curr][i]->utime,  itv),
 		S_VALUE(pid_stats[!curr][i]->stime,  pid_stats[curr][i]->stime,  itv),
-		((double) ((long) pid_stats[curr][i]->nswap - (long) pid_stats[!curr][i]->nswap)) / itv * HZ,
+		((double) ((long) pid_stats[curr][i]->nswap - (long) pid_stats[!curr][i]->nswap))
+		/ itv * HZ,
 		pid_stats[curr][i]->processor);
       }
    }
@@ -1350,7 +1424,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Print statistics about children of a given process */
    if (GET_CPID(act)) {
       if (dis)
-	 printf(_("\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"), cur_time[!curr]);
+	 printf(_("\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"),
+		cur_time[!curr]);
 
       for (i = 0; i < pid_nr; i++) {
 	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & 0x02))
@@ -1362,7 +1437,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 		S_VALUE(pid_stats[!curr][i]->cmajflt, pid_stats[curr][i]->cmajflt, itv),
 		S_VALUE(pid_stats[!curr][i]->cutime,  pid_stats[curr][i]->cutime,  itv),
 		S_VALUE(pid_stats[!curr][i]->cstime,  pid_stats[curr][i]->cstime,  itv),
-		((double) ((long) pid_stats[curr][i]->cnswap - (long) pid_stats[!curr][i]->cnswap)) / itv * HZ);
+		((double) ((long) pid_stats[curr][i]->cnswap - (long) pid_stats[!curr][i]->cnswap))
+		/ itv * HZ);
       }
    }
 
@@ -1417,7 +1493,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Print amount and usage of memory */
    if (GET_MEM_AMT(act)) {
       if (dis)
-	 printf(_("\n%-11s kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"), cur_time[!curr]);
+	 printf(_("\n%-11s kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"),
+		cur_time[!curr]);
 
       printf("%-11s %9lu %9lu", cur_time[curr],
 	     file_stats[curr].frmkb,
@@ -1444,8 +1521,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
        * Will be used to compute the average.
        * Note: overflow unlikely to happen but not impossible...
        * We assume that the total amount of memory installed can not vary
-       * during the interval given on the command line, whereas the total amount
-       * of swap space may.
+       * during the interval given on the command line, whereas the total
+       * amount of swap space may.
        */
       asum.frmkb += file_stats[curr].frmkb;
       asum.shmkb += file_stats[curr].shmkb;
@@ -1455,7 +1532,7 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       asum.tlskb += file_stats[curr].tlskb;
    }
 
-   if (GET_IRQ_CPU(act)) {
+   if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
       int offset;
 
       j = 0;
@@ -1485,42 +1562,48 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       }
 
       for (k = 0; k <= file_hdr.sa_proc; k++) {
-	 printf("%-11s  %3d", cur_time[curr], k);
+	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
 
-	 for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	    p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
-	    if (p0->irq != ~0) {	/* A value of ~0 means it is a remaining interrupt
-					 * which is no longer used, for example because the
-					 * number of interrupts has decreased in /proc/interrupts
-					 * or because we are appending data to an old sa file
-					 * with more interrupts than are actually available now */
-	       q0 = st_irq_cpu[!curr] + j;
-	       offset = j;
+	    printf("%-11s  %3d", cur_time[curr], k);
 
+	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
+	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
 	       /*
-		* If we want stats for the time since system startup,
-		* we have p0->irq != q0->irq, since q0 structure is
-		* completely set to zero.
+		* A value of ~0 means it is a remaining interrupt
+		* which is no longer used, for example because the
+		* number of interrupts has decreased in /proc/interrupts
+		* or because we are appending data to an old sa file
+		* with more interrupts than are actually available now.
 		*/
-	       if ((p0->irq != q0->irq) && !want_since_boot) {
-		  if (j)
-		     offset = j - 1;
-		  q0 = st_irq_cpu[!curr] + offset;
-		  if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-		     offset = j + 1;
-		  q0 = st_irq_cpu[!curr] + offset;
+	       if (p0->irq != ~0) {	
+		  q0 = st_irq_cpu[!curr] + j;
+		  offset = j;
+
+		  /*
+		   * If we want stats for the time since system startup,
+		   * we have p0->irq != q0->irq, since q0 structure is
+		   * completely set to zero.
+		   */
+		  if ((p0->irq != q0->irq) && !want_since_boot) {
+		     if (j)
+			offset = j - 1;
+		     q0 = st_irq_cpu[!curr] + offset;
+		     if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
+			offset = j + 1;
+		     q0 = st_irq_cpu[!curr] + offset;
+		  }
+		  if ((p0->irq == q0->irq) || want_since_boot) {
+		     p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
+		     q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
+		     printf(" %7.2f",
+			    S_VALUE(q->interrupt, p->interrupt, itv));
+		  }
+		  else
+		     printf("     N/A");
 	       }
-	       if ((p0->irq == q0->irq) || want_since_boot) {
-		  p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
-		  q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
-		  printf(" %7.2f",
-			 S_VALUE(q->interrupt, p->interrupt, itv));
-	       }
-	       else
-		  printf("     N/A");
 	    }
+	    printf("\n");
 	 }
-	 printf("\n");
       }
    }
 
@@ -1535,7 +1618,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       printf(" %9u", file_stats[curr].file_used);
       if (file_stats[curr].file_max)
 	 printf("    %6.2f",
-		((double) (file_stats[curr].file_used * 100)) / file_stats[curr].file_max);
+		((double) (file_stats[curr].file_used * 100))
+		/ file_stats[curr].file_max);
       else
 	 printf("      %.2f", 0.0);
 
@@ -1544,21 +1628,24 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       printf(" %9u", file_stats[curr].super_used);
       if (file_stats[curr].super_max)
 	 printf("    %6.2f",
-		((double) (file_stats[curr].super_used * 100)) / file_stats[curr].super_max);
+		((double) (file_stats[curr].super_used * 100))
+		/ file_stats[curr].super_max);
       else
 	 printf("      %.2f", 0.0);
 
       printf(" %9u", file_stats[curr].dquot_used);
       if (file_stats[curr].dquot_max)
 	 printf("    %6.2f",
-		((double) (file_stats[curr].dquot_used * 100)) / file_stats[curr].dquot_max);
+		((double) (file_stats[curr].dquot_used * 100))
+		/ file_stats[curr].dquot_max);
       else
 	 printf("      %.2f", 0.0);
 
       printf(" %9u", file_stats[curr].rtsig_queued);
       if (file_stats[curr].rtsig_max)
 	 printf("    %6.2f\n",
-		((double) (file_stats[curr].rtsig_queued * 100)) / file_stats[curr].rtsig_max);
+		((double) (file_stats[curr].rtsig_queued * 100))
+		/ file_stats[curr].rtsig_max);
       else
 	 printf("      %.2f\n", 0.0);
 
@@ -1634,7 +1721,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Print number of sockets in use */
    if (GET_NET_SOCK(act)) {
       if (dis)
-	 printf(_("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag\n"), cur_time[!curr]);
+	 printf(_("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag\n"),
+		cur_time[!curr]);
 
       printf("%-11s %9u %9u %9u %9u %9u\n", cur_time[curr],
 	     file_stats[curr].sock_inuse,
@@ -1654,19 +1742,22 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Print load averages and queue length */
    if (GET_QUEUE(act)) {
       if (dis)
-	 printf(_("\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5\n"), cur_time[!curr]);
+	 printf(_("\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"),
+		cur_time[!curr]);
 
-      printf("%-11s %9u %9u %9.2f %9.2f\n", cur_time[curr],
+      printf("%-11s %9u %9u %9.2f %9.2f %9.2f\n", cur_time[curr],
 	     file_stats[curr].nr_running,
 	     file_stats[curr].nr_threads,
-	     (double) file_stats[curr].load_avg_1 / 100,
-	     (double) file_stats[curr].load_avg_5 / 100);
+	     (double) file_stats[curr].load_avg_1  / 100,
+	     (double) file_stats[curr].load_avg_5  / 100,
+	     (double) file_stats[curr].load_avg_15 / 100);
 
       /* Will be used to compute the average */
-      asum.nr_running += file_stats[curr].nr_running;
-      asum.nr_threads += file_stats[curr].nr_threads;
-      asum.load_avg_1 += file_stats[curr].load_avg_1;
-      asum.load_avg_5 += file_stats[curr].load_avg_5;
+      asum.nr_running  += file_stats[curr].nr_running;
+      asum.nr_threads  += file_stats[curr].nr_threads;
+      asum.load_avg_1  += file_stats[curr].load_avg_1;
+      asum.load_avg_5  += file_stats[curr].load_avg_5;
+      asum.load_avg_15 += file_stats[curr].load_avg_15;
    }
 
    /* Print disk statistics */
@@ -1714,68 +1805,92 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
    struct disk_stats *st_disk_i, *st_disk_j;
 
    if (GET_PROC(act))
-      printf("%s\t%ld\t%s\t-\tproc/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tproc/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].processes, file_stats[curr].processes, itv));
 
    /* Print number of context switches per second */
    if (GET_CTXSW(act))
-      printf("%s\t%ld\t%s\t-\tcswch/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tcswch/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].context_swtch, file_stats[curr].context_swtch, itv));
 
    /* Print CPU usage */
-   if (GET_CPU(act)) {
-      printf("%s\t%ld\t%s\tall\t%%user\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+   if (GET_CPU(act) &&
+       (!WANT_PER_PROC(flags) ||
+	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
+      printf("%s\t%ld\t%s\tall\t%%user\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     SP_VALUE(file_stats[!curr].cpu_user, file_stats[curr].cpu_user, itv0));
-      printf("%s\t%ld\t%s\tall\t%%nice\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\tall\t%%nice\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     SP_VALUE(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, itv0));
-      printf("%s\t%ld\t%s\tall\t%%system\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\tall\t%%system\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0));
-      printf("%s\t%ld\t%s\tall\t%%iowait\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\tall\t%%iowait\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
-      printf("%s\t%ld\t%s\tall\t%%idle\t", file_hdr.sa_nodename, dt, cur_time);
-      if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	 printf("%.2f\n", 0.0);
+      printf("%s\t%ld\t%s\tall\t%%idle\t",
+	     file_hdr.sa_nodename, dt, cur_time);
+      if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
+	 printf("%.2f\n", 0.0);	/* Handle buggy RTC (or kernels?) */
       else
 	 printf("%.2f\n",
 		SP_VALUE(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, itv0));
    }
 
-   if (GET_ONE_CPU(act)) {
+   if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc) {
+      unsigned long pc_itv;
 
       for (i = 0; i <= file_hdr.sa_proc; i++) {
 	 if (cpu_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
 	    st_cpu_i = st_cpu[curr]  + i;
 	    st_cpu_j = st_cpu[!curr] + i;
-	
-	    printf("%s\t%ld\t%s\tcpu%d\t%%user\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i,
-		   SP_VALUE(st_cpu_j->per_cpu_user, st_cpu_i->per_cpu_user, itv));
-	    printf("%s\t%ld\t%s\tcpu%d\t%%nice\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i,
-		   SP_VALUE(st_cpu_j->per_cpu_nice, st_cpu_i->per_cpu_nice, itv));
-	    printf("%s\t%ld\t%s\tcpu%d\t%%system\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i,
-		   SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv));
-	    printf("%s\t%ld\t%s\tcpu%d\t%%iowait\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i,
-		   SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, itv));
 
-	    if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	       printf("%s\t%ld\t%s\tcpu%d\t%%idle\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i, 0.0);
+	    /* Recalculate itv for current proc */
+	    pc_itv = get_per_cpu_interval(st_cpu_i, st_cpu_j);
+	
+	    printf("%s\t%ld\t%s\tcpu%d\t%%user\t%.2f\n",
+		   file_hdr.sa_nodename, dt, cur_time, i,
+		   SP_VALUE(st_cpu_j->per_cpu_user, st_cpu_i->per_cpu_user, pc_itv));
+	    printf("%s\t%ld\t%s\tcpu%d\t%%nice\t%.2f\n",
+		   file_hdr.sa_nodename, dt, cur_time, i,
+		   SP_VALUE(st_cpu_j->per_cpu_nice, st_cpu_i->per_cpu_nice, pc_itv));
+	    printf("%s\t%ld\t%s\tcpu%d\t%%system\t%.2f\n",
+		   file_hdr.sa_nodename, dt, cur_time, i,
+		   SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, pc_itv));
+	    printf("%s\t%ld\t%s\tcpu%d\t%%iowait\t%.2f\n",
+		   file_hdr.sa_nodename, dt, cur_time, i,
+		   SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, pc_itv));
+
+	    if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)
+	       printf("%s\t%ld\t%s\tcpu%d\t%%idle\t%.2f\n",
+		      file_hdr.sa_nodename, dt, cur_time, i, 0.0);
 	    else
-	       printf("%s\t%ld\t%s\tcpu%d\t%%idle\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i,
-		      SP_VALUE(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, itv));
+	       printf("%s\t%ld\t%s\tcpu%d\t%%idle\t%.2f\n",
+		      file_hdr.sa_nodename, dt, cur_time, i,
+		      SP_VALUE(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, pc_itv));
 	 }
       }
    }
 
    /* Print number of interrupts per second */
-   if (GET_IRQ(act))
-      printf("%s\t%ld\t%s\tsum\tintr/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+   if (GET_IRQ(act) &&
+       (!WANT_PER_PROC(flags) ||
+	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
+      printf("%s\t%ld\t%s\tsum\tintr/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].irq_sum, file_stats[curr].irq_sum, itv));
+   }
 
    if (GET_ONE_IRQ(act)) {
       for (i = 0; i < NR_IRQS; i++) {
 	 if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
-	    printf("%s\t%ld\t%s\ti%03d\tintr/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time, i,
+	    printf("%s\t%ld\t%s\ti%03d\tintr/s\t%.2f\n",
+		   file_hdr.sa_nodename, dt, cur_time, i,
 		   S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
 	 }
       }
@@ -1783,52 +1898,73 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 
    /* Print number of pages the system paged in and out */
    if (GET_PAGE(act)) {
-      printf("%s\t%ld\t%s\t-\tpgpgin/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tpgpgin/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pgpgin, file_stats[curr].pgpgin, itv));
-      printf("%s\t%ld\t%s\t-\tpgpgout/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tpgpgout/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pgpgout, file_stats[curr].pgpgout, itv));
-      printf("%s\t%ld\t%s\t-\tactivepg\t%u\n", file_hdr.sa_nodename, dt, cur_time,
-	    file_stats[curr].nr_active_pages);
-      printf("%s\t%ld\t%s\t-\tinadtypg\t%u\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tactivepg\t%u\n",
+	     file_hdr.sa_nodename, dt, cur_time,
+	     file_stats[curr].nr_active_pages);
+      printf("%s\t%ld\t%s\t-\tinadtypg\t%u\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	    file_stats[curr].nr_inactive_dirty_pages);
-      printf("%s\t%ld\t%s\t-\tinaclnpg\t%u\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tinaclnpg\t%u\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	    file_stats[curr].nr_inactive_clean_pages);
-      printf("%s\t%ld\t%s\t-\tinatarpg\t%lu\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tinatarpg\t%lu\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	    file_stats[curr].inactive_target);
    }
 
    /* Print number of swap pages brought in and out */
    if (GET_SWAP(act)) {
-      printf("%s\t%ld\t%s\t-\tpswpin/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tpswpin/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pswpin, file_stats[curr].pswpin, itv));
-      printf("%s\t%ld\t%s\t-\tpswpout/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tpswpout/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pswpout, file_stats[curr].pswpout, itv));
    }
 
    /* Print I/O stats (no distinction made between disks) */
    if (GET_IO(act)) {
-      printf("%s\t%ld\t%s\t-\ttps\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\ttps\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].dk_drive, file_stats[curr].dk_drive, itv));
-      printf("%s\t%ld\t%s\t-\trtps\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\trtps\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].dk_drive_rio, file_stats[curr].dk_drive_rio, itv));
-      printf("%s\t%ld\t%s\t-\twtps\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\twtps\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].dk_drive_wio, file_stats[curr].dk_drive_wio, itv));
-      printf("%s\t%ld\t%s\t-\tbread/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tbread/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].dk_drive_rblk, file_stats[curr].dk_drive_rblk, itv));
-      printf("%s\t%ld\t%s\t-\tbwrtn/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tbwrtn/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].dk_drive_wblk, file_stats[curr].dk_drive_wblk, itv));
    }
 
    /* Print memory stats */
    if (GET_MEMORY(act)) {
-      printf("%s\t%ld\t%s\t-\tfrmpg/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb)) / itv * HZ);
-      printf("%s\t%ld\t%s\t-\tshmpg/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb)) / itv * HZ);
-      printf("%s\t%ld\t%s\t-\tbufpg/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb)) / itv * HZ);
-      printf("%s\t%ld\t%s\t-\tcampg/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb)) / itv * HZ);
+      printf("%s\t%ld\t%s\t-\tfrmpg/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
+	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb))
+	     / itv * HZ);
+      printf("%s\t%ld\t%s\t-\tshmpg/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
+	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb))
+	     / itv * HZ);
+      printf("%s\t%ld\t%s\t-\tbufpg/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
+	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb))
+	     / itv * HZ);
+      printf("%s\t%ld\t%s\t-\tcampg/s\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
+	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb))
+	     / itv * HZ);
    }
 
    /* Print TTY statistics (serial lines) */
@@ -1857,8 +1993,10 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
       printf("%s\t%ld\t%s\t-\tkbmemfree\t%lu\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].frmkb);
       printf("%s\t%ld\t%s\t-\tkbmemused\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].tlmkb - file_stats[curr].frmkb);
-      printf("%s\t%ld\t%s\t-\t%%memused\t", file_hdr.sa_nodename, dt, cur_time);
+	     file_hdr.sa_nodename, dt, cur_time,
+	     file_stats[curr].tlmkb - file_stats[curr].frmkb);
+      printf("%s\t%ld\t%s\t-\t%%memused\t",
+	     file_hdr.sa_nodename, dt, cur_time);
       if (file_stats[curr].tlmkb)
 	 printf("%.2f\n",
 		SP_VALUE(file_stats[curr].frmkb, file_stats[curr].tlmkb, file_stats[curr].tlmkb));
@@ -1874,8 +2012,10 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
       printf("%s\t%ld\t%s\t-\tkbswpfree\t%lu\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].frskb);
       printf("%s\t%ld\t%s\t-\tkbswpused\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].tlskb - file_stats[curr].frskb);
-      printf("%s\t%ld\t%s\t-\t%%swpused\t", file_hdr.sa_nodename, dt, cur_time);
+	     file_hdr.sa_nodename, dt, cur_time,
+	     file_stats[curr].tlskb - file_stats[curr].frskb);
+      printf("%s\t%ld\t%s\t-\t%%swpused\t",
+	     file_hdr.sa_nodename, dt, cur_time);
       if (file_stats[curr].tlskb)
 	 printf("%.2f\n",
 		SP_VALUE(file_stats[curr].frskb, file_stats[curr].tlskb, file_stats[curr].tlskb));
@@ -1883,35 +2023,40 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 	 printf("%.2f\n", 0.0);
    }
 
-   if (GET_IRQ_CPU(act)) {
+   if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
       int offset;
 
       for (k = 0; k <= file_hdr.sa_proc; k++) {
+	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
 
-	 for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	    p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
-	    if (p0->irq != ~0) {	/* A value of ~0 means it is a remaining interrupt
-					 * which is no longer used, for example because the
-					 * number of interrupts has decreased in /proc/interrupts
-					 * or because we are appending data to an old sa file
-					 * with more interrupts than are actually available now */
-	       q0 = st_irq_cpu[!curr] + j;
-	       offset = j;
+	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
+	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
+	       /*
+		* A value of ~0 means it is a remaining interrupt
+		* which is no longer used, for example because the
+		* number of interrupts has decreased in /proc/interrupts
+		* or because we are appending data to an old sa file
+		* with more interrupts than are actually available now.
+		*/
+	       if (p0->irq != ~0) {
+		  q0 = st_irq_cpu[!curr] + j;
+		  offset = j;
 
-	       if (p0->irq != q0->irq) {
-		  if (j)
-		     offset = j - 1;
-		  q0 = st_irq_cpu[!curr] + offset;
-		  if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-		     offset = j + 1;
-		  q0 = st_irq_cpu[!curr] + offset;
-	       }
-	       if (p0->irq == q0->irq) {
-		  p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
-		  q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
-		  printf("%s\t%ld\t%s\tcpu%d\ti%03d/s\t%.2f\n",
-			 file_hdr.sa_nodename, dt, cur_time, k, p0->irq,
-			 S_VALUE(q->interrupt, p->interrupt, itv));
+		  if (p0->irq != q0->irq) {
+		     if (j)
+			offset = j - 1;
+		     q0 = st_irq_cpu[!curr] + offset;
+		     if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
+			offset = j + 1;
+		     q0 = st_irq_cpu[!curr] + offset;
+		  }
+		  if (p0->irq == q0->irq) {
+		     p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
+		     q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
+		     printf("%s\t%ld\t%s\tcpu%d\ti%03d/s\t%.2f\n",
+			    file_hdr.sa_nodename, dt, cur_time, k, p0->irq,
+			    S_VALUE(q->interrupt, p->interrupt, itv));
+		  }
 	       }
 	    }
 	 }
@@ -1924,7 +2069,8 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].dentry_stat);
       printf("%s\t%ld\t%s\t-\tfile-sz\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].file_used);
-      printf("%s\t%ld\t%s\t-\t%%file-sz\t", file_hdr.sa_nodename, dt, cur_time);
+      printf("%s\t%ld\t%s\t-\t%%file-sz\t",
+	     file_hdr.sa_nodename, dt, cur_time);
       if (file_stats[curr].file_max)
 	 printf("%.2f\n",
 		((double) (file_stats[curr].file_used * 100)) / file_stats[curr].file_max);
@@ -1936,7 +2082,8 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 
       printf("%s\t%ld\t%s\t-\tsuper-sz\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].super_used);
-      printf("%s\t%ld\t%s\t-\t%%super-sz\t", file_hdr.sa_nodename, dt, cur_time);
+      printf("%s\t%ld\t%s\t-\t%%super-sz\t",
+	     file_hdr.sa_nodename, dt, cur_time);
       if (file_stats[curr].super_max)
 	 printf("%.2f\n",
 		((double) (file_stats[curr].super_used * 100)) / file_stats[curr].super_max);
@@ -1945,7 +2092,8 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 
       printf("%s\t%ld\t%s\t-\tdquot-sz\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].dquot_used);
-      printf("%s\t%ld\t%s\t-\t%%dquot-sz\t", file_hdr.sa_nodename, dt, cur_time);
+      printf("%s\t%ld\t%s\t-\t%%dquot-sz\t",
+	     file_hdr.sa_nodename, dt, cur_time);
       if (file_stats[curr].dquot_max)
 	 printf("%.2f\n",
 		((double) (file_stats[curr].dquot_used * 100)) / file_stats[curr].dquot_max);
@@ -1954,7 +2102,8 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 
       printf("%s\t%ld\t%s\t-\trtsig-sz\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].rtsig_queued);
-      printf("%s\t%ld\t%s\t-\t%%rtsig-sz\t", file_hdr.sa_nodename, dt, cur_time);
+      printf("%s\t%ld\t%s\t-\t%%rtsig-sz\t",
+	     file_hdr.sa_nodename, dt, cur_time);
       if (file_stats[curr].rtsig_max)
 	 printf("%.2f\n",
 		((double) (file_stats[curr].rtsig_queued * 100)) / file_stats[curr].rtsig_max);
@@ -2059,9 +2208,14 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
       printf("%s\t%ld\t%s\t-\tplist-sz\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].nr_threads);
       printf("%s\t%ld\t%s\t-\tldavg-1\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time, (double) file_stats[curr].load_avg_1 / 100);
+	     file_hdr.sa_nodename, dt, cur_time,
+	     (double) file_stats[curr].load_avg_1 / 100);
       printf("%s\t%ld\t%s\t-\tldavg-5\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time, (double) file_stats[curr].load_avg_5 / 100);
+	     file_hdr.sa_nodename, dt, cur_time,
+	     (double) file_stats[curr].load_avg_5 / 100);
+      printf("%s\t%ld\t%s\t-\tldavg-15\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
+	     (double) file_stats[curr].load_avg_15 / 100);
    }
 
    /* Print disk statistics */
@@ -2076,10 +2230,12 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 	 st_disk_j = st_disk[!curr] + j;
 	
 	 printf("%s\t%ld\t%s\tdev%d-%d\ttps\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_disk_i->major, st_disk_i->index,
+		file_hdr.sa_nodename, dt, cur_time,
+		st_disk_i->major, st_disk_i->index,
 		S_VALUE(st_disk_j->dk_drive, st_disk_i->dk_drive, itv));
 	 printf("%s\t%ld\t%s\tdev%d-%d\tsect/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_disk_i->major, st_disk_i->index,
+		file_hdr.sa_nodename, dt, cur_time,
+		st_disk_i->major, st_disk_i->index,
 		S_VALUE(st_disk_j->dk_drive_rwblk, st_disk_i->dk_drive_rwblk, itv));
       }
    }
@@ -2110,52 +2266,64 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	     S_VALUE(file_stats[!curr].context_swtch, file_stats[curr].context_swtch, itv));
 
    /* Print CPU usage */
-   if (GET_CPU(act)) {
-      printf("%s;%ld;%s;-1;%.2f;%.2f;%.2f;%.2f;", file_hdr.sa_nodename, dt, cur_time,
+   if (GET_CPU(act) &&
+       (!WANT_PER_PROC(flags) ||
+	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
+      printf("%s;%ld;%s;-1;%.2f;%.2f;%.2f;%.2f;",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     SP_VALUE(file_stats[!curr].cpu_user, file_stats[curr].cpu_user, itv0),
 	     SP_VALUE(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, itv0),
 	     SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0),
 	     SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
-      if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	 printf("%.2f\n", 0.0);
+      if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
+	 printf("%.2f\n", 0.0);	/* Handle buggy RTC (or kernels?) */
       else
 	 printf("%.2f\n",
 		SP_VALUE(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, itv0));
    }
 
-   if (GET_ONE_CPU(act)) {
+   if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc) {
+      unsigned long pc_itv;
 
       for (i = 0; i <= file_hdr.sa_proc; i++) {
 	 if (cpu_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
 	    st_cpu_i = st_cpu[curr]  + i;
 	    st_cpu_j = st_cpu[!curr] + i;
-	
-	    printf("%s;%ld;%s;%d;%.2f;%.2f;%.2f;%.2f;", file_hdr.sa_nodename, dt, cur_time, i,
-		   SP_VALUE(st_cpu_j->per_cpu_user, st_cpu_i->per_cpu_user, itv),
-		   SP_VALUE(st_cpu_j->per_cpu_nice, st_cpu_i->per_cpu_nice, itv),
-		   SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, itv),
-		   SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, itv));
 
-	    if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)	/* Handle buggy RTC (or kernels?) */
+	    /* Recalculate itv for current proc */
+	    pc_itv = get_per_cpu_interval(st_cpu_i, st_cpu_j);
+	
+	    printf("%s;%ld;%s;%d;%.2f;%.2f;%.2f;%.2f;",
+		   file_hdr.sa_nodename, dt, cur_time, i,
+		   SP_VALUE(st_cpu_j->per_cpu_user, st_cpu_i->per_cpu_user, pc_itv),
+		   SP_VALUE(st_cpu_j->per_cpu_nice, st_cpu_i->per_cpu_nice, pc_itv),
+		   SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, pc_itv),
+		   SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, pc_itv));
+
+	    if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)
 	       printf("%.2f\n", 0.0);
 	    else
 	       printf("%.2f\n",
-		      SP_VALUE(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, itv));
+		      SP_VALUE(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, pc_itv));
 	 }
       }
    }
 
    /* Print number of interrupts per second */
-   if (GET_IRQ(act))
+   if (GET_IRQ(act) &&
+       (!WANT_PER_PROC(flags) ||
+	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
       printf("%s;%ld;%s;-1;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].irq_sum, file_stats[curr].irq_sum, itv));
+   }
 
    if (GET_ONE_IRQ(act)) {
       for (i = 0; i < NR_IRQS; i++) {
 	 if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
-	    printf("%s;%ld;%s;%d;%.2f\n", file_hdr.sa_nodename, dt, cur_time, i,
+	    printf("%s;%ld;%s;%d;%.2f\n",
+		   file_hdr.sa_nodename, dt, cur_time, i,
 		   S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
 	 }
       }
@@ -2163,7 +2331,8 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    /* Print number of pages the system paged in and out */
    if (GET_PAGE(act))
-      printf("%s;%ld;%s;%.2f;%.2f;%u;%u;%u;%lu\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s;%ld;%s;%.2f;%.2f;%u;%u;%u;%lu\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pgpgin, file_stats[curr].pgpgin, itv),
 	     S_VALUE(file_stats[!curr].pgpgout, file_stats[curr].pgpgout, itv),
 	     file_stats[curr].nr_active_pages,
@@ -2179,7 +2348,8 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    /* Print I/O stats (no distinction made between disks) */
    if (GET_IO(act))
-      printf("%s;%ld;%s;%.2f;%.2f;%.2f;%.2f;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s;%ld;%s;%.2f;%.2f;%.2f;%.2f;%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].dk_drive, file_stats[curr].dk_drive, itv),
 	     S_VALUE(file_stats[!curr].dk_drive_rio, file_stats[curr].dk_drive_rio, itv),
 	     S_VALUE(file_stats[!curr].dk_drive_wio, file_stats[curr].dk_drive_wio, itv),
@@ -2188,11 +2358,16 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    /* Print memory stats */
    if (GET_MEMORY(act))
-      printf("%s;%ld;%s;%.2f;%.2f;%.2f;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb)) / itv * HZ,
-	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb)) / itv * HZ,
-	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb)) / itv * HZ,
-	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb)) / itv * HZ);
+      printf("%s;%ld;%s;%.2f;%.2f;%.2f;%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
+	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb))
+	     / itv * HZ,
+	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb))
+	     / itv * HZ,
+	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb))
+	     / itv * HZ,
+	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb))
+	     / itv * HZ);
 
    /* Print TTY statistics (serial lines) */
    if (GET_SERIAL(act)) {
@@ -2205,7 +2380,8 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	    continue;
 	
 	 if (st_serial_i->line == st_serial_j->line) {
-	    printf("%s;%ld;%s;%d;%.2f;%.2f\n", file_hdr.sa_nodename, dt, cur_time, st_serial_i->line,
+	    printf("%s;%ld;%s;%d;%.2f;%.2f\n",
+		   file_hdr.sa_nodename, dt, cur_time, st_serial_i->line,
 		   S_VALUE(st_serial_j->rx, st_serial_i->rx, itv),
 		   S_VALUE(st_serial_j->tx, st_serial_i->tx, itv));
 	 }
@@ -2214,16 +2390,18 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    /* Print amount and usage of memory */
    if (GET_MEM_AMT(act)) {
-      printf("%s;%ld;%s;%lu;%lu;", file_hdr.sa_nodename, dt, cur_time,
-	     file_stats[curr].frmkb, file_stats[curr].tlmkb - file_stats[curr].frmkb);
+      printf("%s;%ld;%s;%lu;%lu;",
+	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].frmkb,
+	     file_stats[curr].tlmkb - file_stats[curr].frmkb);
       if (file_stats[curr].tlmkb)
 	 printf("%.2f",
 		SP_VALUE(file_stats[curr].frmkb, file_stats[curr].tlmkb, file_stats[curr].tlmkb));
       else
 	 printf("%.2f", 0.0);
       printf(";%lu;%lu;%lu;%lu;%lu;",
-	     file_stats[curr].shmkb, file_stats[curr].bufkb, file_stats[curr].camkb,
-	     file_stats[curr].frskb, file_stats[curr].tlskb - file_stats[curr].frskb);
+	     file_stats[curr].shmkb, file_stats[curr].bufkb,
+	     file_stats[curr].camkb, file_stats[curr].frskb,
+	     file_stats[curr].tlskb - file_stats[curr].frskb);
       if (file_stats[curr].tlskb)
 	 printf("%.2f\n",
 		SP_VALUE(file_stats[curr].frskb, file_stats[curr].tlskb, file_stats[curr].tlskb));
@@ -2231,34 +2409,40 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	 printf("%.2f\n", 0.0);
    }
 
-   if (GET_IRQ_CPU(act)) {
+   if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
       int offset;
 
       for (k = 0; k <= file_hdr.sa_proc; k++) {
+	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
 
-	 for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	    p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
-	    if (p0->irq != ~0) {	/* A value of ~0 means it is a remaining interrupt
-					 * which is no longer used, for example because the
-					 * number of interrupts has decreased in /proc/interrupts
-					 * or because we are appending data to an old sa file
-					 * with more interrupts than are actually available now */
-	       q0 = st_irq_cpu[!curr] + j;
-	       offset = j;
+	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
+	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
+	       /*
+		* A value of ~0 means it is a remaining interrupt
+		* which is no longer used, for example because the
+		* number of interrupts has decreased in /proc/interrupts
+		* or because we are appending data to an old sa file
+		* with more interrupts than are actually available now.
+		*/
+	       if (p0->irq != ~0) {
+		  q0 = st_irq_cpu[!curr] + j;
+		  offset = j;
 
-	       if (p0->irq != q0->irq) {
-		  if (j)
-		     offset = j - 1;
-		  q0 = st_irq_cpu[!curr] + offset;
-		  if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-		     offset = j + 1;
-		  q0 = st_irq_cpu[!curr] + offset;
-	       }
-	       if (p0->irq == q0->irq) {
-		  p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
-		  q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
-		  printf("%s;%ld;%s;%d;%d;%.2f\n", file_hdr.sa_nodename, dt, cur_time, k, p0->irq,
-			 S_VALUE(q->interrupt, p->interrupt, itv));
+		  if (p0->irq != q0->irq) {
+		     if (j)
+			offset = j - 1;
+		     q0 = st_irq_cpu[!curr] + offset;
+		     if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
+			offset = j + 1;
+		     q0 = st_irq_cpu[!curr] + offset;
+		  }
+		  if (p0->irq == q0->irq) {
+		     p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
+		     q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
+		     printf("%s;%ld;%s;%d;%d;%.2f\n",
+			    file_hdr.sa_nodename, dt, cur_time, k, p0->irq,
+			    S_VALUE(q->interrupt, p->interrupt, itv));
+		  }
 	       }
 	    }
 	 }
@@ -2271,25 +2455,30 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	     file_stats[curr].dentry_stat, file_stats[curr].file_used);
       if (file_stats[curr].file_max)
 	 printf("%.2f",
-		((double) (file_stats[curr].file_used * 100)) / file_stats[curr].file_max);
+		((double) (file_stats[curr].file_used * 100))
+		/ file_stats[curr].file_max);
       else
 	 printf("%.2f", 0.0);
-      printf(";%u;%u;", file_stats[curr].inode_used, file_stats[curr].super_used);
+      printf(";%u;%u;",
+	     file_stats[curr].inode_used, file_stats[curr].super_used);
       if (file_stats[curr].super_max)
 	 printf("%.2f",
-		((double) (file_stats[curr].super_used * 100)) / file_stats[curr].super_max);
+		((double) (file_stats[curr].super_used * 100))
+		/ file_stats[curr].super_max);
       else
 	 printf("%.2f", 0.0);
       printf(";%u;", file_stats[curr].dquot_used);
       if (file_stats[curr].dquot_max)
 	 printf("%.2f",
-		((double) (file_stats[curr].dquot_used * 100)) / file_stats[curr].dquot_max);
+		((double) (file_stats[curr].dquot_used * 100))
+		/ file_stats[curr].dquot_max);
       else
 	 printf("%.2f", 0.0);
       printf(";%u;", file_stats[curr].rtsig_queued);
       if (file_stats[curr].rtsig_max)
 	 printf("%.2f\n",
-		((double) (file_stats[curr].rtsig_queued * 100)) / file_stats[curr].rtsig_max);
+		((double) (file_stats[curr].rtsig_queued * 100))
+		/ file_stats[curr].rtsig_max);
       else
 	 printf("%.2f\n", 0.0);
    }
@@ -2305,7 +2494,8 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	 j = check_iface_reg(st_net_dev, curr, !curr, i);
 	 st_net_dev_j = st_net_dev[!curr] + j;
 
-	 printf("%s;%ld;%s;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+	 printf("%s;%ld;%s;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time,
 		st_net_dev_i->interface,
 		S_VALUE(st_net_dev_j->rx_packets, st_net_dev_i->rx_packets, itv),
 		S_VALUE(st_net_dev_j->tx_packets, st_net_dev_i->tx_packets, itv),
@@ -2328,7 +2518,8 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	 j = check_iface_reg(st_net_dev, curr, !curr, i);
 	 st_net_dev_j = st_net_dev[!curr] + j;
 
-	 printf("%s;%ld;%s;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+	 printf("%s;%ld;%s;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time,
 		st_net_dev_i->interface,
 		S_VALUE(st_net_dev_j->rx_errors, st_net_dev_i->rx_errors, itv),
 		S_VALUE(st_net_dev_j->tx_errors, st_net_dev_i->tx_errors, itv),
@@ -2344,15 +2535,20 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    /* Print number of sockets in use */
    if (GET_NET_SOCK(act))
-      printf("%s;%ld;%s;%u;%u;%u;%u;%u\n", file_hdr.sa_nodename, dt, cur_time,
-	     file_stats[curr].sock_inuse, file_stats[curr].tcp_inuse, file_stats[curr].udp_inuse,
- 	     file_stats[curr].raw_inuse, file_stats[curr].frag_inuse);
+      printf("%s;%ld;%s;%u;%u;%u;%u;%u\n",
+	     file_hdr.sa_nodename, dt, cur_time,
+	     file_stats[curr].sock_inuse, file_stats[curr].tcp_inuse,
+	     file_stats[curr].udp_inuse, file_stats[curr].raw_inuse,
+	     file_stats[curr].frag_inuse);
 
    /* Print load averages and queue length */
    if (GET_QUEUE(act))
-      printf("%s;%ld;%s;%u;%u;%.2f;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s;%ld;%s;%u;%u;%.2f;%.2f;%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time,
 	     file_stats[curr].nr_running, file_stats[curr].nr_threads,
-	     (double) file_stats[curr].load_avg_1 / 100, (double) file_stats[curr].load_avg_5 / 100);
+	     (double) file_stats[curr].load_avg_1  / 100,
+	     (double) file_stats[curr].load_avg_5  / 100,
+	     (double) file_stats[curr].load_avg_15 / 100);
 
    /* Print disk statistics */
    if (GET_DISK(act)) {
@@ -2365,7 +2561,8 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	 j = check_disk_reg(st_disk, curr, !curr, i);
 	 st_disk_j = st_disk[!curr] + j;
 	
-	 printf("%s;%ld;%s;dev%d-%d;%.2f;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+	 printf("%s;%ld;%s;dev%d-%d;%.2f;%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time,
 		st_disk_i->major, st_disk_i->index,
 		S_VALUE(st_disk_j->dk_drive, st_disk_i->dk_drive, itv),
 		S_VALUE(st_disk_j->dk_drive_rwblk, st_disk_i->dk_drive_rwblk, itv));
@@ -2436,9 +2633,11 @@ void write_dummy(short curr, int use_tm_start, int use_tm_end)
       return;
 
    if (USE_H_OPTION(flags))
-      printf("%s\t-1\t%ld\tLINUX-RESTART\n", file_hdr.sa_nodename, file_stats[curr].ust_time);
+      printf("%s\t-1\t%ld\tLINUX-RESTART\n",
+	     file_hdr.sa_nodename, file_stats[curr].ust_time);
    else if (USE_DB_OPTION(flags))
-      printf("%s;-1;%s;LINUX-RESTART\n", file_hdr.sa_nodename, cur_time);
+      printf("%s;-1;%s;LINUX-RESTART\n",
+	     file_hdr.sa_nodename, cur_time);
    else
       printf(_("\n%-11s       LINUX RESTART\n"), cur_time);
 }
@@ -2451,7 +2650,8 @@ void allocate_structures(int stype)
 {
    if (file_hdr.sa_proc > 0)
       salloc_cpu(file_hdr.sa_proc + 1);
-   if ((stype == USE_SADC) && (GET_PID(sar_actflag) || GET_CPID(sar_actflag))) {
+   if ((stype == USE_SADC) &&
+       (GET_PID(sar_actflag) || GET_CPID(sar_actflag))) {
       pid_nr = file_hdr.sa_nr_pid;
       salloc_pid(pid_nr);
    }
@@ -2476,19 +2676,26 @@ void copy_structures(int dest, int src, int stype)
 {
    memcpy(&file_stats[dest], &file_stats[src], FILE_STATS_SIZE);
    if (file_hdr.sa_proc > 0)
-      memcpy(st_cpu[dest], st_cpu[src], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
+      memcpy(st_cpu[dest], st_cpu[src],
+	     STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
    if (GET_ONE_IRQ(file_hdr.sa_actflag))
-      memcpy(interrupts[dest], interrupts[src], STATS_ONE_IRQ_SIZE);
+      memcpy(interrupts[dest], interrupts[src],
+	     STATS_ONE_IRQ_SIZE);
    if ((stype == USE_SADC) && (pid_nr))
-      memcpy(pid_stats[dest][0], pid_stats[src][0], PID_STATS_SIZE * pid_nr);
+      memcpy(pid_stats[dest][0], pid_stats[src][0],
+	     PID_STATS_SIZE * pid_nr);
    if (file_hdr.sa_serial)
-      memcpy(st_serial[dest], st_serial[src], STATS_SERIAL_SIZE * file_hdr.sa_serial);
+      memcpy(st_serial[dest], st_serial[src],
+	     STATS_SERIAL_SIZE * file_hdr.sa_serial);
    if (file_hdr.sa_irqcpu)
-      memcpy(st_irq_cpu[dest], st_irq_cpu[src], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
+      memcpy(st_irq_cpu[dest], st_irq_cpu[src],
+	     STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
    if (file_hdr.sa_iface)
-      memcpy(st_net_dev[dest], st_net_dev[src], STATS_NET_DEV_SIZE * file_hdr.sa_iface);
+      memcpy(st_net_dev[dest], st_net_dev[src],
+	     STATS_NET_DEV_SIZE * file_hdr.sa_iface);
    if (file_hdr.sa_nr_disk)
-      memcpy(st_disk[dest], st_disk[src], DISK_STATS_SIZE * file_hdr.sa_nr_disk);
+      memcpy(st_disk[dest], st_disk[src],
+	     DISK_STATS_SIZE * file_hdr.sa_nr_disk);
 }
 
 
@@ -2498,17 +2705,23 @@ void copy_structures(int dest, int src, int stype)
 void read_extra_stats(short curr, int ifd)
 {
    if (file_hdr.sa_proc > 0)
-      sa_fread(ifd, st_cpu[curr], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1), HARD_SIZE);
+      sa_fread(ifd, st_cpu[curr],
+	       STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1), HARD_SIZE);
    if (GET_ONE_IRQ(file_hdr.sa_actflag))
-      sa_fread(ifd, interrupts[curr], STATS_ONE_IRQ_SIZE, HARD_SIZE);
+      sa_fread(ifd, interrupts[curr],
+	       STATS_ONE_IRQ_SIZE, HARD_SIZE);
    if (file_hdr.sa_serial)
-      sa_fread(ifd, st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
+      sa_fread(ifd, st_serial[curr],
+	       STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
    if (file_hdr.sa_irqcpu)
-      sa_fread(ifd, st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu, HARD_SIZE);
+      sa_fread(ifd, st_irq_cpu[curr],
+	       STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu, HARD_SIZE);
    if (file_hdr.sa_iface)
-      sa_fread(ifd, st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
+      sa_fread(ifd, st_net_dev[curr],
+	       STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
    if (file_hdr.sa_nr_disk)
-      sa_fread(ifd, st_disk[curr], DISK_STATS_SIZE * file_hdr.sa_nr_disk, HARD_SIZE);
+      sa_fread(ifd, st_disk[curr],
+	       DISK_STATS_SIZE * file_hdr.sa_nr_disk, HARD_SIZE);
    /* PID stats cannot be saved in file. So we don't read them */
 }
 
@@ -2520,20 +2733,94 @@ void read_stat_bunch(short curr)
 {
    if (sa_read(&file_stats[curr], file_hdr.sa_st_size))
       exit(0);
-   if ((file_hdr.sa_proc > 0) && sa_read(st_cpu[curr], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1)))
+   if ((file_hdr.sa_proc > 0) &&
+       sa_read(st_cpu[curr], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1)))
       exit(0);
-   if (GET_ONE_IRQ(file_hdr.sa_actflag) && sa_read(interrupts[curr], STATS_ONE_IRQ_SIZE))
+   if (GET_ONE_IRQ(file_hdr.sa_actflag) &&
+       sa_read(interrupts[curr], STATS_ONE_IRQ_SIZE))
       exit(0);
-   if (pid_nr && sa_read(pid_stats[curr][0], PID_STATS_SIZE * pid_nr))
+   if (pid_nr &&
+       sa_read(pid_stats[curr][0], PID_STATS_SIZE * pid_nr))
       exit(0);
-   if (file_hdr.sa_serial && sa_read(st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial))
+   if (file_hdr.sa_serial &&
+       sa_read(st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial))
       exit(0);
-   if (file_hdr.sa_irqcpu && sa_read(st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu))
+   if (file_hdr.sa_irqcpu &&
+       sa_read(st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu))
       exit(0);
-   if (file_hdr.sa_iface && sa_read(st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface))
+   if (file_hdr.sa_iface &&
+       sa_read(st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface))
       exit(0);
-   if (file_hdr.sa_nr_disk && sa_read(st_disk[curr], DISK_STATS_SIZE * file_hdr.sa_nr_disk))
+   if (file_hdr.sa_nr_disk &&
+       sa_read(st_disk[curr], DISK_STATS_SIZE * file_hdr.sa_nr_disk))
       exit(0);
+}
+
+
+/*
+ * Read stats for current activity from file
+ */
+void read_curr_act_stats(int ifd, off_t fpos, short curr, long *cnt, int *eosaf,
+			 int rows, unsigned int act, int *reset)
+{
+   short dis = 1;
+   unsigned long lines;
+   unsigned char rtype;
+   int davg, next;
+   off_t fps;
+
+   if ((fps = lseek(ifd, fpos, SEEK_SET)) < fpos) {
+      perror("lseek");
+      exit(2);
+   }
+
+   /*
+    * Restore the first stats collected.
+    * Used to compute the rate displayed on the first line.
+    */
+   copy_structures(!curr, 2, USE_SA_FILE);
+	
+   lines = 0;
+   davg  = 0;
+   *cnt  = count;
+
+   do {
+      /* Display count lines of stats */
+      *eosaf = sa_fread(ifd, &file_stats[curr],
+			file_hdr.sa_st_size, SOFT_SIZE);
+      rtype = file_stats[curr].record_type;
+	
+      if (!(*eosaf) && (rtype != R_DUMMY))
+	 /* Read the extra fields since it's not a DUMMY record */
+	 read_extra_stats(curr, ifd);
+
+      dis = !(lines++ % rows);
+
+      if (!(*eosaf) && (rtype != R_DUMMY)) {
+
+	 /* next is set to 1 when we were close enough to desired interval */
+	 if (USE_H_OPTION(flags) || USE_DB_OPTION(flags))
+	    next = write_parsable_stats(curr, act, *reset, cnt,
+					tm_start.use, tm_end.use);
+	 else
+	    next = write_stats(curr, dis, act, USE_SA_FILE, cnt,
+			       tm_start.use, tm_end.use, *reset, ST_IMMEDIATE);
+	 if (next && ((*cnt) > 0))
+	    (*cnt)--;
+	 if (next) {
+	    davg++;
+	    curr ^=1;
+	 }
+	 else
+	    lines--;
+	 *reset = 0;
+      }
+   }
+   while ((*cnt) && !(*eosaf) && (rtype != R_DUMMY));
+
+   if (davg && !USE_H_OPTION(flags) && !USE_DB_OPTION(flags))
+      write_stats_avg(!curr, dis, act, USE_SA_FILE);
+   *reset = 1;
 }
 
 
@@ -2542,14 +2829,12 @@ void read_stat_bunch(short curr)
  */
 void read_stats_from_file(char from_file[])
 {
-   short curr = 1, dis = 1;
-   unsigned char rtype;
-   unsigned long lines;
+   short curr = 1;
    unsigned int act;
-   int ifd, nb, davg, next;
+   int ifd, nb;
    int rows = 23, eosaf = 1, reset = 0;
    long cnt = 1;
-   off_t fpos, fps;
+   off_t fpos;
 
    if (!dis_hdr)
       /* Get window size */
@@ -2574,12 +2859,21 @@ void read_stats_from_file(char from_file[])
       dis_hdr = 9;
 
    sar_actflag &= file_hdr.sa_actflag;
-   if (!sar_actflag) {
+   if (!sar_actflag ||
+       (WANT_PER_PROC(flags) && !WANT_ALL_PROC(flags) && !file_hdr.sa_proc && !(sar_actflag & ~(A_CPU + A_IRQ)))) {
       /*
        * We want stats that are not available,
        * maybe because this is an old version of the sa data file.
-       * Note that if A_ONE_CPU or A_ONE_IRQ stats are available, stats
-       * concerning _all_ the CPUS and/or IRQS are available.
+       * Error message is displayed if:
+       * -> no activities remain in sar_actflag
+       * -> or if the user entered eg 'sar -u -P 0 -f file' or
+       * 'sar -I SUM -P 0 -f file', with file created on a UP machine.
+       * NOTE1: If A_ONE_IRQ stats are available, stats
+       * concerning _all_ the IRQs are available.
+       * NOTE2: If file_hdr.sa_proc > 0, stats
+       * concerning _all_ the CPUs are available.
+       * NOTE3: If file_hdr.sa_irqcpu != 0, stats
+       * concerning the IRQs per processor are available.
        */
       fprintf(stderr, _("Requested activities not available in file\n"));
       close(ifd);
@@ -2603,7 +2897,10 @@ void read_stats_from_file(char from_file[])
 	 if (file_stats[0].record_type == R_DUMMY)
 	    write_dummy(0, tm_start.use, tm_end.use);
 	 else {
-	    /* Ok: previous record was not a DUMMY one. So read now the extra fields. */
+	    /*
+	     * Ok: previous record was not a DUMMY one.
+	     * So read now the extra fields.
+	     */
 	    read_extra_stats(0, ifd);
 
 	    init_timestamp(0, NULL, 0);
@@ -2630,61 +2927,25 @@ void read_stats_from_file(char from_file[])
       for (act = 1; act <= A_LAST; act <<= 1) {
 
 	 if (sar_actflag & act) {
-
-	    if ((fps = lseek(ifd, fpos, SEEK_SET)) < fpos) {
-	       perror("lseek");
-	       exit(2);
+	    if ((act == A_IRQ) && WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)) {
+	       /* Distinguish -I SUM activity from IRQs per processor activity */
+	       flags &= ~F_PER_PROC;
+	       read_curr_act_stats(ifd, fpos, curr, &cnt, &eosaf, rows, act, &reset);
+	       flags |= F_PER_PROC;
+	       flags &= ~F_ALL_PROC;
+	       read_curr_act_stats(ifd, fpos, curr, &cnt, &eosaf, rows, act, &reset);
+	       flags |= F_ALL_PROC;
 	    }
-
-	    /* Restore the first stats collected. Used to compute the rate displayed on the first line */
-	    copy_structures(!curr, 2, USE_SA_FILE);
-	
-	    lines = 0;
-	    davg  = 0;
-	    cnt   = count;
-
-	    do {
-	       /* Display count lines of stats */
-	       eosaf = sa_fread(ifd, &file_stats[curr], file_hdr.sa_st_size, SOFT_SIZE);
-	       rtype = file_stats[curr].record_type;
-	
-	       if (!eosaf && (rtype != R_DUMMY))
-		  /* Read the extra fields since it's not a DUMMY record */
-		  read_extra_stats(curr, ifd);
-
-	       dis = !(lines++ % rows);
-
-	       if (!eosaf && (rtype != R_DUMMY)) {
-
-		  /* next is set to 1 when we were close enough to desired interval */
-		  if (USE_H_OPTION(flags) || USE_DB_OPTION(flags))
-		     next = write_parsable_stats(curr, act, reset, &cnt, tm_start.use, tm_end.use);
-		  else
-		     next = write_stats(curr, dis, act, USE_SA_FILE, &cnt,
-							tm_start.use, tm_end.use, reset, ST_IMMEDIATE);
-		  if (next && (cnt > 0))
-		     cnt--;
-		  if (next) {
-		     davg++;
-		     curr ^=1;
-		  }
-		  else
-		     lines--;
-		  reset = 0;
-	       }
-	    }
-	    while (cnt && !eosaf && (rtype != R_DUMMY));
-
-	    if (davg && !USE_H_OPTION(flags) && !USE_DB_OPTION(flags))
-	       write_stats_avg(!curr, dis, act, USE_SA_FILE);
-	    reset = 1;
+	    else
+	       read_curr_act_stats(ifd, fpos, curr, &cnt, &eosaf, rows, act, &reset);
 	 }
       }
 
       if (!cnt) {
 	 /* Go to next Linux restart, if possible */
 	 do {
-	    eosaf = sa_fread(ifd, &file_stats[curr], file_hdr.sa_st_size, SOFT_SIZE);
+	    eosaf = sa_fread(ifd, &file_stats[curr],
+			     file_hdr.sa_st_size, SOFT_SIZE);
 	    if (!eosaf && (file_stats[curr].record_type != R_DUMMY))
 	       read_extra_stats(curr, ifd);
 	 }
@@ -2721,12 +2982,14 @@ void read_stats(void)
 
    /* Force '-U ALL' flag if -A option is used on SMP machines */
    if (USE_A_OPTION(flags) && file_hdr.sa_proc) {
-      sar_actflag |= A_ONE_CPU;
       init_cpu_bitmap(~0);
-      flags |= F_ALL_PROC;
+      flags |= F_ALL_PROC + F_PER_PROC;
    }
 
-   /* Check that data corresponding to requested activities are sent by the data collector */
+   /*
+    * Check that data corresponding to requested activities
+    * are sent by the data collector.
+    */
    if (GET_SERIAL(sar_actflag) && !file_hdr.sa_serial) {
       sar_actflag &= ~A_SERIAL;
       dis_hdr--;
@@ -2735,10 +2998,6 @@ void read_stats(void)
       if (GET_NET_DEV(sar_actflag) && GET_NET_EDEV(sar_actflag))
 	 dis_hdr--;
       sar_actflag &= ~(A_NET_DEV + A_NET_EDEV);
-      dis_hdr--;
-   }
-   if (GET_IRQ_CPU(sar_actflag) && !file_hdr.sa_irqcpu) {
-      sar_actflag &= ~A_IRQ_CPU;
       dis_hdr--;
    }
    if (GET_DISK(sar_actflag) && !file_hdr.sa_nr_disk) {
@@ -2764,7 +3023,10 @@ void read_stats(void)
    /* Check use of -U option */
    prep_smp_option(file_hdr.sa_proc);
 
-   /* No need to force sar_actflag to file_hdr.sa_actflag since we are not reading stats from a file */
+   /*
+    * No need to force sar_actflag to file_hdr.sa_actflag
+    * since we are not reading stats from a file.
+    */
 
    /* Perform required allocations */
    allocate_structures(USE_SADC);
@@ -2801,9 +3063,9 @@ void read_stats(void)
       if (file_hdr.sa_nr_disk)
 	 memset(st_disk[1], 0, DISK_STATS_SIZE * file_hdr.sa_nr_disk);
 	
-      /* Display stats since boot time */
+      /* Display stats since boot time (First arg: !curr) */
       write_stats(0, DISP_HDR, sar_actflag, USE_SADC, &count,
-		  NO_TM_START, NO_TM_END, NO_RESET, ST_SINCE_BOOT);	/* First arg: !curr */
+		  NO_TM_START, NO_TM_END, NO_RESET, ST_SINCE_BOOT);
       exit(0);
    }
 
@@ -2823,8 +3085,8 @@ void read_stats(void)
 	    lines %= rows;
 	 lines += more;
       }
-      write_stats(curr, dis, sar_actflag, USE_SADC, &count, NO_TM_START, tm_end.use,
-		  NO_RESET, ST_IMMEDIATE);
+      write_stats(curr, dis, sar_actflag, USE_SADC, &count, NO_TM_START,
+		  tm_end.use, NO_RESET, ST_IMMEDIATE);
       fflush(stdout);	/* Don't buffer data if redirected to a pipe... */
 
       if (count > 0)
@@ -2875,8 +3137,6 @@ int main(int argc, char **argv)
 	    dis_hdr++;
 	    if (!strcmp(argv[opt], K_SUM))
 	       sar_actflag |= A_IRQ;
-	    else if (!strcmp(argv[opt], K_PROC))
-	       sar_actflag |= A_IRQ_CPU;
 	    else {
 	       sar_actflag |= A_ONE_IRQ;
 	       if (!strcmp(argv[opt], K_ALL)) {
@@ -2907,9 +3167,9 @@ int main(int argc, char **argv)
 	    usage(argv[0]);
       }
 
-      else if (!strcmp(argv[opt], "-U")) {
+      else if (!strcmp(argv[opt], "-P")) {
 	 if (argv[++opt]) {
-	    sar_actflag |= A_ONE_CPU;
+	    flags |= F_PER_PROC;
 	    dis_hdr++;
 	    if (!strcmp(argv[opt], K_ALL)) {
 	       dis_hdr = 9;
@@ -2956,7 +3216,8 @@ int main(int argc, char **argv)
 	 }
 	 else {
 	    get_localtime(&loc_time);
-	    snprintf(from_file, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+	    snprintf(from_file, MAX_FILE_LEN,
+		     "%s/sa%02d", SA_DIR, loc_time.tm_mday);
 	    from_file[MAX_FILE_LEN - 1] = '\0';
 	 }
       }
@@ -2996,7 +3257,8 @@ int main(int argc, char **argv)
 	       strcpy(ltemp, K_SELF);
 	       opt++;
 	    }
-	    else if (!strcmp(argv[opt], K_SUM) && !strcmp(argv[opt - 1], "-x")) {
+	    else if (!strcmp(argv[opt], K_SUM) &&
+		     !strcmp(argv[opt - 1], "-x")) {
 	       if (args_idx < MAX_ARGV_NR - 7) {
 		  salloc(args_idx++, "-x");
 		  salloc(args_idx++, K_SUM);
@@ -3070,9 +3332,10 @@ int main(int argc, char **argv)
 	    switch (*(argv[opt] + i)) {
 
 	     case 'A':
-	       sar_actflag |= A_PROC + A_PAGE + A_IRQ + A_IO + A_CPU + A_CTXSW + A_SWAP +
-		              A_MEMORY + A_SERIAL + A_MEM_AMT + A_IRQ_CPU + A_KTABLES +
-		              A_NET_DEV + A_NET_EDEV + A_NET_SOCK + A_QUEUE + A_DISK;
+	       sar_actflag |= A_PROC + A_PAGE + A_IRQ + A_IO + A_CPU +
+		  	      A_CTXSW + A_SWAP + A_MEMORY + A_SERIAL +
+		  	      A_MEM_AMT + A_KTABLES + A_NET_DEV +
+		  	      A_NET_EDEV + A_NET_SOCK + A_QUEUE + A_DISK;
 	       flags |= F_A_OPTION;
 	       break;
 	     case 'B':
@@ -3170,9 +3433,11 @@ int main(int argc, char **argv)
 
    /* 'sar' is equivalent to 'sar -f' */
    if ((argc == 1) ||
-       (!interval && !WANT_BOOT_STATS(flags) && !from_file[0] && !to_file[0])) {
+       (!interval && !WANT_BOOT_STATS(flags) &&
+	!from_file[0] && !to_file[0])) {
       get_localtime(&loc_time);
-      snprintf(from_file, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+      snprintf(from_file, MAX_FILE_LEN,
+	       "%s/sa%02d", SA_DIR, loc_time.tm_mday);
       from_file[MAX_FILE_LEN - 1] = '\0';
    }
 
@@ -3185,7 +3450,8 @@ int main(int argc, char **argv)
       exit(1);
    }
    /* Use time start or options -i/-h/-H only when reading stats from a file */
-   if ((tm_start.use || (USE_I_OPTION(flags)) || USE_H_OPTION(flags) || USE_DB_OPTION(flags))
+   if ((tm_start.use || (USE_I_OPTION(flags)) ||
+	USE_H_OPTION(flags) || USE_DB_OPTION(flags))
        && !from_file[0]) {
       fprintf(stderr, _("Not reading from a system activity file (use -f option)\n"));
       exit(1);
@@ -3209,7 +3475,10 @@ int main(int argc, char **argv)
 
    /* Default is CPU activity... */
    if (!sar_actflag) {
-      /* Still OK even when reading stats from a file since A_CPU activity is always recorded */
+      /*
+       * Still OK even when reading stats from a file
+       * since A_CPU activity is always recorded.
+       */
       sar_actflag |= A_CPU;
       dis_hdr++;
    }
@@ -3221,11 +3490,10 @@ int main(int argc, char **argv)
       if (!interval)
 	 interval = 1;
 
-      /* If -A option is used, force A_ONE_CPU */
+      /* If -A option is used, force '-P ALL' */
       if (USE_A_OPTION(flags)) {
-	 sar_actflag |= A_ONE_CPU;
 	 init_cpu_bitmap(~0);
-	 flags |= F_ALL_PROC;
+	 flags |= F_ALL_PROC + F_PER_PROC;
       }
 
       /* Read stats from file */
@@ -3292,7 +3560,10 @@ int main(int argc, char **argv)
       execv(SADC_LOCAL_PATH, args);
       execvp(SADC, args);
       execv(SADC_ALT_PATH, args);
-      /* Note: don't use execl/execlp since we don't have a fixed number of args to give to sadc */
+      /*
+       * Note: don't use execl/execlp since we don't have a fixed number of
+       * args to give to sadc.
+       */
 
       perror("exec");
       exit(4);

@@ -5,7 +5,10 @@ mpstat
 sa1
 sa2
 sadc
+sadf
 sapath.h
 sar
 sysstat
+sysstat.crond
+sysstat.sysconfig
 version.h

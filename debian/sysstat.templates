@@ -15,3 +15,17 @@ _Description: Do you want post-installation script to remove these data files?
  .
  If you don't want to remove them automatically, please remove them by hand later,
  in order to the sar command work properly.
+
+Template: sysstat/enable
+Type: boolean
+Default: false
+_Description: Should sysstat by enabled?
+ If this option is enabled the sysstat package will collect (using the cron
+ daemon and init.d script) binary data concerning system activities and store
+ them in log files within /var/log/sysstat/ directory.
+ .
+ With this data the sar(1) command will be able to display day-long system
+ statistics.
+ .
+ If you don't enable this option, the sar(1) command will show only the
+ current statistics.

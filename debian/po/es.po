@@ -16,7 +16,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: sysstat 4.1.4-1\n"
-"POT-Creation-Date: 2003-03-22 21:55+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-04-26 19:24+0200\n"
 "PO-Revision-Date: 2003-07-14 11:20+0200\n"
 "Last-Translator: Carlos Alberto Martín Edo <carlos@dat.etsit.upm.es>\n"
 "Language-Team: Debian L10n Spanish <debian-l10n-spanish@lists.debian.org>\n"
@@ -24,11 +25,13 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-15\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid "WARNING: daily data files format has changed!"
 msgstr "AVISO: ¡El formato de los ficheros de datos diarios ha cambiado!"
 
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid ""
@@ -39,18 +42,20 @@ msgstr ""
 "la versión ${s_version} de sysstat y *no* es compatible con la versión "
 "anterior!"
 
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid "Existing data files need to be deleted."
 msgstr "Se necesita borrar los ficheros de datos existentes."
 
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid "Do you want post-installation script to remove these data files?"
 msgstr ""
-"¿Quiere que el script de post-instalación borre estos ficheros de "
-"datos?"
+"¿Quiere que el script de post-instalación borre estos ficheros de datos?"
 
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid ""
@@ -60,6 +65,7 @@ msgstr ""
 "Si activa esta opción, cualquier fichero de datos que exista en el "
 "directorio /var/log/sysstat/ será borrado."
 
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid ""
@@ -68,3 +74,34 @@ msgid ""
 msgstr ""
 "Si no quiere que se borren automáticamente, por favor, bórrelos a mano más "
 "tarde con el fin de que el programa sar funcione adecuadamente."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid "Should sysstat by enabled?"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"If this option is enabled the sysstat package will collect (using the cron "
+"daemon and init.d script) binary data concerning system activities and store "
+"them in log files within /var/log/sysstat/ directory."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"With this data the sar(1) command will be able to display day-long system "
+"statistics."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"If you don't enable this option, the sar(1) command will show only the "
+"current statistics."
+msgstr ""

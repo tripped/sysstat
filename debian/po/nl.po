@@ -14,7 +14,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: sysstat\n"
-"POT-Creation-Date: 2003-03-22 21:55+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-04-26 19:24+0200\n"
 "PO-Revision-Date: 2003-08-19 17:22+0100\n"
 "Last-Translator: Bart Cornelis <cobaco@linux.be>\n"
 "Language-Team: dutch <debian-l10n-dutch@lists.debian.org>\n"
@@ -22,33 +23,84 @@ msgstr ""
 "Content-Type: text/plain; charset=iso-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid "WARNING: daily data files format has changed!"
-msgstr "WAARSCHUWING: formaat van de bestanden met de dagelijkse data is veranderd!"
+msgstr ""
+"WAARSCHUWING: formaat van de bestanden met de dagelijkse data is veranderd!"
 
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
-msgid "Format of daily data statistics files has changed in version ${s_version} of sysstat and is *not* compatible with the previous one!"
-msgstr "Het formaat van de bestanden met de dagelijkse data is veranderd in versie ${s_version} van sysstat. Het nieuwe formaat is *niet* compatibel met het oude!"
+msgid ""
+"Format of daily data statistics files has changed in version ${s_version} of "
+"sysstat and is *not* compatible with the previous one!"
+msgstr ""
+"Het formaat van de bestanden met de dagelijkse data is veranderd in versie "
+"${s_version} van sysstat. Het nieuwe formaat is *niet* compatibel met het "
+"oude!"
 
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid "Existing data files need to be deleted."
 msgstr "De bestaande data bestanden dienen verwijderd te worden."
 
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid "Do you want post-installation script to remove these data files?"
 msgstr "Wilt u dat het pos-installatie-script deze bestanden verwijderd?"
 
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
-msgid "If you activate this option, any existing data files in /var/log/sysstat/ directory will be deleted."
-msgstr "Indien u deze optie kiest, dan zullen alle bestaande data-bestanden in de /var/log/sysstat map verwijderd worden."
+msgid ""
+"If you activate this option, any existing data files in /var/log/sysstat/ "
+"directory will be deleted."
+msgstr ""
+"Indien u deze optie kiest, dan zullen alle bestaande data-bestanden in de /"
+"var/log/sysstat map verwijderd worden."
 
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
-msgid "If you don't want to remove them automatically, please remove them by hand later, in order to the sar command work properly."
-msgstr "Gelieve deze bestanen, indien u ze bestanden niet automatisch wil verwijderen, later handmatig te verwijderen. Dit is nodig opdat het sar commando juist zou werken."
+msgid ""
+"If you don't want to remove them automatically, please remove them by hand "
+"later, in order to the sar command work properly."
+msgstr ""
+"Gelieve deze bestanen, indien u ze bestanden niet automatisch wil "
+"verwijderen, later handmatig te verwijderen. Dit is nodig opdat het sar "
+"commando juist zou werken."
 
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid "Should sysstat by enabled?"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"If this option is enabled the sysstat package will collect (using the cron "
+"daemon and init.d script) binary data concerning system activities and store "
+"them in log files within /var/log/sysstat/ directory."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"With this data the sar(1) command will be able to display day-long system "
+"statistics."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"If you don't enable this option, the sar(1) command will show only the "
+"current statistics."
+msgstr ""

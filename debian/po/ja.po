@@ -15,7 +15,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: sysstat 5.0.0-1\n"
-"POT-Creation-Date: 2003-03-22 21:55+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-04-26 19:24+0200\n"
 "PO-Revision-Date: 2003-11-20 20:12+0900\n"
 "Last-Translator: Hideki Yamane <henrich@samba.gr.jp>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
@@ -23,38 +24,81 @@ msgstr ""
 "Content-Type: text/plain; charset=EUC-JP\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid "WARNING: daily data files format has changed!"
 msgstr "警告: 日次データファイル形式が変更されました!"
 
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid ""
 "Format of daily data statistics files has changed in version ${s_version} of "
 "sysstat and is *not* compatible with the previous one!"
-msgstr "日次統計データファイルの形式は sysstat バージョン ${s_version} で変更されました。これは以前のものと互換性は「ありません」!"
+msgstr ""
+"日次統計データファイルの形式は sysstat バージョン ${s_version} で変更されまし"
+"た。これは以前のものと互換性は「ありません」!"
 
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid "Existing data files need to be deleted."
 msgstr "現在のデータファイルは削除する必要があります。"
 
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid "Do you want post-installation script to remove these data files?"
 msgstr "このデータファイルをインストール後に自動で削除しますか?"
 
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid ""
 "If you activate this option, any existing data files in /var/log/sysstat/ "
 "directory will be deleted."
-msgstr "このオプションを有効にすると、 /var/log/sysstat/ ディレクトリにある現在のデータファイルは全て削除されます。"
+msgstr ""
+"このオプションを有効にすると、 /var/log/sysstat/ ディレクトリにある現在のデー"
+"タファイルは全て削除されます。"
 
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid ""
 "If you don't want to remove them automatically, please remove them by hand "
 "later, in order to the sar command work properly."
-msgstr "これらを自動的に削除したくなければ、 sar コマンドが正常に動作するように後ほど手動で削除してください。"
+msgstr ""
+"これらを自動的に削除したくなければ、 sar コマンドが正常に動作するように後ほど"
+"手動で削除してください。"
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid "Should sysstat by enabled?"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"If this option is enabled the sysstat package will collect (using the cron "
+"daemon and init.d script) binary data concerning system activities and store "
+"them in log files within /var/log/sysstat/ directory."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"With this data the sar(1) command will be able to display day-long system "
+"statistics."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"If you don't enable this option, the sar(1) command will show only the "
+"current statistics."
+msgstr ""

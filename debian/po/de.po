@@ -6,7 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2003-03-22 21:55+0100\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-04-26 19:24+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Debian Description Translation Project <debconf@ddtp.debian."
 "org>\n"
@@ -18,12 +19,14 @@ msgstr ""
 #  Template: sysstat/notice
 #  ddtp-prioritize: 62
 #
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid "WARNING: daily data files format has changed!"
 msgstr "WARNUNG:  Das Daily-Data-Files-Format wurde geändert!"
 
 #
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid ""
@@ -35,6 +38,7 @@ msgstr ""
 "Vorherigen!"
 
 #
+#. Type: note
 #. Description
 #: ../sysstat.templates:3
 msgid "Existing data files need to be deleted."
@@ -43,12 +47,14 @@ msgstr "Vorhandene Dateien müssen gelöscht werden."
 #  Template: sysstat/remove_files
 #  ddtp-prioritize: 62
 #
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid "Do you want post-installation script to remove these data files?"
 msgstr "Soll das Nachinstallations-Skript diese Dateien entfernen?"
 
 #
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid ""
@@ -59,6 +65,7 @@ msgstr ""
 "log/sysstat/ gelöscht."
 
 #
+#. Type: boolean
 #. Description
 #: ../sysstat.templates:12
 msgid ""
@@ -67,3 +74,34 @@ msgid ""
 msgstr ""
 "Wenn Sie sie nicht automatisch entfernen wollen, entfernen Sie sie später "
 "bitte händisch, damit das »sar«-Kommando richtig funktioniert."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid "Should sysstat by enabled?"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"If this option is enabled the sysstat package will collect (using the cron "
+"daemon and init.d script) binary data concerning system activities and store "
+"them in log files within /var/log/sysstat/ directory."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"With this data the sar(1) command will be able to display day-long system "
+"statistics."
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:22
+msgid ""
+"If you don't enable this option, the sar(1) command will show only the "
+"current statistics."
+msgstr ""

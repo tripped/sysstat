@@ -1,0 +1,2 @@
+# it's a wish script, not a shell one
+isag: shell-script-fails-syntax-check ./usr/bin/isag

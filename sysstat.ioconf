@@ -46,6 +46,7 @@
 1:initrd:x:250:d:256:*:1:Initial RAM Disk (initrd)
 
 #2:0:0:Floppy Devices
+2:fd:*:0:d:2:*:1:Floppy Devices fd0,fd1
 
 3:hd:*:0:a:2:*:64:IDE - Controller %d
 22:3:1:

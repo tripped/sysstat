@@ -4,6 +4,7 @@
 # Directories
 PREFIX = /usr/local
 SA_LIB_DIR = /usr/local/lib/sa
+SADC_PATH = ${SA_LIB_DIR}/sadc
 SA_DIR = /var/log/sa
 MAN_DIR = ${PREFIX}/man
 CLEAN_SA_DIR = n

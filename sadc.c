@@ -226,7 +226,8 @@ void salloc_pid(int pid_nr)
  */
 void p_write_error(void)
 {
-    fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
+    fprintf(stderr, _("Cannot write data to system activity file: %s\n"),
+	    strerror(errno));
     exit(2);
 }
 
@@ -495,7 +496,7 @@ void sa_sys_init(unsigned int *flags)
       disk_used += NR_DISK_PREALLOC;
       salloc_disk(disk_used);
    }
-   else if ((disk_used = get_ppartitions_dev_nr()) > 0) {
+   else if ((disk_used = get_ppartitions_dev_nr(CNT_DEV)) > 0) {
       *flags |= F_HAS_PPARTITIONS;
       sadc_actflag |= A_DISK;
       disk_used += NR_DISK_PREALLOC;
@@ -1493,31 +1494,107 @@ void read_net_sock_stat(void)
    static char line[96];
 
    /* Open /proc/net/sockstat file */
-   if ((sockfp = fopen(NET_SOCKSTAT, "r")) != NULL) {
+   if ((sockfp = fopen(NET_SOCKSTAT, "r")) == NULL)
+      return;
 
-      while (fgets(line, 96, sockfp) != NULL) {
+   while (fgets(line, 96, sockfp) != NULL) {
 	
-	 if (!strncmp(line, "sockets:", 8))
-	    /* Sockets */
-	    sscanf(line + 14, "%u", &(file_stats.sock_inuse));
-	 else if (!strncmp(line, "TCP:", 4))
-	    /* TCP sockets */
-	    sscanf(line + 11, "%u", &(file_stats.tcp_inuse));
-	 else if (!strncmp(line, "UDP:", 4))
-	    /* UDP sockets */
-	    sscanf(line + 11, "%u", &(file_stats.udp_inuse));
-	 else if (!strncmp(line, "RAW:", 4))
-	    /* RAW sockets */
-	    sscanf(line + 11, "%u", &(file_stats.raw_inuse));
-	 else if (!strncmp(line, "FRAG:", 5))
-	    /* FRAGments */
-	    sscanf(line + 12, "%u", &(file_stats.frag_inuse));
-      }
+      if (!strncmp(line, "sockets:", 8))
+	 /* Sockets */
+	 sscanf(line + 14, "%u", &(file_stats.sock_inuse));
+      else if (!strncmp(line, "TCP:", 4))
+	 /* TCP sockets */
+	 sscanf(line + 11, "%u", &(file_stats.tcp_inuse));
+      else if (!strncmp(line, "UDP:", 4))
+	 /* UDP sockets */
+	 sscanf(line + 11, "%u", &(file_stats.udp_inuse));
+      else if (!strncmp(line, "RAW:", 4))
+	 /* RAW sockets */
+	 sscanf(line + 11, "%u", &(file_stats.raw_inuse));
+      else if (!strncmp(line, "FRAG:", 5))
+	 /* FRAGments */
+	 sscanf(line + 12, "%u", &(file_stats.frag_inuse));
    }
 
    /* Close socket file */
    fclose(sockfp);
 }
+
+
+/*
+ ***************************************************************************
+ * Read stats from /proc/net/rpc/nfs
+ * See kernel sources:
+ * 2.4: linux/net/sunrpc/stats.c: rpc_proc_read()
+ * 2.6: linux/net/sunrpc/stats.c: rpc_proc_show()
+ ***************************************************************************
+ */
+void read_net_nfs_stat(void)
+{
+   FILE *nfsfp;
+   static char line[256];
+
+   /* Open /proc/net/rpc/nfs file */
+   if ((nfsfp = fopen(NET_RPC_NFS, "r")) == NULL)
+      return;
+
+   while (fgets(line, 256, nfsfp) != NULL) {
+	
+      if (!strncmp(line, "rpc", 3))
+	 sscanf(line + 3, "%u %u",
+		&(file_stats.nfs_rpccnt), &(file_stats.nfs_rpcretrans));
+	
+      else if (!strncmp(line, "proc3", 5))
+	 sscanf(line + 5, "%*u %u %*u %*u %u %*u %u %u",
+		&(file_stats.nfs_getattcnt), &(file_stats.nfs_accesscnt),
+		&(file_stats.nfs_writecnt), &(file_stats.nfs_readcnt));
+   }
+
+   fclose(nfsfp);
+}
+
+
+/*
+ ***************************************************************************
+ * Read stats from /proc/net/rpc/nfsd
+ * See kernel sources:
+ * 2.4: linux/fs/nfsd/stats.c: nfsd_proc_read()
+ * 2.6: linux/fs/nfsd/stats.c: nfsd_proc_show()
+ ***************************************************************************
+ */
+void read_net_nfsd_stat(void)
+{
+   FILE *nfsdfp;
+   static char line[256];
+
+   /* Open /proc/net/rpc/nfsd file */
+   if ((nfsdfp = fopen(NET_RPC_NFSD, "r")) == NULL)
+      return;
+
+   while (fgets(line, 256, nfsdfp) != NULL) {
+	
+      if (!strncmp(line, "rc", 2))
+	 sscanf(line + 2, "%u %u",
+		&(file_stats.nfsd_rchits), &(file_stats.nfsd_rcmisses));
+	
+      else if (!strncmp(line, "net", 3))
+	 sscanf(line + 3, "%u %u %u",
+		&(file_stats.nfsd_netcnt), &(file_stats.nfsd_netudpcnt),
+		&(file_stats.nfsd_nettcpcnt));
+	
+      else if (!strncmp(line, "rpc", 3))
+	 sscanf(line + 3, "%u %u",
+		&(file_stats.nfsd_rpccnt), &(file_stats.nfsd_rpcbad));
+	
+      else if (!strncmp(line, "proc3", 5))
+	 sscanf(line + 5, "%*u %u %*u %*u %u %*u %u %u",
+		&(file_stats.nfsd_getattcnt), &(file_stats.nfsd_accesscnt),
+		&(file_stats.nfsd_writecnt), &(file_stats.nfsd_readcnt));
+   }
+
+   fclose(nfsdfp);
+}
+
 
 
 /*
@@ -1613,23 +1690,20 @@ void read_ppartitions_stat(void)
 		          " %lu %*u %lu %lu",
 		    &major, &minor, &rd_ios, &rd_sec, &rd_ticks, &wr_ios,
 		    &wr_sec, &wr_ticks, &tot_ticks, &rq_ticks) == 10) {
-	    /*
-	     * Unlike when reading /proc/diskstats,
-	     * this line may be a partition or a device.
-	     */
-	    st_disk_i = st_disk + dsk++;
-	    st_disk_i->major = major;
-	    st_disk_i->minor = minor;
-	    st_disk_i->nr_ios = rd_ios + wr_ios;
-	    st_disk_i->rd_sect = rd_sec;
-	    st_disk_i->wr_sect = wr_sec;
-	    st_disk_i->rd_ticks = rd_ticks;
-	    st_disk_i->wr_ticks = wr_ticks;
-	    st_disk_i->tot_ticks = tot_ticks;
-	    st_disk_i->rq_ticks = rq_ticks;
-	
-	    /* We need to check if it's a device */
+
 	    if (ioc_iswhole(major, minor)) {
+	       /* OK: it's a device and not a partition */
+	       st_disk_i = st_disk + dsk++;
+	       st_disk_i->major = major;
+	       st_disk_i->minor = minor;
+	       st_disk_i->nr_ios = rd_ios + wr_ios;
+	       st_disk_i->rd_sect = rd_sec;
+	       st_disk_i->wr_sect = wr_sec;
+	       st_disk_i->rd_ticks = rd_ticks;
+	       st_disk_i->wr_ticks = wr_ticks;
+	       st_disk_i->tot_ticks = tot_ticks;
+	       st_disk_i->rq_ticks = rq_ticks;
+	
 	       file_stats.dk_drive += rd_ios + wr_ios;
 	       file_stats.dk_drive_rio += rd_ios;
 	       file_stats.dk_drive_rblk += (unsigned int) rd_sec;
@@ -1686,6 +1760,8 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
       read_proc_vmstat();
       read_ktables_stat();
       read_net_sock_stat();
+      read_net_nfs_stat();
+      read_net_nfsd_stat();
       if (disk_used) {
 	 if (HAS_DISKSTATS(*flags))
 	    read_diskstats_stat();
@@ -1793,7 +1869,8 @@ int main(int argc, char **argv)
 
    /* Init activity flag */
    sadc_actflag = A_PROC + A_PAGE + A_IRQ + A_IO + A_CPU + A_CTXSW + A_SWAP +
-                  A_MEMORY + A_MEM_AMT + A_KTABLES + A_NET_SOCK + A_QUEUE;
+                  A_MEMORY + A_MEM_AMT + A_KTABLES + A_NET_SOCK + A_QUEUE +
+      		  A_NET_NFS + A_NET_NFSD;
 
    /* Init structures according to machine architecture */
    sa_sys_init(&flags);

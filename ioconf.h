@@ -16,6 +16,10 @@
 #define IOC_PARTLEN	7
 #define IOC_FMTLEN	15
 
+#ifndef MAX_BLKDEV
+#define MAX_BLKDEV	255
+#endif
+
 #define IOCONF	"/etc/sysconfig/sysstat.ioconf"
 
 #define IS_WHOLE(maj,min)	((min % ioconf[maj]->blkp->pcount) == 0)

@@ -1,11 +1,11 @@
-.TH SAR 1 "NOVEMBER 2004" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "DECEMBER 2004" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
 .B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i
 .I interval
 .B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
-.B [ -n { DEV | EDEV | SOCK | FULL } ]
+.B [ -n { DEV | EDEV | NFS | NFSD | SOCK | FULL } ]
 .B [ -x {
 .I pid
 .B | SELF | ALL } ] [ -X {
@@ -221,7 +221,7 @@ With recent kernels (post 2.5),
 is the minor number of the device, but is only a sequence number with
 pre 2.5 kernels. Device names may also be pretty-printed if option -p
 is used (see below). Values for fields avgqu-sz, await, svctm and %util
-may be unavailable and displayed as 0.0 with some 2.4 kernels.
+may be unavailable and displayed as 0.00 with some 2.4 kernels.
 
 .B tps
 .RS
@@ -311,7 +311,7 @@ the first 16 interrupts are to be reported, whereas the
 .B XALL
 keyword indicates that statistics from all interrupts, including potential
 APIC interrupt sources, are to be reported.
-.IP "-n DEV | EDEV | SOCK | FULL"
+.IP "-n DEV | EDEV | NFS | NFSD | SOCK | FULL"
 Report network statistics.
 
 With the
@@ -413,6 +413,103 @@ Number of FIFO overrun errors that happened per second on received packets.
 .B txfifo/s
 .RS
 Number of FIFO overrun errors that happened per second on transmitted packets.
+.RE
+
+With the
+.B NFS
+keyword, statistics about NFS client activity are reported.
+The following values are displayed:
+
+.B call/s
+.RS
+Number of RPC requests made per second.
+.RE
+
+.B retrans/s
+.RS
+Number of RPC requests per second, those which needed to be retransmitted (for
+example because of a server timeout).
+.RE
+
+.B read/s
+.RS
+Number of 'read' RPC calls made per second.
+.RE
+
+.B write/s
+.RS
+Number of 'write' RPC calls made per second.
+.RE
+
+.B access/s
+.RS
+Number of 'access' RPC calls made per second.
+.RE
+
+.B getatt/s
+.RS
+Number of 'getattr' RPC calls made per second.
+.RE
+
+With the
+.B NFSD
+keyword, statistics about NFS server activity are reported.
+The following values are displayed:
+
+.B scall/s
+.RS
+Number of RPC requests received per second.
+.RE
+
+.B badcall/s
+.RS
+Number of bad RPC requests received per second, those whose
+processing generated an error.
+.RE
+
+.B packet/s
+.RS
+Number of network packets received per second.
+.RE
+
+.B udp/s
+.RS
+Number of UDP packets received per second.
+.RE
+
+.B tcp/s
+.RS
+Number of TCP packets received per second.
+.RE
+
+.B hit/s
+.RS
+Number of reply cache hits per second.
+.RE
+
+.B miss/s
+.RS
+Number of reply cache misses per second.
+.RE
+
+.B sread/s
+.RS
+Number of 'read' RPC calls received per second.
+.RE
+
+.B swrite/s
+.RS
+Number of 'write' RPC calls received per second.
+.RE
+
+.B saccess/s
+.RS
+Number of 'access' RPC calls received per second.
+.RE
+
+.B sgetatt/s
+.RS
+Number of 'getattr' RPC calls received per second.
 .RE
 
 With the

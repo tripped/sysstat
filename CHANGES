@@ -1,5 +1,31 @@
 Changes:
 
+2005/01/02: Version 5.1.4 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x2166]
+	* NFS client and server statistics added to sar.
+	* sar -d now only reads stats for devices (and not partitions)
+	  from /proc/partitions. (This is what it was already doing with
+	  /proc/diskstats).
+	* Display routines from sadf merged, so that -ppc and -db
+	  always output the same values.
+	* sadf updated to handle NFS statistics.
+	* sadf can now display the header of a data file (option -H).
+	* Define MAX_BLKDEV in ioconf.h if non-existent in <linux/major.h>.
+	* sar now looks for sadc in one directory only, specified at
+	  compile time. Moreover it is now possible to have two different
+	  sysstat versions installed: sar knows where its sadc counterpart
+	  is located.
+	* sapath.in removed. SADC_PATH is defined in CONFIG file.
+	* sar and sadf manual pages updated.
+	* sysstat.ioconf file updated.
+	* Fixed a bug in i386 RPM package, where sadc location was not
+	  consistent with that of sar. Spec file updated.
+	* Makefile updated.
+	* NLS updated.
+	* Various cosmetic changes (code and manual pages). Code cleaned.
+	* FAQ and CREDITS files updated.
+
 2004/11/22: Version 5.1.3 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x2165]

@@ -157,8 +157,8 @@ Invalid data format
 This error message means that sadc (the system activity data collector that
 sar is using) is not consistent with the sar command. In most cases this is
 because the sar and sadc commands do not belong to the same release of the
-sysstat package. Remember that sar searches for sadc in predefined
-directories (/usr/lib/sa, /usr/local/lib/sa, ...) before looking in the
+sysstat package. Remember that sar may search for sadc in predefined
+directories (/usr/local/lib/sa, /usr/lib/sa, ...) before looking in the
 current directory!
 
 ~~~

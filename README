@@ -1,4 +1,4 @@
-sysstat: system performance tools for the Linux operating system...
+sysstat: System performance tools for the Linux operating system...
 --
 (C) 1999-2001 Sebastien Godard <sebastien.godard@wanadoo.fr>
 
@@ -38,7 +38,7 @@ The first stage is to configure sysstat for your system:
 This is useful to change some configuration variables, for instance if you
 want to choose installation directories.
 Answer the questions or enter Return to accept the default values.
-For yes/no questions, please answer 'y' or 'n' (without the quotes): it is
+For yes/no questions, please answer 'y' or 'n' (without the quotes): It is
 case sensitive! You can also enter '?' to get a help message.
 Configuring your system is not compulsory. If not done, sysstat will use
 a default configuration file...
@@ -96,10 +96,14 @@ ${PREFIX}/doc/sysstat-x.y/*
 /etc/rc.d/rc2.d/S03sysstat	[REDHAT]
 /etc/rc.d/rc3.d/S03sysstat	[REDHAT]
 /etc/rc.d/rc5.d/S03sysstat	[REDHAT]
-/sbin/init.d/sysstat		[SUSE]
-/sbin/init.d/rc2.d/S03sysstat	[SUSE]
-/sbin/init.d/rc3.d/S03sysstat	[SUSE]
-/sbin/init.d/rc5.d/S03sysstat	[SUSE]
+/sbin/init.d/sysstat		[SUSE <= 7.0]
+/sbin/init.d/rc2.d/S03sysstat	[SUSE <= 7.0]
+/sbin/init.d/rc3.d/S03sysstat	[SUSE <= 7.0]
+/sbin/init.d/rc5.d/S03sysstat	[SUSE <= 7.0]
+/etc/init.d/sysstat		[SUSE <= 7.0]
+/etc/init.d/rc2.d/S03sysstat	[SUSE >= 7.1]
+/etc/init.d/rc3.d/S03sysstat	[SUSE >= 7.1]
+/etc/init.d/rc5.d/S03sysstat	[SUSE >= 7.1]
 
 
 MISCELLANEOUS
@@ -112,10 +116,11 @@ The sysstat package has been tested on Linux kernels 2.0.x and 2.2.x,
 but since new statistics are added in sysstat, they are not necessarily
 present in old 2.0.x kernels.
 
-It has been designed with NLS support in mind, using the GNU gettext
-package (available at http://www.gnu.org). At the present time,
-english, french, german, spanish and portuguese translations are available.
-You are welcome if you want to make other languages available ;-)
+It has been designed with National Language Support (NLS) in mind, using
+the GNU gettext package (available at http://www.gnu.org).
+At the present time, english, french, german, spanish and portuguese
+translations are available. You are welcome if you want to make other
+languages available ;-)
 
 --
 Sebastien Godard <sebastien.godard@wanadoo.fr>

@@ -216,7 +216,8 @@ Print version number and usage then exit.
 Display extended statistics. If no
 .I device
 is given on the command line, then extended statistics are displayed
-for every device registered in the /proc/partitions file.
+for every device registered in the /proc/partitions file. Please note
+that Linux kernel needs to be patched for this option to work.
 
 .SH ENVIRONMENT
 The
@@ -267,3 +268,5 @@ Sebastien Godard <sebastien.godard@wanadoo.fr>
 .BR vmstat (8),
 .BR sar (1),
 .BR mpstat (1)
+
+.I http://perso.wanadoo.fr/sebastien.godard/

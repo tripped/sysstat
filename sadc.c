@@ -50,6 +50,7 @@ int proc_used = -1;  /* Nb of processors on the machine. A value of 1 means two 
 int serial_used = 0, irqcpu_used = 0, iface_used = 0, disk_used = 0;
 unsigned int sadc_actflag;
 long interval = 0, count = 0;
+
 struct file_hdr file_hdr;
 struct file_stats file_stats;
 struct stats_one_cpu *st_cpu;
@@ -58,6 +59,7 @@ struct stats_net_dev *st_net_dev;
 struct stats_irq_cpu *st_irq_cpu;
 struct disk_stats *st_disk;
 struct pid_stats *pid_stats[MAX_PID_NR];
+
 unsigned long all_pids[MAX_PID_NR];
 unsigned char f_pids[MAX_PID_NR];
 unsigned int interrupts[NR_IRQS];
@@ -101,7 +103,6 @@ void alarm_handler(int sig)
  */
 void salloc_cpu(int nr_cpus)
 {
-
    if ((st_cpu = (struct stats_one_cpu *) malloc(STATS_ONE_CPU_SIZE * nr_cpus)) == NULL) {
       perror("malloc");
       exit(4);
@@ -116,7 +117,6 @@ void salloc_cpu(int nr_cpus)
  */
 void salloc_serial(int nr_serial)
 {
-
    if ((st_serial = (struct stats_serial *) malloc(STATS_SERIAL_SIZE * nr_serial)) == NULL) {
       perror("malloc");
       exit(4);
@@ -158,7 +158,6 @@ void salloc_irqcpu(int nr_cpus, int nr_irqcpu)
  */
 void salloc_net_dev(int nr_iface)
 {
-
    if ((st_net_dev = (struct stats_net_dev *) malloc(STATS_NET_DEV_SIZE * nr_iface)) == NULL) {
       perror("malloc");
       exit(4);
@@ -173,7 +172,6 @@ void salloc_net_dev(int nr_iface)
  */
 void salloc_disk(int nr_disks)
 {
-
    if ((st_disk = (struct disk_stats *) malloc(DISK_STATS_SIZE * nr_disks)) == NULL) {
       perror("malloc");
       exit(4);
@@ -189,7 +187,6 @@ void salloc_disk(int nr_disks)
 void salloc_pid(int pid_nr)
 {
    int pid;
-
 
    if ((pid_stats[0] = (struct pid_stats *) malloc(PID_STATS_SIZE * pid_nr)) == NULL) {
       perror("malloc");
@@ -210,7 +207,6 @@ void salloc_pid(int pid_nr)
 void set_pflag(int child, unsigned long pid)
 {
    int i = 0, flag;
-
 
    if (!pid) {
       if (child)
@@ -246,7 +242,6 @@ int count_pids(void)
 {
    int i = 0, n = 0;
 
-
    while (i < apid_nr) {
       if (f_pids[i]) {
 	 n++;
@@ -279,7 +274,6 @@ void get_pid_list(void)
    DIR *dir;
    struct dirent *drp;
 
-
    apid_nr = 0;
 
    /* Open /proc directory */
@@ -311,7 +305,6 @@ void get_serial_lines(int *serial_used, int smp_kernel)
    FILE *serfp;
    char line[256];
    int sl = 0;
-
 
 #ifdef SMP_RACE
    /*
@@ -354,7 +347,6 @@ void get_net_dev(int *iface_used)
    char line[128];
    int dev = 0;
 
-
    /* Open network device file */
    if ((devfp = fopen(NET_DEV, "r")) == NULL) {
       *iface_used = 0;	/* No network device file */
@@ -383,7 +375,6 @@ void get_disks(int *nr_disks)
    char line[1024];
    int dsk = 0;
    int pos;
-
 
    /* Open /proc/stat file */
    if ((statfp = fopen(STAT, "r")) == NULL) {
@@ -418,7 +409,6 @@ void get_irqcpu_nb(int *irqcpu_used, unsigned int max_nr_irqcpu)
    char line[16];
    int irq = 0;
 
-
    /* Open interrupts file */
    if ((irqfp = fopen(INTERRUPTS, "r")) == NULL) {
       *irqcpu_used = 0;	/* No INTERRUPTS file */
@@ -447,7 +437,6 @@ void read_sysfaults(void)
    FILE *pidfp;
    unsigned long minflt, majflt;
    static char filename[24];
-
 
    file_stats.nr_processes = 0;
    file_stats.minflt       = 0;
@@ -490,7 +479,6 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
    int nb;
    struct tm loc_time;
    struct utsname header;
-
 
    /* First reset the structure */
    memset(&file_hdr, 0, sizeof(file_hdr));
@@ -542,7 +530,6 @@ void write_dummy_record(int ofd, size_t file_stats_size)
    int nb;
    struct tm loc_time;
 
-
    /* Reset the structure (not compulsory, but a bit cleaner */
    memset(&file_stats, 0, sizeof(file_stats));
 
@@ -570,26 +557,22 @@ void write_stats(int ofd, size_t file_stats_size)
 {
    int nb;
 
-
    if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size) {
       fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
       exit(2);
    }
-
    if (proc_used > 0) {
       if ((nb = write(ofd, st_cpu, STATS_ONE_CPU_SIZE * (proc_used + 1))) != (STATS_ONE_CPU_SIZE * (proc_used + 1))) {
 	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
 	 exit(2);
       }
    }
-
    if (GET_ONE_IRQ(sadc_actflag)) {
       if ((nb = write(ofd, interrupts, STATS_ONE_IRQ_SIZE)) != STATS_ONE_IRQ_SIZE) {
 	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
 	 exit(2);
       }
    }
-
    if (pid_nr) {
       /* Structures are packed together! */
       if ((nb = write(ofd, pid_stats[0], PID_STATS_SIZE * pid_nr)) != (PID_STATS_SIZE * pid_nr)) {
@@ -597,14 +580,12 @@ void write_stats(int ofd, size_t file_stats_size)
 	 exit(2);
       }
    }
-
    if (serial_used) {
       if ((nb = write(ofd, st_serial, STATS_SERIAL_SIZE * serial_used)) != (STATS_SERIAL_SIZE * serial_used)) {
 	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
 	 exit(2);
       }
    }
-
    if (irqcpu_used) {
       if ((nb = write(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * (proc_used + 1) * irqcpu_used))
 	  != (STATS_IRQ_CPU_SIZE * (proc_used + 1) * irqcpu_used)) {
@@ -612,14 +593,12 @@ void write_stats(int ofd, size_t file_stats_size)
 	 exit(2);
       }
    }
-
    if (iface_used) {
       if ((nb = write(ofd, st_net_dev, STATS_NET_DEV_SIZE * iface_used)) != (STATS_NET_DEV_SIZE * iface_used)) {
 	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
 	 exit(2);
       }
    }
-
    if (disk_used) {
       if ((nb = write(ofd, st_disk, DISK_STATS_SIZE * disk_used)) != (DISK_STATS_SIZE * disk_used)) {
 	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
@@ -634,7 +613,6 @@ void write_stats(int ofd, size_t file_stats_size)
  */
 void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size)
 {
-
    if ((*ofd = open(ofile, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
       fprintf(stderr, _("Cannot open %s: %s\n"), ofile, strerror(errno));
       exit(2);
@@ -651,7 +629,6 @@ void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size)
 void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 {
    ssize_t size;
-
 
    if (ofile[0]) {
       /* Does file exist? */
@@ -743,7 +720,6 @@ void read_proc_stat(void)
    unsigned int v_tmp[5], v_major, v_index;
    int proc_nb, i, pos;
 
-
    /* Open stat file */
    if ((statfp = fopen(STAT, "r")) == NULL) {
       fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
@@ -762,7 +738,7 @@ void read_proc_stat(void)
 		&(file_stats.cpu_system), &(file_stats.cpu_idle));
 
 	 /*
-	  * Compute the uptime of the system in jiffies (1/100ths of a second).
+	  * Compute the uptime of the system in jiffies (1/100ths of a second if HZ=100).
 	  * Machine uptime is multiplied by the number of processors here.
 	  * Note that overflow is not so far away: ULONG_MAX is 4294967295 on 32 bit systems.
 	  * Overflow happens when machine uptime is:
@@ -902,7 +878,6 @@ void read_proc_loadavg(void)
    FILE *loadfp;
    int load_tmp[2];
 
-
    /* Open loadavg file */
    if ((loadfp = fopen(LOADAVG, "r")) == NULL) {
       file_stats.nr_running = 0;
@@ -938,7 +913,6 @@ void read_proc_meminfo(void)
    unsigned int mtemp;
    unsigned long lmtemp;
 
-
    /* Open meminfo file */
    if ((memfp = fopen(MEMINFO, "r")) == NULL) {
       file_stats.tlmkb = 0;
@@ -961,7 +935,7 @@ void read_proc_meminfo(void)
 	 /* Read the total amount of memory in KB */
 	 sscanf(line + 10, "%8lu", &(file_stats.tlmkb));
 
-      if (!strncmp(line, "MemFree:", 8))
+      else if (!strncmp(line, "MemFree:", 8))
 	 /* Read the amount of free memory in KB */
 	 sscanf(line + 10, "%8lu", &(file_stats.frmkb));
 
@@ -1025,7 +999,6 @@ void read_pid_stat(void)
    int pid;
    static char filename[24];
 
-
    for (pid = 0; pid < pid_nr; pid++) {
 
       if (!all_pids[pid])
@@ -1069,7 +1042,6 @@ void read_serial_stat(int smp_kernel)
    int sl = 0;
    int tty;
    char *p;
-
 
 #ifdef SMP_RACE
    if (!smp_kernel) {
@@ -1119,7 +1091,6 @@ void read_interrupts_stat(void)
    int irq = 0, cpu;
    struct stats_irq_cpu *p;
 
-
    /* Open interrupts file */
    if ((irqfp = fopen(INTERRUPTS, "r")) != NULL) {
 
@@ -1164,7 +1135,6 @@ void read_ktables_stat(void)
 {
    FILE *ktfp;
    int parm;
-
 
    /* Open /proc/sys/fs/dentry-state file */
    if ((ktfp = fopen(FDENTRY_STATE, "r")) == NULL)
@@ -1269,7 +1239,6 @@ void read_net_dev_stat(void)
    static char line[256];
    int dev = 0;
 
-
    /* Open network device file */
    if ((devfp = fopen(NET_DEV, "r")) != NULL) {
 
@@ -1296,13 +1265,18 @@ void read_net_dev_stat(void)
       fclose(devfp);
    }
 
-   while (dev < iface_used) {
-      /*
-       * Nb of network interfaces has changed, or appending data to an old file
-       * with more interfaces than are actually available now.
-       */
-      st_net_dev_i = st_net_dev + dev++;
-      strcpy(st_net_dev_i->interface, "?");
+   if (dev < iface_used) {
+      /* Reset unused structures */
+      memset(st_net_dev + dev, 0, STATS_NET_DEV_SIZE * (iface_used - dev));
+
+      while (dev < iface_used) {
+	 /*
+	  * Nb of network interfaces has changed, or appending data to an old file
+	  * with more interfaces than are actually available now.
+	  */
+	 st_net_dev_i = st_net_dev + dev++;
+	 strcpy(st_net_dev_i->interface, "?");
+      }
    }
 }
 
@@ -1316,7 +1290,6 @@ void read_net_sock_stat(void)
 {
    FILE *sockfp;
    static char line[96];
-
 
    file_stats.sock_inuse = 0;
    file_stats.tcp_inuse  = 0;
@@ -1374,7 +1347,6 @@ int main(int argc, char **argv)
     *   appending data to an existing daily data file.
     */
    size_t file_stats_size = FILE_STATS_SIZE;
-
 
    ofile[0] = new_ofile[0] = '\0';
 

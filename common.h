@@ -1,5 +1,5 @@
 /*
- * sysstat: system monitoring tools for Linux
+ * sysstat: System performance tools for Linux
  * (C) 1999-2001 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
@@ -24,6 +24,8 @@
 
 #define WANT_BOOT_STATS(m)	(((m) & F_BOOT_STATS) == F_BOOT_STATS)
 
+#define S_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * HZ)
+
 /*
  * 0: stats at t,
  * 1: stats at t' (t+T or t-T),
@@ -46,7 +48,7 @@
 #define DISP_HDR	1
 
 /* Functions */
-extern char  *base_name(char *);
+extern char  *device_name(char *);
 extern time_t get_localtime(struct tm *);
 extern int    get_nb_proc_used(int *, unsigned int);
 extern int    get_win_height(void);

@@ -2,7 +2,7 @@
 # (C) 1999-2001 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 3.3.6
+VERSION = 4.0.0
 
 include build/CONFIG
 
@@ -27,7 +27,6 @@ LIB_DIR = $(PREFIX)/lib
 MAN_DIR = $(PREFIX)/share/man
 MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
-SA_DIR = /var/log/sysstat
 DOC_DIR = $(PREFIX)/doc/sysstat-$(VERSION)
 NLS_DIR = $(PREFIX)/share/locale
 
@@ -181,6 +180,9 @@ install_base: all man/sadc.8 man/sar.1 man/sa1.8 man/sa2.8 man/iostat.1 isag/isa
 	mkdir -p $(DESTDIR)$(MAN1_DIR)
 	mkdir -p $(DESTDIR)$(MAN8_DIR)
 	mkdir -p $(DESTDIR)$(SA_DIR)
+ifeq ($(CLEAN_SA_DIR),y)
+	rm -f $(DESTDIR)$(SA_DIR)/sa??
+endif
 	mkdir -p $(DESTDIR)$(BIN_DIR)
 	mkdir -p $(DESTDIR)$(DOC_DIR)
 	install -m 755 sadc $(DESTDIR)$(LIB_DIR)/sa
@@ -217,7 +219,7 @@ install_all: install_base
 	$(CHOWN) $(CRON_OWNER) $(DESTDIR)$(SA_DIR)
 	-su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).save"
 	-$(CP) -a /tmp/crontab-$(CRON_OWNER).save ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.save
-	@echo "USER PREVIOUS CRONTAB SAVED IN CURRENT DIRECTORY (WITH .save SUFFIX)."
+	@echo "USER PREVIOUS CRONTAB SAVED IN CURRENT DIRECTORY (USING .save SUFFIX)."
 	-su $(CRON_OWNER) -c "crontab crontab"
 	if [ -d $(DESTDIR)$(INIT_DIR) ]; then \
 	   install -m 755 sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
@@ -257,7 +259,10 @@ distclean: clean
 dist: distclean
 	cd .. && (tar -cvf - sysstat-$(VERSION) | gzip -v9 > sysstat-$(VERSION).tar.gz)
 
-config:
+bdist: distclean
+	cd .. && (tar -cvf - sysstat-$(VERSION) | bzip2 > sysstat-$(VERSION).tar.bz2)
+
+config: clean
 	@sh build/Configure.sh
 
 squeeze:

@@ -8,7 +8,7 @@ display the dates or the numbers for example.
 
 HOW I ENABLE NLS WITH SYSSTAT?
 ------------------------------
-That's easy: answer 'y' (for 'yes') to the question:
+That's easy: Answer 'y' (for 'yes') to the question:
 "Enable National Language Support (NLS)? [y]"
 during configuration stage ('make config').
 Beginning with sysstat release 3.2.2, NLS is now enabled by default.

@@ -83,7 +83,7 @@
 #define F_SA_ROTAT      0x002
 #define F_FLT_INC	0x004
 #define F_A_OPTION	0x008
-/* 0x10 flag used */
+/* 0x10 flag used. Cf. common.h */
 #define F_H_OPTION	0x020
 #define F_ORG_TIME	0x040
 #define F_DEFAULT_COUNT	0x080

@@ -1,11 +1,14 @@
 #!/bin/sh
-#
+# Configuration script for sysstat
+# (C) 2000-2001 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 ASK="sh build/Ask.sh"
 
-echo
+echo ; echo
 echo You can enter a ? to display a help message at any time...
 echo
+
+# Installation directory
 
 PREFIX=`${ASK} 'Installation directory:' "/usr/local" "prefix"`
 if [ ! -d ${PREFIX} ]; then
@@ -13,9 +16,24 @@ if [ ! -d ${PREFIX} ]; then
 	PREFIX=/usr/local
 fi
 
+# System Activity directory
+
+SA_DIR=`${ASK} 'System activity directory:' "/var/log/sa" "sa-dir"`
+if [ ! -d ${SA_DIR} ]; then
+	echo "INFO: Directory ${SA_DIR} will be created during installation stage."
+fi
+
+CLEAN_SA_DIR=`${ASK} 'Clean system activity directory?' "n" "clean-sa-dir"`
+
+# National Language Support
+
 NLS=`${ASK} 'Enable National Language Support (NLS)?' "y" "nls"`
 
+# Linux SMP race workaround
+
 SMPRACE=`${ASK} 'Linux SMP race in serial driver workaround?' "n" "smp-race"`
+
+# Manual page group
 
 grep ^man: /etc/group >/dev/null 2>&1
 if [ $? -eq 1 ];
@@ -32,21 +50,32 @@ then
 	MAN=${GRP}
 fi
 
-if [ -d /sbin/init.d ];
+# Set system directories
+
+if [ -d /etc/init.d ];
+then
+	if [ -d /etc/init.d/rc2.d ];
+	then
+		RC_DIR=/etc/init.d
+		INITD_DIR=.
+	else
+		RC_DIR=/etc
+		INITD_DIR=init.d
+	fi
+	INIT_DIR=/etc/init.d
+elif [ -d /sbin/init.d ];
 then
 	RC_DIR=/sbin/init.d
 	INIT_DIR=/sbin/init.d
 	INITD_DIR=.
-elif [ -d /etc/init.d ];
-then
-	RC_DIR=/etc
-	INIT_DIR=/etc/init.d
-	INITD_DIR=init.d
 else
 	RC_DIR=/etc/rc.d
 	INIT_DIR=/etc/rc.d/init.d
 	INITD_DIR=init.d
 fi
+
+# Crontab
+
 grep ^adm: /etc/passwd >/dev/null 2>&1
 if [ $? -eq 1 ];
 then
@@ -68,10 +97,14 @@ then
 	fi
 fi
 
+# Create CONFIG file
+
 echo -n Creating CONFIG file now... 
 
 sed <build/CONFIG.in >build/CONFIG \
 	-e "s+^\\(PREFIX =\\)\$+\\1 ${PREFIX}+" \
+	-e "s+^\\(SA_DIR =\\)\$+\\1 ${SA_DIR}+" \
+	-e "s+^\\(CLEAN_SA_DIR =\\)\$+\\1 ${CLEAN_SA_DIR}+" \
 	-e "s+^\\(ENABLE_NLS =\\)\$+\\1 ${NLS}+" \
 	-e "s+^\\(ENABLE_SMP_WRKARD =\\)\$+\\1 ${SMPRACE}+" \
 	-e "s+^\\(MAN_GROUP =\\)\$+\\1 ${MAN}+" \

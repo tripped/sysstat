@@ -1,5 +1,5 @@
 /*
- * sar, sadc and iostat common routines.
+ * sar, sadc, mpstat and iostat common routines.
  * (C) 1999-2001 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
@@ -46,7 +46,6 @@ time_t get_localtime(struct tm *loc_time)
    time_t timer;
    struct tm *ltm;
 
-
    time(&timer);
    ltm = localtime(&timer);
 
@@ -67,7 +66,6 @@ int get_nb_proc_used(int *proc_used, unsigned int max_nr_cpus)
    FILE *statfp;
    char line[16];
    int proc_nb, smp_kernel;
-
 
    *proc_used = -1;
 
@@ -115,7 +113,6 @@ inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, 
    char cur_date[11];
    char *e;
 
-
    if (((e = getenv(TM_FMT_VAR)) != NULL) && !strcmp(e, K_ISO))
       strftime(cur_date, 11, "%Y-%m-%d", loc_time);
    else
@@ -131,7 +128,6 @@ inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, 
  */
 void init_nls(void)
 {
-
    setlocale(LC_MESSAGES, "");
    setlocale(LC_TIME, "");
    setlocale(LC_NUMERIC, "");
@@ -148,8 +144,8 @@ void init_nls(void)
 int get_win_height(void)
 {
    struct winsize win;
-   int rows = 23;
-
+   /* This default value will be used whenever STDOUT is redirected to a pipe or a file */
+   int rows = 3600 * 24;
 
    if ((ioctl(STDOUT_FILENO, TIOCGWINSZ, &win) != -1) && (win.ws_row > 2))
       rows = win.ws_row - 2;
@@ -159,15 +155,12 @@ int get_win_height(void)
 
 
 /*
- * Strip directory from file name
+ * Remove /dev from path name
  */
-char *base_name(char *name)
+char *device_name(char *name)
 {
-   int i = strlen(name);
+   if (!strncmp(name, "/dev/", 5))
+      return name + 5;
 
-
-   while (i-- > 0 && *(name + i) != '/')
-      /* nothing */;
-
-   return name + i + 1;
+   return name;
 }

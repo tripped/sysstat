@@ -1032,7 +1032,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
    /* Print time stamp */
    if (DISPLAY_TIMESTAMP(flags)) {
-      strftime(timestamp, sizeof(timestamp), "%X  ", loc_time);
+      strftime(timestamp, sizeof(timestamp), "%X", loc_time);
       printf(_("Time: %s\n"), timestamp);
    }
 

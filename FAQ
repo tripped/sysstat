@@ -136,7 +136,7 @@ in those files.
 But sar can also display statistics collected "on the fly": just enter
 the proper option on the command line to indicate which statistics are
 to be displayed, and also specify an <interval> and <count> number.
-Eg:
+E.g.:
 # sar 2 5  --> will report CPU utilization every two seconds, five times.
 # sar -n DEV 3 0  --> will report network device utilization every
 3 seconds, in an infinite loop.
@@ -178,7 +178,7 @@ may trigger when it reads the /proc/tty/driver/serial file.
 ~~~
 
 2.7. The "Average:" results from the sar command are just rubbish...
-Eg.:
+E.g.:
  11:10:00 AM       all      0.54      0.00      0.89     98.57
  11:20:01 AM       all      3.02      8.05     22.85     66.08
  11:30:01 AM       all      8.15      0.00      2.31     89.54

@@ -1,3 +1,9 @@
+sysstat (5.0.5-2) unstable; urgency=low
+
+  * Updated Dutch translation of debconf template (closes: #260288).
+
+ -- Robert Luberda <robert@debian.org>  Tue, 27 Jul 2004 23:17:02 +0200
+
 sysstat (5.0.5-1) unstable; urgency=low
 
   * New upstream (stable) version.

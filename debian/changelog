@@ -1,9 +1,10 @@
 sysstat (5.0.6-4) unstable; urgency=low
 
+  * sar.c: Fix FTBFS on amd64 with gcc-4.0 (closes: 288582).
   * Initial Czech translation of sysstat debconf templates (closes: #293006).
     Thanks to Miroslav Kure <kurem@upcase.inf.upol.cz>.
 
- -- Robert Luberda <robert@debian.org>  Mon, 31 Jan 2005 19:07:14 +0100
+ -- Robert Luberda <robert@debian.org>  Mon, 31 Jan 2005 19:09:24 +0100
 
 sysstat (5.0.6-3) unstable; urgency=low
 

@@ -2,17 +2,26 @@
 # the next line restarts using wish and correctly pass the arguments to this\
 exec wish "$0" -- "$@"
 
+
 ###############################################################################
 #
-# $Id: isag.m4,v 1.10 2001/02/03 11:02:17 isag Exp $
+# $Id: isag.m4,v 1.12 2001/02/20 19:06:10 sarrep Exp sarrep $
 #
 # Author:		linux_monitor@volny.cz
 # Maintained-by:	linux_monitor@volny.cz
 # Primary-site:		http://www.volny.cz:/linux_monitor/isag
 # Copying-policy:	GPL
-#
+
 # $Log: isag.m4,v $
-# Revision 1.10  2001/02/03 11:02:17  isag
+# Revision 1.12  2001/02/20 19:06:10  sarrep
+# added q switch and actialize B switch to version 3.3.6
+#
+# Revision 1.11  2001/02/10 10:42:03  sarrep
+# finally renamed from sarrep to isag
+# added additional commnts in header
+# added patching
+#
+# Revision 1.10  2001/02/03 11:02:17  sarrep
 # removed many same (for family) parts to different files.
 # improved generationg of cmd array.
 #
@@ -56,9 +65,15 @@ exec wish "$0" -- "$@"
 #
 #
 ###############################################################################
+
+# specific for sebastien's sar
+
+#
+# version.m4
 set ident "/usr/bin/ident"
 set version ""
-set ver_patchlevel "1"
+# This can be set only if small interactive change in result code was occured
+set patchlevel ""
 if {[catch {set fp [open "| $ident $argv0" "r"]}] == 0} {
 	set n 0
 	while {[gets $fp line] != -1} {
@@ -68,13 +83,13 @@ if {[catch {set fp [open "| $ident $argv0" "r"]}] == 0} {
 			set n 1
 		}
 	}
-	if {"" != $ver_patchlevel} {
-		set version "$version\nPatch level: $ver_patchlevel"
-	}
 } else {
 	set version "Unknown! $ident is missing"
 }
-
+if {"" != $patchlevel} {
+	set version "$version\nPatch level: $patchlevel"
+}
+# eof: version.m4
 ###############################################################################
 # $Id: msg_box.m4,v 1.1 2000/12/30 17:39:04 root Exp $
 #
@@ -102,7 +117,7 @@ proc msg_box {title text} {
 }
 
 #
-# $Id: ver_check.m4,v 1.1 2001/02/03 11:05:10 isag Exp $
+# $Id: ver_check.m4,v 1.1 2001/02/03 11:05:10 sarrep Exp $
 #
 # version check
 #
@@ -114,7 +129,7 @@ if {$tcl_version < $needed_version} {
 #eof: ver_check.m4
 ###############################################################################
 #
-# $Id: variables.m4,v 1.1 2001/02/03 11:04:32 isag Exp $
+# $Id: variables.m4,v 1.1 2001/02/03 11:04:32 sarrep Exp $
 #
 # default paths, programs and other variables
 #
@@ -133,7 +148,13 @@ set graph_ht	400
 
 # specific paths and programs
 set sar_data_path "SA_DIR"
+<<<<<<< HEAD
 set sar "PREFIX/bin/sar.sysstat"
+=======
+set sar_data_mask "sa\[0-9\]\[0-9\]"
+set sar "PREFIX/bin/sar"
+#set sar "/home/sarrep/source/sysstat-3.3.6/sar"
+>>>>>>> upstream/3.3.6
 
 ###############################################################################
 #
@@ -141,13 +162,14 @@ set sar "PREFIX/bin/sar.sysstat"
 #	cmd has higher precedence
 #
 proc Usage {} {
-	global sar_data_path cfg_file graph_wd graph_ht
+	global sar_data_path sar_data_mask cfg_file graph_wd graph_ht
 
 	msg_box "Usage" \
 "isag \[options\]
 
 Options:
 \t-p data_path (default: $sar_data_path)
+\t-m data_file_mask (default: $sar_data_mask)
 \t-c cfg_file (default: $cfg_file) 
 \t-gwd graph_width (default: $graph_wd)
 \t-ght graph_height (default: $graph_ht) "
@@ -184,6 +206,9 @@ if {[set t [getopt $argv p]] != ""} {
 		msg_box "Error" "<$t> is not directory using default <$sar_data_path>"
 	}
 }
+if {[set t [getopt $argv m]] != ""} {
+		set sar_data_mask $t
+}
 if {[set t [getopt $argv ght]] != ""} {
 	if {1 == [string is digit $t]} {
 		set graph_ht $t
@@ -214,20 +239,22 @@ set archive ""
 set last_graph ""
 
 # sar switches as names for object-instances (final and curent)
-#set sar_swtch [list b B c n r R u v w W y]
-set  sar_swtch [list b B c   r   u v w W]
+#set prog_swtch [list b B c n q r R u v w W y]
+set  prog_swtch [list b B c   q r R u v w W]
 # R - there are negative values !!!
 
 # maximal and current values for each graph indexed by sar switch i.e. for cpu 
 # is index u not -u
 
-foreach l $sar_swtch {
+foreach l $prog_swtch {
 	set val_max($l) 0
 	set val_cur($l) 0
+	set has_negative($l) 0
 }
 unset l
 # exceptions
 set val_max(u) 100
+set has_negative(R) 1
 
 set val_max(W) 1
 set val_cur(W) 1
@@ -245,7 +272,9 @@ set view_n(b) "I/O transfer rate"
 set view_n(B) "Paging statistics"
 set view_n(c) "Process creation"
 set view_n(n) "Network statistics"
+set view_n(q) "Run Queue"
 set view_n(r) "Memory and Swap"
+set view_n(R) "Memory statistics"
 set view_n(R) "Memory Activities"
 set view_n(u) "CPU Utilization"
 set view_n(v) "inode status"
@@ -260,8 +289,9 @@ set ylabel(b) "ops/sec"
 set ylabel(B) "pages/sec"
 set ylabel(c) "procs/sec"
 set ylabel(n) ""
+set ylabel(q) ""
 set ylabel(r) "KB"
-set ylabel(R) "per sec"
+set ylabel(R) "ops/sec"
 set ylabel(u) "Percent"
 set ylabel(v) ""
 set ylabel(w) "cswch/sec"
@@ -271,6 +301,7 @@ set y2label(b) ""
 set y2label(B) ""
 set y2label(c) ""
 set y2label(n) ""
+set y2label(q) ""
 set y2label(r) ""
 set y2label(R) ""
 set y2label(u) ""
@@ -283,13 +314,15 @@ set y2label(W) ""
 # Note: first element has index 0 (zero)!
 set out_tokens(b) [list 1 2 3 4]
 set out_tokens2(b) ""
-set out_tokens(B) [list 0 1]
+set out_tokens(B) [list 0 1 3 4 5 6]
 set out_tokens2(B) ""
 set out_tokens(c) [list 0]
 set out_tokens2(c) ""
+set out_tokens(q) [list 0 1 2 3]
+set out_tokens2(q) ""
 set out_tokens(r) [list 0 1 3 4 5 6 7]
 set out_tokens2(r) ""
-set out_tokens(R) [list 0 1 3 4 5 6 7]
+set out_tokens(R) [list 0 1 2 3]
 set out_tokens2(R) ""
 # CPU needs special computation
 set out_tokens(u) ""
@@ -314,6 +347,7 @@ proc reget_cmd {} {
  set cmd(B) "$sar -B -f $sar_data_path/$archive |  $grep -v 'pgpgin' $commstr"
  set cmd(c) "$sar -c -f $sar_data_path/$archive | $grep -v 'proc' $commstr"
  set cmd(n) ""
+ set cmd(q) "$sar -q -f $sar_data_path/$archive | $grep -v 'runq-sz' $commstr"
  set cmd(r) "$sar -r -f $sar_data_path/$archive | $grep -v 'kbmemfree' $commstr"
  set cmd(R) "$sar -R -f $sar_data_path/$archive | $grep -v 'campg' $commstr"
  set cmd(u) "$sar -u -f $sar_data_path/$archive | $grep -v 'user' $commstr"
@@ -326,11 +360,13 @@ reget_cmd
 # Functions which are responsible for data source selection and processing
 # funcs are referred from GUI
 proc fill_file_menu {} {
-	global sar_data_path
+	global sar_data_path sar_data_mask
 
-	set fp [open "| ls $sar_data_path"]
+		set fp [open "| sh -c \"ls $sar_data_path/$sar_data_mask\""]
 	menu .file.menu.m -tearoff false
 	while {[gets $fp line] != -1} {
+		set l [string last "/" $line]
+		set line [string range $line [expr $l + 1] end]
 				.file.menu.m add command -label "$line" -command "set_file $line"
 		
 	}
@@ -351,7 +387,7 @@ proc set_file {name} {
 
 ###############################################################################
 #
-# $Id: isag.GUI.m4,v 1.3 2001/02/03 10:53:46 isag Exp $
+# $Id: isag.GUI.m4,v 1.4 2001/02/20 19:05:25 sarrep Exp $
 #
 # GUI
 #
@@ -372,7 +408,7 @@ menubutton .menu.chart -text "Chart" -menu .menu.chart.m -underline 0
 menu .menu.chart.m -tearoff true
 
 # creates for each sar-switch menu item with apropriate command
-foreach l $sar_swtch {
+foreach l $prog_swtch {
 	.menu.chart.m add command -label $view_n($l) \
 		-command "new_chart $l" -accelerator $l
 	bind all $l "new_chart $l"
@@ -479,10 +515,10 @@ proc About {} {
 	msg_box About "Sar Grapher\n\nBuild:$version\n\nhttp://www.volny.cz/linux_monitor/isag/index.html\ne-mail: linux_monitor@volny.cz"
 }
 
-# eof: isag.GUI.m4
+# eof: sarrep.GUI.m4
 ###############################################################################
 #
-# $Id: isag.ResizeAll.m4,v 1.2 2001/02/03 11:01:38 isag Exp $
+# $Id: isag.ResizeAll.m4,v 1.2 2001/02/03 11:01:38 sarrep Exp $
 #
 # Resizing graph window
 #
@@ -528,10 +564,10 @@ proc ResizeAll {} {
 	#set enResizing 1
 }
 
-# eof: isag.ResizeAll.m4
+# eof: sarrep.ResizeAll.m4
 ###############################################################################
 #
-# $Id: isag.Other.Funcs.m4,v 1.5 2001/02/03 10:59:21 isag Exp $
+# $Id: isag.Other.Funcs.m4,v 1.5 2001/02/03 10:59:21 sarrep Exp $
 #
 # Other functions
 #
@@ -656,7 +692,7 @@ proc fngr {l} {
 	return "/tmp/gp_$l[pid]"
 }
 
-# eof: isag.Other.Funcs.m4
+# eof: sarrep.Other.Funcs.m4
 
 ###############################################################################
 #
@@ -667,11 +703,12 @@ proc fngr {l} {
 # in future - this string will not be fixed but functions will coming
 
 set plotstr(b) "\"[fngr b]\" using 1:2 t \"rtps\" with line, \"[fngr b]\" using 1:3 t \"wtps\" with line, \"[fngr b]\" using 1:4 t \"bread/s\" with line,  \"[fngr b]\" using 1:5 t \"bwrtn/s\" with line"
-set plotstr(B) "\"[fngr B]\" using 1:2 t \"pgpgin/s\" with line, \"[fngr B]\" using 1:3 t \"pgpgout/s\" with line"
+set plotstr(B) "\"[fngr B]\" using 1:2 t \"pgpgin/s\" with line, \"[fngr B]\" using 1:3 t \"pgpgout/s\" with line, \"[fngr B]\" using 1:4 t \"activepg\" with line, \"[fngr B]\" using 1:5 t \"inadtypg\" with line,  \"[fngr B]\" using 1:6 t \"inaclnpg\" with line, \"[fngr B]\" using 1:7 t \"inatarpg\" with line"
 set plotstr(c) "\"[fngr c]\" using 1:2 t \"proc/s\" with line"
 set plotstr(n) ""
+set plotstr(q) "\"[fngr q]\" using 1:2 t \"runq-sz\" with line, \"[fngr q]\" using 1:3 t \"plist-sz\" with line, \"[fngr q]\" using 1:4 t \"ldavg-1\" with line, \"[fngr q]\" using 1:5 t \"ldavg-5\" with line"
 set plotstr(r) "\"[fngr r]\" using 1:2 t \"kbmemfree\" with line, \"[fngr r]\" using 1:3 t \"kbmemused\" with line, \"[fngr r]\" using 1:4 t \"kbmemshrd\" with line, \"[fngr r]\" using 1:5 t \"kbbuffers\" with line, \"[fngr r]\" using 1:6 t \"kbcached\" with line, \"[fngr r]\" using 1:7 t \"kbswpfree\" with line, \"[fngr r]\" using 1:8 t \"kbswpused\" with line"
-set plotstr(R) ""
+set plotstr(R) "\"[fngr R]\" using 1:2 t \"frmpg/s\" with line, \"[fngr R]\" using 1:3 t \"shmpg/s\" with line, \"[fngr R]\" using 1:4 t \"bufpg/s\" with line, \"[fngr R]\" using 1:5 t \"campg/s\" with line"
 set plotstr(u) "\"[fngr u]\" using 1:2 t \"%user\" with line, \"[fngr u]\" using 1:3 t \"%nice\" with line, \"[fngr u]\" using 1:4 t \"%system\" with line"
 set plotstr(v) "\"[fngr v]\" using 1:2 t \"file-sz\" with line, \"[fngr v]\" using 1:3 t \"inode-sz\" with line, \"[fngr v]\" using 1:4 t \"super-sz\" with line, \"[fngr v]\" using 1:5 t \"dquot-sz\" with line, \"[fngr v]\" using 1:6 t \"rtsig-sz\" with line"
 set plotstr(w) "\"[fngr w]\" using 1:2 t \"cswch/s\" with line"
@@ -679,7 +716,7 @@ set plotstr(W) "\"[fngr W]\" using 1:2 t \"pswpin/s\" with line, \"[fngr W]\" us
 
 ###############################################################################
 #
-# $Id: isag.perf_data_procs.m4,v 1.4 2001/02/03 11:03:59 isag Exp $
+# $Id: isag.perf_data_procs.m4,v 1.4 2001/02/03 11:03:59 sarrep Exp $
 #
 # Performance data processing
 #
@@ -708,10 +745,10 @@ proc proc_line_u {fp line} {
 	}
 	return $rval
 }
-# eof: isag.perf_data_procs.m4
+# eof: sarrep.perf_data_procs.m4
 ###############################################################################
 #
-# $Id: proc_line_generic.m4,v 1.2 2001/01/27 19:25:57 isag Exp $
+# $Id: proc_line_generic.m4,v 1.2 2001/01/27 19:25:57 sarrep Exp $
 #
 # Performance Data Processing and Drawing functions
 #
@@ -749,7 +786,7 @@ proc proc_line_generic {l fp line} {
 # eof: proc_line_generic.m4
 ###############################################################################
 #
-# $Id: draw.m4,v 1.4 2001/02/03 10:49:40 isag Exp $
+# $Id: draw.m4,v 1.4 2001/02/03 10:49:40 sarrep Exp sarrep $
 #
 # Performance Data Processing and Drawing functions
 #
@@ -765,7 +802,7 @@ proc proc_line_generic {l fp line} {
 proc draw {l} {
 	global archive title sh sar grep sar_data_path gnuplot \
 		gr_scale val_cur val_max view_n cmd xlabel out_tokens \
-		ylabel y2label plotstr enResizing
+		ylabel y2label plotstr enResizing has_negative
 
 	
 	if {$archive == ""} {
@@ -788,7 +825,7 @@ proc draw {l} {
 
 	set nlines 0
 	while {[gets $fp line] != -1} {
-		if {"" != $out_tokens($l)} {
+				if {"" != $out_tokens($l)} {
 			set n [proc_line_generic $l $fpgr "$line"]
 		} else {
 			set n [proc_line_$l $fpgr "$line"]
@@ -803,10 +840,15 @@ proc draw {l} {
 	if {$nlines > 1} {
 		set_cur_max $l
 
+		if {1 == $has_negative($l)} {
+			set yrange "\[-$val_cur($l):$val_cur($l)\]"
+		} else {
+			set yrange "\[0:$val_cur($l)\]"
+		}
 		create_gnuplot_file tkcanvas "[fngr $l]" "$view_n($l)" \
 			"$xlabel" \
 			"$ylabel($l)" $y2label($l) \
-			"\[0:$val_cur($l)\]" \
+			$yrange \
 			"$plotstr($l)"
 
 		exec $gnuplot [fngr $l].gp
@@ -828,7 +870,7 @@ proc draw {l} {
 # eof: draw.m4
 ###############################################################################
 #
-# $Id: isag_cfg_file.m4,v 1.1 2001/02/03 10:50:38 isag Exp $
+# $Id: isag_cfg_file.m4,v 1.1 2001/02/03 10:50:38 sarrep Exp sarrep $
 #
 if {[file isfile $cfg_file] == 1} {
 	source $cfg_file
@@ -843,11 +885,11 @@ if {[file isfile $cfg_file] == 1} {
 # Finishing a program and writting of config file
 #
 proc exit_program {} {
-	global cfg_file sar_swtch val_max val_cur last_graph
+	global cfg_file prog_swtch val_max val_cur last_graph
 
 
 	set fp [open $cfg_file w]
-	foreach l $sar_swtch {
+	foreach l $prog_swtch {
 		puts $fp "set val_max($l) $val_max($l)"
 		puts $fp "set val_cur($l) $val_cur($l)"
 	}

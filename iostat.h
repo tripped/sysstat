@@ -8,8 +8,9 @@
 
 #include "common.h"
 
-
+/* Maximum number of partitions (minimum is 4) */
 #define MAX_PART	32
+
 #define MAX_NAME_LEN	13
 
 /* Files */

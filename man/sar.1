@@ -1,10 +1,10 @@
-.TH SAR 1 "JANUARY 2001" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "FEBRUARY 2001" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
-.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -h ] [ -i
+.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -h ] [ -i
 .I interval
-.B ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
+.B ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
 .B [ -n { DEV | EDEV | SOCK | FULL } ]
 .B [ -x {
 .I pid
@@ -68,7 +68,7 @@ flags. Not specifying any flags selects only CPU activity.
 Specifying the
 .B -A
 flag is equivalent to specifying
-.BR "-bBcrRuvwWy -I SUM -I PROC -n FULL -U ALL".
+.BR "-bBcdqrRuvwWy -I SUM -I PROC -n FULL -U ALL".
 
 The default version of the
 .B sar
@@ -108,7 +108,7 @@ command only reports on local activities.
 .SH OPTIONS
 .IP -A
 This is equivalent to specifying
-.BR "-bBcrRuvwWy -I SUM -I PROC -n FULL -U ALL".
+.BR "-bBcdqrRuvwWy -I SUM -I PROC -n FULL -U ALL".
 .IP -b
 Report I/O and transfer rate statistics. The following values are
 displayed:
@@ -149,12 +149,35 @@ Report paging statistics. The following values are displayed:
 .B pgpgin/s
 .RS
 .RS
-Total number of pages the system paged in from disk per second.
+Total number of blocks the system paged in from disk per second.
 .RE
 
 .B pgpgout/s
 .RS
-Total number of pages the system paged out to disk per second.
+Total number of blocks the system paged out to disk per second.
+.RE
+
+.B activepg
+.RS
+Number of active (recently touched) pages in memory.
+Note that a page has a size of 4 KB or 8 KB according to the machine architecture.
+.RE
+
+.B inadtypg
+.RS
+Number of inactive dirty (modified or potentially modified) pages in memory.
+.RE
+
+.B inaclnpg
+.RS
+Number of inactive clean (not modified) pages in memory.
+.RE
+
+.B inatarpg
+.RS
+"Inactive target" number of pages. This field is a 1-minute floating average
+of the number of pages the system needs to "steal" every second
+in order to satisfy memory demand.
 .RE
 .RE
 .IP -c
@@ -164,6 +187,31 @@ Report process creation activity.
 .RS
 .RS
 Total number of processes created per second.
+.RE
+.RE
+.IP -d
+Report activity for each block device (kernels 2.4 and later only). When data is displayed,
+the device specification
+.I dev m-n
+is generally used (
+.B DEV
+column).
+.B m
+is the major number of the device, whereas
+.B n
+is a distinctive number.
+
+.B tps
+.RS
+.RS
+Indicate the number of transfers per second that were issued to the device.
+Multiple logical requests can be combined into a single I/O request to the
+device. A transfer is of indeterminate size.
+.RE
+
+.B blks/s
+.RS
+Number of blocks transferred from or to the device. A block is of indeterminate size.
 .RE
 .RE
 .IP "-e hh:mm:ss"
@@ -225,7 +273,7 @@ The following values are displayed:
 .B IFACE
 .RS
 .RS
-Name of the network interface from which statistics are reported.
+Name of the network interface for which statistics are reported.
 .RE
 
 .B rxpck/s
@@ -270,7 +318,7 @@ The following values are displayed:
 
 .B IFACE
 .RS
-Name of the network interface from which statistics are reported.
+Name of the network interface for which statistics are reported.
 .RE
 
 .B rxerr/s
@@ -361,6 +409,30 @@ is in a separate record. The default value of the
 parameter is the current daily data file, the
 .IR /var/log/sa/sa dd
 file. The -o option is exclusive of the -f option.
+.IP -q
+Report queue length and load averages. The following values are displayed:
+
+.B runq-sz
+.RS
+.RS
+Run queue length (number of processes waiting for run time). 
+.RE
+
+.B plist-sz
+.RS
+Number of processes in the process list.
+.RE
+
+.B ldavg-1
+.RS
+System load average for the last minute.
+.RE
+
+.B ldavg-5
+.RS
+System load average for the past 5 minutes.
+.RE
+.RE
 .IP -r
 Report memory and swap space utilization statistics.
 The following values are displayed:
@@ -652,7 +724,7 @@ which have required loading a memory page from disk.
 
 These last two statistics are consistent only when no processes have terminated.
 If a process is killed during the interval, the statistics are
-not available (marked as ?.??) and the average number will not be computed.
+not available (marked as ????) and the average number will not be computed.
 .RE
 .IP "-X pid | SELF | ALL"
 Report statistics for the child processes of the process whose PID is

@@ -28,7 +28,6 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/param.h>	/* for HZ */
-#include <asm/page.h>	/* for PAGE_SHIFT */
 
 #include "version.h"
 #include "sa.h"
@@ -57,6 +56,7 @@ struct stats_one_cpu *st_cpu[DIM];
 struct stats_serial *st_serial[DIM];
 struct stats_irq_cpu *st_irq_cpu[DIM];
 struct stats_net_dev *st_net_dev[DIM];
+struct disk_stats *st_disk[DIM];
 /* Array members of common types are always packed */
 unsigned int interrupts[DIM][NR_IRQS];
 /* Structures are aligned but also padded. Thus array members are packed */
@@ -77,7 +77,7 @@ void usage(char *progname)
 		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 	           "Usage: %s [ options... ]\n"
 	           "Options are:\n"
-	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -h ] [ -i <interval> ]\n"
+	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -h ] [ -i <interval> ] [ -q ]\n"
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 		   "[ -I { <irq> | SUM | PROC | ALL | XALL } ] [ -U { <cpu> | ALL } ]\n"
 		   "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
@@ -228,6 +228,25 @@ void salloc_net_dev(int nr_iface)
       }
 
       memset(st_net_dev[i], 0, STATS_NET_DEV_SIZE * nr_iface);
+   }
+}
+
+
+/*
+ * Allocate disk_stats structures
+ */
+void salloc_disk(int nr_disk)
+{
+   int i;
+
+
+   for (i = 0; i < DIM; i++) {
+      if ((st_disk[i] = (struct disk_stats *) malloc(DISK_STATS_SIZE * nr_disk)) == NULL) {
+	 perror("malloc");
+	 exit(4);
+      }
+
+      memset(st_disk[i], 0, DISK_STATS_SIZE * nr_disk);
    }
 }
 
@@ -485,6 +504,8 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
    struct stats_serial *st_serial_i, *st_serial_j;
    struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
    struct stats_one_cpu *st_cpu_i, *st_cpu_j;
+   struct disk_stats *st_disk_i, *st_disk_j;
+   char stemp[16];
 
 
    /* Interval value in jiffies */
@@ -584,11 +605,15 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
    if (GET_PAGE(act)) {
       if (dis)
-	 printf(_("\nAverage:     pgpgin/s pgpgout/s\n"));
+	 printf(_("\nAverage:     pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"));
 
-      printf(_("Average:    %9.2f %9.2f\n"),
+      printf(_("Average:    %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n"),
 	     ((double) ((file_stats[curr].pgpgin  - file_stats[2].pgpgin)  * HZ)) / itv,
-	     ((double) ((file_stats[curr].pgpgout - file_stats[2].pgpgout) * HZ)) / itv);
+	     ((double) ((file_stats[curr].pgpgout - file_stats[2].pgpgout) * HZ)) / itv,
+	     (double) asum.nr_active_pages         / asum.count,
+	     (double) asum.nr_inactive_dirty_pages / asum.count,
+	     (double) asum.nr_inactive_clean_pages / asum.count,
+	     (double) asum.inactive_target         / asum.count);
    }
 
    if (GET_SWAP(act)) {
@@ -613,31 +638,14 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
    }
 
    if (GET_MEMORY(act)) {
-      long mem[2];
-
       if (dis)
 	 printf(_("\nAverage:      frmpg/s   shmpg/s   bufpg/s   campg/s\n"));
 
-      /* A page is 4 Kb or 8 Kb according to the machine architecture */
-      mem[1] = file_stats[curr].frmkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[2].frmkb     >> (PAGE_SHIFT - 10);
-      printf(_("Average:    %9.2f"),
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
-
-      mem[1] = file_stats[curr].shmkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[2].shmkb     >> (PAGE_SHIFT - 10);
-      printf(" %9.2f",
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
-
-      mem[1] = file_stats[curr].bufkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[2].bufkb     >> (PAGE_SHIFT - 10);
-      printf(" %9.2f",
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
-
-      mem[1] = file_stats[curr].camkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[2].camkb     >> (PAGE_SHIFT - 10);
-      printf(" %9.2f\n",
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
+      printf(_("Average:    %9.2f %9.2f %9.2f %9.2f\n"),
+	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[2].frmkb)) * HZ / itv,
+	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[2].shmkb)) * HZ / itv,
+	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[2].bufkb)) * HZ / itv,
+	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[2].camkb)) * HZ / itv);
    }
 
    if (GET_PID(act)) {
@@ -722,21 +730,21 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
       if (dis)
 	 printf(_("\nAverage:    kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"));
 
-      printf(_("Average:    %9lu %9lu"),
-	     asum.frmkb / asum.count,
-	     file_stats[curr].tlmkb - (asum.frmkb / asum.count));
+      printf(_("Average:    %9.0f %9.0f"),
+	     (double) asum.frmkb / asum.count,
+	     (double) file_stats[curr].tlmkb - ((double) asum.frmkb / asum.count));
       if (file_stats[curr].tlmkb)
 	 printf("    %6.2f",
 		((double) ((file_stats[curr].tlmkb - (asum.frmkb / asum.count)) * 100)) / file_stats[curr].tlmkb);
       else
 	 printf("      %.2f", 0.0);
 
-      printf(" %9lu %9lu %9lu %9lu %9lu",
-	     asum.shmkb / asum.count,
-	     asum.bufkb / asum.count,
-	     asum.camkb / asum.count,
-	     asum.frskb / asum.count,
-	     (asum.tlskb / asum.count) - (asum.frskb / asum.count));
+      printf(" %9.0f %9.0f %9.0f %9.0f %9.0f",
+	     (double) asum.shmkb / asum.count,
+	     (double) asum.bufkb / asum.count,
+	     (double) asum.camkb / asum.count,
+	     (double) asum.frskb / asum.count,
+	     ((double) asum.tlskb / asum.count) - ((double) asum.frskb / asum.count));
       if (asum.tlskb / asum.count)
 	 printf("    %6.2f\n",
 		((double) (((asum.tlskb / asum.count) - (asum.frskb / asum.count)) * 100)) / (asum.tlskb / asum.count));
@@ -793,32 +801,32 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
       if (dis)
 	 printf(_("\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"));
 
-      printf(_("Average:    %9lu"), asum.dentry_stat / asum.count);
+      printf(_("Average:    %9.0f"), (double) asum.dentry_stat / asum.count);
 
-      printf(" %9lu", asum.file_used / asum.count);
+      printf(" %9.0f", (double) asum.file_used / asum.count);
       if (file_stats[curr].file_max)
 	 printf("    %6.2f",
 		((double) ((asum.file_used / asum.count) * 100)) / file_stats[curr].file_max);
       else
 	 printf("      %.2f", 0.0);
 
-      printf(" %9lu", asum.inode_used / asum.count);
+      printf(" %9.0f", (double) asum.inode_used / asum.count);
 
-      printf(" %9lu", asum.super_used / asum.count);
+      printf(" %9.0f", (double) asum.super_used / asum.count);
       if (file_stats[curr].super_max)
 	 printf("    %6.2f",
 		((double) ((asum.super_used / asum.count) * 100)) / file_stats[curr].super_max);
       else
 	 printf("      %.2f", 0.0);
 
-      printf(" %9lu", asum.dquot_used / asum.count);
+      printf(" %9.0f", (double) asum.dquot_used / asum.count);
       if (file_stats[curr].dquot_max)
 	 printf("    %6.2f",
 		((double) ((asum.dquot_used / asum.count) * 100)) / file_stats[curr].dquot_max);
       else
 	 printf("      %.2f", 0.0);
 
-      printf(" %9lu", asum.rtsig_queued / asum.count);
+      printf(" %9.0f", (double) asum.rtsig_queued / asum.count);
       if (file_stats[curr].rtsig_max)
 	 printf("    %6.2f\n",
 		((double) ((asum.rtsig_queued / asum.count) * 100)) / file_stats[curr].rtsig_max);
@@ -880,12 +888,41 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
       if (dis)
 	 printf(_("\nAverage:       totsck    tcpsck    udpsck    rawsck   ip-frag\n"));
 
-      printf(_("Average:    %9lu %9lu %9lu %9lu %9lu\n"),
-	     asum.sock_inuse / asum.count,
-	     asum.tcp_inuse  / asum.count,
-	     asum.udp_inuse  / asum.count,
-	     asum.raw_inuse  / asum.count,
-	     asum.frag_inuse / asum.count);
+      printf(_("Average:    %9.0f %9.0f %9.0f %9.0f %9.0f\n"),
+	     (double) asum.sock_inuse / asum.count,
+	     (double) asum.tcp_inuse  / asum.count,
+	     (double) asum.udp_inuse  / asum.count,
+	     (double) asum.raw_inuse  / asum.count,
+	     (double) asum.frag_inuse / asum.count);
+   }
+
+   if (GET_QUEUE(act)) {
+      if (dis)
+	 printf(_("\nAverage:      runq-sz  plist-sz   ldavg-1   ldavg-5\n"));
+
+      printf(_("Average:    %9.0f %9.0f %9.2f %9.2f\n"),
+	     (double) asum.nr_running / asum.count,
+	     (double) asum.nr_threads / asum.count,
+	     (double) asum.load_avg_1 / (asum.count * 100),
+	     (double) asum.load_avg_5 / (asum.count * 100));
+   }
+
+   if (GET_DISK(act)) {
+      if (dis)
+	 printf(_("\nAverage:          DEV       tps    blks/s\n"));
+
+      for (i = 0; i < file_hdr.sa_nr_disk; i++) {
+	
+	 st_disk_i = st_disk[curr] + i;
+	 st_disk_j = st_disk[2]    + i;
+	 if (!(st_disk_i->major + st_disk_i->index))
+	    continue;
+	
+	 sprintf(stemp, "dev%d-%d", st_disk_i->major, st_disk_i->index);
+	 printf(_("Average:    %9.9s %9.2f %9.2f\n"), stemp,
+		((double) ((st_disk_i->dk_drive       - st_disk_j->dk_drive)       * HZ)) / itv,
+		((double) ((st_disk_i->dk_drive_rwblk - st_disk_j->dk_drive_rwblk) * HZ)) / itv);
+      }
    }
 
    if (read_from_file)
@@ -907,7 +944,9 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    struct stats_serial *st_serial_i, *st_serial_j;
    struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
    struct stats_one_cpu *st_cpu_i, *st_cpu_j;
+   struct disk_stats *st_disk_i, *st_disk_j;
    struct tm *ltm;
+   char stemp[16];
 
 
    /* Check time (1) */
@@ -1044,11 +1083,24 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Print number of pages the system paged in and out */
    if (GET_PAGE(act)) {
       if (dis)
-	 printf(_("\n%-11s  pgpgin/s pgpgout/s\n"), cur_time[!curr]);
+	 printf(_("\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"), cur_time[!curr]);
 
-      printf("%-11s %9.2f %9.2f\n", cur_time[curr],
+      printf("%-11s %9.2f %9.2f %9u %9u %9u %9lu\n", cur_time[curr],
 	     ((double) ((file_stats[curr].pgpgin  - file_stats[!curr].pgpgin)  * HZ)) / itv,
-	     ((double) ((file_stats[curr].pgpgout - file_stats[!curr].pgpgout) * HZ)) / itv);
+	     ((double) ((file_stats[curr].pgpgout - file_stats[!curr].pgpgout) * HZ)) / itv,
+	     file_stats[curr].nr_active_pages,
+	     file_stats[curr].nr_inactive_dirty_pages,
+	     file_stats[curr].nr_inactive_clean_pages,
+	     file_stats[curr].inactive_target);
+
+      /*
+       * Will be used to compute the average.
+       * Note: overflow unlikely to happen but not impossible...
+       */
+      asum.nr_active_pages         += file_stats[curr].nr_active_pages;
+      asum.nr_inactive_dirty_pages += file_stats[curr].nr_inactive_dirty_pages;
+      asum.nr_inactive_clean_pages += file_stats[curr].nr_inactive_clean_pages;
+      asum.inactive_target         += file_stats[curr].inactive_target;
    }
 
    /* Print number of swap pages brought in and out */
@@ -1076,31 +1128,14 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 
    /* Print memory stats */
    if (GET_MEMORY(act)) {
-      long mem[2];
-
       if (dis)
 	 printf(_("\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"), cur_time[!curr]);
 
-      /* A page is 4 Kb or 8 Kb according to the machine architecture */
-      mem[1] = file_stats[curr].frmkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[!curr].frmkb >> (PAGE_SHIFT - 10);
-      printf("%-11s %9.2f", cur_time[curr],
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
-
-      mem[1] = file_stats[curr].shmkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[!curr].shmkb >> (PAGE_SHIFT - 10);
-      printf(" %9.2f",
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
-
-      mem[1] = file_stats[curr].bufkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[!curr].bufkb >> (PAGE_SHIFT - 10);
-      printf(" %9.2f",
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
-
-      mem[1] = file_stats[curr].camkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[!curr].camkb >> (PAGE_SHIFT - 10);
-      printf(" %9.2f\n",
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
+      printf("%-11s %9.2f %9.2f %9.2f %9.2f\n", cur_time[curr],
+	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb)) * HZ / itv,
+	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb)) * HZ / itv,
+	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb)) * HZ / itv,
+	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb)) * HZ / itv);
    }
 
    /* Print per-process statistics */
@@ -1426,6 +1461,43 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       asum.frag_inuse += file_stats[curr].frag_inuse;
    }
 
+   /* Print load averages and queue length */
+   if (GET_QUEUE(act)) {
+      if (dis)
+	 printf(_("\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5\n"), cur_time[!curr]);
+
+      printf("%-11s %9u %9u %9.2f %9.2f\n", cur_time[curr],
+	     file_stats[curr].nr_running,
+	     file_stats[curr].nr_threads,
+	     (double) file_stats[curr].load_avg_1 / 100,
+	     (double) file_stats[curr].load_avg_5 / 100);
+
+      /* Will be used to compute the average */
+      asum.nr_running += file_stats[curr].nr_running;
+      asum.nr_threads += file_stats[curr].nr_threads;
+      asum.load_avg_1 += file_stats[curr].load_avg_1;
+      asum.load_avg_5 += file_stats[curr].load_avg_5;
+   }
+
+   /* Print disk statistics */
+   if (GET_DISK(act)) {
+      if (dis)
+	 printf(_("\n%-11s       DEV       tps    blks/s\n"), cur_time[!curr]);
+
+      for (i = 0; i < file_hdr.sa_nr_disk; i++) {
+	
+	 st_disk_i = st_disk[curr]  + i;
+	 st_disk_j = st_disk[!curr] + i;
+	 if (!(st_disk_i->major + st_disk_i->index))
+	    continue;
+
+	 sprintf(stemp, "dev%d-%d", st_disk_i->major, st_disk_i->index);
+	 printf("%-11s %9.9s %9.2f %9.2f\n", cur_time[curr], stemp,
+		((double) ((st_disk_i->dk_drive       - st_disk_j->dk_drive)       * HZ)) / itv,
+		((double) ((st_disk_i->dk_drive_rwblk - st_disk_j->dk_drive_rwblk) * HZ)) / itv);
+      }
+   }
+
    /* Check time (3) */
    if (use_tm_end && (datecmp(&loc_time, &tm_end) >= 0)) {
       /* It's too late now... */
@@ -1450,6 +1522,7 @@ int write_stats_for_ppc(short curr, unsigned int act, int reset, long *cnt,
    struct stats_serial *st_serial_i, *st_serial_j;
    struct stats_irq_cpu *p, *q, *p0, *q0;
    struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
+   struct disk_stats *st_disk_i, *st_disk_j;
    char cur_time[14];
 
 
@@ -1545,6 +1618,14 @@ int write_stats_for_ppc(short curr, unsigned int act, int reset, long *cnt,
 	     ((double) ((file_stats[curr].pgpgin - file_stats[!curr].pgpgin) * HZ)) / itv);
       printf("%s\t%ld\t%s\t-\tpgpgout/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
 	     ((double) ((file_stats[curr].pgpgout - file_stats[!curr].pgpgout) * HZ)) / itv);
+      printf("%s\t%ld\t%s\t-\tactivepg\t%u\n", file_hdr.sa_nodename, dt, cur_time,
+	    file_stats[curr].nr_active_pages);
+      printf("%s\t%ld\t%s\t-\tinadtypg\t%u\n", file_hdr.sa_nodename, dt, cur_time,
+	    file_stats[curr].nr_inactive_dirty_pages);
+      printf("%s\t%ld\t%s\t-\tinaclnpg\t%u\n", file_hdr.sa_nodename, dt, cur_time,
+	    file_stats[curr].nr_inactive_clean_pages);
+      printf("%s\t%ld\t%s\t-\tinatarpg\t%lu\n", file_hdr.sa_nodename, dt, cur_time,
+	    file_stats[curr].inactive_target);
    }
 
    /* Print number of swap pages brought in and out */
@@ -1571,29 +1652,14 @@ int write_stats_for_ppc(short curr, unsigned int act, int reset, long *cnt,
 
    /* Print memory stats */
    if (GET_MEMORY(act)) {
-
-      long mem[2];
-
-      /* A page is 4 Kb or 8 Kb according to machine architecture */
-      mem[1] = file_stats[curr].frmkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[!curr].frmkb >> (PAGE_SHIFT - 10);
-      printf("%s\t%ld\t%s\t-\tfrmpg/s\t%9.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
-
-      mem[1] = file_stats[curr].shmkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[!curr].shmkb >> (PAGE_SHIFT - 10);
-      printf("%s\t%ld\t%s\t-\tshmpg/s\t%9.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
-
-      mem[1] = file_stats[curr].bufkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[!curr].bufkb >> (PAGE_SHIFT - 10);
-      printf("%s\t%ld\t%s\t-\tbufpg/s\t%9.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
-
-      mem[1] = file_stats[curr].camkb  >> (PAGE_SHIFT - 10);
-      mem[0] = file_stats[!curr].camkb >> (PAGE_SHIFT - 10);
-      printf("%s\t%ld\t%s\t-\tcampg/s\t%9.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ((double) ((mem[1] - mem[0]) * HZ)) / itv);
+      printf("%s\t%ld\t%s\t-\tfrmpg/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb)) * HZ / itv);
+      printf("%s\t%ld\t%s\t-\tshmpg/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb)) * HZ / itv);
+      printf("%s\t%ld\t%s\t-\tbufpg/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb)) * HZ / itv);
+      printf("%s\t%ld\t%s\t-\tcampg/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb)) * HZ / itv);
    }
 
    /* Print TTY statistics (serial lines) */
@@ -1815,6 +1881,37 @@ int write_stats_for_ppc(short curr, unsigned int act, int reset, long *cnt,
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].frag_inuse);
    }
 
+   /* Print load averages and queue length */
+   if (GET_QUEUE(act)) {
+      printf("%s\t%ld\t%s\t-\trunq-sz\t%u\n",
+	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].nr_running);
+      printf("%s\t%ld\t%s\t-\tplist-sz\t%u\n",
+	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].nr_threads);
+      printf("%s\t%ld\t%s\t-\tldavg-1\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time, (double) file_stats[curr].load_avg_1 / 100);
+      printf("%s\t%ld\t%s\t-\tldavg-5\t%.2f\n",
+	     file_hdr.sa_nodename, dt, cur_time, (double) file_stats[curr].load_avg_5 / 100);
+   }
+
+   /* Print disk statistics */
+   if (GET_DISK(act)) {
+
+      for (i = 0; i < file_hdr.sa_nr_disk; i++) {
+
+	 st_disk_i = st_disk[curr]  + i;
+	 st_disk_j = st_disk[!curr] + i;
+	 if (!(st_disk_i->major + st_disk_i->index))
+	    continue;
+	
+	 printf("%s\t%ld\t%s\tdev%d-%d\ttps\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, st_disk_i->major, st_disk_i->index,
+		((double) ((st_disk_i->dk_drive - st_disk_j->dk_drive) * HZ)) / itv);
+	 printf("%s\t%ld\t%s\tdev%d-%d\tblks/s\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, st_disk_i->major, st_disk_i->index,
+		((double) ((st_disk_i->dk_drive_rwblk - st_disk_j->dk_drive_rwblk) * HZ)) / itv);
+      }
+   }
+
    /* Check time (3) */
    if (use_tm_end && (datecmp(&loc_time, &tm_end) >= 0)) {
       /* It's too late now... */
@@ -1859,6 +1956,103 @@ void write_dummy(short curr)
 
 
 /*
+ * Allocate structures
+ */
+void allocate_structures(int stype)
+{
+
+   if (file_hdr.sa_proc > 0)
+      salloc_cpu(file_hdr.sa_proc + 1);
+   if ((stype == USE_SADC) && (GET_PID(sar_actflag) || GET_CPID(sar_actflag))) {
+      pid_nr = file_hdr.sa_nr_pid;
+      salloc_pid(pid_nr);
+   }
+   if (file_hdr.sa_serial)
+      salloc_serial(file_hdr.sa_serial);
+   if (file_hdr.sa_irqcpu)
+      salloc_irqcpu(file_hdr.sa_proc + 1, file_hdr.sa_irqcpu);
+   if (file_hdr.sa_iface)
+      salloc_net_dev(file_hdr.sa_iface);
+   if (file_hdr.sa_nr_disk)
+      salloc_disk(file_hdr.sa_nr_disk);
+
+   /* Print report header */
+   print_report_hdr();
+}
+
+
+/*
+ * Move structures data
+ */
+void copy_structures(int dest, int src, int stype)
+{
+
+   memcpy(&file_stats[dest], &file_stats[src], FILE_STATS_SIZE);
+   if (file_hdr.sa_proc > 0)
+      memcpy(st_cpu[dest], st_cpu[src], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
+   if (GET_ONE_IRQ(file_hdr.sa_actflag))
+      memcpy(interrupts[dest], interrupts[src], STATS_ONE_IRQ_SIZE);
+   if ((stype == USE_SADC) && (pid_nr))
+      memcpy(pid_stats[dest][0], pid_stats[src][0], PID_STATS_SIZE * pid_nr);
+   if (file_hdr.sa_serial)
+      memcpy(st_serial[dest], st_serial[src], STATS_SERIAL_SIZE * file_hdr.sa_serial);
+   if (file_hdr.sa_irqcpu)
+      memcpy(st_irq_cpu[dest], st_irq_cpu[src], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
+   if (file_hdr.sa_iface)
+      memcpy(st_net_dev[dest], st_net_dev[src], STATS_NET_DEV_SIZE * file_hdr.sa_iface);
+   if (file_hdr.sa_nr_disk)
+      memcpy(st_disk[dest], st_disk[src], DISK_STATS_SIZE * file_hdr.sa_nr_disk);
+}
+
+
+/*
+ * Read varying part of the statistics from a daily data file
+ */
+void read_extra_stats(short curr, int ifd)
+{
+
+   if (file_hdr.sa_proc > 0)
+      sa_fread(ifd, st_cpu[curr], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1), HARD_SIZE);
+   if (GET_ONE_IRQ(file_hdr.sa_actflag))
+      sa_fread(ifd, interrupts[curr], STATS_ONE_IRQ_SIZE, HARD_SIZE);
+   if (file_hdr.sa_serial)
+      sa_fread(ifd, st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
+   if (file_hdr.sa_irqcpu)
+      sa_fread(ifd, st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu, HARD_SIZE);
+   if (file_hdr.sa_iface)
+      sa_fread(ifd, st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
+   if (file_hdr.sa_nr_disk)
+      sa_fread(ifd, st_disk[curr], DISK_STATS_SIZE * file_hdr.sa_nr_disk, HARD_SIZE);
+   /* PID stats cannot be saved in file. So we don't read them */
+}
+
+
+/*
+ * Read a bunch of statistics sent by the data collector
+ */
+void read_stat_bunch(short curr)
+{
+
+   if (sa_read(&file_stats[curr], file_hdr.sa_st_size))
+      exit(0);
+   if ((file_hdr.sa_proc > 0) && sa_read(st_cpu[curr], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1)))
+      exit(0);
+   if (GET_ONE_IRQ(file_hdr.sa_actflag) && sa_read(interrupts[curr], STATS_ONE_IRQ_SIZE))
+      exit(0);
+   if (pid_nr && sa_read(pid_stats[curr][0], PID_STATS_SIZE * pid_nr))
+      exit(0);
+   if (file_hdr.sa_serial && sa_read(st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial))
+      exit(0);
+   if (file_hdr.sa_irqcpu && sa_read(st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu))
+      exit(0);
+   if (file_hdr.sa_iface && sa_read(st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface))
+      exit(0);
+   if (file_hdr.sa_nr_disk && sa_read(st_disk[curr], DISK_STATS_SIZE * file_hdr.sa_nr_disk))
+      exit(0);
+}
+
+
+/*
  * Read statistics from a system activity data file
  */
 void read_stats_from_file(char from_file[])
@@ -1892,7 +2086,8 @@ void read_stats_from_file(char from_file[])
    }
 
    if ((GET_SERIAL(sar_actflag) && (file_hdr.sa_serial > 1)) ||
-       ((GET_NET_DEV(sar_actflag) || GET_NET_EDEV(sar_actflag)) && (file_hdr.sa_iface  > 1)))
+       ((GET_NET_DEV(sar_actflag) || GET_NET_EDEV(sar_actflag)) && (file_hdr.sa_iface  > 1)) ||
+       (GET_DISK(sar_actflag) && (file_hdr.sa_nr_disk > 1)))
       dis_hdr = 9;
 
    sar_actflag &= file_hdr.sa_actflag;
@@ -1909,25 +2104,14 @@ void read_stats_from_file(char from_file[])
    }
 
    /* Perform required allocations */
-   if (file_hdr.sa_proc > 0)
-      salloc_cpu(file_hdr.sa_proc + 1);
-   if (file_hdr.sa_serial)
-      salloc_serial(file_hdr.sa_serial);
-   if (file_hdr.sa_irqcpu)
-      salloc_irqcpu(file_hdr.sa_proc + 1, file_hdr.sa_irqcpu);
-   if (file_hdr.sa_iface)
-      salloc_net_dev(file_hdr.sa_iface);
-
-   print_report_hdr();
+   allocate_structures(USE_SA_FILE);
 
    /* Read system statistics from file */
    do {
-
       /*
        * If this record is a DUMMY one, print it and (try to) get another one.
        * We must be sure that we have real stats in file_stats[2].
        */
-
       do {
 	 if (sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE))
 	    /* End of sa data file */
@@ -1937,17 +2121,7 @@ void read_stats_from_file(char from_file[])
 	    write_dummy(0);
 	 else {
 	    /* Ok: previous record was not a DUMMY one. So read now the extra fields. */
-	    if (file_hdr.sa_proc > 0)
-	       sa_fread(ifd, st_cpu[0], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1), HARD_SIZE);
-	    if (GET_ONE_IRQ(file_hdr.sa_actflag))
-	       sa_fread(ifd, interrupts[0], STATS_ONE_IRQ_SIZE, HARD_SIZE);
-	    if (file_hdr.sa_serial)
-	       sa_fread(ifd, st_serial[0], STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
-	    if (file_hdr.sa_irqcpu)
-	       sa_fread(ifd, st_irq_cpu[0], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu, HARD_SIZE);
-	    if (file_hdr.sa_iface)
-	       sa_fread(ifd, st_net_dev[0], STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
-	    /* PID stats cannot be saved in file. So we don't read them */
+	    read_extra_stats(0, ifd);
 
 	    if (PRINT_ORG_TIME(flags)) {
 	       loc_time.tm_hour = file_stats[0].hour;
@@ -1958,7 +2132,6 @@ void read_stats_from_file(char from_file[])
 	       ltm = localtime(&file_stats[0].ust_time);
 	       loc_time = *ltm;
 	    }
-	
 	 }
       }
       while ((file_stats[0].record_type == R_DUMMY) ||
@@ -1966,17 +2139,8 @@ void read_stats_from_file(char from_file[])
 	     (tm_end.use && (datecmp(&loc_time, &tm_end) >=0)));
 
       /* Save the first stats collected. Will be used to compute the average */
-      memcpy(&file_stats[2], &file_stats[0], FILE_STATS_SIZE);
-      if (file_hdr.sa_proc > 0)
-	 memcpy(st_cpu[2], st_cpu[0], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc +1));
-      if (GET_ONE_IRQ(file_hdr.sa_actflag))
-	 memcpy(interrupts[2], interrupts[0], STATS_ONE_IRQ_SIZE);
-      if (file_hdr.sa_serial)
-	 memcpy(st_serial[2], st_serial[0], STATS_SERIAL_SIZE * file_hdr.sa_serial);
-      if (file_hdr.sa_irqcpu)
-	 memcpy(st_irq_cpu[2], st_irq_cpu[0], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
-      if (file_hdr.sa_iface)
-	 memcpy(st_net_dev[2], st_net_dev[0], STATS_NET_DEV_SIZE * file_hdr.sa_iface);
+      copy_structures(2, 0, USE_SA_FILE);
+
       reset = 1;	/* Set flag to reset last_uptime variable */
 
       /* Save current file position */
@@ -1998,17 +2162,7 @@ void read_stats_from_file(char from_file[])
 	    }
 
 	    /* Restore the first stats collected. Used to compute the rate displayed on the first line */
-	    memcpy(&file_stats[!curr], &file_stats[2], FILE_STATS_SIZE);
-	    if (file_hdr.sa_proc > 0)
-	       memcpy(st_cpu[!curr], st_cpu[2], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
-	    if (GET_ONE_IRQ(file_hdr.sa_actflag))
-	       memcpy(interrupts[!curr], interrupts[2], STATS_ONE_IRQ_SIZE);
-	    if (file_hdr.sa_serial)
-	       memcpy(st_serial[!curr], st_serial[2], STATS_SERIAL_SIZE * file_hdr.sa_serial);
-	    if (file_hdr.sa_irqcpu)
-	       memcpy(st_irq_cpu[!curr], st_irq_cpu[2], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
-	    if (file_hdr.sa_iface)
-	       memcpy(st_net_dev[!curr], st_net_dev[2], STATS_NET_DEV_SIZE * file_hdr.sa_iface);
+	    copy_structures(!curr, 2, USE_SA_FILE);
 	
 	    lines = 0;
 	    davg  = 0;
@@ -2019,19 +2173,9 @@ void read_stats_from_file(char from_file[])
 	       eosaf = sa_fread(ifd, &file_stats[curr], file_hdr.sa_st_size, SOFT_SIZE);
 	       rtype = file_stats[curr].record_type;
 	
-	       if (!eosaf && (rtype != R_DUMMY)) {
+	       if (!eosaf && (rtype != R_DUMMY))
 		  /* Read the extra fields since it's not a DUMMY record */
-		  if (file_hdr.sa_proc > 0)
-		     sa_fread(ifd, st_cpu[curr], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1), HARD_SIZE);
-		  if (GET_ONE_IRQ(file_hdr.sa_actflag))
-		     sa_fread(ifd, interrupts[curr], STATS_ONE_IRQ_SIZE, HARD_SIZE);
-		  if (file_hdr.sa_serial)
-		     sa_fread(ifd, st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
-		  if (file_hdr.sa_irqcpu)
-		     sa_fread(ifd, st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu, HARD_SIZE);
-		  if (file_hdr.sa_iface)
-		     sa_fread(ifd, st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
-	       }
+		  read_extra_stats(curr, ifd);
 
 	       dis = !(lines++ % rows);
 
@@ -2065,21 +2209,10 @@ void read_stats_from_file(char from_file[])
 	 /* Go to next Linux restart, if possible */
 	 do {
 	    eosaf = sa_fread(ifd, &file_stats[curr], file_hdr.sa_st_size, SOFT_SIZE);
-	    if (!eosaf && (file_stats[curr].record_type != R_DUMMY)) {
-	       if (file_hdr.sa_proc > 0)
-		  sa_fread(ifd, st_cpu[curr], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1), HARD_SIZE);
-	       if (GET_ONE_IRQ(file_hdr.sa_actflag))
-		  sa_fread(ifd, interrupts[curr], STATS_ONE_IRQ_SIZE, HARD_SIZE);
-	       if (file_hdr.sa_serial)
-		  sa_fread(ifd, st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
-	       if (file_hdr.sa_irqcpu)
-		  sa_fread(ifd, st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu, HARD_SIZE);
-	       if (file_hdr.sa_iface)
-		  sa_fread(ifd, st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
-	    }
+	    if (!eosaf && (file_stats[curr].record_type != R_DUMMY))
+	       read_extra_stats(curr, ifd);
 	 }
 	 while (!eosaf && (file_stats[curr].record_type != R_DUMMY));
-
       }
 
       /* The last record we read was a DUMMY one: print it */
@@ -2105,6 +2238,11 @@ void read_stats(void)
    /* Read stats header */
    if (sa_read(&file_hdr, FILE_HDR_SIZE))
       exit(0);
+   if (file_hdr.sa_magic != SA_MAGIC) {
+      /* sar and sadc commands are not consistent */
+      fprintf(stderr, _("Invalid data format\n"));
+      exit(3);
+   }
 
    /* Force '-U ALL' flag if -A option is used on SMP machines */
    if (USE_A_OPTION(flags) && file_hdr.sa_proc) {
@@ -2113,7 +2251,7 @@ void read_stats(void)
       flags |= F_ALL_PROC;
    }
 
-   /* Check that files corresponding to requested activities are available */
+   /* Check that data corresponding to requested activities are sent by the data collector */
    if (GET_SERIAL(sar_actflag) && !file_hdr.sa_serial) {
       sar_actflag &= ~A_SERIAL;
       dis_hdr--;
@@ -2128,13 +2266,18 @@ void read_stats(void)
       sar_actflag &= ~A_IRQ_CPU;
       dis_hdr--;
    }
+   if (GET_DISK(sar_actflag) && !file_hdr.sa_nr_disk) {
+      sar_actflag &= ~A_DISK;
+      dis_hdr--;
+   }
    if (!sar_actflag) {
       fprintf(stderr, _("Requested activities not available\n"));
       exit(1);
    }
 
    if ((GET_SERIAL(sar_actflag) && (file_hdr.sa_serial > 1)) ||
-       ((GET_NET_DEV(sar_actflag) || GET_NET_EDEV(sar_actflag)) && (file_hdr.sa_iface  > 1)))
+       ((GET_NET_DEV(sar_actflag) || GET_NET_EDEV(sar_actflag)) && (file_hdr.sa_iface  > 1)) ||
+       (GET_DISK(sar_actflag) && (file_hdr.sa_nr_disk > 1)))
       dis_hdr = 9;
 
    if (!dis_hdr) {
@@ -2149,36 +2292,10 @@ void read_stats(void)
    /* No need to force sar_actflag to file_hdr.sa_actflag since we are not reading stats from a file */
 
    /* Perform required allocations */
-   if (file_hdr.sa_proc > 0)
-      salloc_cpu(file_hdr.sa_proc + 1);
-   if (GET_PID(sar_actflag) || GET_CPID(sar_actflag)) {
-      pid_nr = file_hdr.sa_nr_pid;
-      salloc_pid(pid_nr);
-   }
-   if (file_hdr.sa_serial)
-      salloc_serial(file_hdr.sa_serial);
-   if (file_hdr.sa_irqcpu)
-      salloc_irqcpu(file_hdr.sa_proc + 1, file_hdr.sa_irqcpu);
-   if (file_hdr.sa_iface)
-      salloc_net_dev(file_hdr.sa_iface);
-
-   print_report_hdr();
+   allocate_structures(USE_SADC);
 
    /* Read system statistics sent by the data collector */
-   if (sa_read(&file_stats[0], file_hdr.sa_st_size))
-      exit(0);
-   if ((file_hdr.sa_proc > 0) && sa_read(st_cpu[0], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1)))
-      exit(0);
-   if (GET_ONE_IRQ(file_hdr.sa_actflag) && sa_read(interrupts[0], STATS_ONE_IRQ_SIZE))
-      exit(0);
-   if (pid_nr && sa_read(pid_stats[0][0], PID_STATS_SIZE * pid_nr))
-      exit(0);
-   if (file_hdr.sa_serial && sa_read(st_serial[0], STATS_SERIAL_SIZE * file_hdr.sa_serial))
-      exit(0);
-   if (file_hdr.sa_irqcpu && sa_read(st_irq_cpu[0], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu))
-      exit(0);
-   if (file_hdr.sa_iface && sa_read(st_net_dev[0], STATS_NET_DEV_SIZE * file_hdr.sa_iface))
-      exit(0);
+   read_stat_bunch(0);
 
    if (!dis_hdr) {
       if (file_hdr.sa_proc > 0)
@@ -2206,6 +2323,8 @@ void read_stats(void)
 	 memset(st_irq_cpu[1], 0, STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
       if (file_hdr.sa_iface)
 	 memset(st_net_dev[1], 0, STATS_NET_DEV_SIZE * file_hdr.sa_iface);
+      if (file_hdr.sa_nr_disk)
+	 memset(st_disk[1], 0, DISK_STATS_SIZE * file_hdr.sa_nr_disk);
 	
       /* Display stats since boot time */
       write_stats(0, DISP_HDR, sar_actflag, USE_SADC, &count,
@@ -2214,37 +2333,13 @@ void read_stats(void)
    }
 
    /* Save the first stats collected. Will be used to compute the average */
-   memcpy(&file_stats[2], &file_stats[0], FILE_STATS_SIZE);
-   if (file_hdr.sa_proc > 0)
-      memcpy(st_cpu[2], st_cpu[0], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
-   if (GET_ONE_IRQ(file_hdr.sa_actflag))
-      memcpy(interrupts[2], interrupts[0], STATS_ONE_IRQ_SIZE);
-   if (pid_nr)
-      memcpy(pid_stats[2][0], pid_stats[0][0], PID_STATS_SIZE * pid_nr);
-   if (file_hdr.sa_serial)
-      memcpy(st_serial[2], st_serial[0], STATS_SERIAL_SIZE * file_hdr.sa_serial);
-   if (file_hdr.sa_irqcpu)
-      memcpy(st_irq_cpu[2], st_irq_cpu[0], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
-   if (file_hdr.sa_iface)
-      memcpy(st_net_dev[2], st_net_dev[0], STATS_NET_DEV_SIZE * file_hdr.sa_iface);
+   copy_structures(2, 0, USE_SADC);
 
    /* Main loop */
    do {
 
-      if (sa_read(&file_stats[curr], file_hdr.sa_st_size))
-	 exit(0);
-      if ((file_hdr.sa_proc > 0) && sa_read(st_cpu[curr], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1)))
-	 exit(0);
-      if (GET_ONE_IRQ(file_hdr.sa_actflag) && sa_read(interrupts[curr], STATS_ONE_IRQ_SIZE))
-	 exit(0);
-      if (pid_nr && sa_read(pid_stats[curr][0], PID_STATS_SIZE * pid_nr))
-	 exit(0);
-      if (file_hdr.sa_serial && sa_read(st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial))
-	 exit(0);
-      if (file_hdr.sa_irqcpu && sa_read(st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu))
-	 exit(0);
-      if (file_hdr.sa_iface && sa_read(st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface))
-	 exit(0);
+      /* Get stats */
+      read_stat_bunch(curr);
 
       /* Print results */
       if (!dis_hdr) {
@@ -2408,7 +2503,8 @@ int main(int argc, char **argv)
 	 interval = atol(argv[opt++]);
 	 if (interval < 1)
 	   usage(argv[0]);
-	 count = -2;
+	 flags |= F_I_OPTION;
+	 flags |= F_DEFAULT_COUNT;
       }
 
       else if (!strcmp(argv[opt], "-x") || !strcmp(argv[opt], "-X")) {
@@ -2494,7 +2590,7 @@ int main(int argc, char **argv)
 	     case 'A':
 	       sar_actflag |= A_PROC + A_PAGE + A_IRQ + A_IO + A_CPU + A_CTXSW + A_SWAP +
 		              A_MEMORY + A_SERIAL + A_MEM_AMT + A_IRQ_CPU + A_KTABLES +
-		              A_NET_DEV + A_NET_EDEV + A_NET_SOCK;
+		              A_NET_DEV + A_NET_EDEV + A_NET_SOCK + A_QUEUE + A_DISK;
 	       flags |= F_A_OPTION;
 	       break;
 	     case 'B':
@@ -2509,8 +2605,16 @@ int main(int argc, char **argv)
 	       sar_actflag |= A_PROC;
 	       dis_hdr++;
 	       break;
+	     case 'd':
+	       sar_actflag |= A_DISK;
+	       dis_hdr++;
+	       break;
 	     case 'h':
 	       flags |= F_H_OPTION;
+	       break;
+	     case 'q':
+	       sar_actflag |= A_QUEUE;
+	       dis_hdr++;
 	       break;
 	     case 'r':
 	       sar_actflag |= A_MEM_AMT;
@@ -2561,16 +2665,21 @@ int main(int argc, char **argv)
 	 else if (interval < 0)
 	   usage(argv[0]);
 	 count = 1;	/* Default value for the count parameter is 1 */
+	 flags |= F_DEFAULT_COUNT;
       }
 
       else {					/* Get count value */
 	 if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
+	    usage(argv[0]);
+	 if (count && !USE_DEFAULT_COUNT(flags))
+	    /* Count parameter already set */
 	    usage(argv[0]);
 	 count = atol(argv[opt++]);
 	 if (count < 0)
 	   usage(argv[0]);
 	 else if (!count)
 	    count = -1;	/* To generate a report continuously */
+	 flags &= ~F_DEFAULT_COUNT;
       }
    }
 
@@ -2590,13 +2699,19 @@ int main(int argc, char **argv)
       exit(1);
    }
    /* Use time start or options -i/-h only when reading from a file */
-   if ((tm_start.use || (count == -2) || USE_H_OPTION(flags)) && !from_file[0]) {
+   if ((tm_start.use || (USE_I_OPTION(flags)) || USE_H_OPTION(flags)) && !from_file[0]) {
       fprintf(stderr, _("Not reading from a system activity file (use -f option)\n"));
       exit(1);
    }
    /* Don't print stats since boot time if -o or -f flags are used */
    if (WANT_BOOT_STATS(flags) && (from_file[0] || to_file[0]))
       usage(argv[0]);
+   /*
+    * Display all the contents of the daily data file if the count parameter
+    * was not set on the command line.
+    */
+   if (USE_DEFAULT_COUNT(flags) && from_file[0])
+      count = -1;
 
    /* -x and -X options ignored when writing to a file */
    if (to_file[0]) {
@@ -2614,7 +2729,7 @@ int main(int argc, char **argv)
 
    /* ---Reading stats from file */
    if (from_file[0]) {
-      if ((count == -2) || !count)
+      if (!count)
 	 count = -1;
       if (!interval)
 	 interval = 1;

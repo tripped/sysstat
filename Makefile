@@ -1,8 +1,8 @@
 # Makefile to build sysstat commands
-# (C) 1999-2000 Sebastien GODARD <sebastien.godard@wanadoo.fr>
+# (C) 1999-2001 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 3.3.5
+VERSION = 3.3.6
 
 include build/CONFIG
 

@@ -6,7 +6,7 @@ Changes:
 1999/05/28: Version 1.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	* NLS support added. French translation started but needs to be
 	  completed.
-	* Sar updated to support more than 16 interrupts (potential APIC
+	* sar updated to support more than 16 interrupts (potential APIC
 	  interrupt sources).
 	* A few typos removed (man pages, etc.).
 	* Author email address updated :-)
@@ -17,7 +17,7 @@ Changes:
 	  for sar, etc.).
 	* System activity daily file structure changed: is now independent of
 	  the locale and is more compact.
-	* Sar updated to support SMP machines (per CPU accounting).
+	* sar updated to support SMP machines (per CPU accounting).
 	* Code cleaned, man pages updated...
 
 1999/09/19: Version 2.0 - Sebastien Godard <sebastien.godard@wanadoo.fr>
@@ -244,4 +244,25 @@ Changes:
 	* sar and iostat manual pages updated.
 	* isag (Interactive System Activity Graph) command added.
 	* Makefile updated.
+
+2001/03/04: Version 3.3.6 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	  WARNING: daily data files format has changed, and is *not*
+	  compatible with the previous one! Delete existing data files
+	  in /var/log/sa directory!
+	* New paging statistics added (sar -B). Kernel 2.4 only.
+	* Load averages and queue length statistics added (option -q for sar).
+	* Per device statistics added (option -d for sar). Kernel 2.4 only.
+	* Better accuracy when computing average for some statistics.
+	* Display all the contents of a daily data file when the count
+	  parameter is not given on the command line.
+	* Check sar command line options more aggressively.
+	* iostat no longer freezes if -c and -d options are used together.
+	* Fixed a bug that prevented iostat from displaying more than an
+	  average of three devices with 2.4 kernels (a buffer was too small).
+	* Check added to ensure that sar and sadc commands are consistent.
+	* sar manual page updated.
+	* NLS updated.
+	* Code cleaned (use smaller subroutines).
+	* Makefile updated.
+	* isag command updates.
 

@@ -94,6 +94,7 @@ ${PREFIX}/share/locale/nb_NO/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/nn_NO/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/it/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/ru/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/ro/LC_MESSAGES/sysstat.mo
 ${PREFIX}/doc/sysstat-x.y.z/*
 /var/log/sa
 ${INIT_DIR}/sysstat
@@ -125,8 +126,8 @@ present in old kernels.
 It has been designed with National Language Support (NLS) in mind, using
 the GNU gettext package (available at http://www.gnu.org).
 At the present time, English, French, German, Spanish, Portuguese,
-Afrikaans, Norwegian, Italian and Russian translations are available.
-You are welcome if you want to make other languages available ;-)
+Afrikaans, Norwegian, Italian, Russian and Romanian translations are
+available. You are welcome if you want to make other languages available ;-)
 Please read the README-nls file in the nls directory before.
 
 --

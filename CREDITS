@@ -20,6 +20,7 @@ The following people have contributed to 'sysstat' in one way or another:
 	  * Stefano Barni <barninga@interfree.it> for the translation
 	    into Italian.
 	  * Dennis Selsky <selsky@siberia.net> for the Russian translation.
+	  * Eugen Hoanca <eugenh@urban-grafx.ro> for the Romanian translation.
 
 	Carl-Christian Weber <ccweber@itz-koeln.de> helped me to make sar
 	work on SMP machines.

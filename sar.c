@@ -74,13 +74,15 @@ char *args[MAX_ARGV_NR];
 
 
 /*
+ ***************************************************************************
  * Print usage and exit
+ ***************************************************************************
  */
 void usage(char *progname)
 {
    fprintf(stderr, _("sysstat version %s\n"
-		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-	           "Usage: %s [ options... ]\n"
+		   "(C) Sebastien Godard\n"
+	           "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 	           "Options are:\n"
 	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i <interval> ] [ -q ]\n"
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
@@ -88,15 +90,16 @@ void usage(char *progname)
 		   "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
 		   "[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 	           "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
-		   "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-	           "[ <interval> [ <count> ] ]\n"),
+		   "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"),
 	   VERSION, progname);
    exit(1);
 }
 
 
 /*
+ ***************************************************************************
  * Init irqs array
+ ***************************************************************************
  */
 void init_irq_bitmap(unsigned int value)
 {
@@ -108,7 +111,9 @@ void init_irq_bitmap(unsigned int value)
 
 
 /*
+ ***************************************************************************
  * Init CPUs array
+ ***************************************************************************
  */
 void init_cpu_bitmap(unsigned int value)
 {
@@ -120,7 +125,9 @@ void init_cpu_bitmap(unsigned int value)
 
 
 /*
+ ***************************************************************************
  * Init stats_sum structure
+ ***************************************************************************
  */
 void init_stats_sum(void)
 {
@@ -129,7 +136,9 @@ void init_stats_sum(void)
 
 
 /*
+ ***************************************************************************
  * Init stats structures
+ ***************************************************************************
  */
 void init_stats(void)
 {
@@ -144,7 +153,9 @@ void init_stats(void)
 
 
 /*
+ ***************************************************************************
  * Allocate memory for sadc args
+ ***************************************************************************
  */
 void salloc(int i, char *ltemp)
 {
@@ -157,8 +168,10 @@ void salloc(int i, char *ltemp)
 
 
 /*
+ ***************************************************************************
  * Allocate stats_one_cpu structures
  * (only on SMP machines)
+ ***************************************************************************
  */
 void salloc_cpu(int nr_cpu)
 {
@@ -176,7 +189,9 @@ void salloc_cpu(int nr_cpu)
 
 
 /*
+ ***************************************************************************
  * Allocate stats_serial structures
+ ***************************************************************************
  */
 void salloc_serial(int nr_serial)
 {
@@ -194,7 +209,9 @@ void salloc_serial(int nr_serial)
 
 
 /*
+ ***************************************************************************
  * Allocate stats_irq_cpu structures
+ ***************************************************************************
  */
 void salloc_irqcpu(int nr_cpus, int nr_irqcpu)
 {
@@ -212,7 +229,9 @@ void salloc_irqcpu(int nr_cpus, int nr_irqcpu)
 
 
 /*
+ ***************************************************************************
  * Allocate stats_net_dev structures
+ ***************************************************************************
  */
 void salloc_net_dev(int nr_iface)
 {
@@ -230,7 +249,9 @@ void salloc_net_dev(int nr_iface)
 
 
 /*
+ ***************************************************************************
  * Allocate disk_stats structures
+ ***************************************************************************
  */
 void salloc_disk(int nr_disk)
 {
@@ -248,7 +269,9 @@ void salloc_disk(int nr_disk)
 
 
 /*
+ ***************************************************************************
  * Allocate pid_stats structures
+ ***************************************************************************
  */
 void salloc_pid(int nr_pid)
 {
@@ -268,7 +291,11 @@ void salloc_pid(int nr_pid)
    }
 }
 
-
+/*
+ ***************************************************************************
+ * Use time stamp to fill tstamp structure
+ ***************************************************************************
+*/
 void decode_time_stamp(char time_stamp[], struct tstamp *tse)
 {
    time_stamp[2] = time_stamp[5] = '\0';
@@ -280,7 +307,9 @@ void decode_time_stamp(char time_stamp[], struct tstamp *tse)
 
 
 /*
+ ***************************************************************************
  * Compare two time stamps
+ ***************************************************************************
  */
 int datecmp(struct tm *loc_time, struct tstamp *tse)
 {
@@ -296,27 +325,29 @@ int datecmp(struct tm *loc_time, struct tstamp *tse)
 
 
 /*
+ ***************************************************************************
  * Check if the user has the right to use -P option.
  * Note that he may use this option when reading stats from a file,
  * even if his machine is not an SMP one...
  * This routine is called only if we are *not* reading stats from a file.
+ ***************************************************************************
  */
-void check_smp_option(int proc_used)
+void check_smp_option(int cpu_nr)
 {
    unsigned int cpu_max, j = 0;
    int i;
 
-   if (proc_used == 0) {
+   if (cpu_nr == 0) {
       fprintf(stderr, _("Not an SMP machine...\n"));
       exit(1);
    }
 
-   cpu_max = 1 << ((proc_used + 1) & 0x1f);
+   cpu_max = 1 << ((cpu_nr + 1) & 0x1f);
 
    for (i = (cpu_max >> 5) + 1; i <= NR_CPUS >> 5; i++)
       j |= cpu_bitmap[i];
 
-   if (j || (cpu_bitmap[proc_used >> 5] >= cpu_max)) {
+   if (j || (cpu_bitmap[cpu_nr >> 5] >= cpu_max)) {
       fprintf(stderr, _("Not that many processors!\n"));
       exit(1);
    }
@@ -324,26 +355,33 @@ void check_smp_option(int proc_used)
 
 
 /*
+ ***************************************************************************
  * Check the use of option -P.
  * Called only if reading stats sent by the data collector.
+ ***************************************************************************
  */
-void prep_smp_option(int proc_used)
+void prep_smp_option(int cpu_nr)
 {
    int i;
 
    if (WANT_PER_PROC(flags)) {
       if (WANT_ALL_PROC(flags))
-	 for (i = proc_used + 1; i < ((NR_CPUS / 32) + 1) * 32; i++)
+	 for (i = cpu_nr + 1; i < ((NR_CPUS / 32) + 1) * 32; i++)
 	    /*
-	     * Reset every bit for proc > proc_used
+	     * Reset every bit for proc > cpu_nr
 	     * (only done when -U ALL entered on the command line)
 	     */
 	    cpu_bitmap[i >> 5] &= ~(1 << (i & 0x1f));
-      check_smp_option(proc_used);
+      check_smp_option(cpu_nr);
    }
 }
 
 
+/*
+ ***************************************************************************
+ * Check if we are close enough to desired interval
+ ***************************************************************************
+*/
 int next_slice(int curr, int reset)
 {
    unsigned long file_interval;
@@ -361,7 +399,8 @@ int next_slice(int curr, int reset)
     * A few notes about the "algorithm" used here to display selected entries
     * from the system activity file (option -f with -i flag):
     * Let 'Iu' be the interval value given by the user on the command line,
-    *     'If' the interval between current and previous line in the system activity file,
+    *     'If' the interval between current and previous line in the system
+    * activity file,
     * and 'En' the nth entry (identified by its time stamp) of the file.
     * We choose In = [ En - If/2, En + If/2 [ if If is even,
     *        or In = [ En - If/2, En + If/2 ] if not.
@@ -386,7 +425,9 @@ int next_slice(int curr, int reset)
 
 
 /*
+ ***************************************************************************
  * Read data sent by the data collector
+ ***************************************************************************
  */
 int sa_read(void *buffer, int size)
 {
@@ -411,7 +452,9 @@ int sa_read(void *buffer, int size)
 
 
 /*
+ ***************************************************************************
  * Read data from a sa data file
+ ***************************************************************************
  */
 int sa_fread(int ifd, void *buffer, int size, int mode)
 {
@@ -435,7 +478,9 @@ int sa_fread(int ifd, void *buffer, int size, int mode)
 
 
 /*
+ ***************************************************************************
  * Print report header
+ ***************************************************************************
  */
 void print_report_hdr(void)
 {
@@ -466,7 +511,9 @@ void print_report_hdr(void)
 
 
 /*
+ ***************************************************************************
  * Check time and get interval value
+ ***************************************************************************
  */
 int prep_time(int use_tm_start, short curr, unsigned long *itv, unsigned long *itv0)
 {
@@ -487,6 +534,11 @@ int prep_time(int use_tm_start, short curr, unsigned long *itv, unsigned long *i
 }
 
 
+/*
+ ***************************************************************************
+ * Set timestamp string
+ ***************************************************************************
+*/
 void init_timestamp(short curr, char *cur_time, int len)
 {
    struct tm *ltm;
@@ -540,8 +592,10 @@ void init_timestamp(short curr, char *cur_time, int len)
 
 
 /*
+ ***************************************************************************
  * Network interfaces may now be registered (and unregistered) dynamically.
  * This is what we try to guess here.
+ ***************************************************************************
  */
 int check_iface_reg(struct stats_net_dev *st_net_dev[], short curr, short ref, int pos)
 {
@@ -653,8 +707,10 @@ int check_iface_reg(struct stats_net_dev *st_net_dev[], short curr, short ref, i
 
 
 /*
+ ***************************************************************************
  * Disks in /proc/stat may be registered dynamically.
  * This is what we try to guess here.
+ ***************************************************************************
  */
 int check_disk_reg(struct disk_stats *st_disk[], short curr, short ref, int pos)
 {
@@ -711,11 +767,13 @@ int check_disk_reg(struct disk_stats *st_disk[], short curr, short ref, int pos)
 
 
 /*
+ ***************************************************************************
  * Since ticks may vary slightly from cpu to cpu, we'll want
  * to recalculate itv based on this cpu's tick count, rather
  * than that reported by the "cpu" line.  Otherwise we
  * occasionally end up with slightly skewed figures, with
  * the skew being greater as the time interval grows shorter.
+ ***************************************************************************
  */
 unsigned long get_per_cpu_interval(struct stats_one_cpu *st_cpu_i,
 				   struct stats_one_cpu *st_cpu_j)
@@ -731,7 +789,9 @@ unsigned long get_per_cpu_interval(struct stats_one_cpu *st_cpu_i,
 
 
 /*
+ ***************************************************************************
  * Print statistics average
+ ***************************************************************************
  */
 void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 {
@@ -1197,7 +1257,9 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
 
 /*
+ ***************************************************************************
  * Print system statistics onto the screen
+ ***************************************************************************
  */
 int write_stats(short curr, short dis, unsigned int act, int read_from_file, long *cnt,
 		int use_tm_start, int use_tm_end, int reset, int want_since_boot)
@@ -1792,7 +1854,9 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 
 
 /*
+ ***************************************************************************
  * Print system statistics to be used by pattern processing commands
+ ***************************************************************************
  */
 void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 			unsigned long itv, unsigned long itv0, char *cur_time)
@@ -2243,7 +2307,9 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 
 
 /*
+ ***************************************************************************
  * Print system statistics to be used for loading into a database
+ ***************************************************************************
  */
 void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 		       unsigned long itv, unsigned long itv0, char *cur_time)
@@ -2572,7 +2638,9 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
 
 /*
+ ***************************************************************************
  * Write system statistics for options -h/-H
+ ***************************************************************************
  */
 int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
 			 int use_tm_start, int use_tm_end)
@@ -2619,7 +2687,9 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
 
 
 /*
+ ***************************************************************************
  * Print a Linux restart message (contents of a DUMMY record)
+ ***************************************************************************
  */
 void write_dummy(short curr, int use_tm_start, int use_tm_end)
 {
@@ -2644,7 +2714,9 @@ void write_dummy(short curr, int use_tm_start, int use_tm_end)
 
 
 /*
+ ***************************************************************************
  * Allocate structures
+ ***************************************************************************
  */
 void allocate_structures(int stype)
 {
@@ -2670,7 +2742,9 @@ void allocate_structures(int stype)
 
 
 /*
+ ***************************************************************************
  * Move structures data
+ ***************************************************************************
  */
 void copy_structures(int dest, int src, int stype)
 {
@@ -2700,7 +2774,9 @@ void copy_structures(int dest, int src, int stype)
 
 
 /*
+ ***************************************************************************
  * Read varying part of the statistics from a daily data file
+ ***************************************************************************
  */
 void read_extra_stats(short curr, int ifd)
 {
@@ -2727,7 +2803,9 @@ void read_extra_stats(short curr, int ifd)
 
 
 /*
+ ***************************************************************************
  * Read a bunch of statistics sent by the data collector
+ ***************************************************************************
  */
 void read_stat_bunch(short curr)
 {
@@ -2758,7 +2836,9 @@ void read_stat_bunch(short curr)
 
 
 /*
+ ***************************************************************************
  * Read stats for current activity from file
+ ***************************************************************************
  */
 void read_curr_act_stats(int ifd, off_t fpos, short curr, long *cnt, int *eosaf,
 			 int rows, unsigned int act, int *reset)
@@ -2825,7 +2905,9 @@ void read_curr_act_stats(int ifd, off_t fpos, short curr, long *cnt, int *eosaf,
 
 
 /*
+ ***************************************************************************
  * Read statistics from a system activity data file
+ ***************************************************************************
  */
 void read_stats_from_file(char from_file[])
 {
@@ -2963,7 +3045,9 @@ void read_stats_from_file(char from_file[])
 
 
 /*
+ ***************************************************************************
  * Read statistics sent by sadc, the data collector.
+ ***************************************************************************
  */
 void read_stats(void)
 {
@@ -3102,7 +3186,9 @@ void read_stats(void)
 
 
 /*
+ ***************************************************************************
  * Main entry to the sar program
+ ***************************************************************************
  */
 int main(int argc, char **argv)
 {

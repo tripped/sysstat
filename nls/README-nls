@@ -26,6 +26,7 @@ Eg.:
 	Norway: nb_NO or nn_NO
 	Italy: it_IT
 	Russia: ru_RU
+	Romania: ro_RO
 
 although other possibilities exist.
 If you use bash and you want to configure your system for a french environment,
@@ -69,7 +70,7 @@ Total:     1,03         4,37         0,65      28816       4340
 HOW CAN I ADD A NEW LANGUAGE TO SYSSTAT?
 ----------------------------------------
 At the present time, sysstat is translated into English, French, German,
-Spanish, Portuguese, Afrikaans, Norwegian, Italian and Russian.
+Spanish, Portuguese, Afrikaans, Norwegian, Italian, Russian and Romanian.
 To add another language, copy an existing Portable Object file (.po) in one
 of your directories (you can copy the file named sysstat.po located in the
 nls/fr directory for instance).

@@ -8,6 +8,7 @@
 
 #include <time.h>
 
+#define TRUE	1
 
 /* Keywords */
 #define K_ISO	"ISO"
@@ -16,13 +17,22 @@
 /* Files */
 #define STAT		"/proc/stat"
 #define INTERRUPTS	"/proc/interrupts"
+#define SYSFS_BLOCK	"/sys/block"
+#define S_STAT		"stat"
 
 #define MAX_FILE_LEN	256
+#define MAX_PF_NAME	1024
+
+#define NR_DEV_PREALLOC		4
+#define NR_DISK_PREALLOC	3
 
 /* Define flags */
-#define F_BOOT_STATS	0x10
+#define F_BOOT_STATS	0x100000
+#define D_PARTITIONS	0x200000
 
 #define WANT_BOOT_STATS(m)	(((m) & F_BOOT_STATS) == F_BOOT_STATS)
+#define DISPLAY_PARTITIONS(m)	(((m) & D_PARTITIONS) == D_PARTITIONS)
+
 
 #define S_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * HZ)
 
@@ -48,6 +58,7 @@
  * using aligned(8) attributes, because they are actually 8-byte long on
  * 64-bit systems.
  */
+/* FIXME: to be removed */
 #define SIZEOF_LONG	8
 
 #define NR_DISKS	4
@@ -56,12 +67,13 @@
 
 /* Functions */
 extern char  *device_name(char *);
+extern int    get_disk_io_nr(void);
 extern int    get_kb_shift(void);
 extern time_t get_localtime(struct tm *);
-extern int    get_nb_proc_used(int *, unsigned int);
+extern int    get_cpu_nr(int *, unsigned int);
+extern int    get_sysfs_dev_nr(int);
 extern int    get_win_height(void);
 extern void   init_nls(void);
 extern void   print_gal_header(struct tm *, char *, char *, char *);
-
 
 #endif  /* _COMMON_H */

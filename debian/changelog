@@ -1,3 +1,11 @@
+sysstat (5.0.4-2) unstable; urgency=low
+
+  * Updated Japanese po-debconf template translation (closes: #252343).
+    Thanks to Hideki Yamane <henrich@samba.gr.jp>.
+  * Added debian/watch file.
+
+ -- Robert Luberda <robert@debian.org>  Sat,  5 Jun 2004 17:55:54 +0200
+
 sysstat (5.0.4-1) unstable; urgency=low
 
   * New upstream (stable) version:

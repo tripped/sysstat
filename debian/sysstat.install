@@ -1,2 +1,3 @@
 debian/tmp/usr/
 debian/tmp/var/
+debian/tmp/etc/

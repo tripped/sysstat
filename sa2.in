@@ -7,7 +7,7 @@
 #   make history configurable
 #
 HISTORY=7
-[ -r /etc/default/sysstat ] && . /etc/default/sysstat
+[ -r /etc/sysstat/config ] && . /etc/sysstat/config
 [ ${HISTORY} -gt 28 ] && HISTORY=28
 S_TIME_FORMAT=ISO ; export S_TIME_FORMAT
 umask 0022

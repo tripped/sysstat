@@ -37,6 +37,7 @@
 #define _(string) (string)
 #endif
 
+#define MAX_BLKDEV 255
 static unsigned int ioc_parsed = 0;
 static struct ioc_entry *ioconf[MAX_BLKDEV+1];
 

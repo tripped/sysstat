@@ -16,7 +16,7 @@
 #define IOC_PARTLEN	7
 #define IOC_FMTLEN	15
 
-#define IOCONF	"/etc/sysconfig/sysstat.ioconf"
+#define IOCONF	"/etc/sysstat/sysstat.ioconf"
 
 #define IS_WHOLE(maj,min)	((min % ioconf[maj]->blkp->pcount) == 0)
 

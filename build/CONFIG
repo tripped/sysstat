@@ -3,6 +3,7 @@
 
 # Directories
 PREFIX = /usr
+SA_LIB_DIR = /usr/lib/sysstat
 SA_DIR = /var/log/sysstat
 MAN_DIR = ${PREFIX}/share/man
 CLEAN_SA_DIR = n

@@ -3,6 +3,7 @@
 
 # Directories
 PREFIX =
+SA_LIB_DIR =
 SA_DIR =
 MAN_DIR =
 CLEAN_SA_DIR =

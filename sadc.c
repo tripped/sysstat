@@ -1354,7 +1354,7 @@ void read_ktables_stat(void)
 	     &(file_stats.dquot_max));
       fclose(ktfp);
 
-      /* Open /proc/sys/fs/dquot_nr file */
+      /* Open /proc/sys/fs/dquot-nr file */
       if ((ktfp = fopen(FDQUOT_NR, "r")) != NULL) {
 	 fscanf(ktfp, "%u %*u\n",
 		&(file_stats.dquot_used));
@@ -1587,7 +1587,8 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
       if DO_SA_ROTAT(*flags) {
 	 /*
 	  * Stats are written at the end of previous file *and* at the
-	  * beginning of the new one.
+	  * beginning of the new one (outfile must have been specified
+	  * as '-' on the command line).
 	  */
 	 *flags &= ~F_DO_SA_ROTAT;
 	 if (fdatasync(ofd) < 0) {	/* Flush previous file */

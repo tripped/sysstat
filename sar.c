@@ -302,14 +302,14 @@ int decode_time_stamp(char time_stamp[], struct tstamp *tse)
    tse->tm_sec  = atoi(&(time_stamp[6]));
    tse->tm_min  = atoi(&(time_stamp[3]));
    tse->tm_hour = atoi(time_stamp);
-   
+
    if ((tse->tm_sec < 0) || (tse->tm_sec > 59) ||
        (tse->tm_min < 0) || (tse->tm_min > 59) ||
        (tse->tm_hour < 0) || (tse->tm_hour > 23))
       return 1;
-   
+
    tse->use = TRUE;
-   
+
    return 0;
 }
 

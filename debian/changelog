@@ -1,3 +1,9 @@
+sysstat (3.3.3-2) unstable; urgency=low
+
+  * Fix typo in postinst (closes: #83980).
+
+ -- Robert Luberda <robert@debian.org>  Mon, 29 Jan 2001 20:21:52 +0100
+
 sysstat (3.3.3-1) unstable; urgency=low
 
   * New upstream version.

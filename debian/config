@@ -2,26 +2,39 @@
 
 set -e
 
-S_VERSION="3.3.3"   
+S_VERSION="3.3.3-2"
+S_UPSTR_VERSION="3.3.3"
 	
+. /usr/share/debconf/confmodule
+
+db_version 2.0 || true
 
 if [ "$1" = "configure" ] ; then
   if dpkg --compare-versions "$2" lt-nl "$S_VERSION"; then
 
-	. /usr/share/debconf/confmodule
-
         db_beginblock || true
 
-	db_subst sysstat/notice s_version "$S_VERSION"  || true
-	db_fset sysstat/notice isdefault true	|| true
+	
+	db_fset sysstat/version isdefault false || true
+	db_get  sysstat/version || true
+	if [ "$RET" = "$2" ] ; then
+		RESET="no"
+	else 
+		RESET="yes"
+	fi
+
+	db_subst sysstat/notice s_version "$S_UPSTR_VERSION"  || true
+	[ "$RESET" = "yes" ] && db_reset sysstat/notice || true
 	db_input high sysstat/notice || true 
 	
- 	db_fset sysstat/remove_files isdefault true  || true
+	[ "$RESET" = "yes" ] && db_reset sysstat/remove_files || true
 	db_input high sysstat/remove_files || true
 
 	db_endblock || true
 	
 	db_go || true
+
+	db_set sysstat/version "$2"
 
    	db_stop || true
    fi

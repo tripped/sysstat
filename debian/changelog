@@ -1,6 +1,13 @@
+sysstat (4.1.7-1) unstable; urgency=low
+
+  * New upstream version (development):
+    + daily data files format has changed again.
+
+ -- Robert Luberda <robert@debian.org>  Sat,  4 Oct 2003 12:02:41 +0200
+
 sysstat (4.1.6-1) unstable; urgency=low
 
-  * New upstream version:
+  * New upstream version (development):
     + daily data files format has changed again.
   * Added Dutch translation of debconf template (closes: #206328).
     Thanks to Bart Cornelis <cobaco@linux.be>.

@@ -1,5 +1,5 @@
 /*
- * sysstat: the sar and iostat commands for Linux
+ * sysstat: System performance tools for Linux
  * (C) 1999-2001 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
@@ -7,6 +7,6 @@
 #define _VERSION_H
 
 /* sysstat version number */
-#define VERSION	"3.3.6"
+#define VERSION	"4.0.0"
 
 #endif  /* _VERSION_H */

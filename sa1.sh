@@ -8,8 +8,8 @@ DFILE=SA_DIR/sa${DATE}
 cd ${ENDIR}
 if [ $# = 0 ]
 then
-	${ENDIR}/sadc 1 1 ${DFILE}
+	exec ${ENDIR}/sadc 1 1 ${DFILE}
 else
-	${ENDIR}/sadc $* ${DFILE}
+	exec ${ENDIR}/sadc $* ${DFILE}
 fi
 

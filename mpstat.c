@@ -58,7 +58,6 @@ struct tm loc_time;
  */
 void usage(char *progname)
 {
-
    fprintf(stderr, _("sysstat version %s\n"
 		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 	           "Usage: %s [ options... ]\n"
@@ -87,7 +86,6 @@ void salloc_mp_cpu(int nr_cpus)
 {
    int i;
 
-
    for (i = 0; i < DIM; i++) {
       if ((st_mp_cpu[i] = (struct mp_stats *) malloc(MP_STATS_SIZE * nr_cpus)) == NULL) {
 	 perror("malloc");
@@ -112,7 +110,6 @@ void write_stats_avg(short curr, short dis)
    struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
    unsigned long itv;
    int cpu;
-
 
    /* Interval value in jiffies, multiplied by the number of proc */
    itv = st_mp_tstamp[curr].uptime - st_mp_tstamp[2].uptime;
@@ -139,15 +136,15 @@ void write_stats_avg(short curr, short dis)
       st_mp_cpu_j = st_mp_cpu[2] + cpu;
 
       printf("  %6.2f  %6.2f  %6.2f",
-	     ((double) ((st_mp_cpu_i->cpu_user   - st_mp_cpu_j->cpu_user)   * HZ)) / itv,
-	     ((double) ((st_mp_cpu_i->cpu_nice   - st_mp_cpu_j->cpu_nice)   * HZ)) / itv,
-	     ((double) ((st_mp_cpu_i->cpu_system - st_mp_cpu_j->cpu_system) * HZ)) / itv);
+	     S_VALUE(st_mp_cpu_j->cpu_user,   st_mp_cpu_i->cpu_user,   itv),
+	     S_VALUE(st_mp_cpu_j->cpu_nice,   st_mp_cpu_i->cpu_nice,   itv),
+	     S_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv));
 
       if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	 printf("    %.2f", 0.0);
       else
 	 printf("  %6.2f",
-		((double) ((st_mp_cpu_i->cpu_idle - st_mp_cpu_j->cpu_idle) * HZ)) / itv);
+		S_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
 
       if (!cpu) {
 	 itv /= (proc_used + 1);
@@ -156,7 +153,7 @@ void write_stats_avg(short curr, short dis)
       }
 
       printf(" %9.2f\n",
-	     ((double) ((st_mp_cpu[curr]->irq - st_mp_cpu[2]->irq) * HZ)) / itv);
+	     S_VALUE(st_mp_cpu[2]->irq, st_mp_cpu[curr]->irq, itv));
    }
 }
 
@@ -170,7 +167,6 @@ void write_stats(short curr, short dis)
    struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
    unsigned long itv;
    int cpu;
-
 
    /*
     * Get previous timestamp
@@ -215,15 +211,15 @@ void write_stats(short curr, short dis)
       st_mp_cpu_j = st_mp_cpu[!curr] + cpu;
 
       printf("  %6.2f  %6.2f  %6.2f",
-	     ((double) ((st_mp_cpu_i->cpu_user   - st_mp_cpu_j->cpu_user)   * HZ)) / itv,
-	     ((double) ((st_mp_cpu_i->cpu_nice   - st_mp_cpu_j->cpu_nice)   * HZ)) / itv,
-	     ((double) ((st_mp_cpu_i->cpu_system - st_mp_cpu_j->cpu_system) * HZ)) / itv);
+	     S_VALUE(st_mp_cpu_j->cpu_user,   st_mp_cpu_i->cpu_user,   itv),
+	     S_VALUE(st_mp_cpu_j->cpu_nice,   st_mp_cpu_i->cpu_nice,   itv),
+	     S_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv));
 
       if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)	/* Handle buggy RTC (or kernels?) */
 	 printf("    %.2f", 0.0);
       else
 	 printf("  %6.2f",
-		((double) ((st_mp_cpu_i->cpu_idle - st_mp_cpu_j->cpu_idle) * HZ)) / itv);
+		S_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
 
       if (!cpu) {
 	 itv /= (proc_used + 1);
@@ -232,7 +228,7 @@ void write_stats(short curr, short dis)
       }
 
       printf(" %9.2f\n",
-	     ((double) ((st_mp_cpu[curr]->irq - st_mp_cpu[!curr]->irq) * HZ)) / itv);
+	     S_VALUE(st_mp_cpu[!curr]->irq, st_mp_cpu[curr]->irq, itv));
    }
 }
 
@@ -249,7 +245,6 @@ void read_proc_stat(short curr)
    unsigned int cc_user, cc_nice, cc_system;
    unsigned long cc_idle;
    int proc_nb;
-
 
    /* Open stat file */
    if ((statfp = fopen(STAT, "r")) == NULL) {
@@ -311,7 +306,6 @@ void read_interrupts_stat(short curr)
    static char line[512];	/* Should depend on the nb of processors */
    unsigned int irq = 0, cpu;
 
-
    for (cpu = 0; cpu <= proc_used; cpu++) {
       st_mp_cpu_i = st_mp_cpu[curr] + cpu +1;
       st_mp_cpu_i->irq = 0;
@@ -348,7 +342,6 @@ int main(int argc, char **argv)
    short curr = 1, dis_hdr = -1, opt_used = 0, dis = 1;
    unsigned long lines = 0;
    int rows = 23;
-
 
 #ifdef USE_NLS
    /* Init National Language Support */

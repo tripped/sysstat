@@ -59,7 +59,7 @@ msgstr "sysstat versión %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 "Uso: %s [ opciones... ]\n"
 "Opciones posibles:\n"
-"[ -c | -d ] [ -t ] [ -V ] [ -x [ <device> ] ]\n"
+"[ -c | -d ] [ -t ] [ -V ] [ -x [ <dispositivo> ] ]\n"
 "[ <intervalo> [ <número_de_muestras> ] ]\n"
 
 #: iostat.c:534
@@ -127,6 +127,10 @@ msgstr "Imposible abrir %s: %s\n"
 #: sar.c:521
 msgid "Invalid system activity file\n"
 msgstr "Fichero de actividad del sistema inválido\n"
+
+#:
+msgid "Invalid data format\n"
+msgstr "Formato de datos inválido\n"
 
 #: sar.c:536
 msgid "\nAverage:       proc/s\n"

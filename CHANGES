@@ -15,7 +15,7 @@ Changes:
 1999/06/25: Version 1.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	* Better NLS support (date, time and numerical values, NLS enabled
 	  for sar, etc.).
-	* System activity daily file structure changed: is now independent of
+	* System activity daily file structure changed: Is now independent of
 	  the locale and is more compact.
 	* sar updated to support SMP machines (per CPU accounting).
 	* Code cleaned, man pages updated...
@@ -52,9 +52,9 @@ Changes:
 	* Daily system activity file rotation added for sar.
 	* Improved 64-bit system support.
 	* CREDITS file added.
-	* NLS updated: german translation added.
+	* NLS updated: German translation added.
 	* Manual pages updated.
-	* Makefile updated: do not call msgfmt if NLS is not enabled.
+	* Makefile updated: Do not call msgfmt if NLS is not enabled.
 
 1999/10/24: Version 2.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	* The sar and iostat commands can now work on non SMP-machines even
@@ -79,7 +79,7 @@ Changes:
 	* Manual pages updated and moved to chapter 1 instead of 8.
 	* sar '-m' option renamed to '-r'.
 	* Display improved for iostat.
-	* NLS updated: spanish translation added.
+	* NLS updated: Spanish translation added.
 	* Patch against kernel 2.2.13 added for iostat.
 
 2000/01/30: Version 3.0 - Sebastien Godard <sebastien.godard@wanadoo.fr>
@@ -113,7 +113,7 @@ Changes:
 	  of jiffies spent by the system in the idle task is decreasing in
 	  /proc/stat.
 	* Manual pages updated.
-	* NLS updated: portuguese translation added.
+	* NLS updated: Portuguese translation added.
 	* Makefile updated.
 
 2000/02/20: Version 3.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
@@ -183,7 +183,7 @@ Changes:
 2000/11/19: Version 3.3.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	* sar now saves timestamps in its daily data files both in UST
 	  and in the user's timezone formats.
-	  WARNING: daily data files format has changed, and is *not*
+	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one!
 	* sar now displays timestamps in locale time when reading data
 	  from its daily data files. -t option has been added to sar,
@@ -196,12 +196,12 @@ Changes:
 	* Usage message updated.
 
 2000/12/31: Version 3.3.3 - Sebastien Godard <sebastien.godard@wanadoo.fr>
-	  WARNING: daily data files format has changed, and is *not*
+	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! Delete existing data files
 	  in /var/log/sa directory!
 	* Disk usage displayed by iostat on SMP machines was wrong. This
 	  is now fixed.
-	* iostat command cleaned: all the statistics not implemented in
+	* iostat command cleaned: All the statistics not implemented in
 	  the standard Linux kernel have been removed (tty, iowait...).
 	* sar can now handle I/O and transfer rate statistics with both
 	  2.2.x and 2.4.x Linux kernels (-b option).
@@ -236,7 +236,7 @@ Changes:
 	* The default value for the count parameter of the sar command is
 	  now 1 (this is how sar works with other Un*xes...). A value of
 	  0 will indicate that reports are to be generated continuously.
-	* Code cleaned: now always use 'double' numbers instead of the
+	* Code cleaned: Now always use 'double' numbers instead of the
 	  INT_PART, INT_VAL, DEC_PART and DEC_VAL macros.
 	* Don't assume that jiffies are 100ths of a second. Use Linux
 	  HZ definition instead.
@@ -246,7 +246,7 @@ Changes:
 	* Makefile updated.
 
 2001/03/04: Version 3.3.6 - Sebastien Godard <sebastien.godard@wanadoo.fr>
-	  WARNING: daily data files format has changed, and is *not*
+	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! Delete existing data files
 	  in /var/log/sa directory!
 	* New paging statistics added (sar -B). Kernel 2.4 only.
@@ -265,4 +265,20 @@ Changes:
 	* Code cleaned (use smaller subroutines).
 	* Makefile updated.
 	* isag command updates.
+
+2001/04/08: Version 4.0.0 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Better network interfaces handling. Now take into account the
+	  fact that they may be registered/unregistered dynamically.
+	* Changed formula used to display statistics in order to avoid
+	  overflow conditions.
+	* Fixed a bug in iostat, where the %util value scaled incorrectly.
+	* Better long file names management by iostat.
+	* mpstat and sar no longer periodically display the title line when
+	  stdout has been redirected to a pipe or a file.
+	* sa2.sh shell script updated: Now exec sadc.
+	* Configuration script updated.
+	* NLS updated.
+	* Makefile updated.
+	* Manual pages updated.
+	* isag command updated.
 

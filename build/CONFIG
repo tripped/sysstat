@@ -3,6 +3,8 @@
 
 # Directories
 PREFIX = /usr/local
+SA_DIR = /var/log/sa
+CLEAN_SA_DIR = n
 
 DFLAGS =
 SAS_DFLAGS =
@@ -25,6 +27,7 @@ CRON_OWNER = adm
 # Run-command directories
 RC_DIR = /etc/rc.d
 INIT_DIR = /etc/rc.d/init.d
+INITD_DIR = init.d
 
-INSTALL_CRON = no
+INSTALL_CRON = n
 

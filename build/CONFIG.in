@@ -3,6 +3,8 @@
 
 # Directories
 PREFIX =
+SA_DIR =
+CLEAN_SA_DIR =
 
 DFLAGS =
 SAS_DFLAGS =

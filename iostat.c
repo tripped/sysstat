@@ -89,7 +89,6 @@ void init_stats(void)
 {
    int i;
 
-
    for (i = 0; i < MAX_PART; i++) {
       memset(&disk_stats[0][i], 0, DISK_STATS_SIZE);
       memset(&disk_stats[1][i], 0, DISK_STATS_SIZE);
@@ -111,7 +110,6 @@ void read_stat(int curr, int flags)
    char line[1024];
    int pos, i;
    unsigned int v_tmp[3], v_major, v_index;
-
 
    /* Open stat file */
    if ((statfp = fopen(STAT, "r")) == NULL) {
@@ -221,7 +219,6 @@ void read_ext_stat(int curr, int flags)
    struct disk_stats part;
    struct disk_hdr_stats part_hdr;
 
-
    /* Open partitions file */
    if ((partfp = fopen(PARTITIONS, "r")) == NULL) {
       perror("fopen");
@@ -230,12 +227,12 @@ void read_ext_stat(int curr, int flags)
 
    while (fgets(line, 256, partfp) != NULL) {
 
-      if (sscanf(line, "%*d %*d %*d %12s %d %d %d %d %d %d %d %d %*d %d %d",
+      if (sscanf(line, "%*d %*d %*d %63s %d %d %d %d %d %d %d %d %*d %d %d",
 	     part_hdr.name,	/* No need to read major and minor numbers */
 	     &part.rd_ios, &part.rd_merges, &part.rd_sectors, &part.rd_ticks,
 	     &part.wr_ios, &part.wr_merges, &part.wr_sectors, &part.wr_ticks,
 	     &part.ticks, &part.aveq) == 11) {
-	
+
 	 /*
 	  * We have just read a line from /proc/partitions containing stats
 	  * for a partition (ie this is not a fake line: title, etc.).
@@ -282,7 +279,6 @@ int write_stat(int curr, int flags, struct tm *loc_time)
    int disk_index;
    unsigned long itv;
 
-
    /* Print time stamp */
    if (DISPLAY_TIMESTAMP(flags)) {
       strftime(timestamp, 14, "%X  ", loc_time);
@@ -302,15 +298,15 @@ int write_stat(int curr, int flags, struct tm *loc_time)
       printf(_("avg-cpu:  %%user   %%nice    %%sys   %%idle\n"));
 
       printf("         %6.2f  %6.2f  %6.2f",
-	     ((double) ((comm_stats[curr].cpu_user   - comm_stats[!curr].cpu_user)   * HZ)) / itv,
-	     ((double) ((comm_stats[curr].cpu_nice   - comm_stats[!curr].cpu_nice)   * HZ)) / itv,
-	     ((double) ((comm_stats[curr].cpu_system - comm_stats[!curr].cpu_system) * HZ)) / itv);
+	     S_VALUE(comm_stats[!curr].cpu_user,   comm_stats[curr].cpu_user,   itv),
+	     S_VALUE(comm_stats[!curr].cpu_nice,   comm_stats[curr].cpu_nice,   itv),
+	     S_VALUE(comm_stats[!curr].cpu_system, comm_stats[curr].cpu_system, itv));
 
       if (comm_stats[curr].cpu_idle < comm_stats[!curr].cpu_idle)
 	 printf("    %.2f", 0.0);
       else
 	 printf("  %6.2f",
-		((double) ((comm_stats[curr].cpu_idle - comm_stats[!curr].cpu_idle) * HZ)) / itv);
+		S_VALUE(comm_stats[!curr].cpu_idle, comm_stats[curr].cpu_idle, itv));
 
       printf("\n");
    }
@@ -330,16 +326,16 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
 	    if (disk_hdr_stats[disk_index].active) {
 	
-	       current.rd_ios      = disk_stats[curr][disk_index].rd_ios      - disk_stats[!curr][disk_index].rd_ios;
-	       current.wr_ios      = disk_stats[curr][disk_index].wr_ios      - disk_stats[!curr][disk_index].wr_ios;
-	       current.rd_ticks    = disk_stats[curr][disk_index].rd_ticks    - disk_stats[!curr][disk_index].rd_ticks;
-	       current.wr_ticks    = disk_stats[curr][disk_index].wr_ticks    - disk_stats[!curr][disk_index].wr_ticks;
-	       current.rd_merges   = disk_stats[curr][disk_index].rd_merges   - disk_stats[!curr][disk_index].rd_merges;
-	       current.wr_merges   = disk_stats[curr][disk_index].wr_merges   - disk_stats[!curr][disk_index].wr_merges;
-	       current.rd_sectors  = disk_stats[curr][disk_index].rd_sectors  - disk_stats[!curr][disk_index].rd_sectors;
-	       current.wr_sectors  = disk_stats[curr][disk_index].wr_sectors  - disk_stats[!curr][disk_index].wr_sectors;
-	       current.ticks       = disk_stats[curr][disk_index].ticks       - disk_stats[!curr][disk_index].ticks;
-	       current.aveq        = disk_stats[curr][disk_index].aveq        - disk_stats[!curr][disk_index].aveq;
+	       current.rd_ios     = disk_stats[curr][disk_index].rd_ios     - disk_stats[!curr][disk_index].rd_ios;
+	       current.wr_ios     = disk_stats[curr][disk_index].wr_ios     - disk_stats[!curr][disk_index].wr_ios;
+	       current.rd_ticks   = disk_stats[curr][disk_index].rd_ticks   - disk_stats[!curr][disk_index].rd_ticks;
+	       current.wr_ticks   = disk_stats[curr][disk_index].wr_ticks   - disk_stats[!curr][disk_index].wr_ticks;
+	       current.rd_merges  = disk_stats[curr][disk_index].rd_merges  - disk_stats[!curr][disk_index].rd_merges;
+	       current.wr_merges  = disk_stats[curr][disk_index].wr_merges  - disk_stats[!curr][disk_index].wr_merges;
+	       current.rd_sectors = disk_stats[curr][disk_index].rd_sectors - disk_stats[!curr][disk_index].rd_sectors;
+	       current.wr_sectors = disk_stats[curr][disk_index].wr_sectors - disk_stats[!curr][disk_index].wr_sectors;
+	       current.ticks      = disk_stats[curr][disk_index].ticks      - disk_stats[!curr][disk_index].ticks;
+	       current.aveq       = disk_stats[curr][disk_index].aveq       - disk_stats[!curr][disk_index].aveq;
 	
 	       nr_ios = current.rd_ios + current.wr_ios;
 	       tput   = nr_ios * HZ / itv;
@@ -347,17 +343,23 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	       svctm  = tput ? util / tput : 0.0;
 	       await  = nr_ios ? (current.rd_ticks + current.wr_ticks) / nr_ios * 1000.0 / HZ : 0.0;
 	       arqsz  = nr_ios ? (current.rd_sectors + current.wr_sectors) / nr_ios : 0.0;
-	
-	       printf("%-8.8s %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
-		      disk_hdr_stats[disk_index].name,
-		      ((double) (current.rd_merges * HZ)) / itv, ((double) (current.wr_merges * HZ)) / itv,
-		      ((double) (current.rd_ios * HZ)) / itv, ((double) (current.wr_ios * HZ)) / itv,
-		      ((double) (current.rd_sectors * HZ)) / itv, ((double) (current.wr_sectors * HZ)) / itv,
+
+	       printf("%-8s", disk_hdr_stats[disk_index].name);
+	       if (strlen(disk_hdr_stats[disk_index].name) > 8)
+		  printf("\n        ");
+	       printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
+		      ((double) current.rd_merges) / itv * HZ, ((double) current.wr_merges) / itv * HZ,
+		      ((double) current.rd_ios) / itv * HZ, ((double) current.wr_ios) / itv * HZ,
+		      ((double) current.rd_sectors) / itv * HZ, ((double) current.wr_sectors) / itv * HZ,
 		      arqsz,
 		      ((double) current.aveq) / itv,
 		      await,
 		      svctm * 1000.0,
-		      util * 100.0);
+		      /*
+		       * The real formula used below is: "util * 100 * (HZ / 1000)".
+		       * Indeed, the ticks output in current sard patches is biased to output 1000 ticks per second.
+		       */
+		      util / 10 * HZ);
 	    }
 	 }
       }
@@ -370,12 +372,9 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
 	    printf("%s %11.2f %12.2f %12.2f %10u %10u\n",
 		   disk_hdr_stats[disk_index].name,
-		   ((double) ((disk_stats[curr][disk_index].dk_drive -
-			       disk_stats[!curr][disk_index].dk_drive) * HZ)) / itv,
-		   ((double) ((disk_stats[curr][disk_index].dk_drive_rblk -
-			       disk_stats[!curr][disk_index].dk_drive_rblk) * HZ)) / itv,
-		   ((double) ((disk_stats[curr][disk_index].dk_drive_wblk -
-			       disk_stats[!curr][disk_index].dk_drive_wblk) * HZ)) / itv,
+		   S_VALUE(disk_stats[!curr][disk_index].dk_drive,      disk_stats[curr][disk_index].dk_drive,      itv),
+		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_rblk, disk_stats[curr][disk_index].dk_drive_rblk, itv),
+		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_wblk, disk_stats[curr][disk_index].dk_drive_wblk, itv),
 		   (disk_stats[curr][disk_index].dk_drive_rblk - disk_stats[!curr][disk_index].dk_drive_rblk),
 		   (disk_stats[curr][disk_index].dk_drive_wblk - disk_stats[!curr][disk_index].dk_drive_wblk));
 	 }
@@ -398,7 +397,6 @@ int main(int argc, char **argv)
    long int count = 1;
    struct utsname header;
 
-
 #ifdef USE_NLS
    /* Init National Language Support */
    init_nls();
@@ -419,7 +417,7 @@ int main(int argc, char **argv)
 	 while (argv[++opt] && strncmp(argv[opt], "-", 1) && !isdigit(argv[opt][0])) {
 	    flags &= ~D_EXTENDED_ALL;
 	    if (part_nr < MAX_PART)
-	       strncpy(disk_hdr_stats[part_nr++].name, base_name(argv[opt]), MAX_NAME_LEN - 1);
+	       strncpy(disk_hdr_stats[part_nr++].name, device_name(argv[opt]), MAX_NAME_LEN - 1);
 	 }
       }
 

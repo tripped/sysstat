@@ -5,14 +5,24 @@ exec wish "$0" -- "$@"
 
 ###############################################################################
 #
-# $Id: isag.m4,v 1.12 2001/02/20 19:06:10 sarrep Exp sarrep $
-#
-# Author:		linux_monitor@volny.cz
+# Author:		linux_monitor@volny.cz (David Doubrava)
 # Maintained-by:	linux_monitor@volny.cz
 # Primary-site:		http://www.volny.cz:/linux_monitor/isag
 # Copying-policy:	GPL
-
+#
+# $Id: isag.m4,v 1.15 2001/03/17 17:30:15 sarrep Exp $
+# $State: Exp $
+#
 # $Log: isag.m4,v $
+# Revision 1.15  2001/03/17 17:30:15  sarrep
+# CVSizing, unified headers of each element file
+#
+# Revision 1.14  2001/03/17 16:55:26  sarrep
+# LINUX RESTART zeroes all counters.
+#
+# Revision 1.13  2001/03/11 20:15:19  sarrep
+# First step after CVSizing
+#
 # Revision 1.12  2001/02/20 19:06:10  sarrep
 # added q switch and actialize B switch to version 3.3.6
 #
@@ -69,7 +79,19 @@ exec wish "$0" -- "$@"
 # specific for sebastien's sar
 
 #
-# version.m4
+###############################################################################
+# $Id: version.m4,v 1.3 2001/03/17 17:43:07 sarrep Exp $
+# $State: Exp $
+# $Log: version.m4,v $
+# Revision 1.3  2001/03/17 17:43:07  sarrep
+# About dialog modify
+#
+# Revision 1.2  2001/03/17 17:30:26  sarrep
+# CVSizing, unified headers of each element file
+#
+#
+###############################################################################
+
 set ident "/usr/bin/ident"
 set version ""
 # This can be set only if small interactive change in result code was occured
@@ -77,7 +99,7 @@ set patchlevel ""
 if {[catch {set fp [open "| $ident $argv0" "r"]}] == 0} {
 	set n 0
 	while {[gets $fp line] != -1} {
-		if {$n != 0} {
+		if {$n != 0 && -1 != [string first "Id:" $line]} {
 			set version "$version\n[string trim $line]"
 		} else {
 			set n 1
@@ -91,10 +113,18 @@ if {"" != $patchlevel} {
 }
 # eof: version.m4
 ###############################################################################
-# $Id: msg_box.m4,v 1.1 2000/12/30 17:39:04 root Exp $
-#
 # Message box functionality
 #
+# $Id: msg_box.m4,v 1.3 2001/03/17 17:30:22 sarrep Exp $
+# $State: Exp $
+# $Log: msg_box.m4,v $
+# Revision 1.3  2001/03/17 17:30:22  sarrep
+# CVSizing, unified headers of each element file
+#
+#
+#
+###############################################################################
+
 proc msg_box_btn {w} {
 	destroy $w
 }
@@ -116,23 +146,39 @@ proc msg_box {title text} {
 	wm deiconify .
 }
 
+#eof: msg_box.m4
+##############################################################################
+# Tcl/Tk: version check
 #
-# $Id: ver_check.m4,v 1.1 2001/02/03 11:05:10 sarrep Exp $
+# $Id: ver_check.m4,v 1.3 2001/03/17 17:30:25 sarrep Exp $
+# $State: Exp $
+# $Log: ver_check.m4,v $
+# Revision 1.3  2001/03/17 17:30:25  sarrep
+# CVSizing, unified headers of each element file
 #
-# version check
 #
+#
+###############################################################################
 set needed_version 8.0
 if {$tcl_version < $needed_version} {
 	msg_box "Warning Version check" "Sarrep needs $needed_version, but this is version $tcl_version of Tcl.\nSome features can fail"
 #	exit
 }
+
 #eof: ver_check.m4
 ###############################################################################
-#
-# $Id: variables.m4,v 1.1 2001/02/03 11:04:32 sarrep Exp $
-#
 # default paths, programs and other variables
 #
+# $Id: variables.m4,v 1.3 2001/03/17 17:30:24 sarrep Exp $
+# $State: Exp $
+# $Log: variables.m4,v $
+# Revision 1.3  2001/03/17 17:30:24  sarrep
+# CVSizing, unified headers of each element file
+#
+#
+#
+###############################################################################
+
 set gnuplot	"/usr/bin/gnuplot"
 set grep	"/bin/grep"
 set sh		"/bin/sh"
@@ -153,10 +199,15 @@ set sar "PREFIX/bin/sar"
 #set sar "/home/sarrep/source/sysstat-3.3.6/sar"
 
 ###############################################################################
+# $Id: isag_common_options.m4,v 1.3 2001/03/17 17:30:20 sarrep Exp $
+# $State: Exp $
+# $Log: isag_common_options.m4,v $
+# Revision 1.3  2001/03/17 17:30:20  sarrep
+# CVSizing, unified headers of each element file
 #
-# Processing command line arguments
-#	cmd has higher precedence
 #
+#
+###############################################################################
 proc Usage {} {
 	global sar_data_path sar_data_mask cfg_file graph_wd graph_ht
 
@@ -337,7 +388,7 @@ proc reget_cmd {} {
  global cmd sar archive grep sar_data_path
 
  # this can avoid some errors, WARNING on pipe symbol on beggining
- set commstr "| $grep '^\[0-9\]' | $grep -v 'LINUX RESTART' | $grep -v '^$'"
+ set commstr "| $grep '^\[0-9\]' | $grep -v '^$'"
 
  set cmd(b) "$sar -b -f $sar_data_path/$archive | $grep -v 'tps' $commstr"
  set cmd(B) "$sar -B -f $sar_data_path/$archive |  $grep -v 'pgpgin' $commstr"
@@ -382,11 +433,20 @@ proc set_file {name} {
 }
 
 ###############################################################################
-#
-# $Id: isag.GUI.m4,v 1.4 2001/02/20 19:05:25 sarrep Exp $
-#
 # GUI
 #
+# $Id: isag.GUI.m4,v 1.7 2001/03/17 17:43:06 sarrep Exp $
+# $State: Exp $
+# $Log: isag.GUI.m4,v $
+# Revision 1.7  2001/03/17 17:43:06  sarrep
+# About dialog modify
+#
+# Revision 1.6  2001/03/17 17:30:11  sarrep
+# CVSizing, unified headers of each element file
+#
+#
+#
+###############################################################################
 set title "System Activity Grapher"
 wm title . $title
 
@@ -508,16 +568,19 @@ proc new_chart {l} {
 proc About {} {
 	global version
 
-	msg_box About "Sar Grapher\n\nBuild:$version\n\nhttp://www.volny.cz/linux_monitor/isag/index.html\ne-mail: linux_monitor@volny.cz"
+	msg_box About "Sar Grapher\n\nBuild info:$version\n\nhttp://www.volny.cz/linux_monitor/isag/index.html\ne-mail: linux_monitor@volny.cz"
 }
 
 # eof: sarrep.GUI.m4
 ###############################################################################
-#
-# $Id: isag.ResizeAll.m4,v 1.2 2001/02/03 11:01:38 sarrep Exp $
-#
 # Resizing graph window
 #
+# $Id: isag.ResizeAll.m4,v 1.4 2001/03/17 17:30:14 sarrep Exp $
+# $State: Exp $
+# $Log:#
+#
+#
+###############################################################################
 
 bind . <Configure> {ResizeAll}
 set enResizing 0
@@ -562,11 +625,13 @@ proc ResizeAll {} {
 
 # eof: sarrep.ResizeAll.m4
 ###############################################################################
-#
-# $Id: isag.Other.Funcs.m4,v 1.5 2001/02/03 10:59:21 sarrep Exp $
-#
 # Other functions
 #
+# $Id: isag.Other.Funcs.m4,v 1.7 2001/03/17 17:30:13 sarrep Exp $
+# $State:#
+# $Log:#
+#
+###############################################################################
 
 ##############################################################################
 #
@@ -711,15 +776,22 @@ set plotstr(w) "\"[fngr w]\" using 1:2 t \"cswch/s\" with line"
 set plotstr(W) "\"[fngr W]\" using 1:2 t \"pswpin/s\" with line, \"[fngr W]\" using 1:3 t \"pswpout/s\" with line"
 
 ###############################################################################
-#
-# $Id: isag.perf_data_procs.m4,v 1.4 2001/02/03 11:03:59 sarrep Exp $
-#
 # Performance data processing
 #
+# $Id: isag.perf_data_procs.m4,v 1.7 2001/03/17 17:30:16 sarrep Exp $
+# $State: Exp $
+# $Log: isag.perf_data_procs.m4,v $
+# Revision 1.7  2001/03/17 17:30:16  sarrep
+# CVSizing, unified headers of each element file
+#
+# Revision 1.6  2001/03/17 16:55:27  sarrep
+# LINUX RESTART zeroes all counters.
+#
+###############################################################################
 
 # CPU measurement specific line processing
 proc proc_line_u {fp line} {
-	global val_cur val_max
+	global val_cur val_max _last_time _reboot_flag
 
 	set rval 0
 		set a [string first "all" $line]
@@ -727,6 +799,12 @@ proc proc_line_u {fp line} {
 				set time [string trim [string range $line 0 [expr $a - 1]]]
 		set time [time_normalize "$time"]
 		set rest [string trim [string range $line [expr $a + 3] end]]
+		if {1 == $_reboot_flag} {
+# after reboot, set to zero also, all charts are with lines
+						set _reboot_flag 0
+# NOTE: The func __output_zero_metrics() cannot be used, because 'u' don't have out_tokens
+			puts $fp "$time 0 0 0"
+		}
 
 				set nums [parse_line $rest]
 			# user nice system (idle)
@@ -738,57 +816,116 @@ proc proc_line_u {fp line} {
 		if {$total > $val_max(u)} {set val_max(u) $total}
 				puts $fp "$time $total [expr $nice + $syst] $syst"
 		set rval 1
-	}
+		set _last_time $time
+	} else {if {-1 != [string first "RESTART" $line]} {
+				set _reboot_flag 1
+# see previous NOTE
+		if {$_last_time != ""} {
+			puts $fp "$_last_time 0 0 0"
+			set rval 1
+		}
+	}}
 	return $rval
 }
 # eof: sarrep.perf_data_procs.m4
 ###############################################################################
-#
-# $Id: proc_line_generic.m4,v 1.2 2001/01/27 19:25:57 sarrep Exp $
-#
 # Performance Data Processing and Drawing functions
-#
 #	proces line functions
 #
+# $Id: proc_line_generic.m4,v 1.5 2001/03/17 17:30:23 sarrep Exp $
+# $State: Exp $
+# $Log: proc_line_generic.m4,v $
+# Revision 1.5  2001/03/17 17:30:23  sarrep
+# CVSizing, unified headers of each element file
+#
+# Revision 1.4  2001/03/17 16:55:28  sarrep
+# LINUX RESTART zeroes all counters.
+#
+#
+###############################################################################
+
+proc __output_zero_metrics {time  l} {
+	global out_tokens out_tokens2
+
+	set out "$time "
+	foreach N $out_tokens($l) {
+		set out "$out 0"
+	}
+	foreach N $out_tokens2($l) {
+		set out "$out 0"
+	}
+	return "$out"
+}
+
+set _last_time ""
+set _reboot_flag 0
 
 # generic line processing
 proc proc_line_generic {l fp line} {
-	global val_cur val_max out_tokens out_tokens2
+	global val_cur val_max out_tokens out_tokens2 _last_time _reboot_flag
 
-#	DEBUG(Line: $line)
-	set time [string trim [string range $line 0 12]]
+		set time [string trim [string range $line 0 12]]
 	# Here was a problem, time string was badly cutten
 		set time [time_normalize "$time"]
 	set rest [string trim [string range $line 12 end]]
-#	DEBUG(Rest: $rest)
-	set nums [parse_line $rest]
-	set out "$time "
-	foreach N $out_tokens($l) {
-		set n [lindex $nums $N]
-		set out "$out $n"
-		if {$n > $val_max($l)} {set val_max($l) $n}
+	#
+# Sebastien's isag specific
+# check for line: "time LINUX RESTART" and reset counter to next
+# valid time stamp.
+# NOTE: Values must be zeroed also for first valid time after reboot. For
+# explanation you can imagin the chart
+#
+	if {-1 == [string first "RESTART" $rest]} {
+		if {1 == $_reboot_flag} {
+# after reboot, set to zero also, all charts are with lines
+			set _reboot_flag 0
+			puts $fp [__output_zero_metrics $time $l]
+		}
+		set nums [parse_line $rest]
+		set out "$time "
+		foreach N $out_tokens($l) {
+			set n [lindex $nums $N]
+			set out "$out $n"
+			if {$n > $val_max($l)} {set val_max($l) $n}
+		}
+
+		foreach N $out_tokens2($l) {
+			set n [lindex $nums $N]
+			set out "$out $n"
+		}
+		set _last_time $time
+		unset nums n N
+	} else {
+# reboot detected, drop all metrics to zero
+		set _reboot_flag 1
+		if {$_last_time != ""} {
+			set out [__output_zero_metrics $_last_time $l]
+		}
 	}
 
-	foreach N $out_tokens2($l) {
-		set n [lindex $nums $N]
-		set out "$out $n"
-	}
-
+		catch {
 		puts $fp "$out"
-	unset rest time nums out N n
+		unset out
+	}
+	unset rest time
 	return 1
 }
 
 # eof: proc_line_generic.m4
 ###############################################################################
-#
-# $Id: draw.m4,v 1.4 2001/02/03 10:49:40 sarrep Exp sarrep $
-#
 # Performance Data Processing and Drawing functions
-#
 #	generic draw function
 #	parametrical draw func for each kind of graph
 #
+# $Id: draw.m4,v 1.6 2001/03/17 17:30:10 sarrep Exp $
+# $State: Exp $
+# $Log: draw.m4,v $
+# Revision 1.6  2001/03/17 17:30:10  sarrep
+# CVSizing, unified headers of each element file
+#
+#
+#
+###############################################################################
 
 #
 # generic draw function
@@ -798,7 +935,8 @@ proc proc_line_generic {l fp line} {
 proc draw {l} {
 	global archive title sh sar grep sar_data_path gnuplot \
 		gr_scale val_cur val_max view_n cmd xlabel out_tokens \
-		ylabel y2label plotstr enResizing has_negative
+		ylabel y2label plotstr enResizing has_negative \
+		_last_time
 
 	
 	if {$archive == ""} {
@@ -807,6 +945,8 @@ proc draw {l} {
 	}
 
 	wm title . "$title: $view_n($l)"
+
+	set _last_time ""
 
 	set fn "/tmp/sag_$l[pid]"
 	set fp [open $fn w]
@@ -865,16 +1005,25 @@ proc draw {l} {
 
 # eof: draw.m4
 ###############################################################################
+# $Id: isag_cfg_file.m4,v 1.3 2001/03/17 17:30:19 sarrep Exp $
+# $State: Exp $
+# $Log: isag_cfg_file.m4,v $
+# Revision 1.3  2001/03/17 17:30:19  sarrep
+# CVSizing, unified headers of each element file
 #
-# $Id: isag_cfg_file.m4,v 1.1 2001/02/03 10:50:38 sarrep Exp sarrep $
 #
+#
+###############################################################################
 if {[file isfile $cfg_file] == 1} {
 	source $cfg_file
 
-		if {$val_max($last_graph) > 0} {
-		.graph.scale configure -to 0 -from $val_max($last_graph)
-		set gr_scale $val_cur($last_graph)
-			}
+	if {"" != $last_graph} {
+				if {$val_max($last_graph) > 0} {
+			.graph.scale configure -to 0 \
+				-from $val_max($last_graph)
+			set gr_scale $val_cur($last_graph)
+					}
+	}
 }
 
 #

@@ -1,3 +1,9 @@
+sysstat (5.0.6-1) unstable; urgency=low
+
+  * New upstream (stable) version.
+
+ -- Robert Luberda <robert@debian.org>  Thu, 26 Aug 2004 20:09:05 +0200
+
 sysstat (5.0.5-3) testing-proposed-updates; urgency=low
 
   * Updated Brazilian Portuguese templates translation (closes: #267189).

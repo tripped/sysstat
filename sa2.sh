@@ -1,6 +1,6 @@
 #!/bin/sh
 # PREFIX/lib/sa/sa2.sh
-# (C) 1999,2000 Sebastien Godard <sebastien.godard@wanadoo.fr>
+# (C) 1999-2001 Sebastien Godard <sebastien.godard@wanadoo.fr>
 #
 S_TIME_FORMAT=ISO ; export S_TIME_FORMAT
 DATE=`date +%d`

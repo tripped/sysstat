@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999,2000 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999,2001 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *

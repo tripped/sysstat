@@ -45,8 +45,8 @@
 #define _(string) (string)
 #endif
 
-
-int proc_used = -1;  /* Nb of processors on the machine. A value of 1 means two processors */
+/* Nb of processors on the machine. A value of 1 means two processors */
+int proc_used = -1;
 int serial_used = 0, irqcpu_used = 0, iface_used = 0, disk_used = 0;
 unsigned int sadc_actflag;
 long interval = 0, count = 0;
@@ -202,6 +202,13 @@ void salloc_pid(int pid_nr)
 }
 
 
+void p_write_error(void)
+{
+    fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
+    exit(2);
+}
+
+
 /*
  * Set PID flag value (bit 0 set: -x, bit 1 set: -X)
  */
@@ -301,7 +308,7 @@ void get_pid_list(void)
 /*
  * Find number of serial lines that support tx/rx accounting
  */
-void get_serial_lines(int *serial_used, int smp_kernel)
+void get_serial_lines(int *serial_used)
 {
    FILE *serfp;
    char line[256];
@@ -309,16 +316,14 @@ void get_serial_lines(int *serial_used, int smp_kernel)
 
 #ifdef SMP_RACE
    /*
-    * Ignore serial lines on SMP machines if SMP_RACE flag is defined.
+    * Ignore serial lines if SMP_RACE flag is defined.
     * This is because there is an SMP race in some 2.2.x kernels that
     * may be triggered when reading the /proc/tty/driver/serial file.
     */
-   if (smp_kernel) {
-      *serial_used = 0;
-      return;
-   }
-#endif
+   *serial_used = 0;
+   return;
 
+#else
    /* Open serial file */
    if ((serfp = fopen(SERIAL, "r")) == NULL) {
       *serial_used = 0;	/* No SERIAL file */
@@ -326,7 +331,10 @@ void get_serial_lines(int *serial_used, int smp_kernel)
    }
 
    while (fgets(line, 256, serfp) != NULL) {
-      /* tx/rx statistics are always present, except when serial line is unknown */
+      /*
+       * tx/rx statistics are always present,
+       * except when serial line is unknown.
+       */
       if (strstr(line, "tx:") != NULL)
 	 sl++;
    }
@@ -335,6 +343,7 @@ void get_serial_lines(int *serial_used, int smp_kernel)
    fclose(serfp);
 
    *serial_used = sl + NR_SERIAL_PREALLOC;
+#endif
 }
 
 
@@ -402,7 +411,8 @@ void get_disks(int *nr_disks)
 
 
 /*
- * Find number of interrupts available per processor
+ * Find number of interrupts available per processor.
+ * Called on SMP machines only.
  */
 void get_irqcpu_nb(int *irqcpu_used, unsigned int max_nr_irqcpu)
 {
@@ -544,67 +554,53 @@ void write_dummy_record(int ofd, size_t file_stats_size)
    file_stats.second = loc_time.tm_sec;
 
    /* Write record now */
-   if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size) {
-      fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
-      exit(2);
-   }
+   if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
+      p_write_error();
 }
 
 
 /*
- * Write stats
+ * Write stats.
+ * NB: sadc provides all the stats, including:
+ * -> CPU utilization per processor (on SMP machines only)
+ * -> IRQ per processor (on SMP machines only)
+ * -> number of each IRQ (if -I option passed to sadc)
  */
 void write_stats(int ofd, size_t file_stats_size)
 {
    int nb;
 
-   if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size) {
-      fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
-      exit(2);
-   }
+   if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
+      p_write_error();
    if (proc_used > 0) {
-      if ((nb = write(ofd, st_cpu, STATS_ONE_CPU_SIZE * (proc_used + 1))) != (STATS_ONE_CPU_SIZE * (proc_used + 1))) {
-	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
-	 exit(2);
-      }
+      if ((nb = write(ofd, st_cpu, STATS_ONE_CPU_SIZE * (proc_used + 1))) != (STATS_ONE_CPU_SIZE * (proc_used + 1)))
+	 p_write_error();
    }
    if (GET_ONE_IRQ(sadc_actflag)) {
-      if ((nb = write(ofd, interrupts, STATS_ONE_IRQ_SIZE)) != STATS_ONE_IRQ_SIZE) {
-	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
-	 exit(2);
-      }
+      if ((nb = write(ofd, interrupts, STATS_ONE_IRQ_SIZE)) != STATS_ONE_IRQ_SIZE)
+	 p_write_error();
    }
    if (pid_nr) {
       /* Structures are packed together! */
-      if ((nb = write(ofd, pid_stats[0], PID_STATS_SIZE * pid_nr)) != (PID_STATS_SIZE * pid_nr)) {
-	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
-	 exit(2);
-      }
+      if ((nb = write(ofd, pid_stats[0], PID_STATS_SIZE * pid_nr)) != (PID_STATS_SIZE * pid_nr))
+	 p_write_error();
    }
    if (serial_used) {
-      if ((nb = write(ofd, st_serial, STATS_SERIAL_SIZE * serial_used)) != (STATS_SERIAL_SIZE * serial_used)) {
-	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
-	 exit(2);
-      }
+      if ((nb = write(ofd, st_serial, STATS_SERIAL_SIZE * serial_used)) != (STATS_SERIAL_SIZE * serial_used))
+	 p_write_error();
    }
    if (irqcpu_used) {
       if ((nb = write(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * (proc_used + 1) * irqcpu_used))
-	  != (STATS_IRQ_CPU_SIZE * (proc_used + 1) * irqcpu_used)) {
-	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
-	 exit(2);
-      }
+	  != (STATS_IRQ_CPU_SIZE * (proc_used + 1) * irqcpu_used))
+	 p_write_error();
    }
    if (iface_used) {
-      if ((nb = write(ofd, st_net_dev, STATS_NET_DEV_SIZE * iface_used)) != (STATS_NET_DEV_SIZE * iface_used)) {
-	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
-	 exit(2);
-      }
+      if ((nb = write(ofd, st_net_dev, STATS_NET_DEV_SIZE * iface_used)) != (STATS_NET_DEV_SIZE * iface_used))
+	 p_write_error();
    }
    if (disk_used) {
-      if ((nb = write(ofd, st_disk, DISK_STATS_SIZE * disk_used)) != (DISK_STATS_SIZE * disk_used)) {
-	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
-	 exit(2);
-      }
+      if ((nb = write(ofd, st_disk, DISK_STATS_SIZE * disk_used)) != (DISK_STATS_SIZE * disk_used))
+	 p_write_error();
    }
 }
 
@@ -667,7 +663,10 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 	    exit(1);
 	 }
 	
-	 /* Force characteristics (nb of serial lines, network interfaces...) to that of the file */
+	 /*
+	  * Force characteristics (nb of serial lines, network interfaces...)
+	  * to that of the file.
+	  */
 	 if (file_hdr.sa_serial != serial_used) {
 	    if (serial_used)
 	       free(st_serial);
@@ -732,8 +731,8 @@ void read_proc_stat(void)
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
 	  * Read the number of jiffies spent in user, nice, system, idle and
-	  * iowait mode among all proc.
-	  * CPU usage is not reduced to one processor to avoid rounding problems.
+	  * iowait mode among all proc. CPU usage is not reduced to one
+	  * processor to avoid rounding problems.
 	  */
 	 file_stats.cpu_iowait = 0;	/* in case it isn't 2.5 */
 	 sscanf(line + 5, "%u %u %u %lu %lu",
@@ -742,10 +741,11 @@ void read_proc_stat(void)
 		&(file_stats.cpu_iowait));
 
 	 /*
-	  * Compute the uptime of the system in jiffies (1/100ths of a second if HZ=100).
+	  * Compute the uptime of the system in jiffies (1/100ths of a second
+	  * if HZ=100).
 	  * Machine uptime is multiplied by the number of processors here.
-	  * Note that overflow is not so far away: ULONG_MAX is 4294967295 on 32 bit systems.
-	  * Overflow happens when machine uptime is:
+	  * Note that overflow is not so far away: ULONG_MAX is 4294967295 on
+	  * 32 bit systems. Overflow happens when machine uptime is:
 	  * 497 days on a monoprocessor machine,
 	  * 248 days on a bi processor,
 	  * 124 days on a quad processor...
@@ -758,59 +758,75 @@ void read_proc_stat(void)
       else if (!strncmp(line, "cpu", 3)) {
 	 if (proc_used > 0) {
 	    /*
-	     * Read the number of jiffies spent in user, nice, system, idle and
-	     * iowait mode for current proc.
+	     * Read the number of jiffies spent in user, nice, system, idle
+	     * and iowait mode for current proc.
 	     * This is done only on SMP machines.
-	     * Warning: st_cpu struct is _not_ allocated even if the kernel has SMP support enabled.
+	     * Warning: st_cpu_i struct is _not_ allocated even if the kernel
+	     * has SMP support enabled.
 	     */
+	    cc_iowait = 0;	/* in case it isn't 2.5 */
 	    sscanf(line + 3, "%d %u %u %u %lu %lu",
-		   &proc_nb, &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
-	    st_cpu_i = st_cpu + proc_nb;
-	    st_cpu_i->per_cpu_user   = cc_user;
-	    st_cpu_i->per_cpu_nice   = cc_nice;
-	    st_cpu_i->per_cpu_system = cc_system;
-	    st_cpu_i->per_cpu_idle   = cc_idle;
-	    st_cpu_i->per_cpu_iowait = cc_iowait;
+		   &proc_nb,
+		   &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
+	    if (proc_nb <= proc_used) {
+	       st_cpu_i = st_cpu + proc_nb;
+	       st_cpu_i->per_cpu_user   = cc_user;
+	       st_cpu_i->per_cpu_nice   = cc_nice;
+	       st_cpu_i->per_cpu_system = cc_system;
+	       st_cpu_i->per_cpu_idle   = cc_idle;
+	       st_cpu_i->per_cpu_iowait = cc_iowait;
+	    }
+	    /* else:
+	     * Additional CPUs have been dynamically registered in /proc/stat.
+	     * sar won't crash, but the CPU stats might be false...
+	     */
 	 }
       }
 
       else if (!strncmp(line, "disk ", 5)) {
 	 /* Read number of I/O done since the last reboot */
-	 sscanf(line + 5, "%u %u %u %u", &(file_stats.dk_drive), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	 sscanf(line + 5, "%u %u %u %u",
+		&(file_stats.dk_drive), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
 	 file_stats.dk_drive += u_tmp[0] + u_tmp[1] + u_tmp[2];
       }
 
       else if (!strncmp(line, "disk_rio ", 9)) {
 	 /* Read number of read I/O */
-	 sscanf(line + 9, "%u %u %u %u", &(file_stats.dk_drive_rio), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	 sscanf(line + 9, "%u %u %u %u",
+		&(file_stats.dk_drive_rio), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
 	 file_stats.dk_drive_rio += u_tmp[0] + u_tmp[1] + u_tmp[2];
       }
 
       else if (!strncmp(line, "disk_wio ", 9)) {
 	 /* Read number of write I/O */
-	 sscanf(line + 9, "%u %u %u %u", &(file_stats.dk_drive_wio), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	 sscanf(line + 9, "%u %u %u %u",
+		&(file_stats.dk_drive_wio), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
 	 file_stats.dk_drive_wio += u_tmp[0] + u_tmp[1] + u_tmp[2];
       }
 
       else if (!strncmp(line, "disk_rblk ", 10)) {
 	 /* Read number of blocks read from disk */
-	 sscanf(line + 10, "%u %u %u %u", &(file_stats.dk_drive_rblk), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	 sscanf(line + 10, "%u %u %u %u",
+		&(file_stats.dk_drive_rblk), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
 	 file_stats.dk_drive_rblk += u_tmp[0] + u_tmp[1] + u_tmp[2];
       }
 
       else if (!strncmp(line, "disk_wblk ", 10)) {
 	 /* Read number of blocks written to disk */
-	 sscanf(line + 10, "%u %u %u %u", &(file_stats.dk_drive_wblk), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	 sscanf(line + 10, "%u %u %u %u",
+		&(file_stats.dk_drive_wblk), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
 	 file_stats.dk_drive_wblk += u_tmp[0] + u_tmp[1] + u_tmp[2];
       }
 
       else if (!strncmp(line, "page ", 5))
 	 /* Read number of pages the system paged in and out */
-	 sscanf(line + 5, "%u %u", &(file_stats.pgpgin), &(file_stats.pgpgout));
+	 sscanf(line + 5, "%u %u",
+		&(file_stats.pgpgin), &(file_stats.pgpgout));
 
       else if (!strncmp(line, "swap ", 5))
 	 /* Read number of swap pages brought in and out */
-	 sscanf(line + 5, "%u %u", &(file_stats.pswpin), &(file_stats.pswpout));
+	 sscanf(line + 5, "%u %u",
+		&(file_stats.pswpin), &(file_stats.pswpout));
 
       else if (!strncmp(line, "intr ", 5)) {
 	 /* Read total number of interrupts received since system boot */
@@ -884,25 +900,29 @@ void read_proc_stat(void)
 void read_proc_loadavg(void)
 {
    FILE *loadfp;
-   int load_tmp[2];
+   int load_tmp[3];
 
    /* Open loadavg file */
    if ((loadfp = fopen(LOADAVG, "r")) == NULL) {
       file_stats.nr_running = 0;
       file_stats.nr_threads = 0;
-      file_stats.load_avg_1 = file_stats.load_avg_5 = 0;
+      file_stats.load_avg_1 = file_stats.load_avg_5
+			    = file_stats.load_avg_15
+			    = 0;
    }
    else {
       /* Read load averages and queue length */
-      fscanf(loadfp, "%d.%d %d.%d %*d.%*d %d/%d %*d\n",
+      fscanf(loadfp, "%d.%d %d.%d %d.%d %d/%d %*d\n",
 	     &(load_tmp[0]), &(file_stats.load_avg_1),
 	     &(load_tmp[1]), &(file_stats.load_avg_5),
+	     &(load_tmp[2]), &(file_stats.load_avg_15),
 	     &(file_stats.nr_running),
 	     &(file_stats.nr_threads));
       fclose(loadfp);
 
-      file_stats.load_avg_1 += load_tmp[0] * 100;
-      file_stats.load_avg_5 += load_tmp[1] * 100;
+      file_stats.load_avg_1  += load_tmp[0] * 100;
+      file_stats.load_avg_5  += load_tmp[1] * 100;
+      file_stats.load_avg_15 += load_tmp[2] * 100;
       if (file_stats.nr_running)
 	 /* Do not take current process into account */
 	 file_stats.nr_running--;
@@ -1042,7 +1062,7 @@ void read_pid_stat(void)
  * Read stats from /proc/tty/driver/serial
  * (see linux source file linux/drivers/char/serial.c)
  */
-void read_serial_stat(int smp_kernel)
+void read_serial_stat(void)
 {
    FILE *serfp;
    struct stats_serial *st_serial_i;
@@ -1051,17 +1071,18 @@ void read_serial_stat(int smp_kernel)
    int tty;
    char *p;
 
-#ifdef SMP_RACE
-   if (!smp_kernel) {
-#endif
 
+#ifndef SMP_RACE
       /* Open serial file */
       if ((serfp = fopen(SERIAL, "r")) != NULL) {
 
 	 while ((fgets(line, 256, serfp) != NULL) && (sl < serial_used)) {
 
 	    if ((p = strstr(line, "tx:")) != NULL) {
-	       /* Read the number of chrs transmitted and received by current serial line */
+	       /*
+		* Read the number of chrs transmitted and received by
+		* current serial line.
+		*/
 	       sscanf(line, "%d", &tty);
 	       st_serial_i = st_serial + sl;
 	       sscanf(p + 3, "%d", &(st_serial_i->tx));
@@ -1075,8 +1096,6 @@ void read_serial_stat(int smp_kernel)
 	 /* Close serial file */
 	 fclose(serfp);
       }
-#ifdef SMP_RACE
-   }
 #endif
 
    while (sl < serial_used) {
@@ -1088,6 +1107,7 @@ void read_serial_stat(int smp_kernel)
       st_serial_i->line = 0xff;
    }
 }
+
 
 /*
  * Read stats from /proc/interrupts
@@ -1111,7 +1131,10 @@ void read_interrupts_stat(void)
 	
 	    for (cpu = 0; cpu <= proc_used; cpu++) {
 	       p = st_irq_cpu + cpu * irqcpu_used + irq;
-	       /* No need to set (st_irq_cpu + cpu * irqcpu_used)->irq: same as st_irq_cpu->irq */
+	       /*
+		* No need to set (st_irq_cpu + cpu * irqcpu_used)->irq:
+		* same as st_irq_cpu->irq.
+		*/
 	       sscanf(line + 4 + 11 * cpu, " %10u", &(p->interrupt));
 	    }
 	    irq++;
@@ -1124,8 +1147,8 @@ void read_interrupts_stat(void)
 
    while (irq < irqcpu_used) {
       /*
-       * Nb of interrupts per processor has changed, or appending data to an old file
-       * with more interrupts than are actually available now.
+       * Nb of interrupts per processor has changed, or appending data to an
+       * old file with more interrupts than are actually available now.
        */
       p = st_irq_cpu + irq;
       p->irq = ~0;	/* This value means this is a dummy interrupt */
@@ -1257,14 +1280,22 @@ void read_net_dev_stat(void)
 	    strncpy(st_net_dev_i->interface, line, 6);
 	    st_net_dev_i->interface[6] = '\0';
 	    sscanf(line + 7, "%lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
-		   &(st_net_dev_i->rx_bytes), &(st_net_dev_i->rx_packets),
-		   &(st_net_dev_i->rx_errors), &(st_net_dev_i->rx_dropped),
-		   &(st_net_dev_i->rx_fifo_errors), &(st_net_dev_i->rx_frame_errors),
-		   &(st_net_dev_i->rx_compressed), &(st_net_dev_i->multicast),
-		   &(st_net_dev_i->tx_bytes), &(st_net_dev_i->tx_packets),
-		   &(st_net_dev_i->tx_errors), &(st_net_dev_i->tx_dropped),
-		   &(st_net_dev_i->tx_fifo_errors), &(st_net_dev_i->collisions),
-		   &(st_net_dev_i->tx_carrier_errors), &(st_net_dev_i->tx_compressed));
+		   &(st_net_dev_i->rx_bytes),
+		   &(st_net_dev_i->rx_packets),
+		   &(st_net_dev_i->rx_errors),
+		   &(st_net_dev_i->rx_dropped),
+		   &(st_net_dev_i->rx_fifo_errors),
+		   &(st_net_dev_i->rx_frame_errors),
+		   &(st_net_dev_i->rx_compressed),
+		   &(st_net_dev_i->multicast),
+		   &(st_net_dev_i->tx_bytes),
+		   &(st_net_dev_i->tx_packets),
+		   &(st_net_dev_i->tx_errors),
+		   &(st_net_dev_i->tx_dropped),
+		   &(st_net_dev_i->tx_fifo_errors),
+		   &(st_net_dev_i->collisions),
+		   &(st_net_dev_i->tx_carrier_errors),
+		   &(st_net_dev_i->tx_compressed));
 	    dev++;
 	 }
       }
@@ -1279,8 +1310,8 @@ void read_net_dev_stat(void)
 
       while (dev < iface_used) {
 	 /*
-	  * Nb of network interfaces has changed, or appending data to an old file
-	  * with more interfaces than are actually available now.
+	  * Nb of network interfaces has changed, or appending data to an
+	  * old file with more interfaces than are actually available now.
 	  */
 	 st_net_dev_i = st_net_dev + dev++;
 	 strcpy(st_net_dev_i->interface, "?");
@@ -1308,31 +1339,28 @@ void read_net_sock_stat(void)
    /* Open /proc/net/sockstat file */
    if ((sockfp = fopen(NET_SOCKSTAT, "r")) != NULL) {
 
-      if (fgets(line, 96, sockfp) != NULL) {
+      while (fgets(line, 96, sockfp) != NULL) {
 	
-	 /* Assume first line is: "sockets: used %d" */
-	 sscanf(line + 14, "%d", &(file_stats.sock_inuse));
-	
-	 while (fgets(line, 96, sockfp) != NULL) {
-	
-	    if (!strncmp(line, "TCP:", 4))
-	       /* TCP sockets */
-	       sscanf(line + 11, "%d", &(file_stats.tcp_inuse));
-	    else if (!strncmp(line, "UDP:", 4))
-	       /* UDP sockets */
-	       sscanf(line + 11, "%d", &(file_stats.udp_inuse));
-	    else if (!strncmp(line, "RAW:", 4))
-	       /* RAW sockets */
-	       sscanf(line + 11, "%d", &(file_stats.raw_inuse));
-	    else if (!strncmp(line, "FRAG:", 5))
-	       /* FRAGments */
-	       sscanf(line + 12, "%d", &(file_stats.frag_inuse));
-	 }
+	 if (!strncmp(line, "sockets:", 8))
+	    /* Sockets */
+	    sscanf(line + 14, "%d", &(file_stats.sock_inuse));
+	 else if (!strncmp(line, "TCP:", 4))
+	    /* TCP sockets */
+	    sscanf(line + 11, "%d", &(file_stats.tcp_inuse));
+	 else if (!strncmp(line, "UDP:", 4))
+	    /* UDP sockets */
+	    sscanf(line + 11, "%d", &(file_stats.udp_inuse));
+	 else if (!strncmp(line, "RAW:", 4))
+	    /* RAW sockets */
+	    sscanf(line + 11, "%d", &(file_stats.raw_inuse));
+	 else if (!strncmp(line, "FRAG:", 5))
+	    /* FRAGments */
+	    sscanf(line + 12, "%d", &(file_stats.frag_inuse));
       }
-
-      /* Close socket file */
-      fclose(sockfp);
    }
+
+   /* Close socket file */
+   fclose(sockfp);
 }
 
 
@@ -1347,12 +1375,13 @@ int main(int argc, char **argv)
    char new_ofile[MAX_FILE_LEN];
    unsigned int flags = 0;
    struct tm loc_time;
-   int ofd, smp_kernel = 0;
+   int ofd;
    /*
     * This variable contains:
-    * - FILE_STATS_SIZE defined in sa.h if creating a new daily data file or using STDOUT,
-    * - the size of the file_stats structure defined in the header of the file if
-    *   appending data to an existing daily data file.
+    * - FILE_STATS_SIZE defined in sa.h if creating a new daily data file or
+    *   using STDOUT,
+    * - the size of the file_stats structure defined in the header of the
+    *   file if appending data to an existing daily data file.
     */
    size_t file_stats_size = FILE_STATS_SIZE;
 
@@ -1381,24 +1410,26 @@ int main(int argc, char **argv)
    memset(&file_stats, 0, FILE_STATS_SIZE);
 
    /* How many processors on this machine ? */
-   smp_kernel = get_nb_proc_used(&proc_used, NR_CPUS);
-   if (proc_used > 0) {
-      sadc_actflag |= A_ONE_CPU;	/* for file_header */
+   get_nb_proc_used(&proc_used, NR_CPUS);
+   if (proc_used > 0)
       salloc_cpu(proc_used + 1);
-   }
 
    /* Get serial lines that support accounting */
-   get_serial_lines(&serial_used, smp_kernel);
+   get_serial_lines(&serial_used);
    if (serial_used) {
       sadc_actflag |= A_SERIAL;
       salloc_serial(serial_used);
    }
    /* Get number of interrupts available per processor */
-   get_irqcpu_nb(&irqcpu_used, NR_IRQS);
-   if (irqcpu_used) {
-      sadc_actflag |= A_IRQ_CPU;
-      salloc_irqcpu(proc_used + 1, irqcpu_used);
+   if (proc_used > 0) {
+      get_irqcpu_nb(&irqcpu_used, NR_IRQS);
+      if (irqcpu_used)
+	 salloc_irqcpu(proc_used + 1, irqcpu_used);
    }
+   else
+      /* IRQ per processor are not provided by sadc on UP machines */
+      irqcpu_used = 0;
+
    /* Get number of network devices (interfaces) */
    get_net_dev(&iface_used);
    if (iface_used) {
@@ -1451,7 +1482,8 @@ int main(int argc, char **argv)
 	    if (!strcmp(argv[opt], "-")) {
 	       /* File name set to '-' */
 	       get_localtime(&loc_time);
-	       snprintf(ofile, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+	       snprintf(ofile, MAX_FILE_LEN,
+			"%s/sa%02d", SA_DIR, loc_time.tm_mday);
 	       ofile[MAX_FILE_LEN - 1] = '\0';
 	       flags |= F_SA_ROTAT;
 	    }
@@ -1542,7 +1574,7 @@ int main(int argc, char **argv)
       if (GET_SUM_PID(sadc_actflag))
 	 read_sysfaults();
       if (serial_used)
-	 read_serial_stat(smp_kernel);
+	 read_serial_stat();
       if (irqcpu_used)
 	 read_interrupts_stat();
       if (iface_used)
@@ -1552,7 +1584,10 @@ int main(int argc, char **argv)
       write_stats(ofd, file_stats_size);
 
       if DO_SA_ROTAT(flags) {
-	 /* Stats are written at the end of previous file *and* at the beginning of the new one */
+	 /*
+	  * Stats are written at the end of previous file *and* at the
+	  * beginning of the new one.
+	  */
 	 flags &= ~F_DO_SA_ROTAT;
 	 if (fdatasync(ofd) < 0) {	/* Flush previous file */
 	    perror("fdatasync");
@@ -1581,7 +1616,8 @@ int main(int argc, char **argv)
       if (WANT_SA_ROTAT(flags)) {
 	 /* The user specified '-' as the filename to use */
 	 get_localtime(&loc_time);
-	 snprintf(new_ofile, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+	 snprintf(new_ofile, MAX_FILE_LEN,
+		  "%s/sa%02d", SA_DIR, loc_time.tm_mday);
 	 new_ofile[MAX_FILE_LEN - 1] = '\0';
 
 	 if (strcmp(ofile, new_ofile))

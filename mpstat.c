@@ -48,7 +48,8 @@ struct mp_stats *st_mp_cpu[DIM];
 /* NOTE: Use array of _char_ for bitmaps to avoid endianness problems...*/
 unsigned char *cpu_bitmap;	/* Bit 0: Global; Bit 1: 1st proc; etc. */
 struct mp_timestamp st_mp_tstamp[DIM];
-int proc_used = -1;  /* Nb of processors on the machine. A value of 1 means two processors */
+/* Nb of processors on the machine. A value of 1 means two processors */
+int proc_used = -1;
 long interval = 0, count = 0;
 unsigned int flags = 0;
 struct tm loc_time;
@@ -135,8 +136,8 @@ void write_stats_avg(short curr, short dis)
 	     SP_VALUE(st_mp_cpu[2]->cpu_system, st_mp_cpu[curr]->cpu_system, itv),
 	     SP_VALUE(st_mp_cpu[2]->cpu_iowait, st_mp_cpu[curr]->cpu_iowait, itv));
 
-      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[2]->cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	 printf("    %.2f", 0.0);
+      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[2]->cpu_idle)
+	 printf("    %.2f", 0.0);	/* Handle buggy RTC (or kernels?) */
       else
 	 printf("  %6.2f",
 		SP_VALUE(st_mp_cpu[2]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
@@ -169,8 +170,8 @@ void write_stats_avg(short curr, short dis)
 	     SP_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv),
 	     SP_VALUE(st_mp_cpu_j->cpu_iowait, st_mp_cpu_i->cpu_iowait, itv));
 
-      if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	 printf("    %.2f", 0.0);
+      if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)
+	 printf("    %.2f", 0.0);	/* Handle buggy RTC (or kernels?) */
       else
 	 printf("  %6.2f",
 		SP_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
@@ -217,7 +218,8 @@ void write_stats(short curr, short dis)
 
    /* Print stats */
    if (dis)
-      printf(_("\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"), cur_time[!curr]);
+      printf(_("\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"),
+	     cur_time[!curr]);
 
    /* Check if we want global stats among all proc */
    if (*cpu_bitmap & 1) {
@@ -230,8 +232,8 @@ void write_stats(short curr, short dis)
 	     SP_VALUE(st_mp_cpu[!curr]->cpu_system, st_mp_cpu[curr]->cpu_system, itv),
 	     SP_VALUE(st_mp_cpu[!curr]->cpu_iowait, st_mp_cpu[curr]->cpu_iowait, itv));
 
-      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[!curr]->cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	 printf("    %.2f", 0.0);
+      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[!curr]->cpu_idle)
+	 printf("    %.2f", 0.0);	/* Handle buggy RTC (or kernels?) */
       else
 	 printf("  %6.2f",
 		SP_VALUE(st_mp_cpu[!curr]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
@@ -264,8 +266,8 @@ void write_stats(short curr, short dis)
 	     SP_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv),
 	     SP_VALUE(st_mp_cpu_j->cpu_iowait, st_mp_cpu_i->cpu_iowait, itv));
 
-      if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	 printf("    %.2f", 0.0);
+      if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)
+	 printf("    %.2f", 0.0);	/* Handle buggy RTC (or kernels?) */
       else
 	 printf("  %6.2f",
 		SP_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
@@ -300,8 +302,8 @@ void read_proc_stat(short curr)
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
 	  * Read the number of jiffies spent in user, nice, system, idle
-	  * and iowait mode among all proc.
-	  * CPU usage is not reduced to one processor to avoid rounding problems.
+	  * and iowait mode among all proc. CPU usage is not reduced to one
+	  * processor to avoid rounding problems.
 	  */
 	 st_mp_cpu[curr]->cpu_iowait = 0;	/* For non 2.5 machines */
 	 sscanf(line + 5, "%u %u %u %lu %lu",
@@ -310,7 +312,8 @@ void read_proc_stat(short curr)
 		&(st_mp_cpu[curr]->cpu_iowait));
 
 	 /*
-	  * Compute the uptime of the system in jiffies (1/100ths of a second if HZ=100).
+	  * Compute the uptime of the system in jiffies (1/100ths of a second
+	  * if HZ=100).
 	  * Machine uptime is multiplied by the number of processors here.
 	  */
 	 st_mp_tstamp[curr].uptime = st_mp_cpu[curr]->cpu_user +
@@ -328,13 +331,20 @@ void read_proc_stat(short curr)
 	  */
 	 cc_iowait = 0;	/* For non 2.5 machines */
 	 sscanf(line + 3, "%d %u %u %u %lu %lu",
-		&proc_nb, &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
-	 st_mp_cpu_i = st_mp_cpu[curr] + proc_nb + 1;
-	 st_mp_cpu_i->cpu_user   = cc_user;
-	 st_mp_cpu_i->cpu_nice   = cc_nice;
-	 st_mp_cpu_i->cpu_system = cc_system;
-	 st_mp_cpu_i->cpu_idle   = cc_idle;
-	 st_mp_cpu_i->cpu_iowait = cc_iowait;
+		&proc_nb,
+		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
+	 if (proc_nb <= proc_used) {
+	    st_mp_cpu_i = st_mp_cpu[curr] + proc_nb + 1;
+	    st_mp_cpu_i->cpu_user   = cc_user;
+	    st_mp_cpu_i->cpu_nice   = cc_nice;
+	    st_mp_cpu_i->cpu_system = cc_system;
+	    st_mp_cpu_i->cpu_idle   = cc_idle;
+	    st_mp_cpu_i->cpu_iowait = cc_iowait;
+	 }
+	 /* else:
+	  * Additional CPUs have been dynamically registered in /proc/stat.
+	  * mpstat won't crash, but the CPU stats might be false...
+	  */
       }
 
       else if (!strncmp(line, "intr ", 5))
@@ -421,7 +431,10 @@ int main(int argc, char **argv)
 	    if (!strcmp(argv[opt], K_ALL)) {
 	       if (proc_used)
 		  dis_hdr = 9;
-	       /* Set bit for every processor. Also indicate to display stats for CPU 'all' */
+	       /*
+		* Set bit for every processor.
+		* Also indicate to display stats for CPU 'all'.
+		*/
 	       memset(cpu_bitmap, 0xff, ((proc_used + 1 + (proc_used > 0)) >> 3) + 1);
 	    }
 	    else {
@@ -521,7 +534,7 @@ int main(int argc, char **argv)
    /* Main loop */
    do {
 
-      /* Resetting the structure is not needed since all the fields will be filled */
+      /* Resetting the structure not needed since every fields will be set */
 
       /* Save time */
       get_localtime(&loc_time);

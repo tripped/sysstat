@@ -1,4 +1,4 @@
-.TH SAR 1 "OCTOBER 2001" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "JANUARY 2003" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -12,7 +12,7 @@ sar \- Collect, report, or save system activity information.
 .I pid
 .B | SELF | ALL } ] [ -I {
 .I irq
-.B | SUM | PROC | ALL | XALL } ] [ -U {
+.B | SUM | ALL | XALL } ] [ -P {
 .I cpu
 .B | ALL } ] [ -o [
 .I filename
@@ -63,12 +63,30 @@ saved in a file. This file can be either the one specified by the
 .B -f
 flag or, by default, the standard system activity daily data file.
 
+Without the
+.B -P
+flag, the
+.B sar
+command reports system-wide (global among all processors) statistics,
+which are calculated as averages for values expressed as percentages,
+and as sums otherwise. If the
+.B -P
+flag is given, the
+.B sar
+command reports activity which relates to the specified processor or
+processors. If
+.B -P ALL
+is given, the
+.B sar
+command reports statistics for each individual processor and global
+statistics among all processors.
+
 You can select information about specific system activities using
 flags. Not specifying any flags selects only CPU activity.
 Specifying the
 .B -A
 flag is equivalent to specifying
-.BR "-bBcdqrRuvwWy -I SUM -I PROC -n FULL -U ALL".
+.BR "-bBcdqrRuvwWy -I SUM -n FULL -P ALL".
 
 The default version of the
 .B sar
@@ -108,7 +126,7 @@ command only reports on local activities.
 .SH OPTIONS
 .IP -A
 This is equivalent to specifying
-.BR "-bBcdqrRuvwWy -I SUM -I PROC -n FULL -U ALL".
+.BR "-bBcdqrRuvwWy -I SUM -n FULL -P ALL".
 .IP -b
 Report I/O and transfer rate statistics. The following values are
 displayed:
@@ -224,7 +242,9 @@ or written to a file (options
 .B -f
 or
 .B -o
-).
+). Note that if you also use
+.B -h
+option, ending time will have to be given in UTC (Coordinated Universal Time).
 .IP "-f filename"
 Extract records from
 .I filename
@@ -239,8 +259,8 @@ file. The -f option is exclusive of the -o option.
 When  reading data from a file, print its contents in a format that can
 easily be handled by pattern processing commands like awk.
 The output consists of fields separated by a tab. Each record contains the
-hostname of the host where sar was run, the interval value (or -1 if not applicable), the timestamp (UTC value - Coordinated Universal Time)
-in seconds from the epoch,
+hostname of the host where sar was run, the interval value (or -1 if not applicable), the
+timestamp (UTC value - Coordinated Universal Time) in seconds from the epoch,
 the device name (or - if not applicable), the field name and its value.
 .IP -H
 When  reading data from a file, print its contents in a format that can easily
@@ -258,7 +278,7 @@ Select data records at seconds as close as possible to the number specified
 by the
 .I interval
 parameter.
-.IP "-I irq | SUM | PROC | ALL | XALL"
+.IP "-I irq | SUM | ALL | XALL"
 Report statistics for a given interrupt.
 .B irq
 is the interrupt number. The
@@ -271,10 +291,6 @@ the first 16 interrupts are to be reported, whereas the
 .B XALL
 keyword indicates that statistics from all interrupts, including potential
 APIC interrupt sources, are to be reported.
-Last, if you use the
-.B PROC
-keyword, the number of interrupts per second received by each processor
-is displayed.
 .IP "-n DEV | EDEV | SOCK | FULL"
 Report network statistics.
 
@@ -422,6 +438,19 @@ is in a separate record. The default value of the
 parameter is the current daily data file, the
 .IR /var/log/sa/sa dd
 file. The -o option is exclusive of the -f option.
+.IP "-P cpu | ALL"
+Report per-processor statistics for the specified processor or processors.
+Specifying the
+.B ALL
+keyword reports statistics for each individual processor, and globally for
+all processors.
+Of the flags which specify the statistics to be reported, only the
+.B -u
+and
+.B -I SUM
+flags are meaningful with the
+.B -P
+flag. Note that processor 0 is the first processor.
 .IP -q
 Report queue length and load averages. The following values are displayed:
 
@@ -444,6 +473,11 @@ System load average for the last minute.
 .B ldavg-5
 .RS
 System load average for the past 5 minutes.
+.RE
+
+.B ldavg-15
+.RS
+System load average for the past 15 minutes.
 .RE
 .RE
 .IP -r
@@ -535,7 +569,9 @@ specified. The default starting time is 08:00.
 Hours must be given in 24-hour format. This option can be
 used only when data are read from a file (option
 .B -f
-).
+). Note that if you also use
+.B -h
+option, starting time will have to be given in UTC (Coordinated Universal Time).
 .IP -t
 When reading data from a daily data file, indicate that
 .B sar
@@ -580,14 +616,6 @@ Percentage of time that the CPU or CPUs were idle and the system
 did not have an outstanding disk I/O request.
 .RE
 .RE
-.IP "-U cpu | ALL"
-Report CPU utilization for a given processor.
-.B cpu
-is the processor number. The
-.B ALL
-keyword indicates that statistics
-are to be reported for all processors. Note that processor 0 is
-the first processor.
 .IP -v
 Report status of inode, file and other kernel tables.
 The following values are displayed:

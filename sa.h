@@ -16,7 +16,7 @@
 #define A_PAGE		0x000010
 #define A_SWAP		0x000020
 #define A_IO		0x000040
-#define A_ONE_CPU	0x000080
+/* unused */
 #define A_ONE_IRQ	0x000100
 #define A_MEMORY	0x000200
 #define A_PID		0x000400
@@ -24,7 +24,7 @@
 #define A_SUM_PID	0x001000
 #define A_SERIAL	0x002000
 #define A_MEM_AMT	0x004000
-#define A_IRQ_CPU	0x008000
+/* unused */
 #define A_KTABLES	0x010000
 #define A_NET_DEV	0x020000
 #define A_NET_EDEV	0x040000
@@ -41,7 +41,6 @@
 #define GET_PAGE(m)	(((m) & A_PAGE) == A_PAGE)
 #define GET_SWAP(m)	(((m) & A_SWAP) == A_SWAP)
 #define GET_IO(m)	(((m) & A_IO) == A_IO)
-#define GET_ONE_CPU(m)	(((m) & A_ONE_CPU) == A_ONE_CPU)
 #define GET_ONE_IRQ(m)	(((m) & A_ONE_IRQ) == A_ONE_IRQ)
 #define GET_MEMORY(m)	(((m) & A_MEMORY) == A_MEMORY)
 #define GET_PID(m)	(((m) & A_PID) == A_PID)
@@ -51,7 +50,6 @@
 #define GET_ALL_PID(m)	(((m) & A_ALL_PID) == A_ALL_PID)
 #define GET_SERIAL(m)	(((m) & A_SERIAL) == A_SERIAL)
 #define GET_MEM_AMT(m)	(((m) & A_MEM_AMT) == A_MEM_AMT)
-#define GET_IRQ_CPU(m)	(((m) & A_IRQ_CPU) == A_IRQ_CPU)
 #define GET_KTABLES(m)	(((m) & A_KTABLES) == A_KTABLES)
 #define GET_NET_DEV(m)	(((m) & A_NET_DEV) == A_NET_DEV)
 #define GET_NET_EDEV(m)	(((m) & A_NET_EDEV) == A_NET_EDEV)
@@ -71,7 +69,6 @@
 #define K_SUM	"SUM"
 #define K_SELF	"SELF"
 #define K_SADC	"SADC"
-#define K_PROC	"PROC"
 #define K_DEV	"DEV"
 #define K_EDEV	"EDEV"
 #define K_SOCK	"SOCK"
@@ -89,6 +86,7 @@
 #define F_I_OPTION	0x100
 #define F_DB_OPTION	0x200
 #define F_DO_SA_ROTAT	0x400
+#define F_PER_PROC	0x800
 
 #define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
 #define WANT_SA_ROTAT(m)	(((m) & F_SA_ROTAT) == F_SA_ROTAT)
@@ -100,6 +98,7 @@
 #define USE_I_OPTION(m)		(((m) & F_I_OPTION) == F_I_OPTION)
 #define USE_DB_OPTION(m)	(((m) & F_DB_OPTION) == F_DB_OPTION)
 #define DO_SA_ROTAT(m)		(((m) & F_DO_SA_ROTAT) == F_DO_SA_ROTAT)
+#define WANT_PER_PROC(m)	(((m) & F_PER_PROC) == F_PER_PROC)
 
 /* Files */
 #define PROC		"/proc"
@@ -136,7 +135,8 @@
 #define MAX_PID_NR		256
 /*
  * Maximum number of args that can be passed to sadc:
- * sadc -x <pid> [-x <pid> ...] -X <pid> [-X <pid> ...] -I <interval> <count> <outfile> NULL
+ * sadc -x <pid> [-x <pid> ...] -X <pid> [-X <pid> ...]
+ *	-I <interval> <count> <outfile> NULL
  */
 #define MAX_ARGV_NR	(64 * 2) + 6
 
@@ -159,7 +159,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x215e
+#define SA_MAGIC	0x215f
 
 /*
  * Attributes such as 'aligned' and 'packed' have been defined for every
@@ -278,11 +278,12 @@ struct file_stats {
    unsigned long inactive_target		__attribute__ ((aligned (8)));
    unsigned int  load_avg_1			__attribute__ ((aligned (8)));
    unsigned int  load_avg_5			__attribute__ ((packed));
+   unsigned int  load_avg_15			__attribute__ ((packed));
    unsigned int  nr_running			__attribute__ ((packed));
    unsigned int  nr_threads			__attribute__ ((packed));
 };
 
-#define FILE_STATS_SIZE	(sizeof(int)  * 37 + \
+#define FILE_STATS_SIZE	(sizeof(int)  * 38 + \
 			 sizeof(char) *  4 + \
 			 SIZEOF_LONG  * 15)
 
@@ -411,9 +412,10 @@ struct stats_sum {
    unsigned long nr_threads			__attribute__ ((packed));
    unsigned long load_avg_1			__attribute__ ((packed));
    unsigned long load_avg_5			__attribute__ ((packed));
+   unsigned long load_avg_15			__attribute__ ((packed));
 };
 
-#define STATS_SUM_SIZE	(sizeof(long) * 26)
+#define STATS_SUM_SIZE	(sizeof(long) * 27)
 
 struct tstamp {
    int tm_sec;

@@ -2,9 +2,14 @@ sysstat (3.3.5-1) unstable; urgency=low
 
   * UNRELEASED
   * New upstream version.
-  * todo: standards 3.5.0; build-depends: debconf-utils; isag newpack
+  * This version includes new command isag - nice GUI for sar. As isag
+    requires wish and gnuplot, I put it in a separate package isag.
+  * Included informations about isag in the copyright file.
+  * Repackaged with debhelper v3.
+  * Standards-Version: 3.5.0 (no changes).
+  * Added debconf-utils to Build-Depends.
 
- -- Robert Luberda <robert@debian.org>  Tue, 13 Feb 2001 18:37:45 +0100
+ -- Robert Luberda <robert@debian.org>  Tue, 13 Feb 2001 22:32:43 +0100
 
 sysstat (3.3.4-2) unstable; urgency=low
 

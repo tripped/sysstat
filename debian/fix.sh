@@ -8,6 +8,7 @@ if [ "x$1" = "x" ] ; then
 fi
 
 cd "$1"
+mkdir -p -m 755 usr/lib/sysstat
 mv usr/bin/sar usr/bin/sar.sysstat
 mv usr/share/man/man1/sar.1 usr/share/man/man1/sar.sysstat.1
 mv usr/lib/sa/* usr/lib/sysstat

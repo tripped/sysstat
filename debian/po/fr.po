@@ -35,7 +35,7 @@ msgid ""
 "sysstat and is *not* compatible with the previous one!"
 msgstr ""
 "Le format des fichiers quotidiens de statistiques a changé dans la version "
-"${s_version] de sysstat et n'est *pas* compatible avec le format antérieur !"
+"${s_version} de sysstat et n'est *pas* compatible avec le format antérieur !"
 
 #. Description
 #: ../sysstat.templates:3

@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 2000-2004 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -121,6 +121,15 @@ void write_stats_core(short prev, short curr, short dis,
    struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
    unsigned long itv;
    int cpu;
+
+   /*
+    * Under very special circumstances, STDOUT may become unavailable,
+    * This is what we try to guess here
+    */
+   if (write(STDOUT_FILENO, "", 0) == -1) {
+      perror("stdout");
+      exit(6);
+   }
 
    /* Interval value in jiffies, multiplied by the number of proc */
    itv = st_mp_tstamp[curr].uptime - st_mp_tstamp[prev].uptime;
@@ -300,8 +309,8 @@ void read_proc_stat(short curr)
 
       else if (!strncmp(line, "cpu", 3)) {
 	 /*
-	  * Read the number of jiffies spent in user, nice, system, idle
-	  * and iowait mode for current proc.
+	  * Read the number of jiffies spent in the different modes
+	  * (user, nice, etc.) for current proc.
 	  * This is done only on SMP machines.
 	  */
 	 cc_iowait = cc_hardirq = cc_softirq = 0;

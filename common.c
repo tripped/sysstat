@@ -1,6 +1,6 @@
 /*
  * sar, sadc, mpstat and iostat common routines.
- * (C) 1999-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2004 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *

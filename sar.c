@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2004 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -423,59 +423,6 @@ int next_slice(int curr, int reset)
 
 /*
  ***************************************************************************
- * Read data sent by the data collector
- ***************************************************************************
- */
-int sa_read(void *buffer, int size)
-{
-   int n;
-
-   while (size) {
-
-      if ((n = read(STDIN_FILENO, buffer, size)) < 0) {
-	 perror("read");
-	 exit(2);
-      }
-
-      if (!n)
-	 return 1;	/* EOF */
-
-      size -= n;
-      (char *) buffer += n;
-   }
-
-   return 0;
-}
-
-
-/*
- ***************************************************************************
- * Read data from a sa data file
- ***************************************************************************
- */
-int sa_fread(int ifd, void *buffer, int size, int mode)
-{
-   int n;
-
-   if ((n = read(ifd, buffer, size)) < 0) {
-      fprintf(stderr, _("Error while reading system activity file: %s\n"), strerror(errno));
-      exit(2);
-   }
-
-   if (!n && (mode == SOFT_SIZE))
-      return 1;	/* EOF */
-
-   if (n < size) {
-      fprintf(stderr, _("End of system activity file unexpected\n"));
-      exit(2);
-   }
-
-   return 0;
-}
-
-
-/*
- ***************************************************************************
  * Print report header
  ***************************************************************************
  */
@@ -795,6 +742,15 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
    struct stats_one_cpu *st_cpu_i, *st_cpu_j;
    struct disk_stats *st_disk_i, *st_disk_j;
    char stemp[16];
+
+   /*
+    * Under very special circumstances, STDOUT may become unavailable,
+    * This is what we try to guess here
+    */
+   if (write(STDOUT_FILENO, "", 0) == -1) {
+      perror("stdout");
+      exit(6);
+   }
 
    /* Print number of processes created per second */
    if (GET_PROC(act)) {
@@ -2238,6 +2194,59 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 		S_VALUE(st_disk_j->wr_sect, st_disk_i->wr_sect, itv));
       }
    }
+}
+
+
+/*
+ ***************************************************************************
+ * Read data sent by the data collector
+ ***************************************************************************
+ */
+int sa_read(void *buffer, int size)
+{
+   int n;
+
+   while (size) {
+
+      if ((n = read(STDIN_FILENO, buffer, size)) < 0) {
+	 perror("read");
+	 exit(2);
+      }
+
+      if (!n)
+	 return 1;	/* EOF */
+
+      size -= n;
+      (char *) buffer += n;
+   }
+
+   return 0;
+}
+
+
+/*
+ ***************************************************************************
+ * Read data from a sa data file
+ ***************************************************************************
+ */
+int sa_fread(int ifd, void *buffer, int size, int mode)
+{
+   int n;
+
+   if ((n = read(ifd, buffer, size)) < 0) {
+      fprintf(stderr, _("Error while reading system activity file: %s\n"), strerror(errno));
+      exit(2);
+   }
+
+   if (!n && (mode == SOFT_SIZE))
+      return 1;	/* EOF */
+
+   if (n < size) {
+      fprintf(stderr, _("End of system activity file unexpected\n"));
+      exit(2);
+   }
+
+   return 0;
 }
 
 

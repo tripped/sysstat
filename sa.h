@@ -1,6 +1,6 @@
 /*
  * sar/sadc: report system activity
- * (C) 1999-2003 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2004 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
 #ifndef _SA_H
@@ -72,18 +72,20 @@
 #define K_FULL	"FULL"
 
 /* Define flags */
-#define F_ALL_PROC      0x001
-#define F_SA_ROTAT      0x002
-#define F_FLT_INC	0x004
-#define F_A_OPTION	0x008
-#define F_F_OPTION	0x010
-#define F_H_OPTION	0x020
-#define F_ORG_TIME	0x040
-#define F_DEFAULT_COUNT	0x080
-#define F_I_OPTION	0x100
-#define F_DB_OPTION	0x200
-#define F_DO_SA_ROTAT	0x400
-#define F_PER_PROC	0x800
+#define F_ALL_PROC      0x0001
+#define F_SA_ROTAT      0x0002
+#define F_FLT_INC	0x0004
+#define F_A_OPTION	0x0008
+#define F_F_OPTION	0x0010
+#define F_H_OPTION	0x0020
+#define F_ORG_TIME	0x0040
+#define F_DEFAULT_COUNT	0x0080
+#define F_I_OPTION	0x0100
+#define F_DB_OPTION	0x0200
+#define F_DO_SA_ROTAT	0x0400
+#define F_PER_PROC	0x0800
+#define F_L_OPTION	0x1000
+#define F_FILE_LCK	0X2000
 /* 0x100000:0x800000 -> reserved (cf. common.h) */
 
 #define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
@@ -98,6 +100,8 @@
 #define USE_DB_OPTION(m)	(((m) & F_DB_OPTION) == F_DB_OPTION)
 #define DO_SA_ROTAT(m)		(((m) & F_DO_SA_ROTAT) == F_DO_SA_ROTAT)
 #define WANT_PER_PROC(m)	(((m) & F_PER_PROC) == F_PER_PROC)
+#define USE_L_OPTION(m)		(((m) & F_L_OPTION) == F_L_OPTION)
+#define FILE_LOCKED(m)		(((m) & F_FILE_LCK) == F_FILE_LCK)
 
 /* Files */
 #define PROC		"/proc"
@@ -146,6 +150,8 @@
 #define NO_TM_START	0
 #define NO_TM_END	0
 #define NO_RESET	0
+#define NON_FATAL	0
+#define FATAL		1
 
 /* Record type */
 #define R_STATS		1
@@ -416,7 +422,7 @@ struct tstamp {
 #define DEF_TMSTART	"08:00:00"
 #define DEF_TMEND	"18:00:00"
 
-/* Using 'do ... while' makes this macro safer to use */
+/* Using 'do ... while' makes this macro safer to use (trailing semicolon) */
 #define CLOSE_ALL(_fd_)		do { \
 				close(_fd_[0]); \
 				close(_fd_[1]); \

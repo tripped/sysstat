@@ -1,5 +1,18 @@
 Changes:
 
+2004/02/02: Version 5.0.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* -L option added to sadc. Enable sadc to lock its output file
+	  to prevent multiple instances from writing to it at once.
+	* sa1 and sysstat scripts updated to take advantage of -L option.
+	* Handle the case where, under very special circumstances, STDOUT
+	  may become unavailable, and sar, iostat and mpstat are no longer
+	  able to display anything.
+	* sadc as called in sysstat script also uses -F option to force
+	  the creation of daily data file.
+	* sar, sadc and mpstat manual pages updated.
+	* Code cleaned.
+	* FAQ and CREDITS files updated.
+
 2003/11/09: Version 5.0.0 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	* New fields added to mpstat: %irq (%time spent servicing
 	  interrupts) and %soft (%time spent servicing softirqs).

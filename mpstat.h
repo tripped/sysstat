@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2003 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 2000-2004 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
 #ifndef _MPSTAT_H

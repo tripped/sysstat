@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1998-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1998-2004 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -357,14 +357,12 @@ void read_stat(int curr, int flags)
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
-	  * Read the number of jiffies spent in user, nice, system, idle
-	  * and iowait mode and compute system uptime in jiffies (1/100ths of
-	  * a second if HZ=100).
-	  * Only in 2.5 is the iowait field present (representing # of jiffies
-	  * spent waiting for I/O to complete). This was previously counted as
-	  * idle time.
+	  * Read the number of jiffies spent in the different modes,
+	  * and compute system uptime in jiffies (1/100ths of a second
+	  * if HZ=100).
+	  * Some fields are only presnt in 2.6 kernels.
 	  */
-	 comm_stats[curr].cpu_iowait = 0;	/* For pre 2.5 kernels */
+	 comm_stats[curr].cpu_iowait = 0;	/* For pre 2.6 kernels */
 	 cc_hardirq = cc_softirq = 0;
 	 sscanf(line + 5, "%u %u %u %lu %lu %u %u",
 	        &(comm_stats[curr].cpu_user), &(comm_stats[curr].cpu_nice),
@@ -933,6 +931,15 @@ void write_basic_stat(int curr, unsigned long itv, int flags)
 int write_stat(int curr, int flags, struct tm *loc_time)
 {
    unsigned long itv;
+
+   /*
+    * Under very special circumstances, STDOUT may become unavailable,
+    * This is what we try to guess here
+    */
+   if (write(STDOUT_FILENO, "", 0) == -1) {
+      perror("stdout");
+      exit(6);
+   }
 
    /* Print time stamp */
    if (DISPLAY_TIMESTAMP(flags)) {

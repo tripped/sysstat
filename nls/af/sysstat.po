@@ -27,8 +27,8 @@ msgstr "sysstat weergawe %s\n"
 "[ -P { <cpu> | ALL } ] [ -V ]\n"
 
 #: mpstat.c:207
-msgid "\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
-msgstr "\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
+msgid "\n%-11s  CPU   %%user   %%nice %%system %%iowait    %%irq   %%soft   %%idle    intr/s\n"
+msgstr "\n%-11s  CPU   %%user   %%nice %%system %%iowait    %%irq   %%soft   %%idle    intr/s\n"
 
 #: mpstat.c:216
 msgid "%-11s  all"
@@ -40,13 +40,13 @@ msgid "sysstat version %s\n"
 "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
 "[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ]\n"
-"[ <device> [ ... ] ] [ -p { ALL | <device> } ]\n"
+"[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]\n"
 msgstr "sysstat weergawe %s\n"
 "(C) Sebastien Godard\n"
 "Gebruik: %s [ opsies... ] [ <interval> [ <nommer> ] ]\n"
 "Opsies moontlik:\n"
 "[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ]\n"
-"[ <device> [ ... ] ] [ -p { ALL | <device> } ]\n"
+"[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]\n"
 
 #: iostat.c:534
 msgid "avg-cpu:  %%user   %%nice    %%sys %%iowait   %%idle\n"

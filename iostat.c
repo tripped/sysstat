@@ -81,7 +81,7 @@ void usage(char *progname)
 	           "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 		   "Options are:\n"
 		   "[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ]\n"
-		   "[ <device> [ ... ] ] [ -p { ALL | <device> } ]\n"),
+		   "[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]\n"),
 	   VERSION, progname);
    exit(1);
 }
@@ -337,7 +337,7 @@ void read_stat(int curr, int flags)
    struct io_stats *st_iodev_tmp[4], *st_iodev_i;
    struct io_hdr_stats *st_hdr_iodev_i;
    unsigned long cc_idle, cc_iowait;
-   unsigned int cc_user, cc_nice, cc_system;
+   unsigned int cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
 
 
    /*
@@ -364,12 +364,19 @@ void read_stat(int curr, int flags)
 	  * spent waiting for I/O to complete). This was previously counted as
 	  * idle time.
 	  */
-	 comm_stats[curr].cpu_iowait = 0;	/* For non 2.5 machines */
-	 sscanf(line + 5, "%u %u %u %lu %lu",
+	 comm_stats[curr].cpu_iowait = 0;	/* For pre 2.5 kernels */
+	 cc_hardirq = cc_softirq = 0;
+	 sscanf(line + 5, "%u %u %u %lu %lu %u %u",
 	        &(comm_stats[curr].cpu_user), &(comm_stats[curr].cpu_nice),
 		&(comm_stats[curr].cpu_system), &(comm_stats[curr].cpu_idle),
-		&(comm_stats[curr].cpu_iowait));
+		&(comm_stats[curr].cpu_iowait), &cc_hardirq, &cc_softirq);
 
+	 /*
+	  * Time spent in system mode also includes time spent servicing
+	  * interrupts and softirqs.
+	  */
+	 comm_stats[curr].cpu_system += cc_hardirq + cc_softirq;
+	
 	 /*
 	  * Compute system uptime in jiffies.
 	  * Uptime is multiplied by the number of processors.
@@ -387,11 +394,13 @@ void read_stat(int curr, int flags)
 	  * Useful to compute uptime reduced to one processor on SMP machines,
 	  * with fewer risks to get an overflow...
 	  */
-	 cc_iowait = 0;
-	 sscanf(line + 5, "%u %u %u %lu %lu",
-		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
+	 cc_iowait = cc_hardirq = cc_softirq = 0;
+	 sscanf(line + 5, "%u %u %u %lu %lu %u %u",
+		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
+		&cc_hardirq, &cc_softirq);
 	 comm_stats[curr].uptime0 = cc_user + cc_nice + cc_system +
-	    			    cc_idle + cc_iowait;
+	    			    cc_idle + cc_iowait +
+	    			    cc_hardirq + cc_softirq;
       }
 
       else if (DISPLAY_EXTENDED(flags) || HAS_DISKSTATS(flags) || HAS_SYSFS(flags))
@@ -772,6 +781,11 @@ void write_ext_stat(int curr, unsigned long itv, int flags)
 	 st_iodev_i = st_iodev[curr] + i;
 	 st_iodev_j = st_iodev[!curr] + i;
 
+	 if (!DISPLAY_UNFILTERED(flags)) {
+	    if (!st_iodev_i->rd_ios && !st_iodev_i->wr_ios)
+	       continue;
+	 }
+
 	 sdev.rd_ios     = st_iodev_i->rd_ios - st_iodev_j->rd_ios;
 	 sdev.wr_ios     = st_iodev_i->wr_ios - st_iodev_j->wr_ios;
 	 sdev.rd_ticks   = st_iodev_i->rd_ticks - st_iodev_j->rd_ticks;
@@ -862,11 +876,21 @@ void write_basic_stat(int curr, unsigned long itv, int flags)
 	       continue;
 	 }
 	
+	 st_iodev_i = st_iodev[curr] + i;
+	 st_iodev_j = st_iodev[!curr] + i;
+
+	 if (!DISPLAY_UNFILTERED(flags)) {
+	    if (HAS_SYSFS(flags) || HAS_DISKSTATS(flags)) {
+	       if (!st_iodev_i->rd_ios && !st_iodev_i->wr_ios)
+		  continue;
+	    }
+	    else if (!st_iodev_i->dk_drive)
+	       continue;
+	 }
+	
 	 printf("%-13s", st_hdr_iodev_i->name);
 	 if (strlen(st_hdr_iodev_i->name) > 13)
 	    printf("\n             ");
-	 st_iodev_i = st_iodev[curr] + i;
-	 st_iodev_j = st_iodev[!curr] + i;
 
 	 if (HAS_SYSFS(flags) || HAS_DISKSTATS(flags)) {
 	    /* Print stats coming from /sys or /proc/diskstats */
@@ -904,15 +928,6 @@ void write_basic_stat(int curr, unsigned long itv, int flags)
 /*
  ***************************************************************************
  * Print everything now (stats and uptime)
- * Notes about the formula used to display stats as:
- * (x(t2) - x(t1)) / (t2 - t1) = XX.YY:
- * We have the identity: a = (a / b) * b + a % b   (a and b are integers).
- * Apply this with a = x(t2) - x(t1) (values about which stats are to be
- * displayed), and b = t2 - t1 (elapsed time in seconds).
- * Since uptime is given in jiffies, it is always divided by HZ to get seconds.
- * The integer part XX is: a / b
- * The decimal part YY is: ((a % b) * HZ) / b  (multiplied by HZ since
- * we want YY and not 0.YY)
  ***************************************************************************
  */
 int write_stat(int curr, int flags, struct tm *loc_time)
@@ -1046,19 +1061,23 @@ int main(int argc, char **argv)
    while (opt < argc) {
 
       if (!strcmp(argv[opt], "-p")) {
-	 if (!argv[++opt] || (strspn(argv[opt], DIGITS) == strlen(argv[opt])))
-	    usage(argv[0]);
 	 flags |= D_PARTITIONS;
-	 if (!strcmp(argv[opt], K_ALL)) {
+	 if (argv[++opt] && (strspn(argv[opt], DIGITS) != strlen(argv[opt])) &&
+	     (strncmp(argv[opt], "-", 1))) {
+	    flags |= D_UNFILTERED;
+	    if (!strcmp(argv[opt], K_ALL)) {
+	       flags |= D_PART_ALL;
+	       opt++;
+	    }
+	    else {
+	       /* Store device name */
+	       i = update_dev_list(&dlist_idx, device_name(argv[opt++]));
+	       st_dev_list_i = st_dev_list + i;
+	       st_dev_list_i->disp_part = TRUE;
+	    }
+	 }
+	 else
 	    flags |= D_PART_ALL;
-	    opt++;
-	 }
-	 else {
-	    /* Store device name */
-	    i = update_dev_list(&dlist_idx, device_name(argv[opt++]));
-	    st_dev_list_i = st_dev_list + i;
-	    st_dev_list_i->disp_part = TRUE;
-	 }
       }
 
       else if (!strncmp(argv[opt], "-", 1)) {
@@ -1096,9 +1115,14 @@ int main(int argc, char **argv)
 	 opt++;
       }
 
-      else if (!isdigit(argv[opt][0]))
-	 /* Store device name */
-	 update_dev_list(&dlist_idx, device_name(argv[opt++]));
+      else if (!isdigit(argv[opt][0])) {
+	 flags |= D_UNFILTERED;
+	 if (strcmp(argv[opt], K_ALL))
+	    /* Store device name */
+	    update_dev_list(&dlist_idx, device_name(argv[opt++]));
+	 else
+	    opt++;
+      }
 
       else if (!it) {
 	 interval = atol(argv[opt++]);

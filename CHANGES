@@ -1,5 +1,27 @@
 Changes:
 
+2003/11/09: Version 5.0.0 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* New fields added to mpstat: %irq (%time spent servicing
+	  interrupts) and %soft (%time spent servicing softirqs).
+	* sar and iostat updated to take into account time spent servicing
+	  interrupts and softirqs when displaying percentage of time
+	  in system mode.
+	* By default iostat now displays only statistics information for
+	  devices that are used by the system. You should now use the ALL
+	  keyword to tell iostat to display statistics for every device
+	  including those that have never been used.
+	* The file version.h is now dynamically created. sysstat's version
+	  number is now only recorded in the Makefile.
+	* sar manual page updated: beginning with kernels 2.4 and later,
+	  pgpgin and pgpgout statistics are in kilobytes and not in
+	  blocks (see linux-2.4/fs/proc/proc_misc.c and
+	  linux-2.6/mm/page_alloc.c).
+	* iostat and mpstat manual pages updated.
+	* Makefile updated: don't process NLS files if they are up-to-date.
+	* sysstat's RPM spec file updated to enable clean, non-root builds.
+	* NLS updated.
+	* FAQ and CREDITS files updated.
+
 2003/09/28: Version 4.1.7 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x2163]
@@ -25,7 +47,7 @@ Changes:
 	  read from or written to devices.
 	* %file-sz (percentage of used file handles) is no longer displayed
 	  by sar -v, since the upper limit for the number of open files
-	  will self-scale with kernels 2.6.
+	  will self-scale with 2.6 kernels.
 	* sar now looks more aggressively for network devices in /proc/net/dev.
 	* Heading spaces in network interface names removed (sar -n).
 	* Fixed a problem reading /proc/interrupts when there are a lot

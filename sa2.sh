@@ -4,7 +4,7 @@
 #
 S_TIME_FORMAT=ISO ; export S_TIME_FORMAT
 umask 022
-DATE=`date --date YESTERDAY +%d`
+DATE=`date YESTERDAY +%d`
 RPT=SA_DIR/sar${DATE}
 ENDIR=BIN_DIR
 DFILE=SA_DIR/sa${DATE}

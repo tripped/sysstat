@@ -82,7 +82,7 @@ void usage(char *progname)
 		   "(C) Sebastien Godard\n"
 	           "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 	           "Options are:\n"
-	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <interval> ] [ -q ]\n"
+	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 		   "[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
 		   "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
@@ -243,7 +243,6 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
    struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
    struct stats_one_cpu *st_cpu_i, *st_cpu_j;
    struct disk_stats *st_disk_i, *st_disk_j;
-   char stemp[16];
 
    /*
     * Under very special circumstances, STDOUT may become unavailable,
@@ -615,23 +614,41 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 
    /* Print disk statistics */
    if (GET_DISK(act)) {
+      double tput, util, await, svctm, arqsz;
+
       if (dis)
-	 printf(_("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s\n"), prev_string);
+	 printf(_("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz  avgqu-sz     await     svctm     %%util\n"), prev_string);
 
       for (i = 0; i < file_hdr.sa_nr_disk; i++) {
 	
 	 st_disk_i = st_disk[curr] + i;
-	
-	 if (!(st_disk_i->major + st_disk_i->index))
+	 if (!(st_disk_i->major + st_disk_i->minor))
 	    continue;
+
+	 tput = ((double) st_disk_i->nr_ios) * HZ / itv;
+	 util = ((double) st_disk_i->tot_ticks) / itv * HZ;
+	 svctm = tput ? util / tput : 0.0;
+	 await = st_disk_i->nr_ios ?
+	    (st_disk_i->rd_ticks + st_disk_i->wr_ticks) / ((double) st_disk_i->nr_ios) : 0.0;
+	 arqsz  = st_disk_i->nr_ios ?
+	    (st_disk_i->rd_sect + st_disk_i->wr_sect) / ((double) st_disk_i->nr_ios) : 0.0;
+
 	 j = check_disk_reg(&file_hdr, st_disk, curr, prev, i);
 	 st_disk_j = st_disk[prev] + j;
 
-	 sprintf(stemp, "dev%d-%d", st_disk_i->major, st_disk_i->index);
-	 printf("%-11s %9.9s %9.2f %9.2f %9.2f\n", curr_string, stemp,
+	 printf("%-11s %9s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+		curr_string,
+		/* Confusion possible here between index and minor numbers */
+		get_devname(st_disk_i->major, st_disk_i->minor, flags),
 		S_VALUE(st_disk_j->nr_ios,  st_disk_i->nr_ios,  itv),
 		ll_s_value(st_disk_j->rd_sect, st_disk_i->rd_sect, itv),
-		ll_s_value(st_disk_j->wr_sect, st_disk_i->wr_sect, itv));
+		ll_s_value(st_disk_j->wr_sect, st_disk_i->wr_sect, itv),
+		/* See iostat for explanations */
+		arqsz,
+		((double) st_disk_i->rq_ticks) / itv * HZ / 1000.0,
+		await,
+		svctm,
+		util / 10.0);
       }
    }
 }

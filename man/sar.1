@@ -4,7 +4,7 @@ sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
 .B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i
 .I interval
-.B ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
+.B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
 .B [ -n { DEV | EDEV | SOCK | FULL } ]
 .B [ -x {
 .I pid
@@ -134,32 +134,31 @@ command only reports on local activities.
 This is equivalent to specifying
 .BR "-bBcdqrRuvwWy -I SUM -I XALL -n FULL -P ALL".
 .IP -b
-Report I/O and transfer rate statistics. This option works only with
-kernels older than 2.5.
+Report I/O and transfer rate statistics.
 The following values are displayed:
 
 .B tps
 .RS
 .RS
-Total number of transfers per second that were issued to the physical disk.
-A transfer is an I/O request to the physical disk. Multiple logical
-requests can be combined into a single I/O request to the disk.
+Total number of transfers per second that were issued to physical devices.
+A transfer is an I/O request to a physical device. Multiple logical
+requests can be combined into a single I/O request to the device.
 A transfer is of indeterminate size.
 .RE
 
 .B rtps
 .RS
-Total number of read requests per second issued to the physical disk.
+Total number of read requests per second issued to physical devices.
 .RE
 
 .B wtps
 .RS
-Total number of write requests per second issued to the physical disk.
+Total number of write requests per second issued to physical devices.
 .RE
 
 .B bread/s
 .RS
-Total amount of data read from the drive in blocks per second.
+Total amount of data read from the devices in blocks per second.
 Blocks are equivalent to sectors with 2.4 kernels and newer
 and therefore have a size of 512 bytes. With older kernels, a block is of
 indeterminate size.
@@ -167,7 +166,7 @@ indeterminate size.
 
 .B bwrtn/s
 .RS
-Total amount of data written to the drive in blocks per second.
+Total amount of data written to devices in blocks per second.
 .RE
 .RE
 .IP -B
@@ -220,7 +219,9 @@ is the major number of the device.
 With recent kernels (post 2.5),
 .B n
 is the minor number of the device, but is only a sequence number with
-pre 2.5 kernels.
+pre 2.5 kernels. Device names may also be pretty-printed if option -p
+is used (see below). Values for fields avgqu-sz, await, svctm and %util
+may be unavailable and displayed as 0.0 with some 2.4 kernels.
 
 .B tps
 .RS
@@ -238,6 +239,36 @@ Number of sectors read from the device. The size of a sector is 512 bytes.
 .B wr_sec/s
 .RS
 Number of sectors written to the device. The size of a sector is 512 bytes.
+.RE
+
+.B avgrq-sz
+.RS
+The average size (in sectors) of the requests that were issued to the device.
+.RE
+
+.B avgqu-sz
+.RS
+The average queue length of the requests that were issued to the device.
+.RE
+
+.B await
+.RS
+The average time (in milliseconds) for I/O requests issued to the device
+to be served. This includes the time spent by the requests in queue and
+the time spent servicing them.
+.RE
+
+.B svctm
+.RS
+The average service time (in milliseconds) for I/O requests that were issued
+to the device.
+.RE
+
+.B %util
+.RS
+Percentage of CPU time during which I/O requests were issued to the device
+(bandwidth utilization for the device). Device saturation occurs when this
+value is close to 100%.
 .RE
 .RE
 .IP "-e hh:mm:ss"
@@ -440,6 +471,14 @@ and
 flags are meaningful with the
 .B -P
 flag. Note that processor 0 is the first processor.
+.IP -p
+Pretty-print device names. Use this option in conjunction with option -d.
+By default names are printed as
+.B dev m-n
+where m and n are the major and minor numbers for the device.
+Use of this option displays the names of the devices as they (should) appear
+in /dev. Name mappings are controlled by
+.B /etc/sysconfig/sysstat.ioconf.
 .IP -q
 Report queue length and load averages. The following values are displayed:
 

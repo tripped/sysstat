@@ -2,7 +2,7 @@
 # (C) 1999-2004 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 5.1.2
+VERSION = 5.1.3
 
 include build/CONFIG
 
@@ -33,10 +33,13 @@ MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
 DOC_DIR = $(PREFIX)/doc/sysstat-$(VERSION)
 NLS_DIR = $(PREFIX)/share/locale
+SYSCONFIG_DIR = /etc/sysconfig
 
 # Compiler flags
 CFLAGS = -Wall -Wstrict-prototypes -pipe -O2 -fno-strength-reduce
-LFLAGS = -L. -lsysstat -lsa -s
+LFLAGS = -L. -lsyscom -s
+LSAFLAG = -lsyssa
+LIOCFLAG = -lsysioc
 SAS_DFLAGS += -DSA_DIR=\"$(SA_DIR)\"
 
 # NLS (National Language Support)
@@ -69,16 +72,23 @@ all: sa1 sa2 crontab sysstat sysstat.sysconfig sysstat.crond \
 	sadc sar sadf iostat mpstat locales
 
 common.o: common.c common.h
-	$(CC) -c -o $@ $(CFLAGS) $(DFLAGS) $<
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
-sa_common.o: sa_common.c sa.h common.h
-	$(CC) -c -o $@ $(CFLAGS) $(DFLAGS) $<
+sa_common.o: sa_common.c sa.h common.h ioconf.h
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
-libsysstat.a: common.o
+ioconf.o: ioconf.c ioconf.h
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
+
+libsyscom.a: common.o
 	$(AR) r $@ $<
 	$(AR) s $@
 
-libsa.a: sa_common.o
+libsyssa.a: sa_common.o
+	$(AR) r $@ $<
+	$(AR) s $@
+
+libsysioc.a: ioconf.o
 	$(AR) r $@ $<
 	$(AR) s $@
 
@@ -88,20 +98,35 @@ version.h: version.in
 sapath.h: sapath.in
 	$(SED) s+ALTLOC+$(SA_LIB_DIR)+g $< > $@
 
-sadc: sadc.c sa.h common.h version.h libsysstat.a libsa.a
-	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $< $(LFLAGS)
+sadc.o: sadc.c sa.h common.h version.h ioconf.h
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
-sar: sar.c sa.h common.h version.h sapath.h libsysstat.a libsa.a
-	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $< $(LFLAGS)
+sadc: sadc.o libsyscom.a libsyssa.a libsysioc.a
+	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG) $(LIOCFLAG)
 
-sadf: sadf.c sa.h common.h version.h libsysstat.a libsa.a
-	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $< $(LFLAGS)
+sar.o: sar.c sa.h common.h version.h sapath.h
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
-iostat: iostat.c iostat.h common.h version.h libsysstat.a
-	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(IOS_DFLAGS) $< $(LFLAGS)
+sar: sar.o libsyscom.a libsyssa.a libsysioc.a
+	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG) $(LIOCFLAG)
 
-mpstat: mpstat.c mpstat.h common.h version.h libsysstat.a
-	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $< $(LFLAGS)
+sadf.o: sadf.c sa.h common.h version.h
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
+
+sadf: sadf.o libsyscom.a libsyssa.a libsysioc.a
+	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG) $(LIOCFLAG)
+
+iostat.o: iostat.c iostat.h common.h version.h ioconf.h
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
+
+iostat: iostat.o libsyscom.a libsysioc.a
+	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LIOCFLAG)
+
+mpstat.o: mpstat.c mpstat.h common.h version.h
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
+
+mpstat: mpstat.o libsyscom.a
+	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS)
 
 sa1: sa1.in
 	$(SED) s+SA_LIB_DIR+$(SA_LIB_DIR)+g $< > $@
@@ -120,16 +145,16 @@ sysstat: sysstat.in
 ifeq ($(INSTALL_CRON),y)
 ifeq ($(CRON_OWNER),root)
 	$(SED) -e 's+SU ++g' -e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
-		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > sysstat
+		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > $@
 else
 	$(SED) -e 's+SU SA_LIB_DIR/+su $(CRON_OWNER) -c "$(SA_LIB_DIR)/+g' \
-		-e 's+ QUOTE+"+g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > sysstat
+		-e 's+ QUOTE+"+g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > $@
 endif
 else
 	$(SED) -e 's+SU ++g' -e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
-		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > sysstat
+		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > $@
 endif
-	$(CHMOD) 755 sysstat
+	$(CHMOD) 755 $@
 	
 crontab: crontab.sample
 	$(SED) s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
@@ -145,47 +170,126 @@ locales:
 endif
 
 nls/af.gmo: nls/af.po
-	$(MSGFMT) -o nls/af.gmo nls/af.po
+	$(MSGFMT) -o $@ $<
 
 nls/de.gmo: nls/de.po
-	$(MSGFMT) -o nls/de.gmo nls/de.po
+	$(MSGFMT) -o $@ $<
 
 nls/es.gmo: nls/es.po
-	$(MSGFMT) -o nls/es.gmo nls/es.po
+	$(MSGFMT) -o $@ $<
 
 nls/fr.gmo: nls/fr.po
-	$(MSGFMT) -o nls/fr.gmo nls/fr.po
+	$(MSGFMT) -o $@ $<
 
 nls/it.gmo: nls/it.po
-	$(MSGFMT) -o nls/it.gmo nls/it.po
+	$(MSGFMT) -o $@ $<
 
 nls/ja.gmo: nls/ja.po
-	$(MSGFMT) -o nls/ja.gmo nls/ja.po
+	$(MSGFMT) -o $@ $<
 
 nls/nb_NO.gmo: nls/nb_NO.po
-	$(MSGFMT) -o nls/nb_NO.gmo nls/nb_NO.po
+	$(MSGFMT) -o $@ $<
 
 nls/nn_NO.gmo: nls/nn_NO.po
-	$(MSGFMT) -o nls/nn_NO.gmo nls/nn_NO.po
+	$(MSGFMT) -o $@ $<
 
 nls/pl.gmo: nls/pl.po
-	$(MSGFMT) -o nls/pl.gmo nls/pl.po
+	$(MSGFMT) -o $@ $<
 
 nls/pt.gmo: nls/pt.po
-	$(MSGFMT) -o nls/pt.gmo nls/pt.po
+	$(MSGFMT) -o $@ $<
 
 nls/ro.gmo: nls/ro.po
-	$(MSGFMT) -o nls/ro.gmo nls/ro.po
+	$(MSGFMT) -o $@ $<
 
 nls/ru.gmo: nls/ru.po
-	$(MSGFMT) -o nls/ru.gmo nls/ru.po
+	$(MSGFMT) -o $@ $<
 
 nls/sk.gmo: nls/sk.po
-	$(MSGFMT) -o nls/sk.gmo nls/sk.po
+	$(MSGFMT) -o $@ $<
 
 # Phony targets
 .PHONY: clean distclean config install install_base install_all uninstall \
 	uninstall_base uninstall_all dist bdist squeeze
+
+install_base: all man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/iostat.1
+	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
+	mkdir -p $(DESTDIR)$(MAN1_DIR)
+	mkdir -p $(DESTDIR)$(MAN8_DIR)
+	mkdir -p $(DESTDIR)$(SA_DIR)
+ifeq ($(CLEAN_SA_DIR),y)
+	rm -f $(DESTDIR)$(SA_DIR)/sa??
+endif
+	mkdir -p $(DESTDIR)$(BIN_DIR)
+	mkdir -p $(DESTDIR)$(DOC_DIR)
+	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
+	install -m 755 sa1 $(DESTDIR)$(SA_LIB_DIR)
+	install -m 644 $(MANGRPARG) man/sa1.8 $(DESTDIR)$(MAN8_DIR)
+	install -m 755 sa2 $(DESTDIR)$(SA_LIB_DIR)
+	install -m 644 $(MANGRPARG) man/sa2.8 $(DESTDIR)$(MAN8_DIR)
+	install -m 755 sadc $(DESTDIR)$(SA_LIB_DIR)
+	install -m 644 $(MANGRPARG) man/sadc.8 $(DESTDIR)$(MAN8_DIR)
+	install -m 755 sar $(DESTDIR)$(BIN_DIR)
+	install -m 644 $(MANGRPARG) man/sar.1 $(DESTDIR)$(MAN1_DIR)
+	install -m 755 sadf $(DESTDIR)$(BIN_DIR)
+	install -m 644 $(MANGRPARG) man/sadf.1 $(DESTDIR)$(MAN1_DIR)
+	install -m 755 iostat $(DESTDIR)$(BIN_DIR)
+	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
+	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
+	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
+	install -m 644 sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR);
+	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
+	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
+	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)
+	install -m 644 README  $(DESTDIR)$(DOC_DIR)
+	install -m 644 FAQ     $(DESTDIR)$(DOC_DIR)
+	install -m 644 *.lsm   $(DESTDIR)$(DOC_DIR)
+ifdef REQUIRE_NLS
+	mkdir -p $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/nb_NO/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/nn_NO/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES
+	install -m 644 nls/af.gmo $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/de.gmo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/es.gmo $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/fr.gmo $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/it.gmo $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/ja.gmo $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/nb_NO.gmo $(DESTDIR)$(NLS_DIR)/nb_NO/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/nn_NO.gmo $(DESTDIR)$(NLS_DIR)/nn_NO/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/pl.gmo $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/pt.gmo $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/ro.gmo $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/ru.gmo $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES/$(PACKAGE).mo
+	install -m 644 nls/sk.gmo $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES/$(PACKAGE).mo
+endif
+
+install_all: install_base
+	$(CHOWN) $(CRON_OWNER) $(DESTDIR)$(SA_DIR)
+	if [ -d $(DESTDIR)/etc/cron.d ]; then \
+	   install -m 644 sysstat.crond $(DESTDIR)/etc/cron.d/sysstat; \
+	else \
+	   su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).save"; \
+	   $(CP) -a /tmp/crontab-$(CRON_OWNER).save ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.save; \
+	   echo "USER PREVIOUS CRONTAB SAVED IN CURRENT DIRECTORY (USING .save SUFFIX)."; \
+	   su $(CRON_OWNER) -c "crontab crontab"; \
+	fi
+	if [ -d $(DESTDIR)$(INIT_DIR) ]; then \
+	   install -m 755 sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
+	fi
+	install -m 644 sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
+	cd $(DESTDIR)$(RC2_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
+	cd $(DESTDIR)$(RC3_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
+	cd $(DESTDIR)$(RC5_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
 
 uninstall_base:
 	rm -f $(DESTDIR)$(SA_LIB_DIR)/sadc
@@ -207,7 +311,8 @@ uninstall_base:
 #	No need to keep sysstat script, config file and links since
 #	the binaries have been deleted.
 	rm -f $(DESTDIR)$(INIT_DIR)/sysstat
-	rm -f $(DESTDIR)/etc/sysconfig/sysstat
+	rm -f $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
+	rm -f $(DESTDIR)$(SYSCONFIG_DIR)/sysstat.ioconf
 	rm -f $(DESTDIR)$(RC2_DIR)/S03sysstat
 	rm -f $(DESTDIR)$(RC3_DIR)/S03sysstat
 	rm -f $(DESTDIR)$(RC5_DIR)/S03sysstat
@@ -263,86 +368,6 @@ uninstall_all: uninstall_base
 	@echo "USER CRONTAB SAVED IN CURRENT DIRECTORY (WITH .old SUFFIX)."
 	-su $(CRON_OWNER) -c "crontab -r"
 
-install_base: all man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/iostat.1
-	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
-	mkdir -p $(DESTDIR)$(MAN1_DIR)
-	mkdir -p $(DESTDIR)$(MAN8_DIR)
-	mkdir -p $(DESTDIR)$(SA_DIR)
-ifeq ($(CLEAN_SA_DIR),y)
-	rm -f $(DESTDIR)$(SA_DIR)/sa??
-endif
-	mkdir -p $(DESTDIR)$(BIN_DIR)
-	mkdir -p $(DESTDIR)$(DOC_DIR)
-	install -m 755 sa1 $(DESTDIR)$(SA_LIB_DIR)
-	install -m 644 $(MANGRPARG) man/sa1.8 $(DESTDIR)$(MAN8_DIR)
-	install -m 755 sa2 $(DESTDIR)$(SA_LIB_DIR)
-	install -m 644 $(MANGRPARG) man/sa2.8 $(DESTDIR)$(MAN8_DIR)
-	install -m 755 sadc $(DESTDIR)$(SA_LIB_DIR)
-	install -m 644 $(MANGRPARG) man/sadc.8 $(DESTDIR)$(MAN8_DIR)
-	install -m 755 sar $(DESTDIR)$(BIN_DIR)
-	install -m 644 $(MANGRPARG) man/sar.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 755 sadf $(DESTDIR)$(BIN_DIR)
-	install -m 644 $(MANGRPARG) man/sadf.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 755 iostat $(DESTDIR)$(BIN_DIR)
-	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
-	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
-	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
-	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)
-	install -m 644 README  $(DESTDIR)$(DOC_DIR)
-	install -m 644 FAQ     $(DESTDIR)$(DOC_DIR)
-	install -m 644 *.lsm   $(DESTDIR)$(DOC_DIR)
-ifdef REQUIRE_NLS
-	mkdir -p $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/nb_NO/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/nn_NO/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES
-	mkdir -p $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES
-	install -m 644 nls/af.gmo $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/de.gmo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/es.gmo $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/fr.gmo $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/it.gmo $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/ja.gmo $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/nb_NO.gmo $(DESTDIR)$(NLS_DIR)/nb_NO/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/nn_NO.gmo $(DESTDIR)$(NLS_DIR)/nn_NO/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/pl.gmo $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/pt.gmo $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/ro.gmo $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/ru.gmo $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/sk.gmo $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES/$(PACKAGE).mo
-endif
-
-install_all: install_base
-	$(CHOWN) $(CRON_OWNER) $(DESTDIR)$(SA_DIR)
-	if [ -d /etc/cron.d ]; then \
-	   install -m 644 sysstat.crond $(DESTDIR)/etc/cron.d/sysstat; \
-	else \
-	   su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).save"; \
-	   $(CP) -a /tmp/crontab-$(CRON_OWNER).save ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.save; \
-	   echo "USER PREVIOUS CRONTAB SAVED IN CURRENT DIRECTORY (USING .save SUFFIX)."; \
-	   su $(CRON_OWNER) -c "crontab crontab"; \
-	fi
-	if [ -d $(DESTDIR)$(INIT_DIR) ]; then \
-	   install -m 755 sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
-	fi
-	if [ -d /etc/sysconfig ]; then \
-	   install -m 644 sysstat.sysconfig $(DESTDIR)/etc/sysconfig/sysstat; \
-	fi
-	cd $(DESTDIR)$(RC2_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
-	cd $(DESTDIR)$(RC3_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
-	cd $(DESTDIR)$(RC5_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
-
-
 ifeq ($(INSTALL_CRON),y)
 uninstall: uninstall_all
 else
@@ -372,34 +397,6 @@ bdist: distclean
 
 config: clean
 	@sh build/Configure.sh
-
-squeeze:
-	sed 's/ *$$//g' sar.c > squeeze-file
-	mv squeeze-file sar.c
-	sed 's/ *$$//g' sadf.c > squeeze-file
-	mv squeeze-file sadf.c
-	sed 's/ *$$//g' sadc.c > squeeze-file
-	mv squeeze-file sadc.c
-	sed 's/ *$$//g' iostat.c > squeeze-file
-	mv squeeze-file iostat.c
-	sed 's/ *$$//g' mpstat.c > squeeze-file
-	mv squeeze-file mpstat.c
-	sed 's/ *$$//g' common.c > squeeze-file
-	mv squeeze-file common.c
-	sed 's/ *$$//g' sa_common.c > squeeze-file
-	mv squeeze-file sa_common.c
-	sed 's/ *$$//g' common.h > squeeze-file
-	mv squeeze-file common.h
-	sed 's/ *$$//g' iostat.h > squeeze-file
-	mv squeeze-file iostat.h
-	sed 's/ *$$//g' mpstat.h > squeeze-file
-	mv squeeze-file mpstat.h
-	sed 's/ *$$//g' sa.h > squeeze-file
-	mv squeeze-file sa.h
-	sed 's/ *$$//g' version.in > squeeze-file
-	mv squeeze-file version.in
-	sed 's/ *$$//g' sapath.in > squeeze-file
-	mv squeeze-file sapath.in
 
 tags:
 	etags ./*.[hc]

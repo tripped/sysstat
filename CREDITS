@@ -79,12 +79,14 @@ The following people have contributed to 'sysstat' in one way or another:
 	Jim W. Jaszewski <grok [at] sprint.ca> fixed several typos in
 	sysstat FAQ!
 
+	Charlie Bennett <ccb [at] redhat.com> sent me several patches to
+	fix known problems with sysstat. He also added the sysstat.ioconf
+	file support, and the -p option to sar.
 
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
 	Des Atkinson <Des.Atkinson@met[...].uk>
-	Charlie Bennett <ccb@red[...].com>
 	Chuck Blake <cb@mit[...].edu>
 	Pascal Bleser <pbleser@ato[...].com>
 	Jason Burnett <jason@jnj[...].org>

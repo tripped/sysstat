@@ -36,6 +36,7 @@
 #include "version.h"
 #include "sa.h"
 #include "common.h"
+#include "ioconf.h"
 
 
 #ifdef USE_NLS
@@ -232,6 +233,19 @@ void p_write_error(void)
 
 /*
  ***************************************************************************
+ * Init dk_drive* counters (used for sar -b)
+ ***************************************************************************
+ */
+void init_dk_drive_stat(void)
+{
+   file_stats.dk_drive = 0;
+   file_stats.dk_drive_rio  = file_stats.dk_drive_wio  = 0;
+   file_stats.dk_drive_rblk = file_stats.dk_drive_wblk = 0;
+}
+
+
+/*
+ ***************************************************************************
  * Set PID flag value (bit 0 set: -x, bit 1 set: -X)
  ***************************************************************************
  */
@@ -338,12 +352,8 @@ void get_pid_list(void)
  ***************************************************************************
  */
 void get_serial_lines(unsigned int *serial_used)
-{
-   FILE *serfp;
-   char line[256];
-   unsigned int sl = 0;
-
 #ifdef SMP_RACE
+{
    /*
     * Ignore serial lines if SMP_RACE flag is defined.
     * This is because there is an SMP race in some 2.2.x kernels that
@@ -351,8 +361,13 @@ void get_serial_lines(unsigned int *serial_used)
     */
    *serial_used = 0;
    return;
-
+}
 #else
+{
+   FILE *serfp;
+   char line[256];
+   unsigned int sl = 0;
+
    /* Open serial file */
    if ((serfp = fopen(SERIAL, "r")) == NULL) {
       *serial_used = 0;	/* No SERIAL file */
@@ -372,8 +387,8 @@ void get_serial_lines(unsigned int *serial_used)
    fclose(serfp);
 
    *serial_used = sl + NR_SERIAL_PREALLOC;
-#endif
 }
+#endif
 
 
 /*
@@ -471,7 +486,7 @@ void sa_sys_init(unsigned int *flags)
       salloc_net_dev(iface_used);
    }
    /*
-    * Get number of devices in /proc/diskstats,
+    * Get number of devices in /proc/{diskstats,partitions}
     * or number of disk_io entries in /proc/stat.
     */
    if ((disk_used = get_diskstats_dev_nr(CNT_DEV)) > 0) {
@@ -808,7 +823,7 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
  * 2.6: linux/fs/proc/proc_misc.c: show_stat()
  ***************************************************************************
  */
-void read_proc_stat(void)
+void read_proc_stat(unsigned int flags)
 {
    FILE *statfp;
    struct stats_one_cpu *st_cpu_i;
@@ -898,41 +913,6 @@ void read_proc_stat(void)
 	 }
       }
 
-      else if (!strncmp(line, "disk ", 5)) {
-	 /* Read number of I/O done since the last reboot */
-	 sscanf(line + 5, "%u %u %u %u",
-		&(file_stats.dk_drive), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-	 file_stats.dk_drive += u_tmp[0] + u_tmp[1] + u_tmp[2];
-      }
-
-      else if (!strncmp(line, "disk_rio ", 9)) {
-	 /* Read number of read I/O */
-	 sscanf(line + 9, "%u %u %u %u",
-		&(file_stats.dk_drive_rio), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-	 file_stats.dk_drive_rio += u_tmp[0] + u_tmp[1] + u_tmp[2];
-      }
-
-      else if (!strncmp(line, "disk_wio ", 9)) {
-	 /* Read number of write I/O */
-	 sscanf(line + 9, "%u %u %u %u",
-		&(file_stats.dk_drive_wio), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-	 file_stats.dk_drive_wio += u_tmp[0] + u_tmp[1] + u_tmp[2];
-      }
-
-      else if (!strncmp(line, "disk_rblk ", 10)) {
-	 /* Read number of blocks read from disk */
-	 sscanf(line + 10, "%u %u %u %u",
-		&(file_stats.dk_drive_rblk), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-	 file_stats.dk_drive_rblk += u_tmp[0] + u_tmp[1] + u_tmp[2];
-      }
-
-      else if (!strncmp(line, "disk_wblk ", 10)) {
-	 /* Read number of blocks written to disk */
-	 sscanf(line + 10, "%u %u %u %u",
-		&(file_stats.dk_drive_wblk), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-	 file_stats.dk_drive_wblk += u_tmp[0] + u_tmp[1] + u_tmp[2];
-      }
-
       else if (!strncmp(line, "page ", 5))
 	 /* Read number of pages the system paged in and out */
 	 sscanf(line + 5, "%lu %lu",
@@ -960,46 +940,6 @@ void read_proc_stat(void)
 	 }
       }
 
-      else if (!strncmp(line, "disk_io: ", 9)) {
-	 unsigned int dsk = 0;
-	
-	 file_stats.dk_drive = 0;
-	 file_stats.dk_drive_rio  = file_stats.dk_drive_wio  = 0;
-	 file_stats.dk_drive_rblk = file_stats.dk_drive_wblk = 0;
-	 pos = 9;
-	
-	 /* Read disks I/O statistics (for 2.4 kernels) */
-	 while (pos < strlen(line) - 1) {	/* Beware: a CR is already included in the line */
-	    sscanf(line + pos, "(%u,%u):(%u,%u,%u,%u,%u) ",
-		   &v_major, &v_index,
-		   &v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3], &v_tmp[4]);
-	    file_stats.dk_drive += v_tmp[0];
-	    file_stats.dk_drive_rio  += v_tmp[1];
-	    file_stats.dk_drive_rblk += v_tmp[2];
-	    file_stats.dk_drive_wio  += v_tmp[3];
-	    file_stats.dk_drive_wblk += v_tmp[4];
-	    if (dsk < disk_used) {
-	       st_disk_i = st_disk + dsk;
-	       st_disk_i->major = v_major;
-	       st_disk_i->index = v_index;
-	       st_disk_i->nr_ios = v_tmp[0];
-	       st_disk_i->rd_sect = v_tmp[2];
-	       st_disk_i->wr_sect = v_tmp[4];
-	       dsk++;
-	    }
-	    pos += strcspn(line + pos, " ") + 1;
-	 }
-
-	 while (dsk < disk_used) {
-	    /*
-	     * Nb of disks has changed, or appending data to an old file
-	     * with more disks than are actually available now.
-	     */
-	    st_disk_i = st_disk + dsk++;
-	    st_disk_i->major = st_disk_i->index = 0;
-	 }
-      }
-
       else if (!strncmp(line, "ctxt ", 5))
 	 /* Read number of context switches */
 	 sscanf(line + 5, "%llu", &(file_stats.context_swtch));
@@ -1007,6 +947,86 @@ void read_proc_stat(void)
       else if (!strncmp(line, "processes ", 10))
 	 /* Read number of processes created since system boot */
 	 sscanf(line + 10, "%lu", &(file_stats.processes));
+
+      else if (!HAS_DISKSTATS(flags) && !HAS_PPARTITIONS(flags)) {
+	 /*
+	  * Read possible disk stats from /proc/stat only if we are
+	  * sure they won't be read later from /proc/diskstats or
+	  * /proc/partitions.
+	  */
+	 if (!strncmp(line, "disk ", 5)) {
+	    /* Read number of I/O done since the last reboot */
+	    sscanf(line + 5, "%u %u %u %u",
+		   &(file_stats.dk_drive), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	    file_stats.dk_drive += u_tmp[0] + u_tmp[1] + u_tmp[2];
+	 }
+
+	 else if (!strncmp(line, "disk_rio ", 9)) {
+	    /* Read number of read I/O */
+	    sscanf(line + 9, "%u %u %u %u",
+		   &(file_stats.dk_drive_rio), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	    file_stats.dk_drive_rio += u_tmp[0] + u_tmp[1] + u_tmp[2];
+	 }
+
+	 else if (!strncmp(line, "disk_wio ", 9)) {
+	    /* Read number of write I/O */
+	    sscanf(line + 9, "%u %u %u %u",
+		   &(file_stats.dk_drive_wio), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	    file_stats.dk_drive_wio += u_tmp[0] + u_tmp[1] + u_tmp[2];
+	 }
+
+	 else if (!strncmp(line, "disk_rblk ", 10)) {
+	    /* Read number of blocks read from disk */
+	    sscanf(line + 10, "%u %u %u %u",
+		   &(file_stats.dk_drive_rblk), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	    file_stats.dk_drive_rblk += u_tmp[0] + u_tmp[1] + u_tmp[2];
+	 }
+
+	 else if (!strncmp(line, "disk_wblk ", 10)) {
+	    /* Read number of blocks written to disk */
+	    sscanf(line + 10, "%u %u %u %u",
+		   &(file_stats.dk_drive_wblk), &u_tmp[0], &u_tmp[1], &u_tmp[2]);
+	    file_stats.dk_drive_wblk += u_tmp[0] + u_tmp[1] + u_tmp[2];
+	 }
+
+	 else if (!strncmp(line, "disk_io: ", 9)) {
+	    unsigned int dsk = 0;
+
+	    init_dk_drive_stat();
+	    pos = 9;
+	
+	    /* Read disks I/O statistics (for 2.4 kernels) */
+	    while (pos < strlen(line) - 1) {	/* Beware: a CR is already included in the line */
+	       sscanf(line + pos, "(%u,%u):(%u,%u,%u,%u,%u) ",
+		      &v_major, &v_index,
+		      &v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3], &v_tmp[4]);
+	       file_stats.dk_drive += v_tmp[0];
+	       file_stats.dk_drive_rio  += v_tmp[1];
+	       file_stats.dk_drive_rblk += v_tmp[2];
+	       file_stats.dk_drive_wio  += v_tmp[3];
+	       file_stats.dk_drive_wblk += v_tmp[4];
+
+	       if (dsk < disk_used) {
+		  st_disk_i = st_disk + dsk++;
+		  st_disk_i->major = v_major;
+		  st_disk_i->minor = v_index;
+		  st_disk_i->nr_ios = v_tmp[0];
+		  st_disk_i->rd_sect = v_tmp[2];
+		  st_disk_i->wr_sect = v_tmp[4];
+	       }
+	       pos += strcspn(line + pos, " ") + 1;
+	    }
+
+	    while (dsk < disk_used) {
+	       /*
+		* Nb of disks has changed, or appending data to an old file
+		* with more disks than are actually available now.
+		*/
+	       st_disk_i = st_disk + dsk++;
+	       st_disk_i->major = st_disk_i->minor = 0;
+	    }
+	 }
+      }
    }
 
    /* Close stat file */
@@ -1204,15 +1224,15 @@ void read_pid_stat(void)
  */
 void read_serial_stat(void)
 {
-   FILE *serfp;
    struct stats_serial *st_serial_i;
-   static char line[256];
    unsigned int sl = 0;
-   unsigned int tty;
-   char *p;
-
 
 #ifndef SMP_RACE
+   FILE *serfp;
+   static char line[256];
+   unsigned int tty;
+   char *p;
+	
       /* Open serial file */
       if ((serfp = fopen(SERIAL, "r")) != NULL) {
 
@@ -1513,23 +1533,40 @@ void read_diskstats_stat(void)
    static char line[256];
    int dsk = 0;
    struct disk_stats *st_disk_i;
-   unsigned int tmp[4];
-   unsigned long long l_tmp[2];
+   unsigned int major, minor;
+   unsigned long rd_ios, wr_ios, rd_ticks, wr_ticks;
+   unsigned long tot_ticks, rq_ticks;
+   unsigned long long rd_sec, wr_sec;
 
    /* Open /proc/diskstats file */
    if ((dstatsfp = fopen(DISKSTATS, "r")) != NULL) {
 
+      init_dk_drive_stat();
+
       while ((fgets(line, 256, dstatsfp) != NULL) && (dsk < disk_used)) {
 	
-	 if (sscanf(line, "%u %u %*s %u %*u %llu %*u %u %*u %llu",
-		    &tmp[0], &tmp[1], &tmp[2], &l_tmp[0], &tmp[3], &l_tmp[1]) == 6) {
-	    /* It's a device */
+	 if (sscanf(line, "%u %u %*s %lu %*u %llu %lu %lu %*u %llu"
+		          " %lu %*u %lu %lu",
+		    &major, &minor,
+		    &rd_ios, &rd_sec, &rd_ticks, &wr_ios, &wr_sec, &wr_ticks,
+		    &tot_ticks, &rq_ticks) == 10) {
+	    /* It's a device and not a partition */
 	    st_disk_i = st_disk + dsk++;
-	    st_disk_i->major = tmp[0];
-	    st_disk_i->index = tmp[1];
-	    st_disk_i->nr_ios = tmp[2] + tmp[3];
-	    st_disk_i->rd_sect = l_tmp[0];
-	    st_disk_i->wr_sect = l_tmp[1];
+	    st_disk_i->major = major;
+	    st_disk_i->minor = minor;
+	    st_disk_i->nr_ios = rd_ios + wr_ios;
+	    st_disk_i->rd_sect = rd_sec;
+	    st_disk_i->wr_sect = wr_sec;
+	    st_disk_i->rd_ticks = rd_ticks;
+	    st_disk_i->wr_ticks = wr_ticks;
+	    st_disk_i->tot_ticks = tot_ticks;
+	    st_disk_i->rq_ticks = rq_ticks;
+	
+	    file_stats.dk_drive += rd_ios + wr_ios;
+	    file_stats.dk_drive_rio += rd_ios;
+	    file_stats.dk_drive_rblk += (unsigned int) rd_sec;
+	    file_stats.dk_drive_wio += wr_ios;
+	    file_stats.dk_drive_wblk += (unsigned int) wr_sec;
 	 }
       }
 
@@ -1543,7 +1580,7 @@ void read_diskstats_stat(void)
        * with more disks than are actually available now.
        */
       st_disk_i = st_disk + dsk++;
-      st_disk_i->major = st_disk_i->index = 0;
+      st_disk_i->major = st_disk_i->minor = 0;
    }
 }
 
@@ -1561,26 +1598,44 @@ void read_ppartitions_stat(void)
    static char line[256];
    int dsk = 0;
    struct disk_stats *st_disk_i;
-   unsigned int tmp[4];
-   unsigned long long l_tmp[2];
+   unsigned int major, minor;
+   unsigned long rd_ios, wr_ios, rd_ticks, wr_ticks, tot_ticks, rq_ticks;
+   unsigned long long rd_sec, wr_sec;
 
    /* Open /proc/partitions file */
    if ((ppartfp = fopen(PPARTITIONS, "r")) != NULL) {
 
+      init_dk_drive_stat();
+
       while ((fgets(line, 256, ppartfp) != NULL) && (dsk < disk_used)) {
 	
-	 if (sscanf(line, "%u %u %*u %*s %u %*u %llu %*u %u %*u %llu",
-		    &tmp[0], &tmp[1], &tmp[2], &l_tmp[0], &tmp[3], &l_tmp[1]) == 6) {
+	 if (sscanf(line, "%u %u %*u %*s %lu %*u %llu %lu %lu %*u %llu"
+		          " %lu %*u %lu %lu",
+		    &major, &minor, &rd_ios, &rd_sec, &rd_ticks, &wr_ios,
+		    &wr_sec, &wr_ticks, &tot_ticks, &rq_ticks) == 10) {
 	    /*
 	     * Unlike when reading /proc/diskstats,
 	     * this line may be a partition or a device.
 	     */
 	    st_disk_i = st_disk + dsk++;
-	    st_disk_i->major = tmp[0];
-	    st_disk_i->index = tmp[1];
-	    st_disk_i->nr_ios = tmp[2] + tmp[3];
-	    st_disk_i->rd_sect = l_tmp[0];
-	    st_disk_i->wr_sect = l_tmp[1];
+	    st_disk_i->major = major;
+	    st_disk_i->minor = minor;
+	    st_disk_i->nr_ios = rd_ios + wr_ios;
+	    st_disk_i->rd_sect = rd_sec;
+	    st_disk_i->wr_sect = wr_sec;
+	    st_disk_i->rd_ticks = rd_ticks;
+	    st_disk_i->wr_ticks = wr_ticks;
+	    st_disk_i->tot_ticks = tot_ticks;
+	    st_disk_i->rq_ticks = rq_ticks;
+	
+	    /* We need to check if it's a device */
+	    if (ioc_iswhole(major, minor)) {
+	       file_stats.dk_drive += rd_ios + wr_ios;
+	       file_stats.dk_drive_rio += rd_ios;
+	       file_stats.dk_drive_rblk += (unsigned int) rd_sec;
+	       file_stats.dk_drive_wio += wr_ios;
+	       file_stats.dk_drive_wblk += (unsigned int) wr_sec;
+	    }
 	 }
       }
 
@@ -1594,7 +1649,7 @@ void read_ppartitions_stat(void)
        * with more disks than are actually available now.
        */
       st_disk_i = st_disk + dsk++;
-      st_disk_i->major = st_disk_i->index = 0;
+      st_disk_i->major = st_disk_i->minor = 0;
    }
 }
 
@@ -1625,7 +1680,7 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
       file_stats.second = loc_time->tm_sec;
 
       /* Read stats */
-      read_proc_stat();
+      read_proc_stat(*flags);
       read_proc_meminfo();
       read_proc_loadavg();
       read_proc_vmstat();

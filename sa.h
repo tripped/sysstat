@@ -93,6 +93,7 @@
 #define F_L_OPTION	0x1000
 #define F_FILE_LCK	0X2000
 #define F_WANT_DISKS	0x4000
+#define F_DEV_PRETTY	0x8000
 /* 0x100000:0x800000 -> reserved (cf. common.h) */
 
 #define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
@@ -110,6 +111,7 @@
 #define PRINT_ORG_TIME(m)	(((m) & F_ORG_TIME) == F_ORG_TIME)
 #define USE_DB_OPTION(m)	(((m) & F_DB_OPTION) == F_DB_OPTION)
 #define WANT_DISKS(m)		(((m) & F_WANT_DISKS) == F_WANT_DISKS)
+#define USE_PRETTY_OPTION(m)	(((m) & F_DEV_PRETTY) == F_DEV_PRETTY)
 
 /* Files */
 #define PROC		"/proc"
@@ -174,7 +176,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x2164
+#define SA_MAGIC	0x2165
 
 /*
  * IMPORTANT NOTE:
@@ -387,10 +389,13 @@ struct stats_irq_cpu {
 struct disk_stats {
    unsigned long long rd_sect			__attribute__ ((aligned (16)));
    unsigned long long wr_sect			__attribute__ ((aligned (16)));
-   unsigned int  major				__attribute__ ((aligned (16)));
-   unsigned int  index				__attribute__ ((packed));
-   unsigned int  nr_ios				__attribute__ ((packed));
-   unsigned char pad[4]				__attribute__ ((packed));
+   unsigned long rd_ticks			__attribute__ ((aligned (16)));
+   unsigned long wr_ticks			__attribute__ ((aligned (8)));
+   unsigned long tot_ticks			__attribute__ ((aligned (8)));
+   unsigned long rq_ticks			__attribute__ ((aligned (8)));
+   unsigned long nr_ios				__attribute__ ((aligned (8)));
+   unsigned int  major				__attribute__ ((aligned (8)));
+   unsigned int  minor				__attribute__ ((packed));
 };
 
 #define DISK_STATS_SIZE		(sizeof(struct disk_stats))
@@ -441,34 +446,35 @@ struct tstamp {
 				} while (0)
 
 /* Functions */
-extern int check_disk_reg(struct file_hdr *, struct disk_stats * [],
+extern int  check_disk_reg(struct file_hdr *, struct disk_stats * [],
 			  short, short, int);
 extern unsigned int check_iface_reg(struct file_hdr *, struct stats_net_dev * [],
 				    short, short, unsigned int);
-extern int datecmp(struct tm *, struct tstamp *);
+extern int  datecmp(struct tm *, struct tstamp *);
 unsigned long long get_per_cpu_interval(struct stats_one_cpu *,
 					struct stats_one_cpu *);
+extern char *get_devname(unsigned int, unsigned int, unsigned int);
 extern void init_bitmap(unsigned char [], unsigned char, unsigned int);
 extern void init_stats(struct file_stats [], unsigned int [][]);
-extern int next_slice(unsigned long long, unsigned long long,
+extern int  next_slice(unsigned long long, unsigned long long,
 		      struct file_hdr *, int, long);
-extern int parse_sar_opt(char * [], int, unsigned int *, unsigned int *,
+extern int  parse_sar_opt(char * [], int, unsigned int *, unsigned int *,
 			 short *, int);
-extern int parse_sar_I_opt(char * [], int *, unsigned int *, short *,
+extern int  parse_sar_I_opt(char * [], int *, unsigned int *, short *,
 			   unsigned char []);
-extern int parse_sa_P_opt(char * [], int *, unsigned int *, short *,
+extern int  parse_sa_P_opt(char * [], int *, unsigned int *, short *,
 			  unsigned char []);
-extern int parse_sar_n_opt(char * [], int *, unsigned int *, short *);
-extern int parse_timestamp(char * [], int *, struct tstamp *,
+extern int  parse_sar_n_opt(char * [], int *, unsigned int *, short *);
+extern int  parse_timestamp(char * [], int *, struct tstamp *,
 			   const char *);
 extern void prep_file_for_reading(int *, char *, struct file_hdr *,
 				  unsigned int *, unsigned int);
-extern int prep_time(struct file_stats *, struct file_stats *,
+extern int  prep_time(struct file_stats *, struct file_stats *,
 		     struct file_hdr *, struct tm *, struct tstamp *, int,
 		     unsigned long long *, unsigned long long *);
 extern void print_report_hdr(unsigned int, struct tm *,
 			     struct file_hdr *);
-extern int sa_fread(int, void *, int, int);
+extern int  sa_fread(int, void *, int, int);
 extern void salloc_cpu_array(struct stats_one_cpu * [], unsigned int);
 extern void salloc_disk_array(struct disk_stats * [], int);
 extern void salloc_irqcpu_array(struct stats_irq_cpu * [],

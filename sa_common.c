@@ -33,6 +33,7 @@
 
 #include "sa.h"
 #include "common.h"
+#include "ioconf.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -174,6 +175,29 @@ void salloc_disk_array(struct disk_stats *st_disk[], int nr_disk)
 
       memset(st_disk[i], 0, DISK_STATS_SIZE * nr_disk);
    }
+}
+
+
+/*
+ ***************************************************************************
+ * Get device real name if possible.
+ * Warning: This routine may return a bad name on 2.4 kernels where
+ * disk activities are read from /proc/stat.
+ ***************************************************************************
+ */
+char *get_devname(unsigned int major, unsigned int minor, unsigned int flags)
+{
+   static char buf[32];
+   char *name;
+
+   snprintf(buf, 32, "dev%d-%d", major, minor);
+
+   if (!USE_PRETTY_OPTION(flags))
+      return (buf);
+   if ((name = ioc_name(major, minor)) == NULL)
+      return (buf);
+
+   return (name);
 }
 
 
@@ -490,7 +514,7 @@ int check_disk_reg(struct file_hdr *file_hdr, struct disk_stats *st_disk[],
    while (index < file_hdr->sa_nr_disk) {
       st_disk_j = st_disk[ref] + index;
       if ((st_disk_i->major == st_disk_j->major) &&
-	  (st_disk_i->index == st_disk_j->index)) {
+	  (st_disk_i->minor == st_disk_j->minor)) {
 	 /*
 	  * Disk found.
 	  * If a counter has decreased, then we may assume that the
@@ -504,7 +528,7 @@ int check_disk_reg(struct file_hdr *file_hdr, struct disk_stats *st_disk[],
 
 	    memset(st_disk_j, 0, DISK_STATS_SIZE);
 	    st_disk_j->major = st_disk_i->major;
-	    st_disk_j->index = st_disk_i->index;
+	    st_disk_j->minor = st_disk_i->minor;
 	 }
 	 return index;
       }
@@ -514,10 +538,10 @@ int check_disk_reg(struct file_hdr *file_hdr, struct disk_stats *st_disk[],
    /* Disk not found: Look for the first free structure */
    for (index = 0; index < file_hdr->sa_nr_disk; index++) {
       st_disk_j = st_disk[ref] + index;
-      if (!(st_disk_j->major + st_disk_j->index)) {
+      if (!(st_disk_j->major + st_disk_j->minor)) {
 	 memset(st_disk_j, 0, DISK_STATS_SIZE);
 	 st_disk_j->major = st_disk_i->major;
-	 st_disk_j->index = st_disk_i->index;
+	 st_disk_j->minor = st_disk_i->minor;
 	 break;
       }
    }
@@ -529,7 +553,7 @@ int check_disk_reg(struct file_hdr *file_hdr, struct disk_stats *st_disk[],
    /* Since the device is not the same, reset all the structure */
    memset(st_disk_j, 0, DISK_STATS_SIZE);
    st_disk_j->major = st_disk_i->major;
-   st_disk_j->index = st_disk_i->index;
+   st_disk_j->minor = st_disk_i->minor;
 
    return index;
 }
@@ -667,6 +691,9 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
        case 'd':
 	 *actflag |= A_DISK;
 	 (*dis_hdr)++;
+	 break;
+       case 'p':
+	 *flags |= F_DEV_PRETTY;
 	 break;
        case 'q':
 	 *actflag |= A_QUEUE;

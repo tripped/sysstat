@@ -16,7 +16,7 @@
 case "$1" in
   start)
         echo -n "Calling the system activity data collector (sadc): "
-        PREFIX/lib/sa/sadc -F -L
+        PREFIX/lib/sa/sadc -F -L - QUOTE
         echo
         ;;
   stop|status|restart|reload)

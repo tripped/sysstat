@@ -1,5 +1,21 @@
 Changes:
 
+2004/05/20: Version 5.0.4 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* When trying to lock file, sadc now checks for both EWOULDBLOCK
+	  and EAGAIN error codes to be portable.
+	* sar could sometimes display a line whose time stamp was greater
+	  than the limit set by -e option. This is no longer possible.
+	* The sadc command in sysstat.sh script had to be enclosed in
+	  quotes to work when called via 'su -c'.
+	* The sysstat.sh script was sending the output of sadc command
+	  to stdout instead of the standard system activity file. This
+	  is now fixed.
+	* Outfile must now be explicitly set to "-" for sadc to use the
+	  standard system activity file.
+	* FAQ updated.
+	* iostat manual page updated. Typo fixed in sadc manual page.
+	* Fixed the "Save picture" option of isag script.
+
 2004/04/07: Version 5.0.3 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* iostat now reads the number of sectors in /proc/diskstats or
 	  from sysfs as 64-bit unsigned values.

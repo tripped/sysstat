@@ -11,16 +11,16 @@ test -f $DAEMON || exit 0
 set -e
 
 case "$1" in
-  start)
+  start|restart|reload|force-reload)
 	echo -n "Starting $DESC: "
 	start-stop-daemon --start --quiet --exec $DAEMON
 	echo "$NAME."
 	;;
-  stop|restart|force-reload)
+  stop)
 	;;
 
   *)
-	echo "Usage: $N {start|stop|restart|force-reload}" >&2
+	echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
 	exit 1
 	;;
 esac

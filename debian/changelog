@@ -1,3 +1,10 @@
+sysstat (3.3.3-3) unstable; urgency=low
+
+  * Modified init script - `restart' now acts like `start' (closes: #84058).
+  * Fixed some problems with debconf support.
+
+ -- Robert Luberda <robert@debian.org>  Tue, 30 Jan 2001 08:00:14 +0100
+
 sysstat (3.3.3-2) unstable; urgency=low
 
   * Fix typo in postinst (closes: #83980).

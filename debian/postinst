@@ -8,18 +8,22 @@ set -e
 
 if [ "$1" = "configure" ] ; then
   if dpkg --compare-versions "$2" lt-nl "$S_VERSION"; then
-	
 
 	RET=""
 	db_get sysstat/remove_files || true
-	RETVAL="$RET"
-	db_stop || true
-	if [ "$RETVAL" = "true" ]; then
-		echo "Removing old statistics from /var/log/sysstat" 1>&2 
+
+	if [ "$RET" = "true" ]; then
+		echo "Removing old statistics from /var/log/sysstat." 1>&2 
 	 	rm -f /var/log/sysstat/sa[0-9]*
 	fi
 	
   fi
+
+  # show notice & question next time
+  db_reset sysstat/notice || true
+  db_reset sysstat/remove_files || true
+  db_stop || true
+
 fi
 
 

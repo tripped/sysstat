@@ -2,7 +2,7 @@ Source: sysstat
 Section: admin
 Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
-Build-Depends: debhelper (>= 2.1.0), gettext
+Build-Depends: debhelper (>= 2.2.0), gettext
 Standards-Version: 3.2.1
 
 Package: sysstat

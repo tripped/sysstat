@@ -14,27 +14,14 @@ if [ "$1" = "configure" ] ; then
 
         db_beginblock || true
 
-	
-	db_fset sysstat/version isdefault false || true
-	db_get  sysstat/version || true
-	if [ "$RET" = "$2" ] ; then
-		RESET="no"
-	else 
-		RESET="yes"
-	fi
-
 	db_subst sysstat/notice s_version "$S_UPSTR_VERSION"  || true
-	[ "$RESET" = "yes" ] && db_reset sysstat/notice || true
 	db_input high sysstat/notice || true 
 	
-	[ "$RESET" = "yes" ] && db_reset sysstat/remove_files || true
 	db_input high sysstat/remove_files || true
 
 	db_endblock || true
 	
 	db_go || true
-
-	db_set sysstat/version "$2"
 
    	db_stop || true
    fi

@@ -88,6 +88,7 @@
 #define F_DEFAULT_COUNT	0x080
 #define F_I_OPTION	0x100
 #define F_DB_OPTION	0x200
+#define F_DO_SA_ROTAT	0x400
 
 #define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
 #define WANT_SA_ROTAT(m)	(((m) & F_SA_ROTAT) == F_SA_ROTAT)
@@ -98,6 +99,7 @@
 #define USE_DEFAULT_COUNT(m)	(((m) & F_DEFAULT_COUNT) == F_DEFAULT_COUNT)
 #define USE_I_OPTION(m)		(((m) & F_I_OPTION) == F_I_OPTION)
 #define USE_DB_OPTION(m)	(((m) & F_DB_OPTION) == F_DB_OPTION)
+#define DO_SA_ROTAT(m)		(((m) & F_DO_SA_ROTAT) == F_DO_SA_ROTAT)
 
 /* Files */
 #define PROC		"/proc"

@@ -17,7 +17,7 @@ The following people have contributed to 'sysstat' in one way or another:
 	    into Afrikaans.
 	  * Roy Sigurd Karlsbakk <roy@karlsbakk.net> for the Norwegian
 	    translation.
-	  * Stefano Barni <barninga@altavista.net> for the translation
+	  * Stefano Barni <barninga@interfree.it> for the translation
 	    into Italian.
 	  * Dennis Selsky <selsky@siberia.net> for the Russian translation.
 
@@ -81,8 +81,10 @@ I would also thank the following people for their hints or bug reports
 	David S. Jackson <dsj@sylvester.dsj.net>
 	Jordan <ledzep37@home.com>	
 	Jurriaan <thunder7@xs4all.nl>
+	Ivo Letzas <letzas@format.mine.nu>	
 	Robert Luberda <robert@debian.org>
 	Robert Macaulay <Robert_Macaulay@Dell.com>
+	Alan Matsuoka <alanm@redhat.com>
 	Rodney J. Mertz <rjm@elvis.arh.ms.cdc.com>
 	Roy Millar <100044.14@compuserve.com>
 	David J. Morse <David_J_Morse@Dell.com>

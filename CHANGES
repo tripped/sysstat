@@ -358,3 +358,11 @@ Changes:
 	* Configuration script updated.
 	* FAQ upated.
 
+2002/11/13: Version 4.0.7 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Make data for timestamp 00:00:00 appear in one of the daily data
+	  files when sar/sadc rotates its output file.
+	* Take out check for non SMP configuration when asking for
+	  mpstat -P.
+	* sargon script updated.
+	* FAQ updated.
+

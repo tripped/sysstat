@@ -1544,6 +1544,19 @@ int main(int argc, char **argv)
       /* Write stats */
       write_stats(ofd, file_stats_size);
 
+      if DO_SA_ROTAT(flags) {
+	 /* Stats are written at the end of previous file *and* at the beginning of the new one */
+	 flags &= ~F_DO_SA_ROTAT;
+	 if (fdatasync(ofd) < 0) {	/* Flush previous file */
+	    perror("fdatasync");
+	    exit(4);
+	 }
+	 close(ofd);
+	 strcpy(ofile, new_ofile);
+	 open_ofile(&ofd, ofile, &file_stats_size);	/* Open and init new file */
+	 write_stats(ofd, file_stats_size);		/* Write stats again */
+      }
+
       /* Flush data */
       fflush(stdout);
       if (ofile[0] && (fdatasync(ofd) < 0)) {
@@ -1564,12 +1577,8 @@ int main(int argc, char **argv)
 	 snprintf(new_ofile, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
 	 new_ofile[MAX_FILE_LEN - 1] = '\0';
 
-	 if (strcmp(ofile, new_ofile)) {
-	    close(ofd);
-	    strcpy(ofile, new_ofile);
-	    /* Open and init new file */
-	    open_ofile(&ofd, ofile, &file_stats_size);
-	 }
+	 if (strcmp(ofile, new_ofile))
+	    flags |= F_DO_SA_ROTAT;
       }
    }
    while (count);

@@ -69,7 +69,8 @@ ln -s $CURRENTDIR/$CURRENTFILE $CURRENTFILE
 [ -f $LASTMAINTFLAG ] || touch "`date +%m%d`$MAINTTIME" $LASTMAINTFLAG
 
 if [ -n "`find $LASTMAINTFLAG -mtime +1 -print`" ]; then
-	find  *	 -type f -name "sa??" -mtime +$KEEPDAYS -exec rm -f {} \;
+	find  *  -type f -name "sa??" -o -name "sa??.gz" -mtime +$KEEPDAYS  \
+		-exec rm -f {} \;
 	find  [0-9]????? -name "sa??" -mtime +$COMPRESSAFTER -type f	    \
 			 -exec gzip {} \; > /dev/null 2>&1
 	rmdir [0-9]?????  > /dev/null 2>&1

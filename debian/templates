@@ -2,7 +2,7 @@ Template: sysstat/notice
 Type: note
 Description: WARNING: daily data files format has changed!
  Format of daily data statistics files has changed in version ${s_version}
- of sysstat and is *not* compatible with the previous one! 
+ of sysstat and is *not* compatible with the previous one!
  .
  Existing data files need to be deleted.
 

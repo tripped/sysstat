@@ -1,3 +1,11 @@
+sysstat (3.3.4-2) unstable; urgency=low
+
+  * Added German translation of debconf templates (closes: #84843).
+    Thanks to Joerg.Rieger@informatik.med.uni-giessen.de for a patch.
+  * Polish translation added too.
+
+ -- Robert Luberda <robert@debian.org>  Mon,  5 Feb 2001 23:06:45 +0100
+
 sysstat (3.3.4-1) unstable; urgency=low
 
   * New upstream version.

@@ -296,13 +296,21 @@ void salloc_pid(int nr_pid)
  * Use time stamp to fill tstamp structure
  ***************************************************************************
  */
-void decode_time_stamp(char time_stamp[], struct tstamp *tse)
+int decode_time_stamp(char time_stamp[], struct tstamp *tse)
 {
    time_stamp[2] = time_stamp[5] = '\0';
    tse->tm_sec  = atoi(&(time_stamp[6]));
    tse->tm_min  = atoi(&(time_stamp[3]));
    tse->tm_hour = atoi(time_stamp);
+   
+   if ((tse->tm_sec < 0) || (tse->tm_sec > 59) ||
+       (tse->tm_min < 0) || (tse->tm_min > 59) ||
+       (tse->tm_hour < 0) || (tse->tm_hour > 23))
+      return 1;
+   
    tse->use = TRUE;
+   
+   return 0;
 }
 
 
@@ -534,7 +542,7 @@ void init_timestamp(short curr, char *cur_time, int len)
 	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S UTC", &loc_time);
    }
    else if (!USE_H_OPTION(flags))
-      strftime(cur_time, len, "%X  ", &loc_time);
+      strftime(cur_time, len, "%X", &loc_time);
 }
 
 
@@ -1266,7 +1274,7 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 int write_stats(short curr, short dis, unsigned int act, int read_from_file, long *cnt,
 		int use_tm_start, int use_tm_end, int reset, int want_since_boot)
 {
-   char cur_time[2][14];
+   char cur_time[2][16];
    unsigned long itv, g_itv;
 
    /* Check time (1) */
@@ -1277,11 +1285,9 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    }
 
    /* Get previous timestamp */
-   init_timestamp(!curr, cur_time[!curr], 14);
+   init_timestamp(!curr, cur_time[!curr], 16);
    /* Get current timestamp */
-   init_timestamp(curr, cur_time[curr], 14);
-   /* Only the first 11 characters are printed */
-   cur_time[curr][11] = cur_time[!curr][11] = '\0';
+   init_timestamp(curr, cur_time[curr], 16);
 
    /* Check time */
    if (prep_time(use_tm_start, curr, &itv, &g_itv))
@@ -2924,7 +2930,8 @@ int main(int argc, char **argv)
 	    strcpy(time_stamp, argv[opt++]);
 	 else
 	    strcpy(time_stamp, DEF_TMSTART);
-	 decode_time_stamp(time_stamp, &tm_start);
+	 if (decode_time_stamp(time_stamp, &tm_start))
+	    usage(argv[0]);
       }
 
       else if (!strcmp(argv[opt], "-e")) {
@@ -2933,7 +2940,8 @@ int main(int argc, char **argv)
 	    strcpy(time_stamp, argv[opt++]);
 	 else
 	    strcpy(time_stamp, DEF_TMEND);
-	 decode_time_stamp(time_stamp, &tm_end);
+	 if (decode_time_stamp(time_stamp, &tm_end))
+	    usage(argv[0]);
       }
 
       else if (!strcmp(argv[opt], "-i")) {
@@ -3005,6 +3013,8 @@ int main(int argc, char **argv)
 	       sar_actflag |= A_NET_DEV + A_NET_EDEV + A_NET_SOCK;
 	       dis_hdr = 9;
 	    }
+	    else
+	       usage(argv[0]);
 	    opt++;
 	 }
 	 else

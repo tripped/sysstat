@@ -1,5 +1,17 @@
 Changes:
 
+2004/06/08: Version 5.0.5 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* Timestamp is no longer limited to 11 characters. This should
+	  avoid problems with somes locales (for example Japanese locale,
+	  where 'mojibake' used to be displayed by sar and mpstat sometimes).
+	* Fixed a bug in sysstat RPM spec file (symlinks to sysstat
+	  script were wrong in /etc/rc.d directories).
+	* sar now checks parameters for options -n, -s and -e more
+	  aggressively.
+	* NLS updated: Japanese translation added.
+	* Various typos fixed in several files (manual pages, README, etc.)
+	* CREDITS file updated.
+
 2004/05/20: Version 5.0.4 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* When trying to lock file, sadc now checks for both EWOULDBLOCK
 	  and EAGAIN error codes to be portable.
@@ -137,7 +149,7 @@ Changes:
 	* The processor number to which the process is attached was no
 	  longer displayed by sar -x. Make it appear again.
 	* CPU usage for processes, as displayed by sar -x and sar -X, should
-	  now be correct on machines where HZ <> 100 (eg IA64 architecture).
+	  now be correct on machines where HZ <> 100 (e.g. IA64 architecture).
 	* iostat still assumed that jiffies were 100ths of a second in some
 	  places. Now use Linux HZ definition *everywhere*.
 	* The average I/O requests queue length as displayed by iostat -x was
@@ -258,11 +270,11 @@ Changes:
 	  problems. As a consequence, mpstat should now work on PowerMac
 	  architectures.
 	* CPU activity as displayed by mpstat -P for a given processor was
-	  in a wrong range on SMP machines (eg. 0-50% for a dual processor
+	  in a wrong range on SMP machines (e.g. 0-50% for a dual processor
 	  box).
 	* Missing bitmap initialization fixed in mpstat.c.
 	* Configuration script updated.
-	* FAQ upated.
+	* FAQ updated.
 
 2002/05/12: Version 4.0.5 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	* Average wait times and service times as displayed by iostat -x
@@ -305,14 +317,14 @@ Changes:
 
 2001/09/22: Version 4.0.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	* CPU usage, as displayed by iostat, mpstat and sar, should now
-	  be OK on machines where HZ <> 100 (eg IA64 architecture).
+	  be OK on machines where HZ <> 100 (e.g. IA64 architecture).
 	* MAX_PART constant set to 256 in iostat.h.
 	* "-H" database friendly option added to sar.
 	* Better disks and network interfaces management (both may be
 	  registered dynamically).
 	* Made options "-s" and "-e" work when option "-h" is used.
 	* isag upgraded to version 1.17.
-	* isag installation is now optionnal and can be chosen at config stage.
+	* isag installation is now optional and can be chosen at config stage.
 	* Now try to install man pages in ${PREFIX}/share/man instead of
 	  ${PREFIX}/man.
 	* sa2 shell script updated.

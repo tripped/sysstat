@@ -27,6 +27,8 @@ The following people have contributed to 'sysstat' in one way or another:
 	    Polish.
 	  * Miroslav David <md20128 [at] decef.elf.stuba.sk> for the slovak
 	    translation.
+	  * Hideki Yamane <henrich [at] samba.gr.jp> for the translation into
+	    Japanese.
 
 	Carl-Christian Weber <ccweber [at] itz-koeln.de> helped me to make sar
 	work on SMP machines.
@@ -81,48 +83,49 @@ The following people have contributed to 'sysstat' in one way or another:
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
-	Des Atkinson <Des.Atkinson [at] metron.co.uk>
-	Pascal Bleser <pbleser [at] atos-group.com>
-	Jason Burnett <jason [at] jnj.org>
-	Mark J. Cox <mjc [at] redhat.com>
-	Nicolas Denis <denisn [at] wanadoo.fr>
-	Andrew Donkin <ard [at] waikato.ac.nz>
-	Greg Edwards <edwardsg [at] sgi.com>
-	Chris Evans <chris [at] scary.beasts.org>
-	Damien (JN) FAURE <damien-jn.faure [at] bull.net>	
-	David Gesswein <djg [at] drs-esg.com>
-	Tatsuo Ito <tito [at] miraclelinux.com>
-	David S. Jackson <dsj [at] sylvester.dsj.net>
-	Erik Jacobson <erikj [at] subway.americas.sgi.com>	
-	Jordan <ledzep37 [at] home.com>	
-	Jurriaan <thunder7 [at] xs4all.nl>
-	Byeong-taek Lee <btlee [at] psych.snu.ac.kr>
-	Ivo Letzas <letzas [at] format.mine.nu>	
-	Robert Luberda <robert [at] debian.org>
-	Robert Macaulay <Robert_Macaulay [at] Dell.com>
-	Alan Matsuoka <alanm [at] redhat.com>
-	Rodney J. Mertz <rjm [at] elvis.arh.ms.cdc.com>
-	Roy Millar <100044.14 [at] compuserve.com>
-	David J. Morse <David_J_Morse [at] Dell.com>
-	Hariprasad Nellitheertha <hari [at] in.ibm.com>
-	Edouard G. Parmelan <edouard.parmelan [at] quadratec.fr>
-	Oliver Paukstadt <oliver.paukstadt [at] millenux.com>	
-	Plattner(?) <Plattner.external [at] infineon.com>
-	ReDragon <redragon [at] vnsecurity.net>
-	Paul Rivoli <paul [at] kbs.net.au>
-	Joseph E. Sacco <jsacco [at] earthlink.net>
-	Danilo Sartori <d.sartori [at] resi.it>
-	Tan Shao Yi <tansy [at] tansy.org>
-	Michel Simoni <m_simoni [at] club-internet.fr>
-	Rod Skinner <rod.skinner [at] intel.com>	
-	Graham Swallow <gps [at] trix.dircon.co.uk>
-	Mike Sweger <mikesw [at] whiterose.net>
-	Don Totten <dontotten [at] ibm.net>
-	Stephen Tweedie <sct [at] redhat.com>
-	Yongjun Wei <yjwei [at] nanjing-fnst.com>
-	Holger Wolf <Holger.Wolf [at] de.ibm.com>
-        Urban Widmark <urban [at] svenskatest.se>
-	Peter Zaitsev <pz [at] spylog.ru>
+	Des Atkinson <Des.Atkinson@met[...].uk>
+	Pascal Bleser <pbleser@ato[...].com>
+	Jason Burnett <jason@jnj[...].org>
+	Mark J. Cox <mjc@red[...].com>
+	Nicolas Denis <denisn@wan[...].fr>
+	Andrew Donkin <ard@wai[...].nz>
+	Greg Edwards <edwardsg@sgi[...].com>
+	Chris Evans <chris@sca[...].org>
+	Damien (JN) FAURE <damien-jn.faure@bul[...].net>
+	David Gesswein <djg@drs[...].com>
+	Tatsuo Ito <tito@mir[...].com>
+	David S. Jackson <dsj@syl[...].net>
+	Erik Jacobson <erikj@sub[...].com>	
+	Jordan <ledzep37@hom[...].com>	
+	Jurriaan <thunder7@xs4[...].nl>
+	Byeong-taek Lee <btlee@psy[...].kr>
+	Ivo Letzas <letzas@for[...].nu>	
+	Robert Luberda <robert@deb[...].org>
+	Neculai Macarie <macarie.neculai@nex[...].com>
+	Robert Macaulay <Robert_Macaulay@Del[...].com>
+	Alan Matsuoka <alanm@red[...].com>
+	Rodney J. Mertz <rjm@elv[...].com>
+	Roy Millar <100044.14@com[...].com>
+	David J. Morse <David_J_Morse@Del[...].com>
+	Hariprasad Nellitheertha <hari@in.[...].com>
+	Edouard G. Parmelan <edouard.parmelan@qua[...].fr>
+	Oliver Paukstadt <oliver.paukstadt@mil[...].com>	
+	Plattner(?) <Plattner.external@inf[...].com>
+	ReDragon <redragon@vns[...].net>
+	Paul Rivoli <paul@kbs[...].au>
+	Joseph E. Sacco <jsacco@ear[...].net>
+	Danilo Sartori <d.sartori@res[...].it>
+	Tan Shao Yi <tansy@tan[...].org>
+	Michel Simoni <m_simoni@clu[...].fr>
+	Rod Skinner <rod.skinner@int[...].com>	
+	Graham Swallow <gps@tri[...].uk>
+	Mike Sweger <mikesw@whi[...].net>
+	Don Totten <dontotten@ibm[...].net>
+	Stephen Tweedie <sct@red[...].com>
+	Yongjun Wei <yjwei@nan[...].com>
+	Holger Wolf <Holger.Wolf@de.[...].com>
+	Urban Widmark <urban@sve[...].se>
+	Peter Zaitsev <pz@spy[...].ru>
 
 --	
 Sebastien Godard (sysstat <at> wanadoo.fr) is the author and the current

@@ -2,7 +2,7 @@
 # (C) 1999-2004 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 5.0.4
+VERSION = 5.0.5
 
 include build/CONFIG
 
@@ -127,7 +127,7 @@ mpstat: mpstat.c mpstat.h common.h version.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $< $(LFLAGS)
 
 ifdef REQUIRE_NLS
-locales: nls/fr/$(PACKAGE).mo nls/de/$(PACKAGE).mo nls/es/$(PACKAGE).mo nls/pt/$(PACKAGE).mo nls/af/$(PACKAGE).mo nls/nb_NO/$(PACKAGE).mo nls/nn_NO/$(PACKAGE).mo nls/it/$(PACKAGE).mo nls/ru/$(PACKAGE).mo nls/ro/$(PACKAGE).mo nls/pl/$(PACKAGE).mo nls/sk/$(PACKAGE).mo
+locales: nls/fr/$(PACKAGE).mo nls/de/$(PACKAGE).mo nls/es/$(PACKAGE).mo nls/pt/$(PACKAGE).mo nls/af/$(PACKAGE).mo nls/nb_NO/$(PACKAGE).mo nls/nn_NO/$(PACKAGE).mo nls/it/$(PACKAGE).mo nls/ru/$(PACKAGE).mo nls/ro/$(PACKAGE).mo nls/pl/$(PACKAGE).mo nls/sk/$(PACKAGE).mo nls/ja/$(PACKAGE).mo
 else
 locales:
 endif
@@ -168,6 +168,9 @@ nls/pl/$(PACKAGE).mo: nls/pl/$(PACKAGE).po
 nls/sk/$(PACKAGE).mo: nls/sk/$(PACKAGE).po
 	$(MSGFMT) -o nls/sk/$(PACKAGE).mo nls/sk/$(PACKAGE).po
 
+nls/ja/$(PACKAGE).mo: nls/ja/$(PACKAGE).po
+	$(MSGFMT) -o nls/ja/$(PACKAGE).mo nls/ja/$(PACKAGE).po
+
 # Phony targets
 .PHONY: clean distclean config install install_base install_all uninstall uninstall_base uninstall_all dist squeeze
 
@@ -198,6 +201,7 @@ uninstall_base:
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/ro/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/pl/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/sk/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/ja/LC_MESSAGES/$(PACKAGE).mo
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES
@@ -210,6 +214,7 @@ uninstall_base:
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ro/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/pl/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sk/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ja/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es
@@ -222,6 +227,7 @@ uninstall_base:
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ro
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/pl
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sk
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ja
 	rm -f $(DESTDIR)$(DOC_DIR)/*
 	-rmdir $(DESTDIR)$(DOC_DIR)
 	@echo "Please ignore the errors above, if any."
@@ -277,6 +283,7 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES
 	install -m 644 nls/fr/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES
 	install -m 644 nls/de/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES
 	install -m 644 nls/es/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
@@ -289,6 +296,7 @@ ifdef REQUIRE_NLS
 	install -m 644 nls/ro/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES
 	install -m 644 nls/pl/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES
 	install -m 644 nls/sk/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES
+	install -m 644 nls/ja/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES
 endif
 
 # NB: Leading minus sign tells make to ignore errors...

@@ -243,7 +243,7 @@ void write_stats_avg(short curr, short dis)
  */
 void write_stats(short curr, short dis, struct tm *loc_time)
 {
-   char cur_time[2][14];
+   char cur_time[2][16];
 
    /*
     * Get previous timestamp
@@ -252,16 +252,13 @@ void write_stats(short curr, short dis, struct tm *loc_time)
    loc_time->tm_hour = st_mp_tstamp[!curr].hour;
    loc_time->tm_min  = st_mp_tstamp[!curr].minute;
    loc_time->tm_sec  = st_mp_tstamp[!curr].second;
-   strftime(cur_time[!curr], 14, "%X  ", loc_time);
+   strftime(cur_time[!curr], 16, "%X", loc_time);
 
    /* Get current timestamp */
    loc_time->tm_hour = st_mp_tstamp[curr].hour;
    loc_time->tm_min  = st_mp_tstamp[curr].minute;
    loc_time->tm_sec  = st_mp_tstamp[curr].second;
-   strftime(cur_time[curr], 14, "%X  ", loc_time);
-
-   /* Only the first 11 characters are printed */
-   cur_time[curr][11] = cur_time[!curr][11] = '\0';
+   strftime(cur_time[curr], 16, "%X", loc_time);
 
    write_stats_core(!curr, curr, dis, cur_time[!curr], cur_time[curr]);
 }

@@ -43,7 +43,11 @@
 
 #define UTSNAME_LEN	65
 
-/* Size of a long int: 8 bytes because of 64-bit systems */
+/*
+ * Size of a long int: 8 bytes. We will always reserve 8 bytes for a long int
+ * using aligned(8) attributes, because they are actually 8-byte long on
+ * 64-bit systems.
+ */
 #define SIZEOF_LONG	8
 
 #define NR_DISKS	4

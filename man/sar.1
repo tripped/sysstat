@@ -250,6 +250,9 @@ the hostname of the host where sar was run, the interval value
 (or -1 if not applicable), the sar timestamp in a form easily acceptable by
 most databases, and additional semicolon separated data fields as specified
 by other sar command line options.
+Note that the timestamp is displayed in UTC (Coordinated Universal Time)
+unless option -t is used. In this latter case, the timestamp is displayed
+in local time.
 .IP "-i interval"
 Select data records at seconds as close as possible to the number specified
 by the
@@ -540,6 +543,9 @@ should display the timestamps in the original locale time of
 the data file creator. Without this option, the
 .B sar
 command displays the timestamps in the user locale time.
+When this option is used together with option -H, the timestamp
+is displayed in local time instead of UTC (Coordinated Universal Time).
+This option is ignored when option -h is used.
 .IP -u
 Report CPU utilization. The following values are displayed:
 

@@ -19,7 +19,7 @@ INSTALLATION
 ------------
 
 The sysstat utilities are a collection of performance monitoring tools for
-Linux. These include mpstat, iostat, sar, isag and sa tools. 
+Linux. These include mpstat, iostat, sar and sa tools. 
 
 The first stage is to configure sysstat for your system:
 
@@ -41,12 +41,13 @@ Then log in as root and enter:
 
 	make install
 
-(see next section to know the installed files).
+(see next section to know the files that are installed).
 That's all!
 
 Of course tell me if there are any problems. This is the only way I can improve
 'sysstat'. But if you wanna raise my morale, you can also send me reports of
 successful use instead of bug reports ;-)
+Please also remember to read the FAQ included in this package.
 
 NB: The iostat command has been updated to take advantage of Stephen Tweedie's
 kernel patch to display extended I/O statistics (option '-x' for iostat).
@@ -60,8 +61,6 @@ to see if it is there...
 
 With regard to sysstat, patches and suggestions for improvements are always
 welcome! Send them to <sebastien.godard@wanadoo.fr>.
-Bugs and questions concerning the "isag" command should be sent to David
-Doubrava <linux_monitor@volny.cz>.
 
 
 FILES THAT ARE INSTALLED
@@ -80,14 +79,12 @@ ${PREFIX}/lib/sa/sa2
 ${PREFIX}/bin/sar
 ${PREFIX}/bin/iostat
 ${PREFIX}/bin/mpstat
-${PREFIX}/bin/isag
 ${PREFIX}(/share)/man/man8/sadc.8
 ${PREFIX}(/share)/man/man8/sa1.8
 ${PREFIX}(/share)/man/man8/sa2.8
 ${PREFIX}(/share)/man/man1/sar.1
 ${PREFIX}(/share)/man/man1/iostat.1
 ${PREFIX}(/share)/man/man1/mpstat.1
-${PREFIX}(/share)/man/man1/isag.1
 ${PREFIX}/share/locale/fr/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/de/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/es/LC_MESSAGES/sysstat.mo
@@ -97,7 +94,7 @@ ${PREFIX}/share/locale/nb_NO/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/nn_NO/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/it/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/ru/LC_MESSAGES/sysstat.mo
-${PREFIX}/doc/sysstat-x.y/*
+${PREFIX}/doc/sysstat-x.y.z/*
 /var/log/sa
 ${INIT_DIR}/sysstat
 ${RC_DIR}/rc2.d/S03sysstat

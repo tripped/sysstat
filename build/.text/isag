@@ -1,8 +1,0 @@
-
-isag is a command that enables you to plot data stored in a daily data file
-by a previous sar run.
-isag needs a recent version of Tcl/Tk installed, together with the
-gnuplot plotting program.
-Answer y if you are running X (using the GNOME or KDE interface) and you
-want to install the isag command on your system.
-

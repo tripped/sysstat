@@ -2,7 +2,7 @@
 # (C) 1999-2002 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 4.0.4
+VERSION = 4.0.5
 
 include build/CONFIG
 
@@ -71,7 +71,7 @@ ifndef INITD_DIR
 INITD_DIR = init.d
 endif
 
-all: sadc sa1 sa2 crontab sysstat sar iostat mpstat isag/isag locales
+all: sadc sa1 sa2 crontab sysstat sar iostat mpstat locales
 
 common.o: common.c common.h
 	$(CC) -c -o $@ $(CFLAGS) $(DFLAGS) $<
@@ -120,12 +120,6 @@ iostat: iostat.c iostat.h common.h version.h libsysstat.a
 mpstat: mpstat.c mpstat.h common.h version.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $< $(LFLAGS)
 
-isag/isag: isag/isag.in
-ifeq ($(WANT_ISAG),y)
-	$(SED) -e s+SA_DIR+$(SA_DIR)+g -e s+PREFIX+$(PREFIX)+g $< > $@
-	$(CHMOD) 755 $@
-endif
-
 locales: nls/fr/$(PACKAGE).po nls/de/$(PACKAGE).po nls/es/$(PACKAGE).po nls/pt/$(PACKAGE).po nls/af/$(PACKAGE).po nls/nb_NO/$(PACKAGE).po nls/nn_NO/$(PACKAGE).po nls/it/$(PACKAGE).po nls/ru/$(PACKAGE).po
 ifdef REQUIRE_NLS
 	$(MSGFMT) -o nls/fr/$(PACKAGE).mo nls/fr/$(PACKAGE).po
@@ -155,8 +149,6 @@ uninstall_base:
 	rm -f $(DESTDIR)$(MAN1_DIR)/iostat.1
 	rm -f $(DESTDIR)$(BIN_DIR)/mpstat
 	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1
-	rm -f $(DESTDIR)$(BIN_DIR)/isag
-	rm -f $(DESTDIR)$(MAN1_DIR)/isag.1
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(LIB_DIR)/sa
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES/$(PACKAGE).mo
@@ -186,8 +178,8 @@ uninstall_base:
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nn_NO
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/it
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ru
-	rm -f $(DESTDIR)$(PREFIX)/doc/sysstat-$(VERSION)/*
-	-rmdir $(DESTDIR)$(PREFIX)/doc/sysstat-$(VERSION)
+	rm -f $(DESTDIR)$(DOC_DIR)/*
+	-rmdir $(DESTDIR)$(DOC_DIR)
 	@echo "Please ignore the errors above, if any."
 
 uninstall_all: uninstall_base
@@ -200,7 +192,7 @@ uninstall_all: uninstall_base
 	rm -f $(DESTDIR)$(RC3_DIR)/S03sysstat
 	rm -f $(DESTDIR)$(RC5_DIR)/S03sysstat
 
-install_base: all man/sadc.8 man/sar.1 man/sa1.8 man/sa2.8 man/iostat.1 isag/isag.1
+install_base: all man/sadc.8 man/sar.1 man/sa1.8 man/sa2.8 man/iostat.1
 	mkdir -p $(DESTDIR)$(LIB_DIR)/sa
 	mkdir -p $(DESTDIR)$(MAN1_DIR)
 	mkdir -p $(DESTDIR)$(MAN8_DIR)
@@ -287,7 +279,7 @@ endif
 
 clean:
 	rm -f sadc sa1 sa2 sysstat sar iostat mpstat *.o *.a core TAGS data crontab
-	rm -f sapath.h isag/isag
+	rm -f sapath.h
 	find nls -name "*.mo" -exec rm -f {} \;
 
 distclean: clean

@@ -331,3 +331,19 @@ Changes:
 	* Added a FAQ.
 	* NLS updated: Russian translation added.
 
+2002/05/12: Version 4.0.5 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Average wait times and service times as displayed by iostat -x
+	  were wrong by a factor of 10. This is now fixed.
+	* Linux RESTART messages must now be in the interval specified by
+	  -s/-e options to be displayed by sar.
+	* Fixed a small bug that affected the timestamp for RESTART messages
+	  displayed by sar -h when option -t was used.
+	* sar -H now displays its data in local time instead of UTC when
+	  option -t is used.
+	* sargon shell script added.
+	* Created a contrib directory, including sargon and isag commands.
+	* NLS updated.
+	* FAQ updated.
+	* Makefile updated.
+	* sar manual page updated.
+

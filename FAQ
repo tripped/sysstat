@@ -1,5 +1,5 @@
 This is sysstat's Frequently Asked Questions!
-Be sure to read this carefully before calling for help...
+Be sure to read this carefully before asking for help...
 
 #################
 
@@ -27,6 +27,26 @@ previous version of sar.
 The solution is easy: just log in as root and remove by hand the files
 located in the /var/log/sysstat directory:
 # rm /var/log/sysstat/sa??
+
+#################
+
+Q> I get the following error message when I try to run sar:
+
+$ sar
+Cannot open /var/log/sa/sa30: No such file or directory
+
+A> Please read sar(1) manual page! Daily data files are created in the
+/var/log/sa directory using the data collector (sadc) or using option
+-o with sar. Once they are created, sar can display statistics saved
+in those files.
+But sar can also display statistics collected "on the fly": just enter
+the proper option on the command line to indicate which statistics are
+to be displayed, and also specify an <interval> and <count> number.
+Eg:
+# sar 2 5  --> will report CPU utilization for each two seconds five
+times.
+# sar -n DEV 3 0  --> will report network device utilization for each
+3 seconds, in an infinite loop.
 
 #################
 
@@ -80,6 +100,26 @@ database.
 
 #################
 
+Q> When I try to compile sysstat, it fails and says it cannot find some
+include files:
+In file included from /usr/include/bits/errno.h:25,
+                 from /usr/include/errno.h:36,
+                 from common.c:26:
+/usr/include/linux/errno.h:4: asm/errno.h: No such file or directory
+<SNIP>
+common.c: In function `get_kb_shift':
+common.c:180: `PAGE_SIZE' undeclared (first use in this function)
+common.c:178: warning: `size' might be used uninitialized in this function
+make: *** [common.o] Error 1
+
+A> Make sure that you have the Linux kernel sources installed in
+/usr/src/linux. Also make sure that the symbolic link exists in the
+/usr/src/linux/include directory and points to the right architecture, e.g.:
+# ll /usr/src/linux/include/asm
+lrwxrwxrwx   1 root     root            8 May  5 18:31 /usr/src/linux/include/asm -> asm-i386
+
+#################
+
 Q> I cannot see all my disks when I use the iostat command...
 
 A> Yes. This is a kernel limit. At the present time Linux doesn't maintain
@@ -103,16 +143,16 @@ Note that some distros have this patch already applied.
 
 #################
 
-Q> I don't understand the output of iostat. It doesn't match what I expect it to be...
+Q> I don't understand the output of iostat. It doesn't match what I expect it
+to be...
 
-A> By default iostat displays I/O activity in blocks per second. With old kernels (i.e. 
-older than 2.4.x) a block is of indeterminate size and therefore the displayed values
-are not useful.
-With recent kernels (kernels 2.4 and later), iostat is now able to get disk activities
-from the kernel expressed in a number of sectors. If you take a look at the kernel code,
-the sector size is actually allowed to vary although I have never seen anything other than
-512 bytes.
-
+A> By default iostat displays I/O activity in blocks per second. With old
+kernels (i.e. older than 2.4.x) a block is of indeterminate size and therefore
+the displayed values are not useful.
+With recent kernels (kernels 2.4 and later), iostat is now able to get disk
+activities from the kernel expressed in a number of sectors. If you take a
+look at the kernel code, the sector size is actually allowed to vary although
+I have never seen anything other than 512 bytes.
 
 --	
 Sebastien Godard <sebastien.godard@wanadoo.fr> is the author and the current

@@ -217,9 +217,9 @@ set graph_ht	400
 #eof: variables.m4
 
 # specific paths and programs
-set sar_data_path "SA_DIR"
+set sar_data_path "/var/log/sysstat"
 set sar_data_mask "sa\[0-9\]\[0-9\]"
-set sar "PREFIX/bin/sar.sysstat"
+set sar "/usr/bin/sar.sysstat"
 #set sar "/home/sarrep/source/sysstat-3.3.6/sar"
 
 #fix: bug2001060501; set LC_ALL to sane value; see Debian bug #101545 

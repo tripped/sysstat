@@ -15,7 +15,7 @@ mv usr/lib/sa/* usr/lib/sysstat
 rmdir usr/lib/sa
 rm -rf usr/doc
 
-for file in usr/lib/sysstat/sa[12] usr/share/man/man*/*; do
+for file in usr/lib/sysstat/sa[12] usr/share/man/man*/* usr/share/doc/sysstat/FAQ; do
  if grep -q 'l[oi][gb]/sa' "$file" >/dev/null 2>&1 ; then
 	mv "$file" _tmp_
 	sed -e 's|usr/lib/sa|usr/lib/sysstat|' \

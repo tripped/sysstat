@@ -1,3 +1,10 @@
+sysstat (4.0.6-2) unstable; urgency=low
+
+  * Standards-Version: 3.5.7
+  * Support DEB_BUILD_OPTIONS=noopt instead of debug.
+
+ -- Robert Luberda <robert@debian.org>  Thu, 24 Oct 2002 07:56:55 +0200
+
 sysstat (4.0.6-1) unstable; urgency=low
 
   * New upstream version.

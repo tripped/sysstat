@@ -33,12 +33,14 @@ DOC_DIR = $(PREFIX)/doc/sysstat-$(VERSION)
 NLS_DIR = $(PREFIX)/share/locale
 
 # Compiler flags
-CFLAGS = -Wall -Wstrict-prototypes -pipe -O2 -fno-strength-reduce
+CFLAGS = -Wall -Wstrict-prototypes -pipe -g -fno-strength-reduce
 LFLAGS = -L. -lsysstat 
 SAS_DFLAGS += -DSA_DIR=\"$(SA_DIR)\"
 
-ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
-  CFLAGS += -g
+ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+  CFLAGS += -O0
+else
+  CFLAGS += -O2
 endif
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
   LFLAGS += -s

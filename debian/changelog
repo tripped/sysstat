@@ -1,3 +1,11 @@
+sysstat (3.3.5-1) unstable; urgency=low
+
+  * UNRELEASED
+  * New upstream version.
+  * todo: standards 3.5.0; build-depends: debconf-utils; isag newpack
+
+ -- Robert Luberda <robert@debian.org>  Tue, 13 Feb 2001 18:37:45 +0100
+
 sysstat (3.3.4-2) unstable; urgency=low
 
   * Added German translation of debconf templates (closes: #84843).

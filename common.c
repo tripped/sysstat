@@ -1,6 +1,6 @@
 /*
  * sar, sadc and iostat common routines.
- * (C) 1999,2000 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2001 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -129,10 +129,8 @@ inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, 
 /*
  * Init National Language Support
  */
-void init_nls(char *dp)
+void init_nls(void)
 {
-   struct lconv *lc;
-
 
    setlocale(LC_MESSAGES, "");
    setlocale(LC_TIME, "");
@@ -140,10 +138,6 @@ void init_nls(char *dp)
 
    bindtextdomain(PACKAGE, LOCALEDIR);
    textdomain(PACKAGE);
-
-   /* Get decimal point */
-   lc = localeconv();
-   *dp = *(lc->decimal_point);
 }
 #endif
 
@@ -161,4 +155,19 @@ int get_win_height(void)
       rows = win.ws_row - 2;
 
    return rows;
+}
+
+
+/*
+ * Strip directory from file name
+ */
+char *base_name(char *name)
+{
+   int i = strlen(name);
+
+
+   while (i-- > 0 && *(name + i) != '/')
+      /* nothing */;
+
+   return name + i + 1;
 }

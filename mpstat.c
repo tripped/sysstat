@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <sys/utsname.h>
+#include <sys/param.h>	/* for HZ */
 
 #include "version.h"
 #include "mpstat.h"
@@ -50,7 +51,6 @@ int proc_used = -1;  /* Nb of processors on the machine. A value of 1 means two 
 long interval = 0, count = 0;
 unsigned int flags = 0;
 struct tm loc_time;
-char dp = '.';	/* Decimal point */
 
 
 /*
@@ -61,7 +61,10 @@ void usage(char *progname)
 
    fprintf(stderr, _("sysstat version %s\n"
 		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-	           "Usage: %s [ -P { <cpu> | ALL } ] [ -V ] [ <interval> [ <count> ] ]\n"),
+	           "Usage: %s [ options... ]\n"
+		   "Options are:\n"
+		   "[ -P { <cpu> | ALL } ] [ -V ]\n"
+		   "[ <interval> [ <count> ] ]\n"),
 	   VERSION, progname);
    exit(1);
 }
@@ -107,7 +110,6 @@ void salloc_mp_cpu(int nr_cpus)
 void write_stats_avg(short curr, short dis)
 {
    struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
-   unsigned long udec_part, ndec_part, sdec_part;
    unsigned long itv;
    int cpu;
 
@@ -136,22 +138,16 @@ void write_stats_avg(short curr, short dis)
       st_mp_cpu_i = st_mp_cpu[curr]  + cpu;
       st_mp_cpu_j = st_mp_cpu[2] + cpu;
 
-      udec_part = DEC_PART(st_mp_cpu_i->cpu_user,   st_mp_cpu_j->cpu_user,   itv);
-      ndec_part = DEC_PART(st_mp_cpu_i->cpu_nice,   st_mp_cpu_j->cpu_nice,   itv);
-      sdec_part = DEC_PART(st_mp_cpu_i->cpu_system, st_mp_cpu_j->cpu_system, itv);
-
-      printf("  %3lu%c%02lu  %3lu%c%02lu  %3lu%c%02lu",
-	     INT_PART(st_mp_cpu_i->cpu_user,   st_mp_cpu_j->cpu_user,   itv), dp, udec_part,
-	     INT_PART(st_mp_cpu_i->cpu_nice,   st_mp_cpu_j->cpu_nice,   itv), dp, ndec_part,
-	     INT_PART(st_mp_cpu_i->cpu_system, st_mp_cpu_j->cpu_system, itv), dp, sdec_part);
+      printf("  %6.2f  %6.2f  %6.2f",
+	     ((double) ((st_mp_cpu_i->cpu_user   - st_mp_cpu_j->cpu_user)   * HZ)) / itv,
+	     ((double) ((st_mp_cpu_i->cpu_nice   - st_mp_cpu_j->cpu_nice)   * HZ)) / itv,
+	     ((double) ((st_mp_cpu_i->cpu_system - st_mp_cpu_j->cpu_system) * HZ)) / itv);
 
       if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	 printf("    0%c%02lu", dp, (300 - (udec_part + ndec_part + sdec_part)) % 100);
+	 printf("    %.2f", 0.0);
       else
-	 printf("  %3lu%c%02lu",
-		INT_PART(st_mp_cpu_i->cpu_idle, st_mp_cpu_j->cpu_idle, itv), dp,
-		/* Correct rounding error */
-		(300 - (udec_part + ndec_part + sdec_part)) % 100);
+	 printf("  %6.2f",
+		((double) ((st_mp_cpu_i->cpu_idle - st_mp_cpu_j->cpu_idle) * HZ)) / itv);
 
       if (!cpu) {
 	 itv /= (proc_used + 1);
@@ -159,9 +155,8 @@ void write_stats_avg(short curr, short dis)
 	    itv = 1;
       }
 
-      printf(" %6lu%c%02lu\n",
-	     INT_PART(st_mp_cpu[curr]->irq, st_mp_cpu[2]->irq, itv), dp,
-	     DEC_PART(st_mp_cpu[curr]->irq, st_mp_cpu[2]->irq, itv));
+      printf(" %9.2f\n",
+	     ((double) ((st_mp_cpu[curr]->irq - st_mp_cpu[2]->irq) * HZ)) / itv);
    }
 }
 
@@ -173,7 +168,6 @@ void write_stats(short curr, short dis)
 {
    char cur_time[2][14];
    struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
-   unsigned long udec_part, ndec_part, sdec_part;
    unsigned long itv;
    int cpu;
 
@@ -220,22 +214,16 @@ void write_stats(short curr, short dis)
       st_mp_cpu_i = st_mp_cpu[curr]  + cpu;
       st_mp_cpu_j = st_mp_cpu[!curr] + cpu;
 
-      udec_part = DEC_PART(st_mp_cpu_i->cpu_user,   st_mp_cpu_j->cpu_user,   itv);
-      ndec_part = DEC_PART(st_mp_cpu_i->cpu_nice,   st_mp_cpu_j->cpu_nice,   itv);
-      sdec_part = DEC_PART(st_mp_cpu_i->cpu_system, st_mp_cpu_j->cpu_system, itv);
-
-      printf("  %3lu%c%02lu  %3lu%c%02lu  %3lu%c%02lu",
-	     INT_PART(st_mp_cpu_i->cpu_user,   st_mp_cpu_j->cpu_user,   itv), dp, udec_part,
-	     INT_PART(st_mp_cpu_i->cpu_nice,   st_mp_cpu_j->cpu_nice,   itv), dp, ndec_part,
-	     INT_PART(st_mp_cpu_i->cpu_system, st_mp_cpu_j->cpu_system, itv), dp, sdec_part);
+      printf("  %6.2f  %6.2f  %6.2f",
+	     ((double) ((st_mp_cpu_i->cpu_user   - st_mp_cpu_j->cpu_user)   * HZ)) / itv,
+	     ((double) ((st_mp_cpu_i->cpu_nice   - st_mp_cpu_j->cpu_nice)   * HZ)) / itv,
+	     ((double) ((st_mp_cpu_i->cpu_system - st_mp_cpu_j->cpu_system) * HZ)) / itv);
 
       if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)	/* Handle buggy RTC (or kernels?) */
-	 printf("    0%c%02lu", dp, (300 - (udec_part + ndec_part + sdec_part)) % 100);
+	 printf("    %.2f", 0.0);
       else
-	 printf("  %3lu%c%02lu",
-		INT_PART(st_mp_cpu_i->cpu_idle, st_mp_cpu_j->cpu_idle, itv), dp,
-		/* Correct rounding error */
-		(300 - (udec_part + ndec_part + sdec_part)) % 100);
+	 printf("  %6.2f",
+		((double) ((st_mp_cpu_i->cpu_idle - st_mp_cpu_j->cpu_idle) * HZ)) / itv);
 
       if (!cpu) {
 	 itv /= (proc_used + 1);
@@ -243,9 +231,8 @@ void write_stats(short curr, short dis)
 	    itv = 1;
       }
 
-      printf(" %6lu%c%02lu\n",
-	     INT_PART(st_mp_cpu[curr]->irq, st_mp_cpu[!curr]->irq, itv), dp,
-	     DEC_PART(st_mp_cpu[curr]->irq, st_mp_cpu[!curr]->irq, itv));
+      printf(" %9.2f\n",
+	     ((double) ((st_mp_cpu[curr]->irq - st_mp_cpu[!curr]->irq) * HZ)) / itv);
    }
 }
 
@@ -282,7 +269,7 @@ void read_proc_stat(short curr)
 		&(st_mp_cpu[curr]->cpu_system), &(st_mp_cpu[curr]->cpu_idle));
 
 	 /*
-	  * Compute the uptime of the system in jiffies (1/100ths of a second).
+	  * Compute the uptime of the system in jiffies (1/100ths of a second if HZ=100).
 	  * Machine uptime is multiplied by the number of processors here.
 	  */
 	 st_mp_tstamp[curr].uptime = st_mp_cpu[curr]->cpu_user   + st_mp_cpu[curr]->cpu_nice +
@@ -365,7 +352,7 @@ int main(int argc, char **argv)
 
 #ifdef USE_NLS
    /* Init National Language Support */
-   init_nls(&dp);
+   init_nls();
 #endif
 
    /* How many processors on this machine ? */

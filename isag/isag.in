@@ -1,0 +1,867 @@
+#!/bin/sh
+# the next line restarts using wish and correctly pass the arguments to this\
+exec wish "$0" -- "$@"
+
+###############################################################################
+#
+# $Id: isag.m4,v 1.10 2001/02/03 11:02:17 isag Exp $
+#
+# Author:		linux_monitor@volny.cz
+# Maintained-by:	linux_monitor@volny.cz
+# Primary-site:		http://www.volny.cz:/linux_monitor/isag
+# Copying-policy:	GPL
+#
+# $Log: isag.m4,v $
+# Revision 1.10  2001/02/03 11:02:17  isag
+# removed many same (for family) parts to different files.
+# improved generationg of cmd array.
+#
+# Revision 1.9  2001/01/27 19:28:43  root
+# added secondary Y axes functionality
+# added -c cfg_file cmdln option
+# writting of selected config data to cfg_file
+# renamed chart lines to names used in sar
+# parametrized creating of cmd() array
+# added generic var __M4_TIMELEN__ for proc_line_generic
+#
+# Revision 1.8  2001/01/20 19:02:53  root
+# added version check due to bug.2312200001
+# added secondary Y label
+#
+# Revision 1.7  2000/12/30 18:35:06  root
+# split into few parts. main idea next extensibility for other platforms
+#
+# Revision 1.6  2000/12/30 11:30:20  root
+# command line argument(s) functionality was added
+# preparation for config file was done
+# and few small changes
+#
+# Revision 1.5  2000/12/23 21:22:10  root
+# fixed situation if LINUX RESTART is in data file
+# fixed if no more than one line in data file.
+# try to fix wrong graph size after resizing appl. window
+#
+# Revision 1.4  2000/12/23 20:48:31  root
+# function rescale_graph was renamed to redraw_graph
+# and one menu item was added.
+#
+# Revision 1.3  2000/12/16 13:37:12  root
+# resize window related functions
+#
+# Revision 1.2  2000/12/11 18:54:17  root
+# behavior will be parametrized
+#
+# Revision 1.1  2000/12/11 15:01:07  root
+# Initial revision
+#
+#
+###############################################################################
+set ident "/usr/bin/ident"
+set version ""
+set ver_patchlevel "1"
+if {[catch {set fp [open "| $ident $argv0" "r"]}] == 0} {
+	set n 0
+	while {[gets $fp line] != -1} {
+		if {$n != 0} {
+			set version "$version\n[string trim $line]"
+		} else {
+			set n 1
+		}
+	}
+	if {"" != $ver_patchlevel} {
+		set version "$version\nPatch level: $ver_patchlevel"
+	}
+} else {
+	set version "Unknown! $ident is missing"
+}
+
+###############################################################################
+# $Id: msg_box.m4,v 1.1 2000/12/30 17:39:04 root Exp $
+#
+# Message box functionality
+#
+proc msg_box_btn {w} {
+	destroy $w
+}
+
+proc msg_box {title text} {
+	toplevel .msg_box
+	
+	wm title .msg_box $title
+	label .msg_box.l -text $text -justify left
+	pack .msg_box.l -side top
+	frame .msg_box.b
+	pack .msg_box.b -side top
+
+	button .msg_box.b.ok -text OK -command {msg_box_btn .msg_box}
+	button .msg_box.b.cancel -text cancel -command {msg_box_btn .msg_box}
+	pack .msg_box.b.ok .msg_box.b.cancel -side left
+	wm iconify .
+	tkwait window .msg_box
+	wm deiconify .
+}
+
+#
+# $Id: ver_check.m4,v 1.1 2001/02/03 11:05:10 isag Exp $
+#
+# version check
+#
+set needed_version 8.0
+if {$tcl_version < $needed_version} {
+	msg_box "Warning Version check" "Sarrep needs $needed_version, but this is version $tcl_version of Tcl.\nSome features can fail"
+#	exit
+}
+#eof: ver_check.m4
+###############################################################################
+#
+# $Id: variables.m4,v 1.1 2001/02/03 11:04:32 isag Exp $
+#
+# default paths, programs and other variables
+#
+set gnuplot	"/usr/bin/gnuplot"
+set grep	"/bin/grep"
+set sh		"/bin/sh"
+set gunzip	"/usr/bin/gunzip"
+set sed		"/bin/sed"
+
+# default placement of config file
+set cfg_file	"$env(HOME)/.isag.cfg"
+set graph_wd	720
+set graph_ht	400
+
+#eof: variables.m4
+
+# specific paths and programs
+set sar_data_path "SA_DIR"
+set sar "PREFIX/bin/sar"
+
+###############################################################################
+#
+# Processing command line arguments
+#	cmd has higher precedence
+#
+proc Usage {} {
+	global sar_data_path cfg_file graph_wd graph_ht
+
+	msg_box "Usage" \
+"isag \[options\]
+
+Options:
+\t-p data_path (default: $sar_data_path)
+\t-c cfg_file (default: $cfg_file) 
+\t-gwd graph_width (default: $graph_wd)
+\t-ght graph_height (default: $graph_ht) "
+        exit
+}
+
+proc getopt {argv opt} {
+	set rv ""
+	if {-1 != [set t [lsearch -exact $argv "-$opt"]]} {
+        	set rv [lindex $argv [expr $t + 1]]
+	}
+	return $rv
+}
+
+if {-1 != [set t [lsearch -exact $argv "-h"]]} {
+	        Usage
+}
+if {-1 != [set t [lsearch -exact $argv "-?"]]} {
+	        Usage
+}
+if {[set t [getopt $argv c]] != ""} {
+	# check for path
+	if {1 == ([file exist $t] && [file isfile $t])} {
+		set cfg_file $t
+	} else {
+		msg_box "Error" "<$t> is not regular file using default <$cfg_file>"
+	}
+}
+if {[set t [getopt $argv p]] != ""} {
+	# check for path
+	if {1 == ([file exist $t] && [file isdirectory $t])} {
+		set sar_data_path $t
+	} else {
+		msg_box "Error" "<$t> is not directory using default <$sar_data_path>"
+	}
+}
+if {[set t [getopt $argv ght]] != ""} {
+	if {1 == [string is digit $t]} {
+		set graph_ht $t
+	} else {
+		msg_box "Error" "<$t> is not decimal number default <$graph_ht>"
+	}
+}
+if {[set t [getopt $argv gwd]] != ""} {
+	if {1 == [string is digit $t]} {
+		set graph_wd $t
+	} else {
+		msg_box "Error" "<$t> is not decimal number default <$graph_wd>"
+	}
+}
+
+unset t
+# eof: isag_common_options.m4
+
+###############################################################################
+#
+# Variables connected to graphs and their default values
+#
+# selected archive file for sa data, typically saNN
+# this variable is set thru: data Chooser (see: Concept Guide)
+set archive ""
+
+# last_graph contains last drawing function as letter
+set last_graph ""
+
+# sar switches as names for object-instances (final and curent)
+#set sar_swtch [list b B c n r R u v w W y]
+set  sar_swtch [list b B c   r   u v w W]
+# R - there are negative values !!!
+
+# maximal and current values for each graph indexed by sar switch i.e. for cpu 
+# is index u not -u
+
+foreach l $sar_swtch {
+	set val_max($l) 0
+	set val_cur($l) 0
+}
+unset l
+# exceptions
+set val_max(u) 100
+
+set val_max(W) 1
+set val_cur(W) 1
+
+# graph/view names this is shoved in menu-view and as name of the graph
+# and other functional parameters
+#	cmd - command line which is used to generate textual source
+#	xlabel - label for x-axis
+#	ylabel - label for y-axis
+#	y2label - label for secondary y-axis
+#	plotstr - string plot for gnuplot, describes a graph
+#
+# view_n(ame) array
+set view_n(b) "I/O transfer rate"
+set view_n(B) "Paging statistics"
+set view_n(c) "Process creation"
+set view_n(n) "Network statistics"
+set view_n(r) "Memory and Swap"
+set view_n(R) "Memory Activities"
+set view_n(u) "CPU Utilization"
+set view_n(v) "inode status"
+set view_n(w) "System switching"
+set view_n(W) "System swapping"
+
+# xlabel is not an array - all values are same
+set xlabel "Time"
+
+# ylabel array
+set ylabel(b) "ops/sec"
+set ylabel(B) "pages/sec"
+set ylabel(c) "procs/sec"
+set ylabel(n) ""
+set ylabel(r) "KB"
+set ylabel(R) "per sec"
+set ylabel(u) "Percent"
+set ylabel(v) ""
+set ylabel(w) "cswch/sec"
+set ylabel(W) "swp/sec"
+
+set y2label(b) ""
+set y2label(B) ""
+set y2label(c) ""
+set y2label(n) ""
+set y2label(r) ""
+set y2label(R) ""
+set y2label(u) ""
+set y2label(v) ""
+set y2label(w) ""
+set y2label(W) ""
+
+# out_tokens describes how is input file covered
+# if no list specified the proc_line_$l() is called
+# Note: first element has index 0 (zero)!
+set out_tokens(b) [list 1 2 3 4]
+set out_tokens2(b) ""
+set out_tokens(B) [list 0 1]
+set out_tokens2(B) ""
+set out_tokens(c) [list 0]
+set out_tokens2(c) ""
+set out_tokens(r) [list 0 1 3 4 5 6 7]
+set out_tokens2(r) ""
+set out_tokens(R) [list 0 1 3 4 5 6 7]
+set out_tokens2(R) ""
+# CPU needs special computation
+set out_tokens(u) ""
+set out_tokens2(u) ""
+set out_tokens(v) [list 1 3 5 7 9]
+set out_tokens2(v) ""
+set out_tokens(w) [list 0]
+set out_tokens2(w) ""
+set out_tokens(W) [list 0 1]
+set out_tokens2(W) ""
+
+# cmd(line) array - this must be refreshed every time if source file is changing
+# beacuse strings are containing actual data file
+set cmd(0) ""
+proc reget_cmd {} {
+ global cmd sar archive grep sar_data_path
+
+ # this can avoid some errors, WARNING on pipe symbol on beggining
+ set commstr "| $grep '^\[0-9\]' | $grep -v 'LINUX RESTART' | $grep -v '^$'"
+
+ set cmd(b) "$sar -b -f $sar_data_path/$archive | $grep -v 'tps' $commstr"
+ set cmd(B) "$sar -B -f $sar_data_path/$archive |  $grep -v 'pgpgin' $commstr"
+ set cmd(c) "$sar -c -f $sar_data_path/$archive | $grep -v 'proc' $commstr"
+ set cmd(n) ""
+ set cmd(r) "$sar -r -f $sar_data_path/$archive | $grep -v 'kbmemfree' $commstr"
+ set cmd(R) "$sar -R -f $sar_data_path/$archive | $grep -v 'campg' $commstr"
+ set cmd(u) "$sar -u -f $sar_data_path/$archive | $grep -v 'user' $commstr"
+ set cmd(v) "$sar -v -f $sar_data_path/$archive | $grep -v 'dentunusd' $commstr"
+ set cmd(w) "$sar -w -f $sar_data_path/$archive | $grep -v 'cswch' $commstr"
+ set cmd(W) "$sar -W -f $sar_data_path/$archive | $grep -v 'pswpin' $commstr"
+}
+reget_cmd
+
+# Functions which are responsible for data source selection and processing
+# funcs are referred from GUI
+proc fill_file_menu {} {
+	global sar_data_path
+
+	set fp [open "| ls $sar_data_path"]
+	menu .file.menu.m -tearoff false
+	while {[gets $fp line] != -1} {
+				.file.menu.m add command -label "$line" -command "set_file $line"
+		
+	}
+	catch {close $fp}
+}
+
+proc set_file {name} {
+	global archive last_graph
+
+	set archive $name
+	.file.lbl configure -text "data source: $name"
+
+	reget_cmd
+	if {"" != $last_graph} {
+		new_chart $last_graph
+	}
+}
+
+###############################################################################
+#
+# $Id: isag.GUI.m4,v 1.3 2001/02/03 10:53:46 isag Exp $
+#
+# GUI
+#
+set title "System Activity Grapher"
+wm title . $title
+
+frame .menu -relief raised -borderwidth 2
+pack .menu -side top -fill x
+menubutton .menu.file -text "Program" -menu .menu.file.m -underline 0
+menu .menu.file.m -tearoff false
+.menu.file.m add command -label "Redraw" -underline 0 \
+        -command "set gr_scale_old 0;redraw_graph" -accelerator "F5"
+.menu.file.m add separator
+.menu.file.m add command -label "Exit program" -underline 0 \
+        -command "exit_program" -accelerator "Alt-X"
+
+menubutton .menu.chart -text "Chart" -menu .menu.chart.m -underline 0
+menu .menu.chart.m -tearoff true
+
+# creates for each sar-switch menu item with apropriate command
+foreach l $sar_swtch {
+	.menu.chart.m add command -label $view_n($l) \
+		-command "new_chart $l" -accelerator $l
+	bind all $l "new_chart $l"
+}
+
+menubutton .menu.help -text "Help" -menu .menu.help.m -underline 0
+menu .menu.help.m -tearoff false
+.menu.help.m add command -label "About" -underline 0 \
+        -command {About}
+
+pack .menu.file .menu.chart -side left
+pack .menu.help -side right
+
+frame .file -relief raised
+pack .file -side top -fill x
+label .file.lbl -text "(no file)" -borderwidth 2
+menubutton .file.menu -relief raised -borderwidth 2 -text "-" -menu .file.menu.m
+fill_file_menu
+pack .file.lbl .file.menu -side left
+
+frame .graph
+pack .graph -side top -expand true -fill both
+
+# this var contains a current value
+set gr_scale 0
+scale .graph.scale -orient vertical -length $graph_ht -to 0 -from 1 -variable gr_scale
+
+bind .graph.scale <Leave> "redraw_graph"
+
+canvas .graph.canv -width $graph_wd -height $graph_ht
+pack .graph.scale -side left -fill y
+pack .graph.canv -side right -expand true -fill both
+
+
+#bind all <Enter> "%W configure -highlightbackground blue"
+#bind all <Leave> "%W configure -highlightbackground white"
+
+bind all <Alt-x> "exit_program"
+bind all <F5> "set gr_scale_old 0;redraw_graph"
+
+###############################################################################
+#
+# this function normalizes max val and sets scale and so on.
+# this part is most common for draw_? functions
+proc set_cur_max {l} {
+	global val_max gr_scale val_cur
+
+	set norm [num_norm $val_max($l)]
+	set val_max($l) [lindex $norm 0]
+	.graph.scale configure -from $val_max($l) -resolution [lindex $norm 1]
+	unset norm
+	
+	set val_cur($l) $gr_scale
+	if {$val_cur($l) == 0} {
+		set val_cur($l) $val_max($l)
+		set gr_scale $val_cur($l)
+	}
+}
+
+###############################################################################
+#
+# this function is called when mouse leaves a graph-scale widget
+#	and here is local variable gr_scale_old
+#
+# this can be also as flag, is set to 0 after resizing
+set gr_scale_old 0
+proc redraw_graph {} {
+	global last_graph gr_scale gr_scale_old archive
+
+	if {($last_graph == "") || ($archive == "")} {
+		return
+	}
+
+	if {$gr_scale_old != $gr_scale} {
+		set gr_scale_old $gr_scale
+		draw $last_graph
+	}
+}
+###############################################################################
+#
+# this function is called from menu-view and decides which graph will be drawn
+#
+proc new_chart {l} {
+	global last_graph val_cur gr_scale
+
+	if {$last_graph != "$l"} {
+		set m [.graph.scale configure -from]
+		if {$m < $val_cur($l)} {
+			.graph.scale configure -from $val_cur($l)
+		}
+		set gr_scale $val_cur($l)
+		set last_graph "$l"
+		unset m
+	}
+	draw $l
+}
+###############################################################################
+#
+# About message box
+#
+proc About {} {
+	global version
+
+	msg_box About "Sar Grapher\n\nBuild:$version\n\nhttp://www.volny.cz/linux_monitor/isag/index.html\ne-mail: linux_monitor@volny.cz"
+}
+
+# eof: isag.GUI.m4
+###############################################################################
+#
+# $Id: isag.ResizeAll.m4,v 1.2 2001/02/03 11:01:38 isag Exp $
+#
+# Resizing graph window
+#
+
+bind . <Configure> {ResizeAll}
+set enResizing 0
+# first time this function is empty
+proc gnuplot {w} {}
+
+proc ResizeAll {} {
+	global enResizing gr_scale_old
+	
+	set width [winfo width .]
+	set height [winfo height .]
+	
+	set w [expr [winfo width .graph.scale] + [winfo width .graph.canv]]
+	set h [expr [winfo height .menu] + [winfo height .file] + [winfo height .graph.scale]]
+	
+	if {($w == $width) && ($h == $height)} {
+		incr enResizing
+		return
+	}
+	
+	if {0 == $enResizing} {
+		return
+	}
+
+		set enResizing 0
+	if {$w != $width} {
+# number two look as magic number
+		.graph.canv configure -width [expr $width - [winfo width .graph.scale] - 2]
+	} 
+
+	if {$h != $height} {
+		set h1 [expr [winfo height .menu] + [.file cget -height]]
+		.graph.canv configure -height [expr $height - $h1]
+		.graph.scale configure -length [expr $height - $h1]
+	}
+#	set gr_scale_old 0
+#	redraw_graph
+## not reliable	WHY?
+	gnuplot .graph.canv 
+	#set enResizing 1
+}
+
+# eof: isag.ResizeAll.m4
+###############################################################################
+#
+# $Id: isag.Other.Funcs.m4,v 1.5 2001/02/03 10:59:21 isag Exp $
+#
+# Other functions
+#
+
+##############################################################################
+#
+#
+
+proc strrep {str old new} {
+	set l [string length $old]
+
+	for {set n [string first $old $str]} {$n != -1} {set n [string first $old $str]} {
+		set str "[string range $str 0 [expr $n - 1]]$new[string range $str [expr $n + $l] end]"
+	}
+	return $str
+}
+
+# eof: strrep.m4
+
+
+# normalizes time if HH:MM:SS PM to 00-24 `format' for gnuplot
+proc time_normalize {time} {
+	set n [string first "AM" $time]
+	if {$n > 0} {
+		set time [string trim [string range $time 0 [expr $n - 1]]]
+		set hours [string range $time 0 1]
+# if hour is 12 then time is after midnight
+		if {$hours == 12} {
+			set time "[format %02d [expr $hours - 12]][string range $time 2 end]"
+		} else {
+			return [string trim [string range $time 0 [expr $n - 1]]]
+		}
+		unset hours
+	}
+	set n [string first "PM" $time]
+	if {$n > 0} {
+		set time [string trim [string range $time 0 [expr $n - 1]]]
+		set hours [string range $time 0 1]
+	# if hours string looks like 07, then is evaluated as octal number
+	# in case of 08 and 09 generates an error
+		if {"0" == [string range $hours 0 0]} {
+			set hours [string range $hours 1 1]
+		}
+		if {$hours < 12} {
+			set time "[format %02d [expr $hours + 12]][string range $time 2 end]"
+		}
+		unset hours
+	}
+	unset n
+	return $time
+}
+
+# tokens are divided by one or more space(s)
+proc parse_line {ln} {
+	global needed_version tcl_version
+
+		set res ""
+	if {$tcl_version > $needed_version} {
+	# this is a more effective
+		set rest [string map { \t " " } [string trim $ln]]
+	} else {
+		set rest [strrep [string trim $ln] \t " "]
+	}
+
+	for {} {[string length $rest] > 0} {} {
+		set a [string first " " $rest]
+		if {$a == -1} {
+			lappend res "$rest"
+			set rest ""
+		} else {
+			set token [string trim [string range $rest 0 [expr $a - 1]]]
+			set rest [string trim [string range $rest [expr $a + 1] end]]
+			lappend res "$token"
+		}
+	}
+	unset rest
+		return $res
+}
+
+
+# normalizes number to 2valid digits representation
+# and returns lis of norm number and step for list
+proc num_norm {num} {
+	if {$num < 10.0} {
+		return [list 10 1]
+	}
+	set l [expr int ([expr log10 ($num)])]
+	set n [expr int ([expr pow (10, [expr $l - 1])])]
+	set m [expr int ([expr ($num - 1)  / $n]) + 1]
+
+	set max [expr $m * $n]
+	set step [expr int ([expr pow (10, [expr $l - 2])])]
+	if {$step < 1} {
+		set step 1
+	}
+	unset l n m
+	return [list $max $step]	
+}
+
+proc create_gnuplot_file {gp_term fn title xlabel ylabel y2label yrange plot_str} {
+# Y2 percentage
+	set fp [open $fn.gp "w"]
+	puts $fp "set term $gp_term"
+	puts $fp "set title \"$title\""
+	puts $fp "set xlabel \"$xlabel\""
+	puts $fp "set ylabel \"$ylabel\""
+	if {$y2label != ""} {
+		puts $fp "set y2label \"$y2label\""
+		puts $fp "set y2range \[0:100\]"
+	}
+	puts $fp "set timefmt \"%H:%M:%S\""
+	puts $fp "set xdata time"
+	puts $fp "set format x \"%H:%M\""
+	puts $fp "set yrange $yrange"
+	puts $fp "set output \"$fn.tk\""
+	puts $fp "plot $plot_str"
+	close $fp
+
+}
+
+proc fngr {l} {
+	return "/tmp/gp_$l[pid]"
+}
+
+# eof: isag.Other.Funcs.m4
+
+###############################################################################
+#
+# Remaining graph paramaters, function fngr() must be defined before this
+#
+
+# plotstr array
+# in future - this string will not be fixed but functions will coming
+
+set plotstr(b) "\"[fngr b]\" using 1:2 t \"rtps\" with line, \"[fngr b]\" using 1:3 t \"wtps\" with line, \"[fngr b]\" using 1:4 t \"bread/s\" with line,  \"[fngr b]\" using 1:5 t \"bwrtn/s\" with line"
+set plotstr(B) "\"[fngr B]\" using 1:2 t \"pgpgin/s\" with line, \"[fngr B]\" using 1:3 t \"pgpgout/s\" with line"
+set plotstr(c) "\"[fngr c]\" using 1:2 t \"proc/s\" with line"
+set plotstr(n) ""
+set plotstr(r) "\"[fngr r]\" using 1:2 t \"kbmemfree\" with line, \"[fngr r]\" using 1:3 t \"kbmemused\" with line, \"[fngr r]\" using 1:4 t \"kbmemshrd\" with line, \"[fngr r]\" using 1:5 t \"kbbuffers\" with line, \"[fngr r]\" using 1:6 t \"kbcached\" with line, \"[fngr r]\" using 1:7 t \"kbswpfree\" with line, \"[fngr r]\" using 1:8 t \"kbswpused\" with line"
+set plotstr(R) ""
+set plotstr(u) "\"[fngr u]\" using 1:2 t \"%user\" with line, \"[fngr u]\" using 1:3 t \"%nice\" with line, \"[fngr u]\" using 1:4 t \"%system\" with line"
+set plotstr(v) "\"[fngr v]\" using 1:2 t \"file-sz\" with line, \"[fngr v]\" using 1:3 t \"inode-sz\" with line, \"[fngr v]\" using 1:4 t \"super-sz\" with line, \"[fngr v]\" using 1:5 t \"dquot-sz\" with line, \"[fngr v]\" using 1:6 t \"rtsig-sz\" with line"
+set plotstr(w) "\"[fngr w]\" using 1:2 t \"cswch/s\" with line"
+set plotstr(W) "\"[fngr W]\" using 1:2 t \"pswpin/s\" with line, \"[fngr W]\" using 1:3 t \"pswpout/s\" with line"
+
+###############################################################################
+#
+# $Id: isag.perf_data_procs.m4,v 1.4 2001/02/03 11:03:59 isag Exp $
+#
+# Performance data processing
+#
+
+# CPU measurement specific line processing
+proc proc_line_u {fp line} {
+	global val_cur val_max
+
+	set rval 0
+		set a [string first "all" $line]
+	if {$a != -1} {
+				set time [string trim [string range $line 0 [expr $a - 1]]]
+		set time [time_normalize "$time"]
+		set rest [string trim [string range $line [expr $a + 3] end]]
+
+				set nums [parse_line $rest]
+			# user nice system (idle)
+		set user [lindex $nums 0]
+		set nice [lindex $nums 1]
+		set syst [lindex $nums 2]
+
+		set total [expr $user + $nice + $syst]
+		if {$total > $val_max(u)} {set val_max(u) $total}
+				puts $fp "$time $total [expr $nice + $syst] $syst"
+		set rval 1
+	}
+	return $rval
+}
+# eof: isag.perf_data_procs.m4
+###############################################################################
+#
+# $Id: proc_line_generic.m4,v 1.2 2001/01/27 19:25:57 isag Exp $
+#
+# Performance Data Processing and Drawing functions
+#
+#	proces line functions
+#
+
+# generic line processing
+proc proc_line_generic {l fp line} {
+	global val_cur val_max out_tokens out_tokens2
+
+#	DEBUG(Line: $line)
+	set time [string trim [string range $line 0 12]]
+	# Here was a problem, time string was badly cutten
+		set time [time_normalize "$time"]
+	set rest [string trim [string range $line 12 end]]
+#	DEBUG(Rest: $rest)
+	set nums [parse_line $rest]
+	set out "$time "
+	foreach N $out_tokens($l) {
+		set n [lindex $nums $N]
+		set out "$out $n"
+		if {$n > $val_max($l)} {set val_max($l) $n}
+	}
+
+	foreach N $out_tokens2($l) {
+		set n [lindex $nums $N]
+		set out "$out $n"
+	}
+
+		puts $fp "$out"
+	unset rest time nums out N n
+	return 1
+}
+
+# eof: proc_line_generic.m4
+###############################################################################
+#
+# $Id: draw.m4,v 1.4 2001/02/03 10:49:40 isag Exp $
+#
+# Performance Data Processing and Drawing functions
+#
+#	generic draw function
+#	parametrical draw func for each kind of graph
+#
+
+#
+# generic draw function
+# Parameter:
+#	l - graph letter other values are parameters
+#
+proc draw {l} {
+	global archive title sh sar grep sar_data_path gnuplot \
+		gr_scale val_cur val_max view_n cmd xlabel out_tokens \
+		ylabel y2label plotstr enResizing
+
+	
+	if {$archive == ""} {
+		msg_box "Error" "No data source selected for: $view_n($l)"
+		return
+	}
+
+	wm title . "$title: $view_n($l)"
+
+	set fn "/tmp/sag_$l[pid]"
+	set fp [open $fn w]
+	puts $fp "#!$sh"
+	puts $fp " "
+		puts $fp "$cmd($l)"
+	close $fp
+	exec chmod u+x $fn
+
+	set fp [open "| $fn" "r"]
+	set fpgr [open [fngr "$l"] w]
+
+	set nlines 0
+	while {[gets $fp line] != -1} {
+		if {"" != $out_tokens($l)} {
+			set n [proc_line_generic $l $fpgr "$line"]
+		} else {
+			set n [proc_line_$l $fpgr "$line"]
+		}
+		incr nlines $n
+	}
+	catch {close $fp}
+	catch {close $fpgr}
+	file delete $fn
+
+# at least two lines of data
+	if {$nlines > 1} {
+		set_cur_max $l
+
+		create_gnuplot_file tkcanvas "[fngr $l]" "$view_n($l)" \
+			"$xlabel" \
+			"$ylabel($l)" $y2label($l) \
+			"\[0:$val_cur($l)\]" \
+			"$plotstr($l)"
+
+		exec $gnuplot [fngr $l].gp
+
+		source [fngr $l].tk
+		gnuplot .graph.canv
+
+		file delete [fngr $l].gp
+		file delete [fngr $l].tk
+	} else {
+		.graph.canv delete all
+		msg_box "Datafile: archive" "No data to show"
+	}
+	file delete [fngr $l]
+
+	unset fp fpgr fn line nlines 
+}
+
+# eof: draw.m4
+###############################################################################
+#
+# $Id: isag_cfg_file.m4,v 1.1 2001/02/03 10:50:38 isag Exp $
+#
+if {[file isfile $cfg_file] == 1} {
+	source $cfg_file
+
+		if {$val_max($last_graph) > 0} {
+		.graph.scale configure -to 0 -from $val_max($last_graph)
+		set gr_scale $val_cur($last_graph)
+			}
+}
+
+#
+# Finishing a program and writting of config file
+#
+proc exit_program {} {
+	global cfg_file sar_swtch val_max val_cur last_graph
+
+
+	set fp [open $cfg_file w]
+	foreach l $sar_swtch {
+		puts $fp "set val_max($l) $val_max($l)"
+		puts $fp "set val_cur($l) $val_cur($l)"
+	}
+	if {$last_graph == ""} {
+		puts $fp "set last_graph \"\""
+	} else {
+		puts $fp "set last_graph $last_graph"
+	}
+	close $fp
+
+	destroy .
+	exit
+}
+
+#eof: isag_cfg_file.m4
+
+# eof: isag.m4

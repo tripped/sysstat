@@ -1,6 +1,6 @@
 /*
  * sysstat: system monitoring tools for Linux
- * (C) 1999,2000 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2001 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
 #ifndef _COMMON_H
@@ -8,14 +8,6 @@
 
 #include <time.h>
 
-
-/*
- * Old formulas:
- * INT_PART(a,b,c)	(((a) - (b)) / (c))
- * DEC_PART(a,b,c)	(((((a) - (b)) % (c)) * 100) / (c))
- */
-#define INT_PART(a,b,c)	((((a) - (b)) * 100) / (c))
-#define DEC_PART(a,b,c)	((((((a) - (b)) * 100) % (c)) * 100) / (c))
 
 /* Keywords */
 #define K_ISO	"ISO"
@@ -54,10 +46,11 @@
 #define DISP_HDR	1
 
 /* Functions */
+extern char  *base_name(char *);
 extern time_t get_localtime(struct tm *);
 extern int    get_nb_proc_used(int *, unsigned int);
 extern int    get_win_height(void);
-extern void   init_nls(char *);
+extern void   init_nls(void);
 extern void   print_gal_header(struct tm *, char *, char *, char *);
 
 

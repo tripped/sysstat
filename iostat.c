@@ -27,8 +27,10 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <time.h>
+#include <ctype.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
+#include <sys/param.h>	/* for HZ */
 
 #include "version.h"
 #include "iostat.h"
@@ -50,11 +52,8 @@ struct comm_stats  comm_stats[2];
 struct tm loc_time;
 int part_nr = 0;	/* Nb of partitions */
 long int interval = 0;
-
 int proc_used = -1;	/* Nb of proc on the machine. A value of 1 means two procs... */
 unsigned char timestamp[14];
-
-char dp = '.';    	/* Decimal point */
 
 
 /*
@@ -66,7 +65,7 @@ void usage(char *progname)
 		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 	           "Usage: %s [ options... ]\n"
 		   "Options are:\n"
-		   "[ -c | -d ] [ -t ] [ -V ]\n"
+		   "[ -c | -d ] [ -t ] [ -V ] [ -x [ <device> ] ]\n"
 		   "[ <interval> [ <count> ] ]\n"),
 	   VERSION, progname);
    exit(1);
@@ -103,13 +102,12 @@ void init_stats(void)
 
 
 /*
- * Read stats...
+ * Read stats from /proc/stat file...
  * (see linux source file linux/fs/proc/array.c)
  */
-void read_stat(int curr)
+void read_stat(int curr, int disp)
 {
    FILE *statfp;
-   char resource_name[16];
    char line[128];
    unsigned int cc_user, cc_nice, cc_system;
    unsigned long cc_idle;
@@ -128,10 +126,10 @@ void read_stat(int curr)
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
 	  * Read the number of jiffies spent in user, nice, system and idle mode
-	  * and compute system uptime in jiffies (1/100ths of a second)
+	  * and compute system uptime in jiffies (1/100ths of a second if HZ=100)
 	  */
-	 sscanf(line, "%s  %u %u %u %lu",
-	        resource_name, &cc_user, &cc_nice, &cc_system, &cc_idle);
+	 sscanf(line, "%*s  %u %u %u %lu",
+	        &cc_user, &cc_nice, &cc_system, &cc_idle);
 
 	 /* Note that CPU usage is *not* reduced to one processor */
 	 comm_stats[curr].cpu_user   = cc_user;
@@ -140,11 +138,18 @@ void read_stat(int curr)
 	 comm_stats[curr].cpu_idle   = cc_idle;
 
 	 /*
-	  * Compute system uptime in jiffies (1/100ths of a second).
+	  * Compute system uptime in jiffies.
 	  * Uptime is multiplied by the number of processors.
 	  */
 	 comm_stats[curr].uptime = cc_user + cc_nice + cc_system + cc_idle;
       }
+
+      else if (DISPLAY_EXTENDED(disp))
+	 /*
+	  * When displaying extended statistics, we just need to get
+	  * CPU info from /proc/stat.
+	  */
+	 continue;
 
       else if (!strncmp(line, "disk_rblk ", 10)) {
 	 /*
@@ -153,8 +158,8 @@ void read_stat(int curr)
 	  * once made me think this was a number of sectors. Yet, it seems to be
 	  * a number of kilobytes... Please tell me if I'm wrong.
 	  */
-	 sscanf(line, "%s %u %u %u %u",
-		resource_name, &(disk_stats[curr][0].dk_drive_rblk), &(disk_stats[curr][1].dk_drive_rblk),
+	 sscanf(line, "%*s %u %u %u %u",
+		&(disk_stats[curr][0].dk_drive_rblk), &(disk_stats[curr][1].dk_drive_rblk),
 		&(disk_stats[curr][2].dk_drive_rblk), &(disk_stats[curr][3].dk_drive_rblk));
 
 	 /* Statistics handled for the first four disks with pre 2.4 kernels */
@@ -163,14 +168,14 @@ void read_stat(int curr)
 
       else if (!strncmp(line, "disk_wblk ", 10))
 	 /* Read the number of blocks written to disk */
-	 sscanf(line, "%s %u %u %u %u",
-		resource_name, &(disk_stats[curr][0].dk_drive_wblk), &(disk_stats[curr][1].dk_drive_wblk),
+	 sscanf(line, "%*s %u %u %u %u",
+		&(disk_stats[curr][0].dk_drive_wblk), &(disk_stats[curr][1].dk_drive_wblk),
 		&(disk_stats[curr][2].dk_drive_wblk), &(disk_stats[curr][3].dk_drive_wblk));
 
       else if (!strncmp(line, "disk ", 5))
 	 /* Read the number of I/O done since the last reboot */
-	 sscanf(line, "%s %u %u %u %u",
-		resource_name, &(disk_stats[curr][0].dk_drive), &(disk_stats[curr][1].dk_drive),
+	 sscanf(line, "%*s %u %u %u %u",
+		&(disk_stats[curr][0].dk_drive), &(disk_stats[curr][1].dk_drive),
 		&(disk_stats[curr][2].dk_drive), &(disk_stats[curr][3].dk_drive));
 
       else if (!strncmp(line, "disk_io: ", 9)) {
@@ -214,21 +219,75 @@ void read_stat(int curr)
 
 
 /*
+ * Read extended stats from /proc/partitions file
+ */
+void read_ext_stat(int curr, int disp)
+{
+   FILE *partfp;
+   int i;
+   char line[256];
+   struct disk_stats part;
+   struct disk_hdr_stats part_hdr;
+
+
+   /* Open partitions file */
+   if ((partfp = fopen(PARTITIONS, "r")) == NULL) {
+      perror("fopen");
+      exit(2);
+   }
+
+   while (fgets(line, 256, partfp) != NULL) {
+
+      if (sscanf(line, "%*d %*d %*d %12s %d %d %d %d %d %d %d %d %*d %d %d",
+	     part_hdr.name,	/* No need to read major and minor numbers */
+	     &part.rd_ios, &part.rd_merges, &part.rd_sectors, &part.rd_ticks,
+	     &part.wr_ios, &part.wr_merges, &part.wr_sectors, &part.wr_ticks,
+	     &part.ticks, &part.aveq) == 11) {
+	
+	 /*
+	  * We have just read a line from /proc/partitions containing stats
+	  * for a partition (ie this is not a fake line: title, etc.).
+	  * Moreover, we now know that the kernel has the patch applied.
+	  */
+
+	 /* Look for partition in data table */
+	 for (i = 0; i < part_nr; i++) {
+	    if (!strcmp(disk_hdr_stats[i].name, part_hdr.name)) {
+	       /* Partition found */
+	       disk_hdr_stats[i].active = 1;
+	       disk_stats[curr][i] = part;
+	       break;
+	    }
+	 }
+
+	 if ((i == part_nr) && DISPLAY_EXTENDED_ALL(disp) && (part_nr < MAX_PART) && part.ticks) {
+	    /* Allocate new partition */
+	    disk_stats[curr][part_nr] = part;
+	    disk_hdr_stats[part_nr].active = 1;
+	    strcpy(disk_hdr_stats[part_nr++].name, part_hdr.name);
+	 }
+      }
+   }
+
+   /* Close file */
+   fclose(partfp);
+}
+
+
+/*
  * Print everything now (stats and uptime)
  * Notes about the formula used to display stats as:
  * (x(t2) - x(t1)) / (t2 - t1) = XX.YY:
  * We have the identity: a = (a / b) * b + a % b   (a and b are integers).
  * Apply this with a = x(t2) - x(t1) (values about which stats are to be displayed)
  *             and b = t2 - t1 (elapsed time in seconds).
- * Since uptime is given in jiffies, it is always divided by 100 to get seconds.
+ * Since uptime is given in jiffies, it is always divided by HZ to get seconds.
  * The integer part XX is: a / b
- * The decimal part YY is: ((a % b) * 100) / b  (multiplied by 100 since we want YY and not 0.YY)
+ * The decimal part YY is: ((a % b) * HZ) / b  (multiplied by HZ since we want YY and not 0.YY)
  */
 int write_stat(int curr, int disp, struct tm *loc_time)
 {
    int disk_index;
-   unsigned long udec_part, ndec_part, sdec_part;
-   unsigned long wdec_part = 0;
    unsigned long itv;
 
 
@@ -250,22 +309,16 @@ int write_stat(int curr, int disp, struct tm *loc_time)
 
       printf(_("avg-cpu:  %%user   %%nice    %%sys   %%idle\n"));
 
-      udec_part = DEC_PART(comm_stats[curr].cpu_user,   comm_stats[!curr].cpu_user,   itv);
-      ndec_part = DEC_PART(comm_stats[curr].cpu_nice,   comm_stats[!curr].cpu_nice,   itv);
-      sdec_part = DEC_PART(comm_stats[curr].cpu_system, comm_stats[!curr].cpu_system, itv);
-
-      printf("         %3lu%c%02lu  %3lu%c%02lu  %3lu%c%02lu",
-	     INT_PART(comm_stats[curr].cpu_user,   comm_stats[!curr].cpu_user,   itv), dp, udec_part,
-	     INT_PART(comm_stats[curr].cpu_nice,   comm_stats[!curr].cpu_nice,   itv), dp, ndec_part,
-	     INT_PART(comm_stats[curr].cpu_system, comm_stats[!curr].cpu_system, itv), dp, sdec_part);
+      printf("         %6.2f  %6.2f  %6.2f",
+	     ((double) ((comm_stats[curr].cpu_user   - comm_stats[!curr].cpu_user)   * HZ)) / itv,
+	     ((double) ((comm_stats[curr].cpu_nice   - comm_stats[!curr].cpu_nice)   * HZ)) / itv,
+	     ((double) ((comm_stats[curr].cpu_system - comm_stats[!curr].cpu_system) * HZ)) / itv);
 
       if (comm_stats[curr].cpu_idle < comm_stats[!curr].cpu_idle)
-	 printf("    0%c%02lu", dp, (400 - (udec_part + ndec_part + sdec_part + wdec_part)) % 100);
+	 printf("    %.2f", 0.0);
       else
-	 printf("  %3lu%c%02lu",
-		INT_PART(comm_stats[curr].cpu_idle, comm_stats[!curr].cpu_idle, itv), dp,
-		/* Correct rounding error */
-		(400 - (udec_part + ndec_part + sdec_part + wdec_part)) % 100);
+	 printf("  %6.2f",
+		((double) ((comm_stats[curr].cpu_idle - comm_stats[!curr].cpu_idle) * HZ)) / itv);
 
       printf("\n");
    }
@@ -274,29 +327,66 @@ int write_stat(int curr, int disp, struct tm *loc_time)
 
    if (!DISPLAY_CPU_ONLY(disp)) {
 
-      printf(_("Disks:         tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
+      if (DISPLAY_EXTENDED(disp)) {
+	
+	 struct disk_stats current;
+	 double tput, util, await, svctm, arqsz, nr_ios;
+	
+	 printf(_("Device:  rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"));
+	
+	 for (disk_index = 0; disk_index < part_nr; disk_index++) {
 
-      for (disk_index = 0; disk_index < part_nr; disk_index++) {
+	    if (disk_hdr_stats[disk_index].active) {
+	
+	       current.rd_ios      = disk_stats[curr][disk_index].rd_ios      - disk_stats[!curr][disk_index].rd_ios;
+	       current.wr_ios      = disk_stats[curr][disk_index].wr_ios      - disk_stats[!curr][disk_index].wr_ios;
+	       current.rd_ticks    = disk_stats[curr][disk_index].rd_ticks    - disk_stats[!curr][disk_index].rd_ticks;
+	       current.wr_ticks    = disk_stats[curr][disk_index].wr_ticks    - disk_stats[!curr][disk_index].wr_ticks;
+	       current.rd_merges   = disk_stats[curr][disk_index].rd_merges   - disk_stats[!curr][disk_index].rd_merges;
+	       current.wr_merges   = disk_stats[curr][disk_index].wr_merges   - disk_stats[!curr][disk_index].wr_merges;
+	       current.rd_sectors  = disk_stats[curr][disk_index].rd_sectors  - disk_stats[!curr][disk_index].rd_sectors;
+	       current.wr_sectors  = disk_stats[curr][disk_index].wr_sectors  - disk_stats[!curr][disk_index].wr_sectors;
+	       current.ticks       = disk_stats[curr][disk_index].ticks       - disk_stats[!curr][disk_index].ticks;
+	       current.aveq        = disk_stats[curr][disk_index].aveq        - disk_stats[!curr][disk_index].aveq;
+	
+	       nr_ios = current.rd_ios + current.wr_ios;
+	       tput   = nr_ios * HZ / itv;
+	       util   = ((double) current.ticks) / itv;
+	       svctm  = tput ? util / tput : 0.0;
+	       await  = nr_ios ? (current.rd_ticks + current.wr_ticks) / nr_ios * 1000.0 / HZ : 0.0;
+	       arqsz  = nr_ios ? (current.rd_sectors + current.wr_sectors) / nr_ios : 0.0;
+	
+	       printf("%-8.8s %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
+		      disk_hdr_stats[disk_index].name,
+		      ((double) (current.rd_merges * HZ)) / itv, ((double) (current.wr_merges * HZ)) / itv,
+		      ((double) (current.rd_ios * HZ)) / itv, ((double) (current.wr_ios * HZ)) / itv,
+		      ((double) (current.rd_sectors * HZ)) / itv, ((double) (current.wr_sectors * HZ)) / itv,
+		      arqsz,
+		      ((double) current.aveq) / itv,
+		      await,
+		      svctm * 1000.0,
+		      util * 100.0);
+	    }
+	 }
+      }
 
-	 printf("%s %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n",
-		disk_hdr_stats[disk_index].name,
-		INT_PART(disk_stats[curr][disk_index].dk_drive,
-			 disk_stats[!curr][disk_index].dk_drive, itv),
-		dp,
-		DEC_PART(disk_stats[curr][disk_index].dk_drive,
-			 disk_stats[!curr][disk_index].dk_drive, itv),
-		INT_PART(disk_stats[curr][disk_index].dk_drive_rblk,
-			 disk_stats[!curr][disk_index].dk_drive_rblk, itv),
-		dp,
-		DEC_PART(disk_stats[curr][disk_index].dk_drive_rblk,
-			 disk_stats[!curr][disk_index].dk_drive_rblk, itv),
-		INT_PART(disk_stats[curr][disk_index].dk_drive_wblk,
-			 disk_stats[!curr][disk_index].dk_drive_wblk, itv),
-		dp,
-		DEC_PART(disk_stats[curr][disk_index].dk_drive_wblk,
-			 disk_stats[!curr][disk_index].dk_drive_wblk, itv),
-		(disk_stats[curr][disk_index].dk_drive_rblk - disk_stats[!curr][disk_index].dk_drive_rblk),
-		(disk_stats[curr][disk_index].dk_drive_wblk - disk_stats[!curr][disk_index].dk_drive_wblk));
+      else {
+
+	 printf(_("Device:        tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
+
+	 for (disk_index = 0; disk_index < part_nr; disk_index++) {
+
+	    printf("%s %11.2f %12.2f %12.2f %10u %10u\n",
+		   disk_hdr_stats[disk_index].name,
+		   ((double) ((disk_stats[curr][disk_index].dk_drive -
+			       disk_stats[!curr][disk_index].dk_drive) * HZ)) / itv,
+		   ((double) ((disk_stats[curr][disk_index].dk_drive_rblk -
+			       disk_stats[!curr][disk_index].dk_drive_rblk) * HZ)) / itv,
+		   ((double) ((disk_stats[curr][disk_index].dk_drive_wblk -
+			       disk_stats[!curr][disk_index].dk_drive_wblk) * HZ)) / itv,
+		   (disk_stats[curr][disk_index].dk_drive_rblk - disk_stats[!curr][disk_index].dk_drive_rblk),
+		   (disk_stats[curr][disk_index].dk_drive_wblk - disk_stats[!curr][disk_index].dk_drive_wblk));
+	 }
       }
       printf("\n");
    }
@@ -319,7 +409,7 @@ int main(int argc, char **argv)
 
 #ifdef USE_NLS
    /* Init National Language Support */
-   init_nls(&dp);
+   init_nls();
 #endif
 
    /* Init stat counters */
@@ -331,7 +421,17 @@ int main(int argc, char **argv)
    /* Process args... */
    while (opt < argc) {
 
-      if (!strncmp(argv[opt], "-", 1)) {
+      if (!strcmp(argv[opt], "-x")) {
+	 disp |= D_EXTENDED + D_EXTENDED_ALL;	/* Extended statistics		*/
+	 /* Get device names */
+	 while (argv[++opt] && strncmp(argv[opt], "-", 1) && !isdigit(argv[opt][0])) {
+	    disp &= ~D_EXTENDED_ALL;
+	    if (part_nr < MAX_PART)
+	       strncpy(disk_hdr_stats[part_nr++].name, base_name(argv[opt]), MAX_NAME_LEN - 1);
+	 }
+      }
+
+      else if (!strncmp(argv[opt], "-", 1)) {
 	 for (i = 1; *(argv[opt] + i); i++) {
 
 	    switch (*(argv[opt] + i)) {
@@ -384,7 +484,9 @@ int main(int argc, char **argv)
    /* Main loop */
    do {
       /* Read kernel statistics */
-      read_stat(curr);
+      read_stat(curr, disp);
+      if (DISPLAY_EXTENDED(disp))
+	  read_ext_stat(curr, disp);
 
       /* Save time */
       get_localtime(&loc_time);

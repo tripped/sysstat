@@ -9,18 +9,23 @@
 #include "common.h"
 
 
-#define MIN(a, b) 	(((a) < (b)) ? (a) : (b))
-
 #define MAX_PART	32
-#define MAX_NAME_LEN	12
+#define MAX_NAME_LEN	13
+
+/* Files */
+#define PARTITIONS	"/proc/partitions"
 
 #define D_CPU_ONLY	1
 #define D_DISK_ONLY	2
 #define D_TIMESTAMP	4
+#define D_EXTENDED	8
+#define D_EXTENDED_ALL	16
 
 #define DISPLAY_CPU_ONLY(m)	(((m) & D_CPU_ONLY) == D_CPU_ONLY)
 #define DISPLAY_DISK_ONLY(m)	(((m) & D_DISK_ONLY) == D_DISK_ONLY)
 #define DISPLAY_TIMESTAMP(m)	(((m) & D_TIMESTAMP) == D_TIMESTAMP)
+#define DISPLAY_EXTENDED(m)	(((m) & D_EXTENDED) == D_EXTENDED)
+#define DISPLAY_EXTENDED_ALL(m)	(((m) & D_EXTENDED_ALL) == D_EXTENDED_ALL)
 
 
 struct comm_stats {
@@ -37,12 +42,13 @@ struct comm_stats {
 
 
 struct disk_hdr_stats {
-   unsigned int  major				__attribute__ ((aligned (8)));
+   unsigned int  active				__attribute__ ((aligned (8)));
+   unsigned int  major				__attribute__ ((packed));
    unsigned int  minor				__attribute__ ((packed));
             char name[MAX_NAME_LEN]		__attribute__ ((packed));
 };
 
-#define DISK_HDR_STATS_SIZE	(sizeof(int)  * 2 + \
+#define DISK_HDR_STATS_SIZE	(sizeof(int) * 3  \
 				 sizeof(char) * MAX_NAME_LEN)
 
 

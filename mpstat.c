@@ -151,7 +151,7 @@ void write_stats_avg(short curr, short dis)
 	  S_VALUE(st_mp_cpu[2]->irq, st_mp_cpu[curr]->irq, itv));
    }
 
-   for (cpu = 1; cpu <= proc_used + (proc_used > 0); cpu++) {
+   for (cpu = 1; cpu <= proc_used + 1; cpu++) {
 
       /* Check if we want stats about this proc */
       if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
@@ -244,7 +244,7 @@ void write_stats(short curr, short dis)
 	  S_VALUE(st_mp_cpu[!curr]->irq, st_mp_cpu[curr]->irq, itv));
    }
 
-   for (cpu = 1; cpu <= proc_used + (proc_used > 0); cpu++) {
+   for (cpu = 1; cpu <= proc_used + 1; cpu++) {
 
       /* Check if we want stats about this proc */
       if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
@@ -311,18 +311,16 @@ void read_proc_stat(short curr)
       }
 
       else if (!strncmp(line, "cpu", 3)) {
-	 if (proc_used > 0) {
-	    /*
-	     * Read the number of jiffies spent in user, nice, system and idle mode for current proc.
-	     * This is done only on SMP machines.
-	     */
-	    sscanf(line + 3, "%d %u %u %u %lu", &proc_nb, &cc_user, &cc_nice, &cc_system, &cc_idle);
-	    st_mp_cpu_i = st_mp_cpu[curr] + proc_nb + 1;
-	    st_mp_cpu_i->cpu_user   = cc_user;
-	    st_mp_cpu_i->cpu_nice   = cc_nice;
-	    st_mp_cpu_i->cpu_system = cc_system;
-	    st_mp_cpu_i->cpu_idle   = cc_idle;
-	 }
+	 /*
+	  * Read the number of jiffies spent in user, nice, system and idle mode for current proc.
+	  * This is done only on SMP machines.
+	  */
+	 sscanf(line + 3, "%d %u %u %u %lu", &proc_nb, &cc_user, &cc_nice, &cc_system, &cc_idle);
+	 st_mp_cpu_i = st_mp_cpu[curr] + proc_nb + 1;
+	 st_mp_cpu_i->cpu_user   = cc_user;
+	 st_mp_cpu_i->cpu_nice   = cc_nice;
+	 st_mp_cpu_i->cpu_system = cc_system;
+	 st_mp_cpu_i->cpu_idle   = cc_idle;
       }
 
       else if (!strncmp(line, "intr ", 5))
@@ -394,7 +392,7 @@ int main(int argc, char **argv)
     * proc_used: a value of 1 means there are 2 processors (0 and 1).
     * In this case, we have to allocate 3 structures: global, proc0 and proc1.
     */
-   salloc_mp_cpu(proc_used + 1 + (proc_used > 0));
+   salloc_mp_cpu(proc_used + 2);
 
    while (++opt < argc) {
 
@@ -402,16 +400,14 @@ int main(int argc, char **argv)
 	 usage(argv[0]);
 
       else if (!strcmp(argv[opt], "-P")) {
-	 if (!proc_used) {
-	    fprintf(stderr, _("Not an SMP machine...\n"));
-	    exit(1);
-	 }
+	 /* '-P ALL' can be used on UP machines */
 	 if (argv[++opt]) {
 	    opt_used = 1;
 	    dis_hdr++;
 	    if (!strcmp(argv[opt], K_ALL) || !strcmp(argv[opt], "-1")) {
-	       dis_hdr = 9;
-	       /* Set bit for every processor */
+	       if (proc_used)
+		  dis_hdr = 9;
+	       /* Set bit for every processor. Also indicate to display stats for CPU 'all' */
 	       memset(cpu_bitmap, 0xff, ((proc_used + 1 + (proc_used > 0)) >> 3) + 1);
 	    }
 	    else {
@@ -478,8 +474,7 @@ int main(int argc, char **argv)
 
    /* Read stats */
    read_proc_stat(0);
-   if (proc_used > 0)
-      read_interrupts_stat(0);
+   read_interrupts_stat(0);
 
    if (!interval || WANT_BOOT_STATS(flags)) {
       /* Display since boot time */
@@ -489,7 +484,7 @@ int main(int argc, char **argv)
 
       st_mp_tstamp[1].uptime = 0;
 
-      memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (proc_used + 1 + (proc_used > 0)));
+      memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (proc_used + 2));
 
       write_stats(0, DISP_HDR);
       exit(0);
@@ -505,7 +500,7 @@ int main(int argc, char **argv)
 
    st_mp_tstamp[2].uptime = st_mp_tstamp[0].uptime;
 
-   memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (proc_used + 1 + (proc_used > 0)));
+   memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (proc_used + 2));
 
    pause();
 
@@ -523,8 +518,7 @@ int main(int argc, char **argv)
 
       /* Read stats */
       read_proc_stat(curr);
-      if (proc_used > 0)
-	 read_interrupts_stat(curr);
+      read_interrupts_stat(curr);
 
       /* Write stats */
       if (!dis_hdr) {

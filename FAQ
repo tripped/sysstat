@@ -13,7 +13,7 @@ question
 "Enable National Language Support (NLS)? [y]"
 during config stage (make config), then compile sysstat as usual (make ;
 make install).
-Please the README-nls file included in sysstat source package to learn
+Please read the README-nls file included in sysstat source package to learn
 some more about National Language Support.
 
 #################
@@ -121,7 +121,7 @@ Eg.:
  05:10:00 PM       all      4.93      0.00      1.29     93.78
  Average:          all    100.22    100.20    100.13      0.00
 
-A> Your sar command was not well installed (in fact, you compiled it but
+A> Your sar command was not installed properly (in fact, you compiled it but
 forgot to run 'make install' as the last stage). Whenever your computer
 is restarted (as it is the case here between 12:00:00 PM and 03:40:01 PM),
 the sysstat shell script must be called by the system, so that the
@@ -183,8 +183,8 @@ advantage of Stephen Tweedie's kernel patch to display extended I/O statistics
 You can find Stephen's patch here:
 ftp://ftp.uk.linux.org/pub/linux/sct/fs/profiling
 Stephen used to maintain his patch for various kernel versions, but it is
-no longer the case. You will have to get one of the relevant patch and
-update it by hand to suit your kernel.
+no longer the case. You will have to get one of the relevant patches (if they
+are still there and update it by hand to suit your kernel.
 Note that some distros have this patch already applied.
 
 #################

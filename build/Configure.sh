@@ -29,9 +29,23 @@ CLEAN_SA_DIR=`${ASK} 'Clean system activity directory?' "n" "clean-sa-dir"`
 
 NLS=`${ASK} 'Enable National Language Support (NLS)?' "y" "nls"`
 
+# isag command
+
+ISAG=`${ASK} 'Compile and install isag command?' "y" "isag"`
+
 # Linux SMP race workaround
 
 SMPRACE=`${ASK} 'Linux SMP race in serial driver workaround?' "n" "smp-race"`
+
+# sa2.sh processes data file of the day before
+
+YESTERDAY=`${ASK} 'sa2 uses daily data file of previous day?' "n" "yesterday"`
+if [ "${YESTERDAY}" = "y" ];
+then
+	YDAY="--date=yesterday"
+else
+	YDAY=""
+fi
 
 # Manual page group
 
@@ -93,9 +107,24 @@ then
 	if [ $? -eq 1 ];
 	then
 		echo WARNING: User ${CRON_OWNER} not found: Using ${USR} instead.
-	CRON_OWNER=${USR}
+		CRON_OWNER=${USR}
 	fi
 fi
+
+# Man directory
+
+if [ -L ${PREFIX}/man -a -d ${PREFIX}/share/man ];
+then
+	MANDIR=${PREFIX}/share/man
+else
+	MANDIR=${PREFIX}/man
+fi
+
+echo
+echo " man directory is ${MANDIR}"
+echo "  rc directory is ${RC_DIR}"
+echo "init directory is ${INIT_DIR}"
+echo
 
 # Create CONFIG file
 
@@ -104,9 +133,12 @@ echo -n Creating CONFIG file now...
 sed <build/CONFIG.in >build/CONFIG \
 	-e "s+^\\(PREFIX =\\)\$+\\1 ${PREFIX}+" \
 	-e "s+^\\(SA_DIR =\\)\$+\\1 ${SA_DIR}+" \
+	-e "s+^\\(MAN_DIR =\\)\$+\\1 ${MANDIR}+" \
 	-e "s+^\\(CLEAN_SA_DIR =\\)\$+\\1 ${CLEAN_SA_DIR}+" \
 	-e "s+^\\(ENABLE_NLS =\\)\$+\\1 ${NLS}+" \
+	-e "s+^\\(WANT_ISAG =\\)\$+\\1 ${ISAG}+" \
 	-e "s+^\\(ENABLE_SMP_WRKARD =\\)\$+\\1 ${SMPRACE}+" \
+	-e "s+^\\(YESTERDAY =\\)\$+\\1 ${YDAY}+" \
 	-e "s+^\\(MAN_GROUP =\\)\$+\\1 ${MAN}+" \
 	-e "s+^\\(RC_DIR =\\)\$+\\1 ${RC_DIR}+" \
 	-e "s+^\\(INIT_DIR =\\)\$+\\1 ${INIT_DIR}+" \

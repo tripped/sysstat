@@ -26,6 +26,9 @@
 
 #define S_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * HZ)
 
+/* new define to normalize to %; HZ is 1024 on IA64 and % should be normalized to 100 */
+#define SP_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * 100)
+
 /*
  * 0: stats at t,
  * 1: stats at t' (t+T or t-T),

@@ -7,14 +7,16 @@ The following people have contributed to 'sysstat' in one way or another:
 
 	Many thanks to the translators involved in sysstat:
 
-	  * Birko Bergt <birko.bergt@gmx.de> for his translation in german,
+	  * Birko Bergt <birko.bergt@gmx.de> for his translation into German,
 	  * Fernando Félix Redondo <fernando.felix@rediris.es> for his
-	    translation in spanish (now maintained by Muralito
+	    translation into Spanish (now maintained by Muralito
 	    <muralito@montevideo.com.uy>),
 	  * Frederic L. W. Meunier <0@pervalidus.net> for the
-	    portuguese translation.
+	    Portuguese translation.
 	  * Gert Brits <gbrits@techconcepts.co.za> for the translation
-	    in Afrikaans.
+	    into Afrikaans.
+	  * Roy Sigurd Karlsbakk <roy@karlsbakk.net> for the Norwegian
+	    translation.
 
 	Carl-Christian Weber <ccweber@itz-koeln.de> helped me to make sar
 	work on SMP machines.
@@ -44,6 +46,13 @@ The following people have contributed to 'sysstat' in one way or another:
 	of several fields that were added in Linux kernel 2.4
 	/proc/meminfo file.
 
+	Hubert Nueckel <hubert.nueckel@oracle.com> sent me a patch to
+	fix CPU utilization displayed by sar, iostat and mpstat commands
+	on IA64 machines.
+
+	Victor Hazlewood <victor@sdsc.edu> sent me a patch to implement
+	a database friendly option for sar (option -H).
+
 
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
@@ -59,6 +68,7 @@ I would also thank the following people for their hints or bug reports
 	Jordan <ledzep37@home.com>	
 	Jurriaan <thunder7@xs4all.nl>
 	Robert Luberda <robert@debian.org>
+	Robert Macaulay <Robert_Macaulay@Dell.com>
 	Rodney J. Mertz <rjm@elvis.arh.ms.cdc.com>
 	Roy Millar <100044.14@compuserve.com>
 	David J. Morse <David_J_Morse@Dell.com>

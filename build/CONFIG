@@ -4,7 +4,10 @@
 # Directories
 PREFIX = /usr/local
 SA_DIR = /var/log/sa
+MAN_DIR = ${PREFIX}/man
 CLEAN_SA_DIR = n
+YESTERDAY =
+WANT_ISAG = y
 
 DFLAGS =
 SAS_DFLAGS =

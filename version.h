@@ -7,6 +7,6 @@
 #define _VERSION_H
 
 /* sysstat version number */
-#define VERSION	"4.0.1"
+#define VERSION	"4.0.2"
 
 #endif  /* _VERSION_H */

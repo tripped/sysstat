@@ -2,7 +2,7 @@
 # (C) 1999-2001 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 4.0.1
+VERSION = 4.0.2
 
 include build/CONFIG
 
@@ -24,7 +24,9 @@ endif
 DESTDIR = $(RPM_BUILD_ROOT)
 BIN_DIR = $(PREFIX)/bin
 LIB_DIR = $(PREFIX)/lib
+ifndef MAN_DIR
 MAN_DIR = $(PREFIX)/man
+endif
 MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
 DOC_DIR = $(PREFIX)/doc/sysstat-$(VERSION)
@@ -82,7 +84,7 @@ sa1: sa1.sh
 
 sa2: sa2.sh
 	$(SED) -e s+BIN_DIR+$(BIN_DIR)+g -e s+SA_DIR+$(SA_DIR)+g \
-		-e s+PREFIX+$(PREFIX)+g $< > $@
+		-e s+PREFIX+$(PREFIX)+g -e s+YESTERDAY+$(YESTERDAY)+g $< > $@
 	$(CHMOD) 755 $@
 
 sysstat_base: sysstat.sh
@@ -110,16 +112,20 @@ mpstat: mpstat.c mpstat.h common.h version.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $< $(LFLAGS)
 
 isag/isag: isag/isag.in
+ifeq ($(WANT_ISAG),y)
 	$(SED) -e s+SA_DIR+$(SA_DIR)+g -e s+PREFIX+$(PREFIX)+g $< > $@
 	$(CHMOD) 755 $@
+endif
 
-locales: nls/fr/$(PACKAGE).po nls/de/$(PACKAGE).po nls/es/$(PACKAGE).po nls/pt/$(PACKAGE).po nls/af/$(PACKAGE).po
+locales: nls/fr/$(PACKAGE).po nls/de/$(PACKAGE).po nls/es/$(PACKAGE).po nls/pt/$(PACKAGE).po nls/af/$(PACKAGE).po nls/nb_NO/$(PACKAGE).po nls/nn_NO/$(PACKAGE).po
 ifdef REQUIRE_NLS
 	$(MSGFMT) -o nls/fr/$(PACKAGE).mo nls/fr/$(PACKAGE).po
 	$(MSGFMT) -o nls/de/$(PACKAGE).mo nls/de/$(PACKAGE).po
 	$(MSGFMT) -o nls/es/$(PACKAGE).mo nls/es/$(PACKAGE).po
 	$(MSGFMT) -o nls/pt/$(PACKAGE).mo nls/pt/$(PACKAGE).po
 	$(MSGFMT) -o nls/af/$(PACKAGE).mo nls/af/$(PACKAGE).po
+	$(MSGFMT) -o nls/nb_NO/$(PACKAGE).mo nls/nb_NO/$(PACKAGE).po
+	$(MSGFMT) -o nls/nn_NO/$(PACKAGE).mo nls/nn_NO/$(PACKAGE).po
 endif
 
 # Phony targets
@@ -147,16 +153,22 @@ uninstall_base:
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/pt/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/nb_NO/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/nn_NO/LC_MESSAGES/$(PACKAGE).mo
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/pt/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nb_NO/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nn_NO/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/pt
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nb_NO
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nn_NO
 	rm -f $(DESTDIR)$(PREFIX)/doc/sysstat-$(VERSION)/*
 	-rmdir $(DESTDIR)$(PREFIX)/doc/sysstat-$(VERSION)
 	@echo "Please ignore the errors above, if any."
@@ -193,8 +205,10 @@ endif
 	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
 	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
+ifeq ($(WANT_ISAG),y)
 	install -m 755 isag/isag $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) isag/isag.1 $(DESTDIR)$(MAN1_DIR)
+endif
 	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
 	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
 	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)
@@ -206,11 +220,15 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/nb_NO/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/nn_NO/LC_MESSAGES
 	install -m 644 nls/fr/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES
 	install -m 644 nls/de/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES
 	install -m 644 nls/es/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
 	install -m 644 nls/pt/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES
 	install -m 644 nls/af/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES
+	install -m 644 nls/nb_NO/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/nb_NO/LC_MESSAGES
+	install -m 644 nls/nn_NO/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/nn_NO/LC_MESSAGES
 endif
 
 install_all: install_base

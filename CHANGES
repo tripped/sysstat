@@ -291,3 +291,20 @@ Changes:
 	* Cosmetic changes for iostat.
 	* NLS updated: Afrikaans translation added.
 
+2001/09/22: Version 4.0.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* CPU usage, as displayed by iostat, mpstat and sar, should now
+	  be OK on machines where HZ <> 100 (eg IA64 architecture).
+	* MAX_PART constant set to 256 in iostat.h.
+	* "-H" database friendly option added to sar.
+	* Better disks and network interfaces management (both may be
+	  registered dynamically).
+	* Made options "-s" and "-e" work when option "-h" is used.
+	* isag upgraded to version 1.17.
+	* isag installation is now optionnal and can be chosen at config stage.
+	* Now try to install man pages in ${PREFIX}/share/man instead of
+	  ${PREFIX}/man.
+	* sa2 shell script updated.
+	* Configuration script updated.
+	* sar manual page updated.
+	* NLS updated: Norwegian translation added.
+

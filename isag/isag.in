@@ -5,15 +5,33 @@ exec wish "$0" -- "$@"
 
 ###############################################################################
 #
-# Author:		linux_monitor@volny.cz (David Doubrava)
-# Maintained-by:	linux_monitor@volny.cz
-# Primary-site:		http://www.volny.cz:/linux_monitor/isag
-# Copying-policy:	GPL
+# Copyright (c) 2000, 2001 David Doubrava (linux_monitor@volny.cz)
 #
-# $Id: isag.m4,v 1.15 2001/03/17 17:30:15 sarrep Exp $
-# $State: Exp $
+# Primary-site:	http://www.volny.cz:/linux_monitor/isag
+#
+# This program/module is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# as published by Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version
+#  
+# This program is distributed in the hope that it will be usefull,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY of FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+###############################################################################
+#
+# $Id: isag.m4,v 1.17 2001/07/30 18:05:41 sarrep Rel $
+# $State: Rel $
 #
 # $Log: isag.m4,v $
+# Revision 1.17  2001/07/30 18:05:41  sarrep
+# fix: bug2001060501; set LC_ALL to sane value; see Debian bug #101545
+#
+# Revision 1.16  2001/04/22 14:19:34  sarrep
+# Added GPL related text
+# remove notes about solving R switch problems
+#
 # Revision 1.15  2001/03/17 17:30:15  sarrep
 # CVSizing, unified headers of each element file
 #
@@ -80,8 +98,8 @@ exec wish "$0" -- "$@"
 
 #
 ###############################################################################
-# $Id: version.m4,v 1.3 2001/03/17 17:43:07 sarrep Exp $
-# $State: Exp $
+# $Id: version.m4,v 1.3 2001/03/17 17:43:07 sarrep Stab $
+# $State: Stab $
 # $Log: version.m4,v $
 # Revision 1.3  2001/03/17 17:43:07  sarrep
 # About dialog modify
@@ -115,9 +133,13 @@ if {"" != $patchlevel} {
 ###############################################################################
 # Message box functionality
 #
-# $Id: msg_box.m4,v 1.3 2001/03/17 17:30:22 sarrep Exp $
-# $State: Exp $
+# $Id: msg_box.m4,v 1.4 2001/06/03 19:58:04 sarrep Stab $
+# $State: Stab $
 # $Log: msg_box.m4,v $
+# Revision 1.4  2001/06/03 19:58:04  sarrep
+# improved behaviour, added grab capability
+# removed (softly) Cancel button
+#
 # Revision 1.3  2001/03/17 17:30:22  sarrep
 # CVSizing, unified headers of each element file
 #
@@ -139,19 +161,21 @@ proc msg_box {title text} {
 	pack .msg_box.b -side top
 
 	button .msg_box.b.ok -text OK -command {msg_box_btn .msg_box}
-	button .msg_box.b.cancel -text cancel -command {msg_box_btn .msg_box}
-	pack .msg_box.b.ok .msg_box.b.cancel -side left
-	wm iconify .
+	pack .msg_box.b.ok -side left
+
+#	button .msg_box.b.cancel -text cancel -command {msg_box_btn .msg_box}
+#	pack .msg_box.b.cancel -side left
+
+	grab .msg_box
 	tkwait window .msg_box
-	wm deiconify .
 }
 
 #eof: msg_box.m4
 ##############################################################################
 # Tcl/Tk: version check
 #
-# $Id: ver_check.m4,v 1.3 2001/03/17 17:30:25 sarrep Exp $
-# $State: Exp $
+# $Id: ver_check.m4,v 1.3 2001/03/17 17:30:25 sarrep Stab $
+# $State: Stab $
 # $Log: ver_check.m4,v $
 # Revision 1.3  2001/03/17 17:30:25  sarrep
 # CVSizing, unified headers of each element file
@@ -169,8 +193,8 @@ if {$tcl_version < $needed_version} {
 ###############################################################################
 # default paths, programs and other variables
 #
-# $Id: variables.m4,v 1.3 2001/03/17 17:30:24 sarrep Exp $
-# $State: Exp $
+# $Id: variables.m4,v 1.3 2001/03/17 17:30:24 sarrep Stab $
+# $State: Stab $
 # $Log: variables.m4,v $
 # Revision 1.3  2001/03/17 17:30:24  sarrep
 # CVSizing, unified headers of each element file
@@ -198,9 +222,13 @@ set sar_data_mask "sa\[0-9\]\[0-9\]"
 set sar "PREFIX/bin/sar"
 #set sar "/home/sarrep/source/sysstat-3.3.6/sar"
 
+#fix: bug2001060501; set LC_ALL to sane value; see Debian bug #101545 
+set env(LC_NUMERIC) "C"
+
+
 ###############################################################################
-# $Id: isag_common_options.m4,v 1.3 2001/03/17 17:30:20 sarrep Exp $
-# $State: Exp $
+# $Id: isag_common_options.m4,v 1.3 2001/03/17 17:30:20 sarrep Stab $
+# $State: Stab $
 # $Log: isag_common_options.m4,v $
 # Revision 1.3  2001/03/17 17:30:20  sarrep
 # CVSizing, unified headers of each element file
@@ -288,7 +316,6 @@ set last_graph ""
 # sar switches as names for object-instances (final and curent)
 #set prog_swtch [list b B c n q r R u v w W y]
 set  prog_swtch [list b B c   q r R u v w W]
-# R - there are negative values !!!
 
 # maximal and current values for each graph indexed by sar switch i.e. for cpu 
 # is index u not -u
@@ -435,8 +462,8 @@ proc set_file {name} {
 ###############################################################################
 # GUI
 #
-# $Id: isag.GUI.m4,v 1.7 2001/03/17 17:43:06 sarrep Exp $
-# $State: Exp $
+# $Id: isag.GUI.m4,v 1.7 2001/03/17 17:43:06 sarrep Stab $
+# $State: Stab $
 # $Log: isag.GUI.m4,v $
 # Revision 1.7  2001/03/17 17:43:06  sarrep
 # About dialog modify
@@ -575,8 +602,8 @@ proc About {} {
 ###############################################################################
 # Resizing graph window
 #
-# $Id: isag.ResizeAll.m4,v 1.4 2001/03/17 17:30:14 sarrep Exp $
-# $State: Exp $
+# $Id: isag.ResizeAll.m4,v 1.4 2001/03/17 17:30:14 sarrep Stab $
+# $State: Stab $
 # $Log:#
 #
 #
@@ -627,7 +654,7 @@ proc ResizeAll {} {
 ###############################################################################
 # Other functions
 #
-# $Id: isag.Other.Funcs.m4,v 1.7 2001/03/17 17:30:13 sarrep Exp $
+# $Id: isag.Other.Funcs.m4,v 1.8 2001/07/30 18:11:02 sarrep Stab $
 # $State:#
 # $Log:#
 #
@@ -778,9 +805,12 @@ set plotstr(W) "\"[fngr W]\" using 1:2 t \"pswpin/s\" with line, \"[fngr W]\" us
 ###############################################################################
 # Performance data processing
 #
-# $Id: isag.perf_data_procs.m4,v 1.7 2001/03/17 17:30:16 sarrep Exp $
-# $State: Exp $
+# $Id: isag.perf_data_procs.m4,v 1.8 2001/03/30 16:42:26 sarrep Stab $
+# $State: Stab $
 # $Log: isag.perf_data_procs.m4,v $
+# Revision 1.8  2001/03/30 16:42:26  sarrep
+# Fixed bug about _last_time, (mangled graph)
+#
 # Revision 1.7  2001/03/17 17:30:16  sarrep
 # CVSizing, unified headers of each element file
 #
@@ -832,9 +862,15 @@ proc proc_line_u {fp line} {
 # Performance Data Processing and Drawing functions
 #	proces line functions
 #
-# $Id: proc_line_generic.m4,v 1.5 2001/03/17 17:30:23 sarrep Exp $
-# $State: Exp $
+# $Id: proc_line_generic.m4,v 1.7 2001/07/30 18:06:25 sarrep Stab $
+# $State: Stab $
 # $Log: proc_line_generic.m4,v $
+# Revision 1.7  2001/07/30 18:06:25  sarrep
+# Fixed one debug print. It was on wrong place.
+#
+# Revision 1.6  2001/03/30 16:42:26  sarrep
+# Fixed bug about _last_time, (mangled graph)
+#
 # Revision 1.5  2001/03/17 17:30:23  sarrep
 # CVSizing, unified headers of each element file
 #
@@ -903,8 +939,8 @@ proc proc_line_generic {l fp line} {
 		}
 	}
 
-		catch {
-		puts $fp "$out"
+	catch {
+				puts $fp "$out"
 		unset out
 	}
 	unset rest time
@@ -917,9 +953,12 @@ proc proc_line_generic {l fp line} {
 #	generic draw function
 #	parametrical draw func for each kind of graph
 #
-# $Id: draw.m4,v 1.6 2001/03/17 17:30:10 sarrep Exp $
-# $State: Exp $
+# $Id: draw.m4,v 1.7 2001/03/30 16:42:26 sarrep Stab $
+# $State: Stab $
 # $Log: draw.m4,v $
+# Revision 1.7  2001/03/30 16:42:26  sarrep
+# Fixed bug about _last_time, (mangled graph)
+#
 # Revision 1.6  2001/03/17 17:30:10  sarrep
 # CVSizing, unified headers of each element file
 #
@@ -1005,8 +1044,8 @@ proc draw {l} {
 
 # eof: draw.m4
 ###############################################################################
-# $Id: isag_cfg_file.m4,v 1.3 2001/03/17 17:30:19 sarrep Exp $
-# $State: Exp $
+# $Id: isag_cfg_file.m4,v 1.3 2001/03/17 17:30:19 sarrep Stab $
+# $State: Stab $
 # $Log: isag_cfg_file.m4,v $
 # Revision 1.3  2001/03/17 17:30:19  sarrep
 # CVSizing, unified headers of each element file

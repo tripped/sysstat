@@ -9,9 +9,9 @@
 #include "common.h"
 
 /* Maximum number of partitions (minimum is 4) */
-#define MAX_PART	32
+#define MAX_PART	256
 
-#define MAX_NAME_LEN 64
+#define MAX_NAME_LEN 68
 
 /* Files */
 #define PARTITIONS	"/proc/partitions"

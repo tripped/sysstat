@@ -5,81 +5,85 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: sysstat 3.0\n"
-"PO-Revision-Date: 2001-12-09 22:44CET-1\n"
-"Last-Translator: Stefano Barni <barninga@altavista.net>\n"
-"Language-Team: Italian\n"
+"PO-Revision-Date: 2002-01-31 14:21GMT+6\n"
+"Last-Translator: Dennis Selsky <selsky@densky.pp.ru>\n"
+"Language-Team: Russian <ru@li.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=koi8-r\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: KBabel 0.9.5\n"
 
 #: mpstat.c:62
-msgid "sysstat version %s\n"
+msgid ""
+"sysstat version %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 "Usage: %s [ options... ]\n"
 "Options are:\n"
 "[ -P { <cpu> | ALL } ] [ -V ]\n"
 "[ <interval> [ <count> ] ]\n"
-msgstr "sysstat versione %s\n"
+msgstr ""
+"sysstat версия %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-"Uso: %s [ opzioni... ]\n"
-"Opzioni ammesse:\n"
+"Использование: %s [ опции... ]\n"
+"Допустимые опции:\n"
 "[ -P { <cpu> | ALL } ] [ -V ]\n"
-"[ <intervallo> [ <iterazioni> ] ]\n"
+"[ <интервал> [ <счетчик> ] ]\n"
 
 #: mpstat.c:123
 msgid "\nAverage:     CPU   %%user   %%nice %%system   %%idle    intr/s\n"
-msgstr "\nMedia:       CPU %%utente   %%nice %%sistema %%inatt. interr/s\n"
+msgstr "\nСреднее:    Проц   %%юзер   %%найс   %%сист  %%отдых    intr/s\n"
 
 #: mpstat.c:132
 msgid "Average:     all"
-msgstr "Media:       all"
+msgstr "Среднее:     все"
 
 #: mpstat.c:134
 msgid "Average:    %4d"
-msgstr "Media:      %4d"
+msgstr "Среднее:    %4d"
 
 #: mpstat.c:207
 msgid "\n%-11s  CPU   %%user   %%nice %%system   %%idle    intr/s\n"
-msgstr "\n%-11s  CPU %%utente   %%nice %%sistema %%inatt. interr/s\n"
+msgstr "\n%-11s Проц   %%юзер   %%найс %%систем  %%отдых    intr/s\n"
 
 #: mpstat.c:216
 msgid "%-11s  all"
-msgstr "%-11s  all"
+msgstr "%-11s  все"
 
 #: iostat.c:73
-msgid "sysstat version %s\n"
+msgid ""
+"sysstat version %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 "Usage: %s [ options... ]\n"
 "Options are:\n"
 "[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x [ <device> ] ]\n"
 "[ <interval> [ <count> ] ]\n"
-msgstr "sysstat versione %s\n"
+msgstr ""
+"sysstat версия %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-"Uso: %s [ opzioni... ]\n"
-"Opzioni ammesse:\n"
-"[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x [ <device> ] ]\n"
-"[ <intervallo> [ <iterazioni> ] ]\n"
+"Использование: %s [ опции... ]\n"
+"Допустимые опции:\n"
+"[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x [ <устройство> ] ]\n"
+"[ <интервал> [ <счетчик> ] ]\n"
 
 #: iostat.c:534
 msgid "avg-cpu:  %%user   %%nice    %%sys   %%idle\n"
-msgstr "cpu-med: %%utente  %%nice   %%sist  %%inatt\n"
+msgstr "проц-сред: %%юзер   %%найс   %%сист  %%отдых\n"
 
 #: iostat.c:555
 msgid "Time: %s\n"
-msgstr "Ora:  %s\n"
+msgstr "Время: %s\n"
 
 #: iostat.c:400
 msgid "Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n"
-msgstr "Device:            tps   kB_letti/s     kB_scr/s   kB_letti     kB_scr\n"
+msgstr "Устройство:        tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n"
 
 #: iostat.c:617
 msgid "Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"
-msgstr "Device:            tps  Blk_letti/s    Blk_scr/s  Blk_letti    Blk_scr\n"
+msgstr "Устройство:        tps  Блок_чт/сек Блок_зап/сек    Блок_чт   Блок_зап\n"
 
 #: iostat.c
 msgid "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
-msgstr "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
+msgstr "Устройств: rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
 
 #: sar.c:91
 msgid "sysstat version %s\n"
@@ -94,178 +98,178 @@ msgid "sysstat version %s\n"
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ <interval> [ <count> ] ]\n"
-msgstr "sysstat versione %s\n"
+msgstr "sysstat версия %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-"Uso: %s [ opzioni... ]\n"
-"Opzioni ammesse:\n"
-"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i <intervallo> ] [ -q ]\n"
+"Использование: %s [ опции... ]\n"
+"Допустимые опции:\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i <интервал> ] [ -q ]\n"
 "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 "[ -I { <irq> | SUM | PROC | ALL | XALL } ] [ -U { <cpu> | ALL } ]\n"
 "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
 "[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
-"[ -o [ <file> ] | -f [ <file> ] ]\n"
+"[ -o [ <имя_файла> ] | -f [ <имя_файла> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ <intervallo> [ <iterazioni> ] ]\n"
+"[ <интервал> [ <счетчик> ] ]\n"
 
 #: sar.c:184
 msgid "Not an SMP machine...\n"
-msgstr "Non e' una macchina multiprocessore...\n"
+msgstr "Не многопроцессорная тачка...\n"
 
 #: sar.c:194
 msgid "Not that many processors!\n"
-msgstr "Ci sono meno processori di quanti specificati!\n"
+msgstr "Не так много процессоров!\n"
 
 #: sar.c:284
 msgid "Error while reading system activity file: %s\n"
-msgstr "Errore durante la lettura del file delle statistiche di sistema: %s\n"
+msgstr "Ошибка чтения файла системной активности: %s\n"
 
 #: sar.c:288
 msgid "End of system activity file unexpected\n"
-msgstr "Fine inattesa del file delle statistiche di sistema\n"
+msgstr "Неожиданное окончание файла системной активности\n"
 
 #: sar.c:402
 msgid "Cannot open %s: %s\n"
-msgstr "Impossibile aprire %s: %s\n"
+msgstr "Невозможно открыть %s: %s\n"
 
 #: sar.c:521
 msgid "Invalid system activity file\n"
-msgstr "File delle statistiche di sistema non valido\n"
+msgstr "Неправильный файл системной активности\n"
 
 #:
 msgid "Invalid data format\n"
-msgstr "Formato dei dati non valido\n"
+msgstr "Неправильный формат данных\n"
 
 #: sar.c:536
 msgid "\nAverage:       proc/s\n"
-msgstr "\nMedia:         proc/s\n"
+msgstr "\nСреднее:       proc/s\n"
 
 #: sar.c:538
 msgid "Average:    %9.2f\n"
-msgstr "Media:      %9.2f\n"
+msgstr "Среднее:    %9.2f\n"
 
 #: sar.c:624
 msgid "Average:    %9.0f"
-msgstr "Media:      %9.0f"
+msgstr "Среднее:    %9.0f"
 
 #: sar.c
 msgid "Average:    %9.0f %9.0f"
-msgstr "Media:      %9.0f %9.0f"
+msgstr "Среднее:    %9.0f %9.0f"
 
 #: sar.c
 msgid "Average:    %9.9s %9.2f %9.2f\n"
-msgstr "Media:      %9.9s %9.2f %9.2f\n"
+msgstr "Среднее:    %9.9s %9.2f %9.2f\n"
 
 #: sar.c
 msgid "Average:    %9.0f %9.0f %9.0f %9.0f %9.0f\n"
-msgstr "Media:      %9.0f %9.0f %9.0f %9.0f %9.0f\n"
+msgstr "Среднее:    %9.0f %9.0f %9.0f %9.0f %9.0f\n"
 
 #: sar.c
 msgid "Average:    %9.0f %9.0f %9.2f %9.2f\n"
-msgstr "Media:      %9.0f %9.0f %9.2f %9.2f\n"
+msgstr "Среднее:    %9.0f %9.0f %9.2f %9.2f\n"
 
 #: sar.c
 msgid "Average:    %9.2f %9.2f %9.2f %9.2f\n"
-msgstr "Media:      %9.2f %9.2f %9.2f %9.2f\n"
+msgstr "Среднее:    %9.2f %9.2f %9.2f %9.2f\n"
 
 #: sar.c
 msgid "Average:    %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n"
-msgstr "Media:      %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n"
+msgstr "Среднее:    %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n"
 
 #: sar.c:545
 msgid "\nAverage:      cswch/s\n"
-msgstr "\nMedia:        cswch/s\n"
+msgstr "\nСреднее:      cswch/s\n"
 
 #: sar.c:554
 msgid "\nAverage:          CPU     %%user     %%nice   %%system     %%idle\n"
-msgstr "\nMedia:            CPU   %%utente     %%nice  %%sistema    %%inatt\n"
+msgstr "\nСреднее:         Проц     %%юзер     %%найс  %%система    %%отдых\n"
 
 #: sar.c:557
 msgid "Average:          all"
-msgstr "Media:            all"
+msgstr "Среднее:          all"
 
 #: sar.c:568
 msgid "Requested activities not available in file\n"
-msgstr "Statistiche richieste non disponibili nel file\n"
+msgstr "Запрошенных активностей нет в файле\n"
 
 #: sar.c:582
 msgid "Average:          %3d"
-msgstr "Media:            %3d"
+msgstr "Среднее:          %3d"
 
 #: sar.c:612
 msgid "\nAverage:         INTR    intr/s\n"
-msgstr "\nMedia:           INTR  interr/s\n"
+msgstr "\nСреднее:         INTR    intr/s\n"
 
 #: sar.c:614
 msgid "Average:    %9.2f %9.2f\n"
-msgstr "Media:      %9.2f %9.2f\n"
+msgstr "Среднее:    %9.2f %9.2f\n"
 
 #: sar.c:615
 msgid "Average:          sum"
-msgstr "Media:          somma"
+msgstr "Среднее:          sum"
 
 #: sar.c:636
 msgid "Average:    %9.2f %9.2f %9.2f %9.2f %9.2f\n"
-msgstr "Media:      %9.2f %9.2f %9.2f %9.2f %9.2f\n"
+msgstr "Среднее:    %9.2f %9.2f %9.2f %9.2f %9.2f\n"
 
 #: sar.c
 msgid "Average:       %6s"
-msgstr "Media:         %6s"
+msgstr "Среднее:       %6s"
 
 #: sar.c:638
 msgid "\nAverage:     pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
-msgstr "\nMedia:       pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
+msgstr "\nСреднее:     pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
 
 #: sar.c:651
 msgid "\nAverage:     pswpin/s pswpout/s\n"
-msgstr "\nMedia:       pswpin/s pswpout/s\n"
+msgstr "\nСреднее:     pswpin/s pswpout/s\n"
 
 #: sar.c:664
 msgid "\nAverage:          tps      rtps      wtps   bread/s   bwrtn/s\n"
-msgstr "\nMedia:            tps      rtps      wtps   bread/s   bwrtn/s\n"
+msgstr "\nСреднее:          tps      rtps      wtps   bread/s   bwrtn/s\n"
 
 #: sar.c:692
 msgid "\nAverage:      frmpg/s   shmpg/s   bufpg/s   campg/s\n"
-msgstr "\nMedia:        frmpg/s   shmpg/s   bufpg/s   campg/s\n"
+msgstr "\nСреднее:      frmpg/s   shmpg/s   bufpg/s   campg/s\n"
 
 #: sar.c:718
 msgid "\nAverage:          PID  minflt/s  majflt/s     %%user   %%system   nswap/s\n"
-msgstr "\nMedia:            PID  minflt/s  majflt/s     %%utente %%sistema  nswap/s\n"
+msgstr "\nСреднее:          PID  minflt/s  majflt/s     %%юзер   %%система  nswap/s\n"
 
 #: sar.c:723
 msgid "Average:    %9ld"
-msgstr "Media:      %9ld"
+msgstr "Среднее:    %9ld"
 
 #: sar.c:749
 msgid "\nAverage:         PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
-msgstr "\nMedia:           PPID cminflt/s cmajflt/s    %%c-ut   %%c-sist   cnswap/s\n"
+msgstr "\nСреднее:         PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
 
 #: sar.c:786
 msgid "\nAverage:     minflt/s  majflt/s\n"
-msgstr "\nMedia:       minflt/s  majflt/s\n"
+msgstr "\nСреднее:     minflt/s  majflt/s\n"
 
 #: sar.c:789
 msgid "Average:          N/A       N/A\n"
-msgstr "Media:            N/A       N/A\n"
+msgstr "Среднее:          N/A       N/A\n"
 
 #: sar.c:797
 msgid "Cannot write system activity file header: %s\n"
-msgstr "Impossibile scrivere lo header del file delle statistiche di sistema: %s\n"
+msgstr "Невозможно записать заголовок файла системной активности: %s\n"
 
 #: sar.c:804
 msgid "\nAverage:          TTY   rcvin/s   xmtin/s\n"
-msgstr "\nMedia:            TTY   rcvin/s   xmtin/s\n"
+msgstr "\nСреднее:          TTY   rcvin/s   xmtin/s\n"
 
 #: sar.c:807
 msgid "Average:          "
-msgstr "Media:            "
+msgstr "Среднее:          "
 
 #: sar.c:823
 msgid "\nAverage:    kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
-msgstr "\nMedia:      kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
+msgstr "\nСреднее:    kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
 
 #: sar.c:847
 msgid "\nAverage:     CPU"
-msgstr "\nMedia:       CPU"
+msgstr "\nСреднее:     CPU"
 
 #: sar.c:850
 msgid "  i%03d/s"
@@ -273,27 +277,27 @@ msgstr "  i%03d/s"
 
 #: sar.c:864
 msgid "Average:     %3d"
-msgstr "Media:       %3d"
+msgstr "Среднее:     %3d"
 
 #: sar.c:954
 msgid "\nAverage:       totsck    tcpsck    udpsck    rawsck   ip-frag\n"
-msgstr "\nMedia:         totsck    tcpsck    udpsck    rawsck   ip-frag\n"
+msgstr "\nСреднее:       totsck    tcpsck    udpsck    rawsck   ip-frag\n"
 
 #: sar.c:970
 msgid "Cannot write data to system activity file: %s\n"
-msgstr "Impossibile scrivere dati nel file delle statistiche di sistema: %s\n"
+msgstr "Невозможно записать данные в файл системной активности: %s\n"
 
 #: sar.c:871
 msgid "\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
-msgstr "\nMedia:      dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+msgstr "\nСреднее:    dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
 
 #: sar.c:903
 msgid "\nAverage:        IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
-msgstr "\nMedia:          IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
+msgstr "\nСреднее:        IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
 
 #: sar.c:941
 msgid "\nAverage:        IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
-msgstr "\nMedia:          IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
+msgstr "\nСреднее:        IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
 
 #: sar.c
 msgid "\n%-11s       DEV       tps    sect/s\n"
@@ -305,11 +309,11 @@ msgstr "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5\n"
 
 #: sar.c
 msgid "\nAverage:          DEV       tps    sect/s\n"
-msgstr "\nMedia:            DEV       tps    sect/s\n"
+msgstr "\nСреднее:          DEV       tps    sect/s\n"
 
 #: sar.c
 msgid "\nAverage:      runq-sz  plist-sz   ldavg-1   ldavg-5\n"
-msgstr "\nMedia:        runq-sz  plist-sz   ldavg-1   ldavg-5\n"
+msgstr "\nСреднее:      runq-sz  plist-sz   ldavg-1   ldavg-5\n"
 
 #: sar.c:1043
 msgid "\n%-11s    proc/s\n"
@@ -321,7 +325,7 @@ msgstr "\n%-11s   cswch/s\n"
 
 #: sar.c:1063
 msgid "\n%-11s       CPU     %%user     %%nice   %%system     %%idle\n"
-msgstr "\n%-11s       CPU   %%utente     %%nice  %%sistema    %%inatt\n"
+msgstr "\n%-11s      Проц     %%юзер     %%найс  %%система    %%отдых\n"
 
 #: sar.c:1066
 msgid "%-11s       all"
@@ -329,7 +333,7 @@ msgstr "%-11s       all"
 
 #: sar.c:1074
 msgid "Please give a smaller interval value\n"
-msgstr "Specificare un intervallo minore\n"
+msgstr "Задайте меньшее значение интервала\n"
 
 #: sar.c:1121
 msgid "\n%-11s      INTR    intr/s\n"
@@ -337,7 +341,7 @@ msgstr "\n%-11s      INTR    intr/s\n"
 
 #: sar.c:1125
 msgid "%-11s       sum"
-msgstr "%-11s     somma"
+msgstr "%-11s       sum"
 
 #: sar.c:1149
 msgid "\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
@@ -357,11 +361,11 @@ msgstr "\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"
 
 #: sar.c:1234
 msgid "\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s   CPU\n"
-msgstr "\n%-11s       PID  minflt/s  majflt/s   %%utente  %%sistema   nswap/s   CPU\n"
+msgstr "\n%-11s       PID  minflt/s  majflt/s     %%юзер  %%система   nswap/s  Проц\n"
 
 #: sar.c:1269
 msgid "\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
-msgstr "\n%-11s      PPID cminflt/s cmajflt/s     %%c-ut   %%c-sist  cnswap/s\n"
+msgstr "\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
 
 #: sar.c:1302
 msgid "\n%-11s  minflt/s  majflt/s\n"
@@ -381,7 +385,7 @@ msgstr "\n%-11s  CPU"
 
 #: sar.c:1419
 msgid "Not reading from a system activity file (use -f option)\n"
-msgstr "La lettura non avviene da un file delle statistiche di sistema (usare l'opzione -f)\n"
+msgstr "Не читаем из файла системной активности (используйте опцию -f)\n"
 
 #: sar.c:1447
 msgid "\n%-11s dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
@@ -401,35 +405,37 @@ msgstr "\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txc
 
 #: sar.c:1606
 msgid "\n%-11s       LINUX RESTART\n"
-msgstr "\n%-11s       RESTART DI LINUX\n"
+msgstr "\n%-11s       LINUX RESTART\n"
 
 #: sar.c:1610
 msgid "-f and -o options are mutually exclusive\n"
-msgstr "Le opzioni -f e -o non possono essere utilizzate contemporaneamente\n"
+msgstr "Опции -f и -o взаимоисключающие\n"
 
 #: sar.c:1846
 msgid "Requested activities not available\n"
-msgstr "Le statistiche richieste non sono disponibili\n"
+msgstr "Запрошенная активность недоступна\n"
 
 #: sadc.c:74
-msgid "sysstat version %s\n"
+msgid ""
+"sysstat version %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 "Usage: %s [ options... ]\n"
 "Options are:\n"
 "[ -x <pid> ] [ -X <pid> ] [ -I ] [ -V ]\n"
 "[ <interval> [ <count> ] ] [ <outfile> ]\n"
-msgstr "sysstat versione %s\n"
+msgstr ""
+"sysstat версия %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-"Uso: %s [ opzioni... ]\n"
-"Opzioni ammesse:\n"
+"Использование: %s [ options... ]\n"
+"Допустимые опции:\n"
 "[ -x <pid> ] [ -X <pid> ] [ -I ] [ -V ]\n"
-"[ <intervallo> [ <iterazioni> ] ] [ <file> ]\n"
+"[ <интервал> [ <счетчик> ] ] [ <выходной_файл> ]\n"
 
 #: sadc.c:614
 msgid "Cannot append data to that file\n"
-msgstr "Impossibile aggiungere dati a quel file\n"
+msgstr "Невозможно добавить данные в этот файл\n"
 
 #: common.c:91
 msgid "Cannot handle so many processors!\n"
-msgstr "Numero di processori eccessivo!\n"
+msgstr "Невозможно обработать так много процессоров!\n"
 

@@ -19,6 +19,7 @@ The following people have contributed to 'sysstat' in one way or another:
 	    translation.
 	  * Stefano Barni <barninga@altavista.net> for the translation
 	    into Italian.
+	  * Dennis Selsky <selsky@siberia.net> for the Russian translation.
 
 	Carl-Christian Weber <ccweber@itz-koeln.de> helped me to make sar
 	work on SMP machines.
@@ -87,6 +88,7 @@ I would also thank the following people for their hints or bug reports
 	Mike Sweger <mikesw@whiterose.net>
 	Don Totten <dontotten@ibm.net>
 	Stephen Tweedie <sct@redhat.com>
+	Holger Wolf <Holger.Wolf@de.ibm.com>
         Urban Widmark <urban@svenskatest.se>
 	Peter Zaitsev <pz@spylog.ru>
 

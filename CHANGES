@@ -319,3 +319,15 @@ Changes:
 	* KB (standing for kilobytes) replaced with kB in various places.
 	* NLS updated: Italian translation added.
 
+2002/04/07: Version 4.0.4 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* iostat is now able to display I/O activity in kB/s with 2.4.x
+	  kernels (option -k).
+	* Fixed a typo in 'sar -W -h' output.
+	* Try to handle the case when some parameters in /proc/net/dev
+	  may overflow ULONG_MAX.
+	* 'sar -d' now displays sectors per second instead of blocks
+	  per second.
+	* iostat and sar manual pages updated.
+	* Added a FAQ.
+	* NLS updated: Russian translation added.
+

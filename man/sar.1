@@ -135,7 +135,9 @@ Total number of write requests per second issued to the physical disk.
 .B bread/s
 .RS
 Total amount of data read from the drive in blocks per second.
-A block is of indeterminate size.
+Blocks are equivalent to sectors with post 2.4 kernels
+and therefore have a size of 512 bytes. With older kernels, a block is of
+indeterminate size.
 .RE
 
 .B bwrtn/s
@@ -209,9 +211,9 @@ Multiple logical requests can be combined into a single I/O request to the
 device. A transfer is of indeterminate size.
 .RE
 
-.B blks/s
+.B sect/s
 .RS
-Number of blocks transferred from or to the device. A block is of indeterminate size.
+Number of sectors transferred from or to the device. The size of a sector is 512 bytes.
 .RE
 .RE
 .IP "-e hh:mm:ss"
@@ -237,7 +239,7 @@ file. The -f option is exclusive of the -o option.
 When  reading data from a file, print its contents in a format that can
 easily be handled by pattern processing commands like awk.
 The output consists of fields separated by a tab. Each record contains the
-hostname of the host where sar was run, the interval value (or -1 if not applicable), the timestamp (UST time)
+hostname of the host where sar was run, the interval value (or -1 if not applicable), the timestamp (UTC value - Coordinated Universal Time)
 in seconds from the epoch,
 the device name (or - if not applicable), the field name and its value.
 .IP -H

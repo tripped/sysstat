@@ -16,17 +16,19 @@
 /* Files */
 #define PARTITIONS	"/proc/partitions"
 
-#define D_CPU_ONLY	1
-#define D_DISK_ONLY	2
-#define D_TIMESTAMP	4
-#define D_EXTENDED	8
-#define D_EXTENDED_ALL	16
+#define D_CPU_ONLY	0x01
+#define D_DISK_ONLY	0x02
+#define D_TIMESTAMP	0x04
+#define D_EXTENDED	0x08
+#define D_EXTENDED_ALL	0x10
+#define D_KILOBYTES	0x10
 
 #define DISPLAY_CPU_ONLY(m)	(((m) & D_CPU_ONLY) == D_CPU_ONLY)
 #define DISPLAY_DISK_ONLY(m)	(((m) & D_DISK_ONLY) == D_DISK_ONLY)
 #define DISPLAY_TIMESTAMP(m)	(((m) & D_TIMESTAMP) == D_TIMESTAMP)
 #define DISPLAY_EXTENDED(m)	(((m) & D_EXTENDED) == D_EXTENDED)
 #define DISPLAY_EXTENDED_ALL(m)	(((m) & D_EXTENDED_ALL) == D_EXTENDED_ALL)
+#define DISPLAY_KILOBYTES(m)	(((m) & D_KILOBYTES) == D_KILOBYTES)
 
 
 struct comm_stats {

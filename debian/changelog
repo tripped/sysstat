@@ -1,3 +1,13 @@
+sysstat (4.1.3-1) unstable; urgency=low
+
+  * New upstream version (development):
+    + NOTE (from the upstream home page): iostat should now be fully compliant
+      with 2.5/2.6 kernels.  But it will no longer look for statistics in the 
+      /proc/partitions file.  Those who need to display extended statistics 
+      with iostat while still using an older 2.4 kernel must use sysstat 4.1.2
+
+ -- Robert Luberda <robert@debian.org>  Sat, 17 May 2003 18:47:46 +0200
+
 sysstat (4.1.2-3) unstable; urgency=low
 
   * Update German and Russian translations of debconf templates from DDTP.

@@ -49,30 +49,33 @@ struct mp_stats *st_mp_cpu[DIM];
 unsigned char *cpu_bitmap;	/* Bit 0: Global; Bit 1: 1st proc; etc. */
 struct mp_timestamp st_mp_tstamp[DIM];
 /* Nb of processors on the machine. A value of 1 means two processors */
-int proc_used = -1;
+int cpu_nr = -1;
 long interval = 0, count = 0;
 unsigned int flags = 0;
 struct tm loc_time;
 
 
 /*
+ ***************************************************************************
  * Print usage and exit
+ ***************************************************************************
  */
 void usage(char *progname)
 {
    fprintf(stderr, _("sysstat version %s\n"
-		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-	           "Usage: %s [ options... ]\n"
+		   "(C) Sebastien Godard\n"
+	           "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 		   "Options are:\n"
-		   "[ -P { <cpu> | ALL } ] [ -V ]\n"
-		   "[ <interval> [ <count> ] ]\n"),
+		   "[ -P { <cpu> | ALL } ] [ -V ]\n"),
 	   VERSION, progname);
    exit(1);
 }
 
 
 /*
+ ***************************************************************************
  * SIGALRM signal handler
+ ***************************************************************************
  */
 void alarm_handler(int sig)
 {
@@ -82,7 +85,9 @@ void alarm_handler(int sig)
 
 
 /*
+ ***************************************************************************
  * Allocate mp_stats structures and cpu bitmap
+ ***************************************************************************
  */
 void salloc_mp_cpu(int nr_cpus)
 {
@@ -107,7 +112,9 @@ void salloc_mp_cpu(int nr_cpus)
 
 
 /*
+ ***************************************************************************
  * Print statistics average
+ ***************************************************************************
  */
 void write_stats_avg(short curr, short dis)
 {
@@ -144,7 +151,7 @@ void write_stats_avg(short curr, short dis)
    }
 
    /* Here, we reduce the interval value to one processor! */
-   itv /= (proc_used + 1);
+   itv /= (cpu_nr + 1);
    if (!itv)
       itv = 1;
 
@@ -153,7 +160,7 @@ void write_stats_avg(short curr, short dis)
 	  S_VALUE(st_mp_cpu[2]->irq, st_mp_cpu[curr]->irq, itv));
    }
 
-   for (cpu = 1; cpu <= proc_used + 1; cpu++) {
+   for (cpu = 1; cpu <= cpu_nr + 1; cpu++) {
 
       /* Check if we want stats about this proc */
       if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
@@ -183,7 +190,9 @@ void write_stats_avg(short curr, short dis)
 
 
 /*
+ ***************************************************************************
  * Print statistics
+ ***************************************************************************
  */
 void write_stats(short curr, short dis)
 {
@@ -240,7 +249,7 @@ void write_stats(short curr, short dis)
    }
 
    /* Here, we reduce the interval value to one processor! */
-   itv /= (proc_used + 1);
+   itv /= (cpu_nr + 1);
    if (!itv)
       itv = 1;
 
@@ -249,7 +258,7 @@ void write_stats(short curr, short dis)
 	  S_VALUE(st_mp_cpu[!curr]->irq, st_mp_cpu[curr]->irq, itv));
    }
 
-   for (cpu = 1; cpu <= proc_used + 1; cpu++) {
+   for (cpu = 1; cpu <= cpu_nr + 1; cpu++) {
 
       /* Check if we want stats about this proc */
       if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
@@ -279,8 +288,10 @@ void write_stats(short curr, short dis)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/stat
  * (see linux source file linux/fs/proc/array.c)
+ ***************************************************************************
  */
 void read_proc_stat(short curr)
 {
@@ -333,7 +344,7 @@ void read_proc_stat(short curr)
 	 sscanf(line + 3, "%d %u %u %u %lu %lu",
 		&proc_nb,
 		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
-	 if (proc_nb <= proc_used) {
+	 if (proc_nb <= cpu_nr) {
 	    st_mp_cpu_i = st_mp_cpu[curr] + proc_nb + 1;
 	    st_mp_cpu_i->cpu_user   = cc_user;
 	    st_mp_cpu_i->cpu_nice   = cc_nice;
@@ -358,7 +369,9 @@ void read_proc_stat(short curr)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/interrupts
+ ***************************************************************************
  */
 void read_interrupts_stat(short curr)
 {
@@ -367,7 +380,7 @@ void read_interrupts_stat(short curr)
    static char line[512];	/* Should depend on the nb of processors */
    unsigned int irq = 0, cpu;
 
-   for (cpu = 0; cpu <= proc_used; cpu++) {
+   for (cpu = 0; cpu <= cpu_nr; cpu++) {
       st_mp_cpu_i = st_mp_cpu[curr] + cpu +1;
       st_mp_cpu_i->irq = 0;
    }
@@ -379,7 +392,7 @@ void read_interrupts_stat(short curr)
 
 	 if (isdigit(line[2])) {
 	
-	    for (cpu = 0; cpu <= proc_used; cpu++) {
+	    for (cpu = 0; cpu <= cpu_nr; cpu++) {
 	       st_mp_cpu_i = st_mp_cpu[curr] + cpu + 1;
 	       sscanf(line + 4 + 11 * cpu, " %10u", &irq);
 	       st_mp_cpu_i->irq += irq;
@@ -394,7 +407,9 @@ void read_interrupts_stat(short curr)
 
 
 /*
+ ***************************************************************************
  * Main entry to the program
+ ***************************************************************************
  */
 int main(int argc, char **argv)
 {
@@ -410,13 +425,13 @@ int main(int argc, char **argv)
 #endif
 
    /* How many processors on this machine ? */
-   get_nb_proc_used(&proc_used, ~0);
+   get_cpu_nr(&cpu_nr, ~0);
 
    /*
-    * proc_used: a value of 1 means there are 2 processors (0 and 1).
+    * cpu_nr: a value of 1 means there are 2 processors (0 and 1).
     * In this case, we have to allocate 3 structures: global, proc0 and proc1.
     */
-   salloc_mp_cpu(proc_used + 2);
+   salloc_mp_cpu(cpu_nr + 2);
 
    while (++opt < argc) {
 
@@ -429,19 +444,19 @@ int main(int argc, char **argv)
 	    opt_used = 1;
 	    dis_hdr++;
 	    if (!strcmp(argv[opt], K_ALL)) {
-	       if (proc_used)
+	       if (cpu_nr)
 		  dis_hdr = 9;
 	       /*
 		* Set bit for every processor.
 		* Also indicate to display stats for CPU 'all'.
 		*/
-	       memset(cpu_bitmap, 0xff, ((proc_used + 1 + (proc_used > 0)) >> 3) + 1);
+	       memset(cpu_bitmap, 0xff, ((cpu_nr + 1 + (cpu_nr > 0)) >> 3) + 1);
 	    }
 	    else {
 	       if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
 		  usage(argv[0]);
 	       i = atoi(argv[opt]);	/* Get cpu number */
-	       if (i > proc_used) {
+	       if (i > cpu_nr) {
 		  fprintf(stderr, _("Not that many processors!\n"));
 		  exit(1);
 	       }
@@ -511,7 +526,7 @@ int main(int argc, char **argv)
 
       st_mp_tstamp[1].uptime = 0;
 
-      memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (proc_used + 2));
+      memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 2));
 
       write_stats(0, DISP_HDR);
       exit(0);
@@ -527,7 +542,7 @@ int main(int argc, char **argv)
 
    st_mp_tstamp[2].uptime = st_mp_tstamp[0].uptime;
 
-   memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (proc_used + 2));
+   memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (cpu_nr + 2));
 
    pause();
 

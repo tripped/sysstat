@@ -16,7 +16,7 @@
 #define A_PAGE		0x000010
 #define A_SWAP		0x000020
 #define A_IO		0x000040
-/* unused */
+/* 80: unused */
 #define A_ONE_IRQ	0x000100
 #define A_MEMORY	0x000200
 #define A_PID		0x000400
@@ -24,7 +24,7 @@
 #define A_SUM_PID	0x001000
 #define A_SERIAL	0x002000
 #define A_MEM_AMT	0x004000
-/* unused */
+/* 8000: unused */
 #define A_KTABLES	0x010000
 #define A_NET_DEV	0x020000
 #define A_NET_EDEV	0x040000
@@ -79,7 +79,7 @@
 #define F_SA_ROTAT      0x002
 #define F_FLT_INC	0x004
 #define F_A_OPTION	0x008
-/* 0x10 flag used. Cf. common.h */
+/* 0x10: unused */
 #define F_H_OPTION	0x020
 #define F_ORG_TIME	0x040
 #define F_DEFAULT_COUNT	0x080
@@ -87,6 +87,7 @@
 #define F_DB_OPTION	0x200
 #define F_DO_SA_ROTAT	0x400
 #define F_PER_PROC	0x800
+/* 0x100000:0x800000 -> reserved (cf. common.h) */
 
 #define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
 #define WANT_SA_ROTAT(m)	(((m) & F_SA_ROTAT) == F_SA_ROTAT)
@@ -129,7 +130,6 @@
 #define NR_IFACE_PREALLOC	2
 #define NR_SERIAL_PREALLOC	2
 #define NR_IRQPROC_PREALLOC	3
-#define NR_DISK_PREALLOC	3
 
 /* Maximum number of processes that can be monitored simultaneously */
 #define MAX_PID_NR		256
@@ -162,10 +162,23 @@
 #define SA_MAGIC	0x215f
 
 /*
+ * IMPORTANT NOTE:
  * Attributes such as 'aligned' and 'packed' have been defined for every
  * members of the following structures, so that:
  * 1) structures have a fixed size whether on 32 or 64-bit systems,
  * 2) we don't have variable gap between members.
+ * Indeed, we want to be able to read daily data files recorded on
+ * 32 and 64-bit systems, even if we are not on the same architecture.
+ * Moreover, we are sure that sizeof(struct) is a constant for every
+ * struct of same type, so that expressions like
+ * struct *foo2 = struct *foo1 + i;
+ * can be safely used.
+ *
+ * Structures are padded so that their length be a multiple of 8 bytes.
+ * It seems better (although not compulsory) for structures written
+ * contiguously into daily data files and accessed the following way once
+ * they are read into memory:
+ * struct *foo2 = struct *foo1 + i;  (since i <=> sizeof(struct foo))
  */
 /* System activity data file header */
 struct file_hdr {
@@ -206,8 +219,8 @@ struct file_hdr {
 };
 
 /*
- * Note that sizeof(file_hdr) may be greater than FILE_HDR_SIZE,
- * because we use aligned(8) attributes.
+ * Note that sizeof(file_hdr)==FILE_HDR_SIZE,
+ * since we use SIZEOF_LONG instead of sizeof(long).
  */
 #define FILE_HDR_SIZE	(SIZEOF_LONG + \
 			 sizeof(int)   * 4 + \
@@ -294,7 +307,8 @@ struct stats_one_cpu {
    unsigned int  per_cpu_nice			__attribute__ ((packed));
    unsigned int  per_cpu_system			__attribute__ ((packed));
    unsigned char pad[4]				__attribute__ ((packed));
-/* IMPORTANT NOTE:
+/*
+ * IMPORTANT NOTE:
  * Structure must be a multiple of 8 bytes, since we use an array of structures.
  * Each structure is *aligned*, and we want the structures to be packed together.
  */

@@ -24,7 +24,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <errno.h>
-#include <unistd.h>	/* For STDOUT_FILENO */
+#include <unistd.h>	/* For STDOUT_FILENO, among others */
+#include <dirent.h>
+#include <sys/types.h>
 #include <sys/ioctl.h>
 
 /*
@@ -46,7 +48,9 @@
 
 
 /*
+ ***************************************************************************
  * Get current date or time
+ ***************************************************************************
  */
 time_t get_localtime(struct tm *loc_time)
 {
@@ -62,19 +66,21 @@ time_t get_localtime(struct tm *loc_time)
 
 
 /*
+ ***************************************************************************
  * Find number of processors used on the machine
  * (0 means one proc, 1 means two proc, etc.)
  * As far as I know, there are two possibilities for this:
  * 1) Use /proc/stat or 2) Use /proc/cpuinfo
  * (I haven't heard of a better method to guess it...)
+ ***************************************************************************
  */
-int get_nb_proc_used(int *proc_used, unsigned int max_nr_cpus)
+int get_cpu_nr(int *cpu_nr, unsigned int max_nr_cpus)
 {
    FILE *statfp;
    char line[16];
    int proc_nb, smp_box;
 
-   *proc_used = -1;
+   *cpu_nr = -1;
 
    /* Open stat file */
    if ((statfp = fopen(STAT, "r")) == NULL) {
@@ -86,21 +92,21 @@ int get_nb_proc_used(int *proc_used, unsigned int max_nr_cpus)
 
       if (strncmp(line, "cpu ", 4) && !strncmp(line, "cpu", 3)) {
 	 sscanf(line + 3, "%d", &proc_nb);
-	 if (proc_nb > *proc_used)
-	   *proc_used = proc_nb;
+	 if (proc_nb > *cpu_nr)
+	   *cpu_nr = proc_nb;
       }
    }
 
    /*
-    * proc_used initial value: -1
-    * If proc_used < 0 then there is only one proc.
-    * If proc_used = 0 then there is only one proc but this is an SMP kernel
+    * cpu_nr initial value: -1
+    * If cpu_nr < 0 then there is only one proc.
+    * If cpu_nr = 0 then there is only one proc but this is an SMP kernel
     */
-   smp_box = (*proc_used > 0);
-   if (*proc_used < 0)
-      *proc_used = 0;
+   smp_box = (*cpu_nr > 0);
+   if (*cpu_nr < 0)
+      *cpu_nr = 0;
 
-   if (*proc_used >= max_nr_cpus) {
+   if (*cpu_nr >= max_nr_cpus) {
       fprintf(stderr, _("Cannot handle so many processors!\n"));
       exit(1);
    }
@@ -113,7 +119,123 @@ int get_nb_proc_used(int *proc_used, unsigned int max_nr_cpus)
 
 
 /*
+ ***************************************************************************
+ * Look for partitions of a given block device in /sys filesystem
+ ***************************************************************************
+ */
+int get_dev_part_nr(char *dev_name)
+{
+   DIR *dir;
+   struct dirent *drd;
+   char dfile[MAX_PF_NAME], line[MAX_PF_NAME];
+   int part = 0;
+
+   sprintf(dfile, "%s/%s", SYSFS_BLOCK, dev_name);
+
+   /* Open current device directory in /sys/block */
+   if ((dir = opendir(dfile)) == NULL)
+      return 0;
+
+   /* Get current file entry */
+   while ((drd = readdir(dir)) != NULL) {
+      if (!strcmp(drd->d_name, ".") || !strcmp(drd->d_name, ".."))
+	 continue;
+      sprintf(line, "%s/%s/%s", dfile, drd->d_name, S_STAT);
+
+      /* Try to guess if current entry is a directory containing a stat file */
+      if (!access(line, R_OK))
+	 /* Yep... */
+	 part++;
+   }
+
+   /* Close directory */
+   (void) closedir(dir);
+
+   return part;
+}
+
+
+/*
+ ***************************************************************************
+ * Look for block devices present in /sys/ filesystem:
+ * Check first that sysfs is mounted (done by trying to open /sys/block
+ * directory), then find number of devices registered.
+ ***************************************************************************
+ */
+int get_sysfs_dev_nr(int flags)
+{
+   DIR *dir;
+   struct dirent *drd;
+   char line[MAX_PF_NAME];
+   int dev = 0;
+
+   /* Open /sys/block directory */
+   if ((dir = opendir(SYSFS_BLOCK)) == NULL)
+      /* sysfs not mounted, or perhaps this is an old kernel */
+      return 0;
+
+   /* Get current file entry in /sys/block directory */
+   while ((drd = readdir(dir)) != NULL) {
+      if (!strcmp(drd->d_name, ".") || !strcmp(drd->d_name, ".."))
+	 continue;
+      sprintf(line, "%s/%s/%s", SYSFS_BLOCK, drd->d_name, S_STAT);
+
+      /* Try to guess if current entry is a directory containing a stat file */
+      if (!access(line, R_OK)) {
+	 /* Yep... */
+	 dev++;
+	
+	 if (DISPLAY_PARTITIONS(flags))
+	    /* We also want the number of partitions for this device */
+	    dev += get_dev_part_nr(drd->d_name);
+      }
+   }
+
+    /* Close /sys/block directory */
+   (void) closedir(dir);
+
+   return dev;
+}
+
+
+/*
+ ***************************************************************************
+ * Find number of disk entries that are registered on the
+ * "disk_io:" line in /proc/stat.
+ ***************************************************************************
+ */
+int get_disk_io_nr(void)
+{
+   FILE *statfp;
+   char line[1024];
+   int dsk = 0;
+   int pos;
+
+   /* Open /proc/stat file */
+   if ((statfp = fopen(STAT, "r")) == NULL) {
+      fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
+      exit(2);
+   }
+
+   while (fgets(line, 1024, statfp) != NULL) {
+
+      if (!strncmp(line, "disk_io: ", 9)) {
+	 for (pos = 9; pos < strlen(line) - 1; pos +=strcspn(line + pos, " ") + 1)
+	    dsk++;
+      }
+   }
+
+   /* Close /proc/stat file */
+   fclose(statfp);
+
+   return dsk;
+}
+
+
+/*
+ ***************************************************************************
  * Print banner
+ ***************************************************************************
  */
 inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, char *nodename)
 {
@@ -131,7 +253,9 @@ inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, 
 
 #ifdef USE_NLS
 /*
+ ***************************************************************************
  * Init National Language Support
+ ***************************************************************************
  */
 void init_nls(void)
 {
@@ -147,7 +271,9 @@ void init_nls(void)
 
 
 /*
+ ***************************************************************************
  * Get window height (number of lines)
+ ***************************************************************************
  */
 int get_win_height(void)
 {
@@ -167,7 +293,9 @@ int get_win_height(void)
 
 
 /*
+ ***************************************************************************
  * Remove /dev from path name
+ ***************************************************************************
  */
 char *device_name(char *name)
 {
@@ -179,7 +307,9 @@ char *device_name(char *name)
 
 
 /*
+ ***************************************************************************
  * Get page shift in kB
+ ***************************************************************************
  */
 int get_kb_shift(void)
 {

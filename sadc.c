@@ -46,7 +46,7 @@
 #endif
 
 /* Nb of processors on the machine. A value of 1 means two processors */
-int proc_used = -1;
+int cpu_nr = -1;
 int serial_used = 0, irqcpu_used = 0, iface_used = 0, disk_used = 0;
 unsigned int sadc_actflag;
 long interval = 0, count = 0;
@@ -69,7 +69,9 @@ int pid_nr = 0, apid_nr = 0;
 
 
 /*
+ ***************************************************************************
  * Print usage and exit
+ ***************************************************************************
  */
 void usage(char *progname)
 {
@@ -78,18 +80,19 @@ void usage(char *progname)
     * They should only be used with sar.
     */
    fprintf(stderr, _("sysstat version %s\n"
-		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
-	           "Usage: %s [ options... ]\n"
+		   "(C) Sebastien Godard\n"
+	           "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
 		   "Options are:\n"
-		   "[ -x <pid> ] [ -X <pid> ] [ -I ] [ -V ]\n"
-		   "[ <interval> [ <count> ] ] [ <outfile> ]\n"),
+		   "[ -x <pid> ] [ -X <pid> ] [ -I ] [ -V ]\n"),
 	   VERSION, progname);
    exit(1);
 }
 
 
 /*
+ ***************************************************************************
  * SIGALRM signal handler
+ ***************************************************************************
  */
 void alarm_handler(int sig)
 {
@@ -99,8 +102,10 @@ void alarm_handler(int sig)
 
 
 /*
+ ***************************************************************************
  * Allocate stats_one_cpu structures
  * (only on SMP machines)
+ ***************************************************************************
  */
 void salloc_cpu(int nr_cpus)
 {
@@ -114,7 +119,9 @@ void salloc_cpu(int nr_cpus)
 
 
 /*
+ ***************************************************************************
  * Allocate stats_serial structures
+ ***************************************************************************
  */
 void salloc_serial(int nr_serial)
 {
@@ -128,7 +135,9 @@ void salloc_serial(int nr_serial)
 
 
 /*
+ ***************************************************************************
  * Allocate stats_irq_cpu structures
+ ***************************************************************************
  */
 void salloc_irqcpu(int nr_cpus, int nr_irqcpu)
 {
@@ -155,7 +164,9 @@ void salloc_irqcpu(int nr_cpus, int nr_irqcpu)
 
 
 /*
+ ***************************************************************************
  * Allocate stats_net_dev structures
+ ***************************************************************************
  */
 void salloc_net_dev(int nr_iface)
 {
@@ -169,7 +180,9 @@ void salloc_net_dev(int nr_iface)
 
 
 /*
+ ***************************************************************************
  * Allocate disk_stats structures
+ ***************************************************************************
  */
 void salloc_disk(int nr_disks)
 {
@@ -183,7 +196,9 @@ void salloc_disk(int nr_disks)
 
 
 /*
+ ***************************************************************************
  * Allocate pid_stats structures
+ ***************************************************************************
  */
 void salloc_pid(int pid_nr)
 {
@@ -210,7 +225,9 @@ void p_write_error(void)
 
 
 /*
+ ***************************************************************************
  * Set PID flag value (bit 0 set: -x, bit 1 set: -X)
+ ***************************************************************************
  */
 void set_pflag(int child, unsigned long pid)
 {
@@ -244,7 +261,9 @@ void set_pflag(int child, unsigned long pid)
 
 
 /*
+ ***************************************************************************
  * Count number of processes to display
+ ***************************************************************************
  */
 int count_pids(void)
 {
@@ -274,7 +293,9 @@ int count_pids(void)
 
 
 /*
+ ***************************************************************************
  * Look for all the PIDs
+ ***************************************************************************
  */
 void get_pid_list(void)
 {
@@ -306,7 +327,9 @@ void get_pid_list(void)
 
 
 /*
+ ***************************************************************************
  * Find number of serial lines that support tx/rx accounting
+ ***************************************************************************
  */
 void get_serial_lines(int *serial_used)
 {
@@ -348,8 +371,10 @@ void get_serial_lines(int *serial_used)
 
 
 /*
+ ***************************************************************************
  * Find number of interfaces (network devices) that are in /proc/net/dev file
  * (see linux source file linux/net/core/dev.c)
+ ***************************************************************************
  */
 void get_net_dev(int *iface_used)
 {
@@ -375,44 +400,11 @@ void get_net_dev(int *iface_used)
 }
 
 
-
 /*
- * Find number of disks that are in /proc/stat file
- */
-void get_disks(int *nr_disks)
-{
-   FILE *statfp;
-   char line[1024];
-   int dsk = 0;
-   int pos;
-
-   /* Open /proc/stat file */
-   if ((statfp = fopen(STAT, "r")) == NULL) {
-      fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
-      exit(2);
-   }
-
-   while (fgets(line, 1024, statfp) != NULL) {
-
-      if (!strncmp(line, "disk_io: ", 9)) {
-	 for (pos = 9; pos < strlen(line) - 1; pos +=strcspn(line + pos, " ") + 1)
-	    dsk++;
-      }
-   }
-
-   /* Close /proc/stat file */
-   fclose(statfp);
-
-   if (dsk)
-      *nr_disks = dsk + NR_DISK_PREALLOC;
-   else
-      *nr_disks = 0;
-}
-
-
-/*
+ ***************************************************************************
  * Find number of interrupts available per processor.
  * Called on SMP machines only.
+ ***************************************************************************
  */
 void get_irqcpu_nb(int *irqcpu_used, unsigned int max_nr_irqcpu)
 {
@@ -439,7 +431,9 @@ void get_irqcpu_nb(int *irqcpu_used, unsigned int max_nr_irqcpu)
 
 
 /*
+ ***************************************************************************
  * Get total number of minor and major faults made by the system
+ ***************************************************************************
  */
 void read_sysfaults(void)
 {
@@ -483,7 +477,9 @@ void read_sysfaults(void)
 
 
 /*
+ ***************************************************************************
  * Fill system activity file header, then print it
+ ***************************************************************************
  */
 void setup_file_hdr(int ofd, size_t *file_stats_size)
 {
@@ -504,7 +500,7 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
    file_hdr.sa_day     = loc_time.tm_mday;
    file_hdr.sa_month   = loc_time.tm_mon;
    file_hdr.sa_year    = loc_time.tm_year;
-   file_hdr.sa_proc    = proc_used;
+   file_hdr.sa_proc    = cpu_nr;
    file_hdr.sa_nr_pid  = pid_nr;
    file_hdr.sa_serial  = serial_used;
    file_hdr.sa_irqcpu  = irqcpu_used;
@@ -531,10 +527,12 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
 
 
 /*
+ ***************************************************************************
  * sadc called with interval and count parameters not set:
  * write a dummy record notifying a system restart.
  * This should typically be called this way at boot time,
  * before the cron daemon is started to avoid conflict with sa1/sa2 scripts.
+ ***************************************************************************
  */
 void write_dummy_record(int ofd, size_t file_stats_size)
 {
@@ -560,11 +558,13 @@ void write_dummy_record(int ofd, size_t file_stats_size)
 
 
 /*
+ ***************************************************************************
  * Write stats.
  * NB: sadc provides all the stats, including:
  * -> CPU utilization per processor (on SMP machines only)
  * -> IRQ per processor (on SMP machines only)
  * -> number of each IRQ (if -I option passed to sadc)
+ ***************************************************************************
  */
 void write_stats(int ofd, size_t file_stats_size)
 {
@@ -572,8 +572,8 @@ void write_stats(int ofd, size_t file_stats_size)
 
    if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
       p_write_error();
-   if (proc_used > 0) {
-      if ((nb = write(ofd, st_cpu, STATS_ONE_CPU_SIZE * (proc_used + 1))) != (STATS_ONE_CPU_SIZE * (proc_used + 1)))
+   if (cpu_nr > 0) {
+      if ((nb = write(ofd, st_cpu, STATS_ONE_CPU_SIZE * (cpu_nr + 1))) != (STATS_ONE_CPU_SIZE * (cpu_nr + 1)))
 	 p_write_error();
    }
    if (GET_ONE_IRQ(sadc_actflag)) {
@@ -590,8 +590,8 @@ void write_stats(int ofd, size_t file_stats_size)
 	 p_write_error();
    }
    if (irqcpu_used) {
-      if ((nb = write(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * (proc_used + 1) * irqcpu_used))
-	  != (STATS_IRQ_CPU_SIZE * (proc_used + 1) * irqcpu_used))
+      if ((nb = write(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_used))
+	  != (STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_used))
 	 p_write_error();
    }
    if (iface_used) {
@@ -606,7 +606,9 @@ void write_stats(int ofd, size_t file_stats_size)
 
 
 /*
+ ***************************************************************************
  * Create a system activity daily data file
+ ***************************************************************************
  */
 void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size)
 {
@@ -621,7 +623,9 @@ void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size)
 
 
 /*
+ ***************************************************************************
  * Get file descriptor for output
+ ***************************************************************************
  */
 void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 {
@@ -658,7 +662,7 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 	 sadc_actflag     = file_hdr.sa_actflag;
 	 *file_stats_size = file_hdr.sa_st_size;
 
-	 if (file_hdr.sa_proc != proc_used) {
+	 if (file_hdr.sa_proc != cpu_nr) {
 	    fprintf(stderr, _("Cannot append data to that file\n"));
 	    exit(1);
 	 }
@@ -683,7 +687,7 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 	    if (irqcpu_used)
 	       free(st_irq_cpu);
 	    irqcpu_used = file_hdr.sa_irqcpu;
-	    salloc_irqcpu(proc_used + 1, irqcpu_used);
+	    salloc_irqcpu(cpu_nr + 1, irqcpu_used);
 	 }
 	 if (file_hdr.sa_nr_disk != disk_used) {
 	    if (disk_used)
@@ -706,8 +710,10 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/stat
  * (see linux source file linux/fs/proc/proc_misc.c)
+ ***************************************************************************
  */
 void read_proc_stat(void)
 {
@@ -756,7 +762,7 @@ void read_proc_stat(void)
       }
 
       else if (!strncmp(line, "cpu", 3)) {
-	 if (proc_used > 0) {
+	 if (cpu_nr > 0) {
 	    /*
 	     * Read the number of jiffies spent in user, nice, system, idle
 	     * and iowait mode for current proc.
@@ -768,7 +774,7 @@ void read_proc_stat(void)
 	    sscanf(line + 3, "%d %u %u %u %lu %lu",
 		   &proc_nb,
 		   &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
-	    if (proc_nb <= proc_used) {
+	    if (proc_nb <= cpu_nr) {
 	       st_cpu_i = st_cpu + proc_nb;
 	       st_cpu_i->per_cpu_user   = cc_user;
 	       st_cpu_i->per_cpu_nice   = cc_nice;
@@ -894,8 +900,10 @@ void read_proc_stat(void)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/loadavg
  * (see linux source file linux/fs/proc/proc_misc.c)
+ ***************************************************************************
  */
 void read_proc_loadavg(void)
 {
@@ -931,8 +939,10 @@ void read_proc_loadavg(void)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/meminfo
  * (see linux source file linux/fs/proc/array.c and linux/fs/proc/proc_misc.c)
+ ***************************************************************************
  */
 void read_proc_meminfo(void)
 {
@@ -1018,8 +1028,10 @@ void read_proc_meminfo(void)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/<pid>/stat
  * (see linux source file linux/fs/proc/array.c)
+ ***************************************************************************
  */
 void read_pid_stat(void)
 {
@@ -1059,8 +1071,10 @@ void read_pid_stat(void)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/tty/driver/serial
  * (see linux source file linux/drivers/char/serial.c)
+ ***************************************************************************
  */
 void read_serial_stat(void)
 {
@@ -1110,7 +1124,9 @@ void read_serial_stat(void)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/interrupts
+ ***************************************************************************
  */
 void read_interrupts_stat(void)
 {
@@ -1129,7 +1145,7 @@ void read_interrupts_stat(void)
 	    p = st_irq_cpu + irq;
 	    sscanf(line, "%3d", &(p->irq));
 	
-	    for (cpu = 0; cpu <= proc_used; cpu++) {
+	    for (cpu = 0; cpu <= cpu_nr; cpu++) {
 	       p = st_irq_cpu + cpu * irqcpu_used + irq;
 	       /*
 		* No need to set (st_irq_cpu + cpu * irqcpu_used)->irq:
@@ -1158,9 +1174,11 @@ void read_interrupts_stat(void)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/sys/fs/...
  * (see linux source file linux/kernel/sysctl.c)
  * Some files may not exist, depending on the kernel configuration.
+ ***************************************************************************
  */
 void read_ktables_stat(void)
 {
@@ -1260,8 +1278,10 @@ void read_ktables_stat(void)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/net/dev
  * (see linux source file linux/net/core/dev.c and linux/include/linux/netdevice.h)
+ ***************************************************************************
  */
 void read_net_dev_stat(void)
 {
@@ -1321,9 +1341,11 @@ void read_net_dev_stat(void)
 
 
 /*
+ ***************************************************************************
  * Read stats from /proc/net/sockstat
  * (see afinet_get_info() function in linux source file linux/net/ipv4/proc.c
  *  and socket_get_info() function in linux source file linux/net/socket.c)
+ ***************************************************************************
  */
 void read_net_sock_stat(void)
 {
@@ -1365,7 +1387,9 @@ void read_net_sock_stat(void)
 
 
 /*
+ ***************************************************************************
  * Main entry to the program
+ ***************************************************************************
  */
 int main(int argc, char **argv)
 {
@@ -1410,9 +1434,9 @@ int main(int argc, char **argv)
    memset(&file_stats, 0, FILE_STATS_SIZE);
 
    /* How many processors on this machine ? */
-   get_nb_proc_used(&proc_used, NR_CPUS);
-   if (proc_used > 0)
-      salloc_cpu(proc_used + 1);
+   get_cpu_nr(&cpu_nr, NR_CPUS);
+   if (cpu_nr > 0)
+      salloc_cpu(cpu_nr + 1);
 
    /* Get serial lines that support accounting */
    get_serial_lines(&serial_used);
@@ -1421,10 +1445,10 @@ int main(int argc, char **argv)
       salloc_serial(serial_used);
    }
    /* Get number of interrupts available per processor */
-   if (proc_used > 0) {
+   if (cpu_nr > 0) {
       get_irqcpu_nb(&irqcpu_used, NR_IRQS);
       if (irqcpu_used)
-	 salloc_irqcpu(proc_used + 1, irqcpu_used);
+	 salloc_irqcpu(cpu_nr + 1, irqcpu_used);
    }
    else
       /* IRQ per processor are not provided by sadc on UP machines */
@@ -1436,10 +1460,10 @@ int main(int argc, char **argv)
       sadc_actflag |= A_NET_DEV + A_NET_EDEV;
       salloc_net_dev(iface_used);
    }
-   /* Get number of disks */
-   get_disks(&disk_used);
-   if (disk_used) {
+   /* Get number of disk_io entries in /proc/stat */
+   if ((disk_used = get_disk_io_nr()) > 0) {
       sadc_actflag |= A_DISK;
+      disk_used += NR_DISK_PREALLOC;
       salloc_disk(disk_used);
    }
 

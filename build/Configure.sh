@@ -26,8 +26,12 @@ fi
 CLEAN_SA_DIR=`${ASK} 'Clean system activity directory?' "n" "clean-sa-dir"`
 
 # National Language Support
-
 NLS=`${ASK} 'Enable National Language Support (NLS)?' "y" "nls"`
+which msgfmt > /dev/null 2>&1
+WHICH=`echo $?`
+if [ "${NLS}" = "y" -a ${WHICH} -eq 1 ]; then
+	echo WARNING: msgfmt command not found!
+fi
 
 # Linux SMP race workaround
 

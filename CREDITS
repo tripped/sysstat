@@ -33,7 +33,7 @@ The following people have contributed to 'sysstat' in one way or another:
 
 	Mario Vanoni <vanonim@dial.eunet.ch> is the originator of the 2.x
 	to 3.x version transition. Thanks to his numerous advice and his
-	experience on UN*X systems, he helped me to make sar what I think
+	experience on UN*X systems, he helped me to make what I think
 	today is a true system monitoring program.
 
 	Jason (Jay) R. Fink <jay_rf@exis.net> set up and maintained the
@@ -89,6 +89,7 @@ I would also thank the following people for their hints or bug reports
 	Edouard G. Parmelan <edouard.parmelan@quadratec.fr>
 	Plattner(?) <Plattner.external@infineon.com>
 	ReDragon <redragon@vnsecurity.net>
+	Joseph E. Sacco <jsacco@earthlink.net>
 	Michel Simoni <m_simoni@club-internet.fr>
 	Rod Skinner <rod.skinner@intel.com>	
 	Graham Swallow <gps@trix.dircon.co.uk>

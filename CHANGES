@@ -347,3 +347,14 @@ Changes:
 	* Makefile updated.
 	* sar manual page updated.
 
+2002/08/04: Version 4.0.6 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* mpstat now uses a bitmap of char instead of int to avoid endianness
+	  problems. As a consequence, mpstat should now work on PowerMac
+	  architectures.
+	* CPU activity as displayed by mpstat -P for a given processor was
+	  in a wrong range on SMP machines (eg. 0-50% for a dual processor
+	  box).
+	* Missing bitmap initialization fixed in mpstat.c.
+	* Configuration script updated.
+	* FAQ upated.
+

@@ -45,7 +45,8 @@
 
 
 struct mp_stats *st_mp_cpu[DIM];
-unsigned int *cpu_bitmap;	/* Bit 0: Global; Bit 1: 1st proc; etc. */
+/* NOTE: Use array of _char_ for bitmaps to avoid endianness problems...*/
+unsigned char *cpu_bitmap;	/* Bit 0: Global; Bit 1: 1st proc; etc. */
 struct mp_timestamp st_mp_tstamp[DIM];
 int proc_used = -1;  /* Nb of processors on the machine. A value of 1 means two processors */
 long interval = 0, count = 0;
@@ -95,10 +96,12 @@ void salloc_mp_cpu(int nr_cpus)
       memset(st_mp_cpu[i], 0, MP_STATS_SIZE * nr_cpus);
    }
 
-   if ((cpu_bitmap = (int *) malloc((nr_cpus >> 5) + 1)) == NULL) {
+   if ((cpu_bitmap = (unsigned char *) malloc((nr_cpus >> 3) + 1)) == NULL) {
       perror("malloc");
       exit(4);
    }
+
+   memset(cpu_bitmap, 0, (nr_cpus >> 3) + 1);
 }
 
 
@@ -121,16 +124,40 @@ void write_stats_avg(short curr, short dis)
    if (dis)
       printf(_("\nAverage:     CPU   %%user   %%nice %%system   %%idle    intr/s\n"));
 
-   for (cpu = 0; cpu <= proc_used + (proc_used > 0); cpu++) {
+   /* Check if we want global average stats among all proc */
+   if (*cpu_bitmap & 1) {
+
+      printf(_("Average:     all"));
+
+      printf("  %6.2f  %6.2f  %6.2f",
+	     SP_VALUE(st_mp_cpu[2]->cpu_user,   st_mp_cpu[curr]->cpu_user,   itv),
+	     SP_VALUE(st_mp_cpu[2]->cpu_nice,   st_mp_cpu[curr]->cpu_nice,   itv),
+	     SP_VALUE(st_mp_cpu[2]->cpu_system, st_mp_cpu[curr]->cpu_system, itv));
+
+      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[2]->cpu_idle)	/* Handle buggy RTC (or kernels?) */
+	 printf("    %.2f", 0.0);
+      else
+	 printf("  %6.2f",
+		SP_VALUE(st_mp_cpu[2]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
+   }
+
+   /* Here, we reduce the interval value to one processor! */
+   itv /= (proc_used + 1);
+   if (!itv)
+      itv = 1;
+
+   if (*cpu_bitmap & 1) {
+      printf(" %9.2f\n",
+	  S_VALUE(st_mp_cpu[2]->irq, st_mp_cpu[curr]->irq, itv));
+   }
+
+   for (cpu = 1; cpu <= proc_used + (proc_used > 0); cpu++) {
 
       /* Check if we want stats about this proc */
-      if (!(*(cpu_bitmap + (cpu >> 5)) & (1 << (cpu & 0x1f))))
+      if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
 	 continue;
 
-      if (!cpu)
-	 printf(_("Average:     all"));
-      else
-	 printf(_("Average:    %4d"), cpu - 1);
+      printf(_("Average:    %4d"), cpu - 1);
 
       st_mp_cpu_i = st_mp_cpu[curr]  + cpu;
       st_mp_cpu_j = st_mp_cpu[2] + cpu;
@@ -146,14 +173,8 @@ void write_stats_avg(short curr, short dis)
 	 printf("  %6.2f",
 		SP_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
 
-      if (!cpu) {
-	 itv /= (proc_used + 1);
-	 if (!itv)
-	    itv = 1;
-      }
-
       printf(" %9.2f\n",
-	     S_VALUE(st_mp_cpu[2]->irq, st_mp_cpu[curr]->irq, itv));
+	     S_VALUE(st_mp_cpu_j->irq, st_mp_cpu_i->irq, itv));
    }
 }
 
@@ -196,16 +217,40 @@ void write_stats(short curr, short dis)
    if (dis)
       printf(_("\n%-11s  CPU   %%user   %%nice %%system   %%idle    intr/s\n"), cur_time[!curr]);
 
-   for (cpu = 0; cpu <= proc_used + (proc_used > 0); cpu++) {
+   /* Check if we want global stats among all proc */
+   if (*cpu_bitmap & 1) {
+
+      printf(_("%-11s  all"), cur_time[curr]);
+
+      printf("  %6.2f  %6.2f  %6.2f",
+	     SP_VALUE(st_mp_cpu[!curr]->cpu_user,   st_mp_cpu[curr]->cpu_user,   itv),
+	     SP_VALUE(st_mp_cpu[!curr]->cpu_nice,   st_mp_cpu[curr]->cpu_nice,   itv),
+	     SP_VALUE(st_mp_cpu[!curr]->cpu_system, st_mp_cpu[curr]->cpu_system, itv));
+
+      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[!curr]->cpu_idle)	/* Handle buggy RTC (or kernels?) */
+	 printf("    %.2f", 0.0);
+      else
+	 printf("  %6.2f",
+		SP_VALUE(st_mp_cpu[!curr]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
+   }
+
+   /* Here, we reduce the interval value to one processor! */
+   itv /= (proc_used + 1);
+   if (!itv)
+      itv = 1;
+
+   if (*cpu_bitmap & 1) {
+      printf(" %9.2f\n",
+	  S_VALUE(st_mp_cpu[!curr]->irq, st_mp_cpu[curr]->irq, itv));
+   }
+
+   for (cpu = 1; cpu <= proc_used + (proc_used > 0); cpu++) {
 
       /* Check if we want stats about this proc */
-      if (!(*(cpu_bitmap + (cpu >> 5)) & (1 << (cpu & 0x1f))))
+      if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
 	 continue;
 
-      if (!cpu)
-	 printf(_("%-11s  all"), cur_time[curr]);
-      else
-	 printf("%-11s %4d", cur_time[curr], cpu - 1);
+      printf("%-11s %4d", cur_time[curr], cpu - 1);
 
       st_mp_cpu_i = st_mp_cpu[curr]  + cpu;
       st_mp_cpu_j = st_mp_cpu[!curr] + cpu;
@@ -221,14 +266,8 @@ void write_stats(short curr, short dis)
 	 printf("  %6.2f",
 		SP_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
 
-      if (!cpu) {
-	 itv /= (proc_used + 1);
-	 if (!itv)
-	    itv = 1;
-      }
-
       printf(" %9.2f\n",
-	     S_VALUE(st_mp_cpu[!curr]->irq, st_mp_cpu[curr]->irq, itv));
+	  S_VALUE(st_mp_cpu_j->irq, st_mp_cpu_i->irq, itv));
    }
 }
 
@@ -350,6 +389,7 @@ int main(int argc, char **argv)
 
    /* How many processors on this machine ? */
    get_nb_proc_used(&proc_used, ~0);
+
    /*
     * proc_used: a value of 1 means there are 2 processors (0 and 1).
     * In this case, we have to allocate 3 structures: global, proc0 and proc1.
@@ -372,7 +412,7 @@ int main(int argc, char **argv)
 	    if (!strcmp(argv[opt], K_ALL) || !strcmp(argv[opt], "-1")) {
 	       dis_hdr = 9;
 	       /* Set bit for every processor */
-	       memset(cpu_bitmap, ~0, ((proc_used + 1 + (proc_used > 0)) >> 5) + 1);
+	       memset(cpu_bitmap, 0xff, ((proc_used + 1 + (proc_used > 0)) >> 3) + 1);
 	    }
 	    else {
 	       if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
@@ -383,7 +423,7 @@ int main(int argc, char **argv)
 		  exit(1);
 	       }
 	       i++;
-	       *(cpu_bitmap + (i >> 5)) |= 1 << (i & 0x1f);
+	       *(cpu_bitmap + (i >> 3)) |= 1 << (i & 0x07);
 	    }
 	 }
 	 else

@@ -2,7 +2,7 @@
 # (C) 1999-2002 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 4.0.5
+VERSION = 4.0.6
 
 include build/CONFIG
 

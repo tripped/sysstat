@@ -9,8 +9,6 @@ Here are the things I would like (or I should) do for the next releases:
   example), but I am rather reluctant to display them: There are too many of
   them and sar becomes bigger and bigger...
 
-* Add new fields to sar -d: avgrq-sz and avgqu-sz.
-
 * Try to add new fields to sar -B and sar -W (pgscan, pgfree, pgsteal, etc.).
 
 * Use autoconf to configure sysstat.
@@ -18,6 +16,4 @@ Here are the things I would like (or I should) do for the next releases:
 * Add support for hotplug CPU ?
 
 * Dynamically allocate structures for IRQs (just like for CPUs).
-
-* Add NFS stats to sar.
 

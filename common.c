@@ -38,6 +38,7 @@
 #include <asm/page.h>
 
 #include "common.h"
+#include "ioconf.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -220,7 +221,7 @@ int get_diskstats_dev_nr(int count_part)
 
    /* Open /proc/diskstats file */
    if ((dstatsfp = fopen(DISKSTATS, "r")) == NULL)
-      /* /proc/diskstats non-existent */
+      /* File non-existent */
       return 0;
 
    /*
@@ -253,26 +254,30 @@ int get_diskstats_dev_nr(int count_part)
  * 2.6: linux/drivers/block/genhd.c: show_partition() (see sysfs instead)
  ***************************************************************************
  */
-int get_ppartitions_dev_nr(void)
+int get_ppartitions_dev_nr(int count_part)
 {
    FILE *ppartfp;
    char line[256];
    int dev = 0;
-   unsigned int tmp;
+   unsigned int major, minor, tmp;
 
    /* Open /proc/partitions file */
    if ((ppartfp = fopen(PPARTITIONS, "r")) == NULL)
-      /* /proc/partitions non-existent */
+      /* File non-existent */
       return 0;
 
    while (fgets(line, 256, ppartfp) != NULL) {
-      if (sscanf(line, "%*u %*u %*u %*s %u", &tmp) == 1)
+      if (sscanf(line, "%u %u %*u %*s %u", &major, &minor, &tmp) == 3) {
 	 /*
 	  * We have just read a line from /proc/partitions containing stats
 	  * for a device or a partition
 	  * (i.e. this is not a fake line: title, etc.)
 	  */
+	 if (!count_part && !ioc_iswhole(major, minor))
+	    /* This was a partition, and we don't want to count them */
+	    continue;
 	 dev++;
+      }
    }
 
    /* Close file */

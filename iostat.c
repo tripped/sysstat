@@ -266,7 +266,7 @@ void io_sys_init(int *flags)
        * Get number of block devices and partitions in /proc/partitions,
        * those with statistics...
        */
-      else if ((iodev_nr = get_ppartitions_dev_nr()) > 0) {
+      else if ((iodev_nr = get_ppartitions_dev_nr(CNT_PART)) > 0) {
 	 *flags |= F_HAS_PPARTITIONS;
 	 iodev_nr += NR_DEV_PREALLOC;
       }
@@ -686,9 +686,9 @@ void read_diskstats_stat(int curr, int flags)
    char line[256], dev_name[MAX_NAME_LEN];
    struct io_stats sdev;
    int i;
-   unsigned long rd_ios, rd_merges, rd_ticks, wr_ios, wr_merges, wr_ticks;
-   unsigned long ios_pgr, tot_ticks, rq_ticks;
-   unsigned long long rd_sec, wr_sec;
+   unsigned long rd_ios, rd_merges_or_rd_sec, rd_ticks_or_wr_sec, wr_ios;
+   unsigned long ios_pgr, tot_ticks, rq_ticks, wr_merges, wr_ticks;
+   unsigned long long rd_sec_or_wr_ios, wr_sec;
    char *ioc_dname;
    unsigned int major, minor;
 
@@ -704,25 +704,31 @@ void read_diskstats_stat(int curr, int flags)
       /* major minor name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
       i = sscanf(line, "%u %u %s %lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
 		 &major, &minor, dev_name,
-		 &rd_ios, &rd_merges, &rd_sec, &rd_ticks, &wr_ios, &wr_merges,
-		 &wr_sec, &wr_ticks, &ios_pgr, &tot_ticks, &rq_ticks);
+		 &rd_ios, &rd_merges_or_rd_sec, &rd_sec_or_wr_ios, &rd_ticks_or_wr_sec,
+		 &wr_ios, &wr_merges, &wr_sec, &wr_ticks, &ios_pgr, &tot_ticks, &rq_ticks);
 
       if (i == 14) {
 	 /* Device */
-	 sdev.rd_ios     = rd_ios;  sdev.rd_merges = rd_merges;
-	 sdev.rd_sectors = rd_sec;  sdev.rd_ticks  = rd_ticks;
-	 sdev.wr_ios     = wr_ios;  sdev.wr_merges = wr_merges;
-	 sdev.wr_sectors = wr_sec;  sdev.wr_ticks  = wr_ticks;
-	 sdev.ios_pgr    = ios_pgr; sdev.tot_ticks = tot_ticks;
+	 sdev.rd_ios     = rd_ios;
+	 sdev.rd_merges  = rd_merges_or_rd_sec;
+	 sdev.rd_sectors = rd_sec_or_wr_ios;
+	 sdev.rd_ticks   = rd_ticks_or_wr_sec;
+	 sdev.wr_ios     = wr_ios;
+	 sdev.wr_merges  = wr_merges;
+	 sdev.wr_sectors = wr_sec;
+	 sdev.wr_ticks   = wr_ticks;
+	 sdev.ios_pgr    = ios_pgr;
+	 sdev.tot_ticks  = tot_ticks;
 	 sdev.rq_ticks   = rq_ticks;
       }
       else if (i == 7) {
 	 /* Partition */
 	 if (DISPLAY_EXTENDED(flags) || (!dlist_idx && !DISPLAY_PARTITIONS(flags)))
 	    continue;
-	 /* !!! Note that fields are different for partitions !!! */
-	 sdev.rd_ios = rd_ios; sdev.rd_sectors = rd_merges;
-	 sdev.wr_ios = rd_sec; sdev.wr_sectors = rd_ticks;
+	 sdev.rd_ios     = rd_ios;
+	 sdev.rd_sectors = rd_merges_or_rd_sec;
+	 sdev.wr_ios     = rd_sec_or_wr_ios;
+	 sdev.wr_sectors = rd_ticks_or_wr_sec;
       }
       else
 	 /* Unknown entry: ignore it */

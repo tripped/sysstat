@@ -22,12 +22,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
 #include <sys/param.h>	/* for HZ */
 
 #include "version.h"
+#include "sadf.h"
 #include "sa.h"
 #include "common.h"
 
@@ -43,6 +45,7 @@
 
 long interval = 0, count = 0;
 unsigned int sadf_actflag = 0;
+unsigned int sadf_flags = 0;
 unsigned int flags = 0;
 unsigned char irq_bitmap[(NR_IRQS / 8) + 1];
 unsigned char cpu_bitmap[(NR_CPUS / 8) + 1];
@@ -76,7 +79,7 @@ void usage(char *progname)
 		   "(C) Sebastien Godard\n"
 	           "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
 	           "Options are:\n"
-	           "[ -d ] [ -p ] [ -t ]\n"
+	           "[ -d ] [ -H ] [ -p ] [ -t ]\n"
 		   "[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 		   "[ -- <sar_options...> ]\n"),
 	   VERSION, progname);
@@ -124,802 +127,761 @@ void init_timestamp(short curr, char *cur_time, int len)
 
 /*
  ***************************************************************************
- * Print system statistics to be used by pattern processing commands
+ * cons() -
+ *   encapsulate a pair of ints or pair of char * into a static Cons and
+ *   return a pointer to it.
+ *
+ * given:   t - type of Cons {iv, sv}
+ *	    arg1 - unsigned long int (if iv), char * (if sv) to become
+ *		   element 'a'
+ *	    arg2 - unsigned long int (if iv), char * (if sv) to become
+ *		   element 'b'
+ *
+ * does:    load a static Cons with values using the t parameter to
+ *	    guide pulling values from the arglist
+ *
+ * return:  the address of it's static Cons.  If you need to keep
+ *	    the contents of this Cons, copy it somewhere before calling
+ *	    cons() against to avoid overwrite.
+ *	    ie. don't do this:  f( cons( iv, i, j ), cons( iv, a, b ) );
  ***************************************************************************
  */
-void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
-			 unsigned long long itv, unsigned long long g_itv,
-			 char *cur_time)
+
+static Cons *cons(tcons t, ...)
 {
-   int i, j, k;
-   struct stats_one_cpu *st_cpu_i, *st_cpu_j;
-   struct stats_serial *st_serial_i, *st_serial_j;
-   struct stats_irq_cpu *p, *q, *p0, *q0;
-   struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
-   struct disk_stats *st_disk_i, *st_disk_j;
+   va_list ap;
+   static Cons c;
 
-   if (GET_PROC(act))
-      printf("%s\t%ld\t%s\t-\tproc/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].processes, file_stats[curr].processes, itv));
+   c.t = t;
 
-   /* Print number of context switches per second */
-   if (GET_CTXSW(act))
-      printf("%s\t%ld\t%s\t-\tcswch/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ll_s_value(file_stats[!curr].context_swtch, file_stats[curr].context_swtch, itv));
-
-   /* Print CPU usage */
-   if (GET_CPU(act) &&
-       (!WANT_PER_PROC(flags) ||
-	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
-      printf("%s\t%ld\t%s\tall\t%%user\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ll_sp_value(file_stats[!curr].cpu_user, file_stats[curr].cpu_user, g_itv));
-      printf("%s\t%ld\t%s\tall\t%%nice\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ll_sp_value(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, g_itv));
-      printf("%s\t%ld\t%s\tall\t%%system\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ll_sp_value(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, g_itv));
-      printf("%s\t%ld\t%s\tall\t%%iowait\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ll_sp_value(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, g_itv));
-      printf("%s\t%ld\t%s\tall\t%%idle\t",
-	     file_hdr.sa_nodename, dt, cur_time);
-      if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
-	 printf("%.2f\n", 0.0);	/* Handle buggy RTC (or kernels?) */
-      else
-	 printf("%.2f\n",
-		ll_sp_value(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, g_itv));
+   va_start(ap, t);
+   if (t == iv) {
+      c.a.i = va_arg(ap, unsigned long int);
+      c.b.i = va_arg(ap, unsigned long int);
    }
+   else {
+      c.a.s = va_arg(ap, char *);
+      c.b.s = va_arg(ap, char *);
+   }
+   va_end(ap);
+   return(&c);
+}
 
-   if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc) {
-      unsigned long long pc_itv;
 
-      for (i = 0; i <= file_hdr.sa_proc; i++) {
-	 if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
+/*
+ ***************************************************************************
+ * render():
+ *
+ * given:    isdb - flag, true if db printing, false if ppc printing
+ *	     pre  - prefix string for output entries
+ *	     rflags - PT_.... rendering flags
+ *	     pptxt - printf-format text required for ppc output (may be null)
+ *	     dbtxt - printf-format text required for db output (may be null)
+ *	     mid - pptxt/dbtxt format args as a Cons.
+ *	     luval - %lu printable arg (PT_USEINT must be set)
+ *	     dval  - %.2f printable arg (used unless PT_USEINT is set)
+ *
+ * does:     print [pre<sep>]([dbtxt,arg,arg<sep>]|[pptxt,arg,arg<sep>]) \
+ *                     (luval|dval)(<sep>|\n)
+ *
+ * return:   void.
+ ***************************************************************************
+ */
 
-	    st_cpu_i = st_cpu[curr]  + i;
-	    st_cpu_j = st_cpu[!curr] + i;
+static void render(int isdb, char *pre, int rflags, const char *pptxt,
+		   const char *dbtxt, Cons *mid, unsigned long int luval,
+		   double dval)
+{
+   static int newline = 1;
+   const char *txt[]  = {pptxt, dbtxt};
+   char *sep;
 
-	    /* Recalculate itv for current proc */
-	    pc_itv = get_per_cpu_interval(st_cpu_i, st_cpu_j);
-	
-	    printf("%s\t%ld\t%s\tcpu%d\t%%user\t%.2f\n",
-		   file_hdr.sa_nodename, dt, cur_time, i,
-		   ll_sp_value(st_cpu_j->per_cpu_user, st_cpu_i->per_cpu_user, pc_itv));
-	    printf("%s\t%ld\t%s\tcpu%d\t%%nice\t%.2f\n",
-		   file_hdr.sa_nodename, dt, cur_time, i,
-		   ll_sp_value(st_cpu_j->per_cpu_nice, st_cpu_i->per_cpu_nice, pc_itv));
-	    printf("%s\t%ld\t%s\tcpu%d\t%%system\t%.2f\n",
-		   file_hdr.sa_nodename, dt, cur_time, i,
-		   ll_sp_value(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, pc_itv));
-	    printf("%s\t%ld\t%s\tcpu%d\t%%iowait\t%.2f\n",
-		   file_hdr.sa_nodename, dt, cur_time, i,
-		   ll_sp_value(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, pc_itv));
+   /* Start a new line? */
+   if (newline)
+      printf("%s%s", pre, seps[isdb]);
 
-	    if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)
-	       printf("%s\t%ld\t%s\tcpu%d\t%%idle\t%.2f\n",
-		      file_hdr.sa_nodename, dt, cur_time, i, 0.0);
-	    else
-	       printf("%s\t%ld\t%s\tcpu%d\t%%idle\t%.2f\n",
-		      file_hdr.sa_nodename, dt, cur_time, i,
-		      ll_sp_value(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, pc_itv));
+   /* Terminate this one ? ppc always gets a newline */
+   newline = ((rflags & PT_NEWLIN) || !isdb);
+
+   if (txt[isdb]) {		/* pp/dbtxt? */
+
+      if (mid) {		/* Got format args? */
+	 switch(mid->t) {
+	  case iv:
+	    printf(txt[isdb], mid->a.i, mid->b.i);
+	    break;
+	  case sv:
+	    printf(txt[isdb], mid->a.s, mid->b.s);
+	    break;
 	 }
       }
-   }
-
-   /* Print number of interrupts per second */
-   if (GET_IRQ(act) &&
-       (!WANT_PER_PROC(flags) ||
-	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
-      printf("%s\t%ld\t%s\tsum\tintr/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ll_s_value(file_stats[!curr].irq_sum, file_stats[curr].irq_sum, itv));
-   }
-
-   if (GET_ONE_IRQ(act)) {
-      for (i = 0; i < NR_IRQS; i++) {
-	 if (irq_bitmap[i >> 3] & (1 << (i & 0x07))) {
-
-	    printf("%s\t%ld\t%s\ti%03d\tintr/s\t%.2f\n",
-		   file_hdr.sa_nodename, dt, cur_time, i,
-		   S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
-	 }
+      else {
+	 printf(txt[isdb]);	/* No args */
       }
+      printf("%s", seps[isdb]);	/* Only if something actually got printed */
    }
 
-   /* Print paging statistics */
-   if (GET_PAGE(act)) {
-      printf("%s\t%ld\t%s\t-\tpgpgin/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].pgpgin, file_stats[curr].pgpgin, itv));
-      printf("%s\t%ld\t%s\t-\tpgpgout/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].pgpgout, file_stats[curr].pgpgout, itv));
-      printf("%s\t%ld\t%s\t-\tfault/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].pgfault, file_stats[curr].pgfault, itv));
-      printf("%s\t%ld\t%s\t-\tmajflt/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].pgmajfault, file_stats[curr].pgmajfault, itv));
+   sep = (newline) ? "\n" : seps[isdb]; /* How does this rendering end? */
+
+   if (rflags & PT_USEINT) {
+      printf("%lu%s", luval, sep);
    }
-
-   /* Print number of swap pages brought in and out */
-   if (GET_SWAP(act)) {
-      printf("%s\t%ld\t%s\t-\tpswpin/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].pswpin, file_stats[curr].pswpin, itv));
-      printf("%s\t%ld\t%s\t-\tpswpout/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].pswpout, file_stats[curr].pswpout, itv));
-   }
-
-   /* Print I/O stats (no distinction made between disks) */
-   if (GET_IO(act)) {
-      printf("%s\t%ld\t%s\t-\ttps\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].dk_drive, file_stats[curr].dk_drive, itv));
-      printf("%s\t%ld\t%s\t-\trtps\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].dk_drive_rio, file_stats[curr].dk_drive_rio, itv));
-      printf("%s\t%ld\t%s\t-\twtps\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].dk_drive_wio, file_stats[curr].dk_drive_wio, itv));
-      printf("%s\t%ld\t%s\t-\tbread/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].dk_drive_rblk, file_stats[curr].dk_drive_rblk, itv));
-      printf("%s\t%ld\t%s\t-\tbwrtn/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].dk_drive_wblk, file_stats[curr].dk_drive_wblk, itv));
-   }
-
-   /* Print memory stats */
-   if (GET_MEMORY(act)) {
-      printf("%s\t%ld\t%s\t-\tfrmpg/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb))
-	     / itv * HZ);
-      printf("%s\t%ld\t%s\t-\tbufpg/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb))
-	     / itv * HZ);
-      printf("%s\t%ld\t%s\t-\tcampg/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb))
-	     / itv * HZ);
-   }
-
-   /* Print TTY statistics (serial lines) */
-   if (GET_SERIAL(act)) {
-
-      for (i = 0; i < file_hdr.sa_serial; i++) {
-
-	 st_serial_i = st_serial[curr]  + i;
-	 st_serial_j = st_serial[!curr] + i;
-	 if (st_serial_i->line == ~0)
-	    continue;
-	
-	 if (st_serial_i->line == st_serial_j->line) {
-	    printf("%s\t%ld\t%s\tttyS%d\trcvin/s\t%.2f\n",
-		   file_hdr.sa_nodename, dt, cur_time, st_serial_i->line,
-		   S_VALUE(st_serial_j->rx, st_serial_i->rx, itv));
-	    printf("%s\t%ld\t%s\tttyS%d\txmtin/s\t%.2f\n",
-		   file_hdr.sa_nodename, dt, cur_time, st_serial_i->line,
-		   S_VALUE(st_serial_j->tx, st_serial_i->tx, itv));
-	 }
-      }
-   }
-
-   /* Print amount and usage of memory */
-   if (GET_MEM_AMT(act)) {
-      printf("%s\t%ld\t%s\t-\tkbmemfree\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].frmkb);
-      printf("%s\t%ld\t%s\t-\tkbmemused\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     file_stats[curr].tlmkb - file_stats[curr].frmkb);
-      printf("%s\t%ld\t%s\t-\t%%memused\t",
-	     file_hdr.sa_nodename, dt, cur_time);
-      if (file_stats[curr].tlmkb)
-	 printf("%.2f\n",
-		SP_VALUE(file_stats[curr].frmkb, file_stats[curr].tlmkb, file_stats[curr].tlmkb));
-      else
-	 printf("%.2f\n", 0.0);
-
-      printf("%s\t%ld\t%s\t-\tkbbuffers\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].bufkb);
-      printf("%s\t%ld\t%s\t-\tkbcached\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].camkb);
-      printf("%s\t%ld\t%s\t-\tkbswpfree\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].frskb);
-      printf("%s\t%ld\t%s\t-\tkbswpused\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     file_stats[curr].tlskb - file_stats[curr].frskb);
-      printf("%s\t%ld\t%s\t-\t%%swpused\t",
-	     file_hdr.sa_nodename, dt, cur_time);
-      if (file_stats[curr].tlskb)
-	 printf("%.2f\n",
-		SP_VALUE(file_stats[curr].frskb, file_stats[curr].tlskb, file_stats[curr].tlskb));
-      else
-	 printf("%.2f\n", 0.0);
-      printf("%s\t%ld\t%s\t-\tkbswpcad\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].caskb);
-   }
-
-   if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
-      int offset;
-
-      for (k = 0; k <= file_hdr.sa_proc; k++) {
-	 if (cpu_bitmap[k >> 3] & (1 << (k & 0x07))) {
-
-	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
-	       /*
-		* A value of ~0 means it is a remaining interrupt
-		* which is no longer used, for example because the
-		* number of interrupts has decreased in /proc/interrupts
-		* or because we are appending data to an old sa file
-		* with more interrupts than are actually available now.
-		*/
-	       if (p0->irq != ~0) {
-		  q0 = st_irq_cpu[!curr] + j;
-		  offset = j;
-
-		  if (p0->irq != q0->irq) {
-		     if (j)
-			offset = j - 1;
-		     q0 = st_irq_cpu[!curr] + offset;
-		     if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-			offset = j + 1;
-		     q0 = st_irq_cpu[!curr] + offset;
-		  }
-		  if (p0->irq == q0->irq) {
-		     p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
-		     q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
-		     printf("%s\t%ld\t%s\tcpu%d\ti%03d/s\t%.2f\n",
-			    file_hdr.sa_nodename, dt, cur_time, k, p0->irq,
-			    S_VALUE(q->interrupt, p->interrupt, itv));
-		  }
-	       }
-	    }
-	 }
-      }
-   }
-
-   /* Print values of some kernel tables */
-   if (GET_KTABLES(act)) {
-      printf("%s\t%ld\t%s\t-\tdentunusd\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].dentry_stat);
-      printf("%s\t%ld\t%s\t-\tfile-sz\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].file_used);
-      printf("%s\t%ld\t%s\t-\tinode-sz\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].inode_used);
-
-      printf("%s\t%ld\t%s\t-\tsuper-sz\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].super_used);
-      printf("%s\t%ld\t%s\t-\t%%super-sz\t",
-	     file_hdr.sa_nodename, dt, cur_time);
-      if (file_stats[curr].super_max)
-	 printf("%.2f\n",
-		((double) (file_stats[curr].super_used * 100)) / file_stats[curr].super_max);
-      else
-	 printf("%.2f\n", 0.0);
-
-      printf("%s\t%ld\t%s\t-\tdquot-sz\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].dquot_used);
-      printf("%s\t%ld\t%s\t-\t%%dquot-sz\t",
-	     file_hdr.sa_nodename, dt, cur_time);
-      if (file_stats[curr].dquot_max)
-	 printf("%.2f\n",
-		((double) (file_stats[curr].dquot_used * 100)) / file_stats[curr].dquot_max);
-      else
-	 printf("%.2f\n", 0.0);
-
-      printf("%s\t%ld\t%s\t-\trtsig-sz\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].rtsig_queued);
-      printf("%s\t%ld\t%s\t-\t%%rtsig-sz\t",
-	     file_hdr.sa_nodename, dt, cur_time);
-      if (file_stats[curr].rtsig_max)
-	 printf("%.2f\n",
-		((double) (file_stats[curr].rtsig_queued * 100)) / file_stats[curr].rtsig_max);
-      else
-	 printf("%.2f\n", 0.0);
-   }
-
-   /* Print network interface statistics */
-   if (GET_NET_DEV(act)) {
-
-      for (i = 0; i < file_hdr.sa_iface; i++) {
-
-	 st_net_dev_i = st_net_dev[curr] + i;
-	 if (!strcmp(st_net_dev_i->interface, "?"))
-	    continue;
-	 j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
-	 st_net_dev_j = st_net_dev[!curr] + j;
-
-	 printf("%s\t%ld\t%s\t%s\trxpck/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->rx_packets, st_net_dev_i->rx_packets, itv));
-	 printf("%s\t%ld\t%s\t%s\ttxpck/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->tx_packets, st_net_dev_i->tx_packets, itv));
-	 printf("%s\t%ld\t%s\t%s\trxbyt/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->rx_bytes, st_net_dev_i->rx_bytes, itv));
-	 printf("%s\t%ld\t%s\t%s\ttxbyt/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->tx_bytes, st_net_dev_i->tx_bytes, itv));
-	 printf("%s\t%ld\t%s\t%s\trxcmp/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->rx_compressed, st_net_dev_i->rx_compressed, itv));
-	 printf("%s\t%ld\t%s\t%s\ttxcmp/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->tx_compressed, st_net_dev_i->tx_compressed, itv));
-	 printf("%s\t%ld\t%s\t%s\trxmcst/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->multicast, st_net_dev_i->multicast, itv));
-      }
-   }
-
-   /* Print network interface statistics (errors) */
-   if (GET_NET_EDEV(act)) {
-
-      for (i = 0; i < file_hdr.sa_iface; i++) {
-
-	 st_net_dev_i = st_net_dev[curr] + i;
-	 if (!strcmp(st_net_dev_i->interface, "?"))
-	    continue;
-	 j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
-	 st_net_dev_j = st_net_dev[!curr] + j;
-	
-	 printf("%s\t%ld\t%s\t%s\trxerr/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->rx_errors, st_net_dev_i->rx_errors, itv));
-	 printf("%s\t%ld\t%s\t%s\ttxerr/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->tx_errors, st_net_dev_i->tx_errors, itv));
-	 printf("%s\t%ld\t%s\t%s\tcoll/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->collisions, st_net_dev_i->collisions, itv));
-	 printf("%s\t%ld\t%s\t%s\trxdrop/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->rx_dropped, st_net_dev_i->rx_dropped, itv));
-	 printf("%s\t%ld\t%s\t%s\ttxdrop/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->tx_dropped, st_net_dev_i->tx_dropped, itv));
-	 printf("%s\t%ld\t%s\t%s\ttxcarr/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->tx_carrier_errors, st_net_dev_i->tx_carrier_errors, itv));
-	 printf("%s\t%ld\t%s\t%s\trxfram/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->rx_frame_errors, st_net_dev_i->rx_frame_errors, itv));
-	 printf("%s\t%ld\t%s\t%s\trxfifo/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->rx_fifo_errors, st_net_dev_i->rx_fifo_errors, itv));
-	 printf("%s\t%ld\t%s\t%s\ttxfifo/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->tx_fifo_errors, st_net_dev_i->tx_fifo_errors, itv));
-      }
-   }
-
-   /* Print number of sockets in use */
-   if (GET_NET_SOCK(act)) {
-      printf("%s\t%ld\t%s\t-\ttotsck\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].sock_inuse);
-      printf("%s\t%ld\t%s\t-\ttcpsck\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].tcp_inuse);
-      printf("%s\t%ld\t%s\t-\tudpsck\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].udp_inuse);
-      printf("%s\t%ld\t%s\t-\trawsck\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].raw_inuse);
-      printf("%s\t%ld\t%s\t-\tip-frag\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].frag_inuse);
-   }
-
-   /* Print load averages and queue length */
-   if (GET_QUEUE(act)) {
-      printf("%s\t%ld\t%s\t-\trunq-sz\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].nr_running);
-      printf("%s\t%ld\t%s\t-\tplist-sz\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].nr_threads);
-      printf("%s\t%ld\t%s\t-\tldavg-1\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     (double) file_stats[curr].load_avg_1 / 100);
-      printf("%s\t%ld\t%s\t-\tldavg-5\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     (double) file_stats[curr].load_avg_5 / 100);
-      printf("%s\t%ld\t%s\t-\tldavg-15\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     (double) file_stats[curr].load_avg_15 / 100);
-   }
-
-   /* Print disk statistics */
-   if (GET_DISK(act)) {
-      char *name;
-      double tput, util, await, svctm, arqsz;
-
-      for (i = 0; i < file_hdr.sa_nr_disk; i++) {
-
-	 st_disk_i = st_disk[curr]  + i;
-	 if (!(st_disk_i->major + st_disk_i->minor))
-	    continue;
-
-	 tput = ((double) st_disk_i->nr_ios) * HZ / itv;
-	 util = ((double) st_disk_i->tot_ticks) / itv * HZ;
-	 svctm = tput ? util / tput : 0.0;
-	 await = st_disk_i->nr_ios ?
-	    (st_disk_i->rd_ticks + st_disk_i->wr_ticks) / ((double) st_disk_i->nr_ios) : 0.0;
-	 arqsz  = st_disk_i->nr_ios ?
-	    (st_disk_i->rd_sect + st_disk_i->wr_sect) / ((double) st_disk_i->nr_ios) : 0.0;
-	
-	 j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
-	 st_disk_j = st_disk[!curr] + j;
-	 name = get_devname(st_disk_i->major, st_disk_i->minor, flags);
-	
-	 printf("%s\t%ld\t%s\t%s\ttps\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, name,
-		S_VALUE(st_disk_j->nr_ios, st_disk_i->nr_ios, itv));
-	 printf("%s\t%ld\t%s\t%s\trd_sec/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, name,
-		ll_s_value(st_disk_j->rd_sect, st_disk_i->rd_sect, itv));
-	 printf("%s\t%ld\t%s\t%s\twr_sec/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, name,
-		ll_s_value(st_disk_j->wr_sect, st_disk_i->wr_sect, itv));
-	 printf("%s\t%ld\t%s\t%s\tavgrq-sz\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, name,
-		arqsz);
-	 printf("%s\t%ld\t%s\t%s\tavgqu-sz\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, name,
-		((double) st_disk_i->rq_ticks) / itv * HZ / 1000.0);
-	 printf("%s\t%ld\t%s\t%s\tawait\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, name,
-		await);
-	 printf("%s\t%ld\t%s\t%s\tsvctm\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, name,
-		svctm);
-	 printf("%s\t%ld\t%s\t%s\t%%util\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time, name,
-		util / 10.0);
-      }
+   else {
+      printf("%.2f%s", dval, sep);
    }
 }
 
 
 /*
  ***************************************************************************
- * Print system statistics to be used for loading into a database
+ * write_mech_stats() -
+ * Replace the old write_stats_for_ppc() and write_stats_for_db(),
+ * making it easier for them to remain in sync and print the same data.
  ***************************************************************************
  */
-void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
-			unsigned long long itv, unsigned long long g_itv,
-			char *cur_time)
+
+void write_mech_stats(int isdb, short curr, unsigned int act,
+		      unsigned long dt, unsigned long long itv,
+		      unsigned long long g_itv, char *cur_time)
 {
-   int i, j, k;
-   struct stats_one_cpu *st_cpu_i, *st_cpu_j;
-   struct stats_serial *st_serial_i, *st_serial_j;
-   struct stats_irq_cpu *p, *q, *p0, *q0;
-   struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
-   struct disk_stats *st_disk_i, *st_disk_j;
+   struct file_stats
+      *fsi = &file_stats[curr],
+      *fsj = &file_stats[!curr];
 
-   /* Print number of processes created per second */
-   if (GET_PROC(act))
-      printf("%s;%ld;%s;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].processes, file_stats[curr].processes, itv));
+   char pre[80];	/* Text at beginning of each line */
+   int wantproc = !WANT_PER_PROC(flags)
+      || (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags));
 
-   /* Print number of context switches per second */
-   if (GET_CTXSW(act))
-      printf("%s;%ld;%s;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ll_s_value(file_stats[!curr].context_swtch, file_stats[curr].context_swtch, itv));
 
-   /* Print CPU usage */
-   if (GET_CPU(act) &&
-       (!WANT_PER_PROC(flags) ||
-	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
-      printf("%s;%ld;%s;-1;%.2f;%.2f;%.2f;%.2f;",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ll_sp_value(file_stats[!curr].cpu_user, file_stats[curr].cpu_user, g_itv),
-	     ll_sp_value(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, g_itv),
-	     ll_sp_value(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, g_itv),
-	     ll_sp_value(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, g_itv));
-      if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
-	 printf("%.2f\n", 0.0);	/* Handle buggy RTC (or kernels?) */
-      else
-	 printf("%.2f\n",
-		ll_sp_value(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, g_itv));
+   /*
+    * This substring appears on every output line, preformat it here
+    */
+   snprintf(pre, 80, "%s%s%ld%s%s",
+	    file_hdr.sa_nodename, seps[isdb], dt, seps[isdb], cur_time);
+
+
+   if (GET_PROC(act)) {
+      /* The first one as an example */
+      render(isdb,		/* db/ppc flag */
+	     pre,		/* the preformatted line leader */
+	     PT_NEWLIN,		/* is this the end of a db line? */
+	     "-\tproc/s",	/* ppc text */
+	     NULL,		/* db text */
+	     NULL,		/* db/ppc text format args (Cons *) */
+	     NOVAL,		/* %lu value (unused unless PT_USEINT) */
+	     /* and %.2f value, used unless PT_USEINT */
+	     S_VALUE(fsj->processes, fsi->processes, itv));
    }
 
-   if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc) {
-      unsigned long long pc_itv;
+   if (GET_CTXSW(act)) {
+      render(isdb, pre, PT_NEWLIN,
+	     "-\tcswch/s", NULL, NULL,
+	     NOVAL,
+	     ll_sp_value(fsj->context_swtch, fsi->context_swtch, itv));
+   }
 
-      for (i = 0; i <= file_hdr.sa_proc; i++) {
+
+   if (GET_CPU(act) && wantproc) {
+      render(isdb, pre,
+	     PT_NOFLAG,		/* that's zero but you know what it means */
+	     "all\t%%user",	/* all ppctext is used as format, thus '%%' */
+	     "-1",		/* look! dbtext */
+	     NULL,		/* no args */
+	     NOVAL,		/* another 0, named for readability */
+	     ll_sp_value(fsj->cpu_user, fsi->cpu_user, g_itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "all\t%%nice", NULL, NULL,
+	     NOVAL,
+	     ll_sp_value(fsj->cpu_nice, fsi->cpu_nice, g_itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "all\t%%system", NULL, NULL,
+	     NOVAL,
+	     ll_sp_value(fsj->cpu_system, fsi->cpu_system, g_itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "all\t%%iowait", NULL, NULL,
+	     NOVAL,
+	     ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv));
+
+      render(isdb, pre, PT_NEWLIN,
+	     "all\t%%idle", NULL, NULL,
+	     NOVAL,
+	     (fsi->cpu_idle < fsj->cpu_idle)
+	     ? 0.0
+	     : ll_sp_value(fsj->cpu_idle, fsi->cpu_idle, g_itv));
+   }
+
+
+   if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc) {
+      int i;
+      struct stats_one_cpu
+	 *t = st_cpu[curr],
+         *s = st_cpu[!curr];
+
+      for (i = 0; i <= file_hdr.sa_proc; i++, t++, s++) {
 	 if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
 
-	    st_cpu_i = st_cpu[curr]  + i;
-	    st_cpu_j = st_cpu[!curr] + i;
-
 	    /* Recalculate itv for current proc */
-	    pc_itv = get_per_cpu_interval(st_cpu_i, st_cpu_j);
-	
-	    printf("%s;%ld;%s;%d;%.2f;%.2f;%.2f;%.2f;",
-		   file_hdr.sa_nodename, dt, cur_time, i,
-		   ll_sp_value(st_cpu_j->per_cpu_user, st_cpu_i->per_cpu_user, pc_itv),
-		   ll_sp_value(st_cpu_j->per_cpu_nice, st_cpu_i->per_cpu_nice, pc_itv),
-		   ll_sp_value(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, pc_itv),
-		   ll_sp_value(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, pc_itv));
+	    itv = get_per_cpu_interval(t, s);
 
-	    if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)
-	       printf("%.2f\n", 0.0);
-	    else
-	       printf("%.2f\n",
-		      ll_sp_value(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, pc_itv));
+	    render(isdb, pre, PT_NOFLAG,
+		   "cpu%d\t%%user",	/* ppc text with formatting */
+		   "%d",		/* db text with format char */
+		   cons(iv, i, NOVAL),	/* how we pass format args */
+		   NOVAL,
+		   ll_sp_value(s->per_cpu_user, t->per_cpu_user, itv));
+
+	    render(isdb, pre, PT_NOFLAG,
+		   "cpu%d\t%%nice", NULL, cons(iv, i, NOVAL),
+		   NOVAL,
+		   ll_sp_value(s->per_cpu_nice, t->per_cpu_nice, itv));
+
+	    render(isdb, pre, PT_NOFLAG,
+		   "cpu%d\t%%system", NULL, cons(iv, i, NOVAL),
+		   NOVAL,
+		   ll_sp_value(s->per_cpu_system, t->per_cpu_system, itv));
+
+	    render(isdb, pre, PT_NOFLAG,
+		   "cpu%d\t%%iowait", NULL, cons(iv, i, NOVAL),
+		   NOVAL,
+		   ll_sp_value(s->per_cpu_iowait, t->per_cpu_iowait, itv));
+
+	    render(isdb, pre, PT_NEWLIN,
+		   "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
+		   NOVAL,
+		   (t->per_cpu_idle < s->per_cpu_idle)
+		   ? 0.0
+		   : ll_sp_value(s->per_cpu_idle, t->per_cpu_idle, itv));
 	 }
       }
    }
 
-   /* Print number of interrupts per second */
-   if (GET_IRQ(act) &&
-       (!WANT_PER_PROC(flags) ||
-	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
-      printf("%s;%ld;%s;-1;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     ll_s_value(file_stats[!curr].irq_sum, file_stats[curr].irq_sum, itv));
+   if (GET_IRQ(act) && wantproc) {
+      /* Print number of interrupts per second */
+      render(isdb, pre, PT_NEWLIN,
+	     "sum\tintr/s", "-1", NULL,
+	     NOVAL, ll_sp_value(fsj->irq_sum, fsi->irq_sum, itv));
    }
 
    if (GET_ONE_IRQ(act)) {
+      int i;
+
       for (i = 0; i < NR_IRQS; i++) {
 	 if (irq_bitmap[i >> 3] & (1 << (i & 0x07))) {
-
-	    printf("%s;%ld;%s;%d;%.2f\n",
-		   file_hdr.sa_nodename, dt, cur_time, i,
+	    render(isdb, pre, PT_NEWLIN,
+		   "i%03d\tintr/s", "%d", cons(iv, i, NOVAL),
+		   NOVAL,
 		   S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
 	 }
       }
    }
 
-   /* Print paging statistics */
-   if (GET_PAGE(act))
-      printf("%s;%ld;%s;%.2f;%.2f;%.2f;%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].pgpgin, file_stats[curr].pgpgin, itv),
-	     S_VALUE(file_stats[!curr].pgpgout, file_stats[curr].pgpgout, itv),
-	     S_VALUE(file_stats[!curr].pgfault, file_stats[curr].pgfault, itv),
-	     S_VALUE(file_stats[!curr].pgmajfault, file_stats[curr].pgmajfault, itv));
+   /* print paging stats */
+   if (GET_PAGE(act)) {
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tpgpgin/s", NULL, NULL,
+	     NOVAL,
+	     S_VALUE(fsj->pgpgin, fsi->pgpgin, itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tpgpgout/s", NULL, NULL,
+	     NOVAL,
+	     S_VALUE(fsj->pgpgout, fsi->pgpgout, itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tfault/s", NULL, NULL,
+	     NOVAL,
+	     S_VALUE(fsj->pgfault, fsi->pgfault, itv));
+
+      render(isdb, pre, PT_NEWLIN,
+	     "-\tmajflt/s", NULL, NULL,
+	     NOVAL,
+	     S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv));
+   }
 
    /* Print number of swap pages brought in and out */
-   if (GET_SWAP(act))
-      printf("%s;%ld;%s;%.2f;%.2f\n", file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].pswpin, file_stats[curr].pswpin, itv),
-	     S_VALUE(file_stats[!curr].pswpout, file_stats[curr].pswpout, itv));
+   if (GET_SWAP(act)) {
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tpswpin/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->pswpin, fsi->pswpin, itv));
+      render(isdb, pre, PT_NEWLIN,
+	     "-\tpswpout/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->pswpout, fsi->pswpout, itv));
+   }
 
    /* Print I/O stats (no distinction made between disks) */
-   if (GET_IO(act))
-      printf("%s;%ld;%s;%.2f;%.2f;%.2f;%.2f;%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     S_VALUE(file_stats[!curr].dk_drive, file_stats[curr].dk_drive, itv),
-	     S_VALUE(file_stats[!curr].dk_drive_rio, file_stats[curr].dk_drive_rio, itv),
-	     S_VALUE(file_stats[!curr].dk_drive_wio, file_stats[curr].dk_drive_wio, itv),
-	     S_VALUE(file_stats[!curr].dk_drive_rblk, file_stats[curr].dk_drive_rblk, itv),
-	     S_VALUE(file_stats[!curr].dk_drive_wblk, file_stats[curr].dk_drive_wblk, itv));
+   if (GET_IO(act)) {
+      render(isdb, pre, PT_NOFLAG,
+	     "-\ttps", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->dk_drive, fsi->dk_drive, itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\trtps", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->dk_drive_rio, fsi->dk_drive_rio, itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\twtps", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->dk_drive_wio, fsi->dk_drive_wio, itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tbread/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->dk_drive_rblk, fsi->dk_drive_rblk, itv));
+
+      render(isdb, pre, PT_NEWLIN,
+	     "-\tbwrtn/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->dk_drive_wblk, fsi->dk_drive_wblk, itv));
+   }
 
    /* Print memory stats */
-   if (GET_MEMORY(act))
-      printf("%s;%ld;%s;%.2f;%.2f;%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb))
-	     / itv * HZ,
-	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb))
-	     / itv * HZ,
-	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb))
-	     / itv * HZ);
+   if (GET_MEMORY(act)) {
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tfrmpg/s", NULL, NULL,
+	     NOVAL,
+	     S_VALUE((double) PG(fsj->frmkb),
+		      (double) PG(fsi->frmkb), itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tbufpg/s", NULL, NULL,
+	     NOVAL, S_VALUE((double) PG(fsj->bufkb),
+			     (double) PG(fsi->bufkb), itv));
+
+      render(isdb, pre, PT_NEWLIN,
+	     "-\tcampg/s", NULL, NULL,
+	     NOVAL, S_VALUE((double) PG(fsj->camkb),
+			     (double) PG(fsi->camkb), itv));
+   }
 
    /* Print TTY statistics (serial lines) */
    if (GET_SERIAL(act)) {
+      int i;
+      struct stats_serial
+	 *sti = st_serial[curr],
+         *stj = st_serial[!curr];
 
-      for (i = 0; i < file_hdr.sa_serial; i++) {
+      for (i = 0; i++ < file_hdr.sa_serial; sti++, stj++) {
 
-	 st_serial_i = st_serial[curr]  + i;
-	 st_serial_j = st_serial[!curr] + i;
-	 if (st_serial_i->line == ~0)
+	 if (sti->line == ~0)
 	    continue;
 	
-	 if (st_serial_i->line == st_serial_j->line) {
-	    printf("%s;%ld;%s;%d;%.2f;%.2f\n",
-		   file_hdr.sa_nodename, dt, cur_time, st_serial_i->line,
-		   S_VALUE(st_serial_j->rx, st_serial_i->rx, itv),
-		   S_VALUE(st_serial_j->tx, st_serial_i->tx, itv));
+	 if (sti->line == stj->line) {
+	    render(isdb, pre, PT_NOFLAG,
+		   "ttyS%d\trcvin/s", "%d", cons(iv, sti->line, NOVAL),
+		   NOVAL, S_VALUE(stj->rx, sti->rx, itv));
+
+	    render(isdb, pre, PT_NEWLIN,
+		   "ttyS%d\txmtin/s", "%d", cons(iv, sti->line, NOVAL),
+		   NOVAL, S_VALUE(stj->tx, sti->tx, itv));
 	 }
       }
    }
 
    /* Print amount and usage of memory */
    if (GET_MEM_AMT(act)) {
-      printf("%s;%ld;%s;%lu;%lu;",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].frmkb,
-	     file_stats[curr].tlmkb - file_stats[curr].frmkb);
-      if (file_stats[curr].tlmkb)
-	 printf("%.2f",
-		SP_VALUE(file_stats[curr].frmkb, file_stats[curr].tlmkb, file_stats[curr].tlmkb));
-      else
-	 printf("%.2f", 0.0);
-      printf(";%lu;%lu;%lu;%lu;",
-	     file_stats[curr].bufkb, file_stats[curr].camkb,
-	     file_stats[curr].frskb,
-	     file_stats[curr].tlskb - file_stats[curr].frskb);
-      if (file_stats[curr].tlskb)
-	 printf("%.2f",
-		SP_VALUE(file_stats[curr].frskb, file_stats[curr].tlskb, file_stats[curr].tlskb));
-      else
-	 printf("%.2f", 0.0);
-      printf(";%lu\n", file_stats[curr].caskb);
+      render(isdb, pre, PT_USEINT,
+	     "-\tkbmemfree", NULL, NULL, fsi->frmkb, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\tkbmemused", NULL, NULL, fsi->tlmkb - fsi->frmkb, DNOVAL);
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\t%%memused", NULL, NULL, NOVAL,
+	     fsi->tlmkb
+	     ? SP_VALUE(fsi->frmkb, fsi->tlmkb, fsi->tlmkb)
+	     : 0.0);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\tkbbuffers", NULL, NULL, fsi->bufkb, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\tkbcached", NULL, NULL, fsi->camkb, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\tkbswpfree", NULL, NULL, fsi->frskb, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\tkbswpused", NULL, NULL, fsi->tlskb - fsi->frskb, DNOVAL);
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\t%%swpused", NULL, NULL, NOVAL,
+	     fsi->tlskb
+	     ? SP_VALUE(fsi->frskb, fsi->tlskb, fsi->tlskb)
+	     : 0.0);
+
+      render(isdb, pre, PT_USEINT | PT_NEWLIN,
+	     "-\tkbswpcad", NULL, NULL, fsi->caskb, DNOVAL);
    }
 
    if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
-      int offset;
+      int j, k, offset;
+      struct stats_irq_cpu *p, *q, *p0, *q0;
 
       for (k = 0; k <= file_hdr.sa_proc; k++) {
-	 if (cpu_bitmap[k >> 3] & (1 << (k & 0x07))) {
+	 if (!(cpu_bitmap[k >> 3] & (1 << (k & 0x07))))
+	    /* These are not the droids you are looking for */
+	    continue;
 
-	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
-	       /*
-		* A value of ~0 means it is a remaining interrupt
-		* which is no longer used, for example because the
-		* number of interrupts has decreased in /proc/interrupts
-		* or because we are appending data to an old sa file
-		* with more interrupts than are actually available now.
-		*/
-	       if (p0->irq != ~0) {
-		  q0 = st_irq_cpu[!curr] + j;
-		  offset = j;
+	 p0 = st_irq_cpu[curr];
+	 for (j = 0; j < file_hdr.sa_irqcpu; p0++, j++) {
+	    /* irq field set only for proc #0 */
 
-		  if (p0->irq != q0->irq) {
-		     if (j)
-			offset = j - 1;
-		     q0 = st_irq_cpu[!curr] + offset;
-		     if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-			offset = j + 1;
-		     q0 = st_irq_cpu[!curr] + offset;
-		  }
-		  if (p0->irq == q0->irq) {
-		     p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
-		     q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
-		     printf("%s;%ld;%s;%d;%d;%.2f\n",
-			    file_hdr.sa_nodename, dt, cur_time, k, p0->irq,
-			    S_VALUE(q->interrupt, p->interrupt, itv));
-		  }
-	       }
+	    /*
+	     * A value of ~0 means it is a remaining interrupt
+	     * which is no longer used, for example because the
+	     * number of interrupts has decreased in /proc/interrupts
+	     * or because we are appending data to an old sa file
+	     * with more interrupts than are actually available now.
+	     */
+	    if (p0->irq == ~0)
+	       continue;
+	
+	    q0 = st_irq_cpu[!curr] + j;
+	    offset = j;
+	
+	    if (p0->irq != q0->irq) {
+	       if (j)
+		  offset = j - 1;
+	       q0 = st_irq_cpu[!curr] + offset;
+	
+	       if (p0->irq != q0->irq
+		   && (j + 1) < file_hdr.sa_irqcpu)
+		  offset = j + 1;
+	       q0 = st_irq_cpu[!curr] + offset;
 	    }
+	
+	    if (p0->irq != q0->irq)
+	       continue;
+	
+	    p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
+	    q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
+	    render(isdb, pre, PT_NEWLIN,
+		   "cpu%d\ti%03d/s", "%d;%d", cons(iv, k, p0->irq),
+		   NOVAL, S_VALUE(q->interrupt, p->interrupt, itv));
 	 }
       }
    }
 
+
    /* Print values of some kernel tables */
    if (GET_KTABLES(act)) {
-      printf("%s;%ld;%s;%u;%u;%u;%u;", file_hdr.sa_nodename, dt, cur_time,
-	     file_stats[curr].dentry_stat, file_stats[curr].file_used,
-	     file_stats[curr].inode_used, file_stats[curr].super_used);
-      if (file_stats[curr].super_max)
-	 printf("%.2f",
-		((double) (file_stats[curr].super_used * 100))
-		/ file_stats[curr].super_max);
-      else
-	 printf("%.2f", 0.0);
-      printf(";%u;", file_stats[curr].dquot_used);
-      if (file_stats[curr].dquot_max)
-	 printf("%.2f",
-		((double) (file_stats[curr].dquot_used * 100))
-		/ file_stats[curr].dquot_max);
-      else
-	 printf("%.2f", 0.0);
-      printf(";%u;", file_stats[curr].rtsig_queued);
-      if (file_stats[curr].rtsig_max)
-	 printf("%.2f\n",
-		((double) (file_stats[curr].rtsig_queued * 100))
-		/ file_stats[curr].rtsig_max);
-      else
-	 printf("%.2f\n", 0.0);
+      render(isdb, pre, PT_USEINT,
+	     "-\tdentunusd", NULL, NULL,
+	     fsi->dentry_stat, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\tfile-sz", NULL, NULL,
+	     fsi->file_used, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\tinode-sz", NULL, NULL,
+	     fsi->inode_used, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\tsuper-sz", NULL, NULL,
+	     fsi->super_used, DNOVAL);
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\t%%super-sz", NULL, NULL,
+	     NOVAL,
+	     fsi->super_max
+	     ? ((double) (fsi->super_used * 100)) / fsi->super_max
+	     : 0.0);
+			
+      render(isdb, pre, PT_USEINT,
+	     "-\tdquot-sz", NULL, NULL,
+	     fsi->dquot_used, DNOVAL);
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\t%%dquot-sz", NULL, NULL,
+	     NOVAL,
+	     fsi->dquot_max
+	     ? ((double) (fsi->dquot_used * 100)) / fsi->dquot_max
+	     : 0.0);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\trtsig-sz", NULL, NULL,
+	     fsi->rtsig_queued, DNOVAL);
+
+      render(isdb, pre, PT_NEWLIN,
+	     "-\t%%rtsig-sz", NULL, NULL,
+	     NOVAL,
+	     fsi->rtsig_max
+	     ? ((double) (fsi->rtsig_queued * 100)) / fsi->rtsig_max
+	     : 0.0);
    }
 
    /* Print network interface statistics */
    if (GET_NET_DEV(act)) {
+      int i, j;
+      struct stats_net_dev
+	 *sni = st_net_dev[curr],
+         *snj;
+      char *ifc;
 
-      for (i = 0; i < file_hdr.sa_iface; i++) {
+      for (i = 0; i < file_hdr.sa_iface; i++, ++sni) {
 
-	 st_net_dev_i = st_net_dev[curr] + i;
-	 if (!strcmp(st_net_dev_i->interface, "?"))
+	 if (!strcmp((ifc = sni->interface), "?"))
 	    continue;
-	 j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
-	 st_net_dev_j = st_net_dev[!curr] + j;
 
-	 printf("%s;%ld;%s;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time,
-		st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->rx_packets, st_net_dev_i->rx_packets, itv),
-		S_VALUE(st_net_dev_j->tx_packets, st_net_dev_i->tx_packets, itv),
-		S_VALUE(st_net_dev_j->rx_bytes, st_net_dev_i->rx_bytes, itv),
-		S_VALUE(st_net_dev_j->tx_bytes, st_net_dev_i->tx_bytes, itv),
-		S_VALUE(st_net_dev_j->rx_compressed, st_net_dev_i->rx_compressed, itv),
-		S_VALUE(st_net_dev_j->tx_compressed, st_net_dev_i->tx_compressed, itv),
-		S_VALUE(st_net_dev_j->multicast, st_net_dev_i->multicast, itv));
+	 j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
+	 snj = st_net_dev[!curr] + j;
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\trxpck/s", "%s",
+		cons(sv, ifc, NULL), /* What if the format args are strings? */
+		NOVAL, S_VALUE(snj->rx_packets, sni->rx_packets, itv));
+		
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\ttxpck/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->tx_packets, sni->tx_packets, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\trxbyt/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->rx_bytes, sni->rx_bytes, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\ttxbyt/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->tx_bytes, sni->tx_bytes, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\trxcmp/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->rx_compressed, sni->rx_compressed, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\ttxcmp/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->tx_compressed, sni->tx_compressed, itv));
+
+	 render(isdb, pre, PT_NEWLIN,
+		"%s\trxmcst/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->multicast, sni->multicast, itv));
       }
    }
 
    /* Print network interface statistics (errors) */
    if (GET_NET_EDEV(act)) {
+      int i, j;
+      struct stats_net_dev
+	 *sni = st_net_dev[curr],
+         *snj;
+      char *ifc;
 
-      for (i = 0; i < file_hdr.sa_iface; i++) {
+      for (i = 0; i < file_hdr.sa_iface; i++, ++sni) {
 
-	 st_net_dev_i = st_net_dev[curr] + i;
-	 if (!strcmp(st_net_dev_i->interface, "?"))
+	 if (!strcmp((ifc = sni->interface), "?"))
 	    continue;
-	 j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
-	 st_net_dev_j = st_net_dev[!curr] + j;
 
-	 printf("%s;%ld;%s;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time,
-		st_net_dev_i->interface,
-		S_VALUE(st_net_dev_j->rx_errors, st_net_dev_i->rx_errors, itv),
-		S_VALUE(st_net_dev_j->tx_errors, st_net_dev_i->tx_errors, itv),
-		S_VALUE(st_net_dev_j->collisions, st_net_dev_i->collisions, itv),
-		S_VALUE(st_net_dev_j->rx_dropped, st_net_dev_i->rx_dropped, itv),
-		S_VALUE(st_net_dev_j->tx_dropped, st_net_dev_i->tx_dropped, itv),
-		S_VALUE(st_net_dev_j->tx_carrier_errors, st_net_dev_i->tx_carrier_errors, itv),
-		S_VALUE(st_net_dev_j->rx_frame_errors, st_net_dev_i->rx_frame_errors, itv),
-		S_VALUE(st_net_dev_j->rx_fifo_errors, st_net_dev_i->rx_fifo_errors, itv),
-		S_VALUE(st_net_dev_j->tx_fifo_errors, st_net_dev_i->tx_fifo_errors, itv));
+	 j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
+	 snj = st_net_dev[!curr] + j;
+	
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\trxerr/s", "%s", cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->rx_errors, sni->rx_errors, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\ttxerr/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->tx_errors,
+			       sni->tx_errors, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\tcoll/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->collisions, sni->collisions, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\trxdrop/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->rx_dropped, sni->rx_dropped, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\ttxdrop/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->tx_dropped, sni->tx_dropped, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\ttxcarr/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->tx_carrier_errors,
+			       sni->tx_carrier_errors, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\trxfram/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->rx_frame_errors,
+			       sni->rx_frame_errors, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\trxfifo/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->rx_fifo_errors,
+			       sni->rx_fifo_errors, itv));
+
+	 render(isdb, pre, PT_NEWLIN,
+		"%s\ttxfifo/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(snj->tx_fifo_errors,
+			       sni->tx_fifo_errors, itv));
       }
    }
 
    /* Print number of sockets in use */
-   if (GET_NET_SOCK(act))
-      printf("%s;%ld;%s;%u;%u;%u;%u;%u\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     file_stats[curr].sock_inuse, file_stats[curr].tcp_inuse,
-	     file_stats[curr].udp_inuse, file_stats[curr].raw_inuse,
-	     file_stats[curr].frag_inuse);
+   if (GET_NET_SOCK(act)) {
+      render(isdb, pre, PT_USEINT,
+	     "-\ttotsck", NULL, NULL, fsi->sock_inuse, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\ttcpsck", NULL, NULL, fsi->tcp_inuse, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\tudpsck",  NULL, NULL, fsi->udp_inuse, DNOVAL);
+
+      render(isdb, pre, PT_USEINT,
+	     "-\trawsck", NULL, NULL, fsi->raw_inuse, DNOVAL);
+
+      render(isdb, pre, PT_USEINT | PT_NEWLIN,
+	     "-\tip-frag", NULL, NULL, fsi->frag_inuse, DNOVAL);
+   }
+
 
    /* Print load averages and queue length */
-   if (GET_QUEUE(act))
-      printf("%s;%ld;%s;%lu;%u;%.2f;%.2f;%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     file_stats[curr].nr_running, file_stats[curr].nr_threads,
-	     (double) file_stats[curr].load_avg_1  / 100,
-	     (double) file_stats[curr].load_avg_5  / 100,
-	     (double) file_stats[curr].load_avg_15 / 100);
+   if (GET_QUEUE(act)) {
+      render(isdb, pre, PT_USEINT,
+	     "-\trunq-sz", NULL, NULL, fsi->nr_running, DNOVAL);
+	
+      render(isdb, pre, PT_USEINT,
+	     "-\tplist-sz", NULL, NULL, fsi->nr_threads, DNOVAL);
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tldavg-1", NULL, NULL,
+	     NOVAL, (double) fsi->load_avg_1 / 100);
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tldavg-5", NULL, NULL,
+	     NOVAL, (double) fsi->load_avg_5 / 100);
+
+      render(isdb, pre, PT_NEWLIN,
+	     "-\tldavg-15", NULL, NULL,
+	     NOVAL, (double) fsi->load_avg_15 / 100);
+   }
 
    /* Print disk statistics */
    if (GET_DISK(act)) {
+      int i, j;
+      char *name;
       double tput, util, await, svctm, arqsz;
+      struct disk_stats
+	 *sdi = st_disk[curr],
+         *sdj;
 
-      for (i = 0; i < file_hdr.sa_nr_disk; i++) {
+      for (i = 0; i < file_hdr.sa_nr_disk; i++, ++sdi) {
 
-	 st_disk_i = st_disk[curr]  + i;
-	 if (!(st_disk_i->major + st_disk_i->minor))
+	 if (!(sdi->major + sdi->minor))
 	    continue;
 
-	 tput = ((double) st_disk_i->nr_ios) * HZ / itv;
-	 util = ((double) st_disk_i->tot_ticks) / itv * HZ;
+	 tput = ((double) sdi->nr_ios) * HZ / itv;
+	 util = ((double) sdi->tot_ticks) / itv * HZ;
 	 svctm = tput ? util / tput : 0.0;
-	 await = st_disk_i->nr_ios ?
-	    (st_disk_i->rd_ticks + st_disk_i->wr_ticks) / ((double) st_disk_i->nr_ios) : 0.0;
-	 arqsz  = st_disk_i->nr_ios ?
-	    (st_disk_i->rd_sect + st_disk_i->wr_sect) / ((double) st_disk_i->nr_ios) : 0.0;
-	
+	 await = sdi->nr_ios ?
+	    (sdi->rd_ticks + sdi->wr_ticks) / ((double) sdi->nr_ios) : 0.0;
+	 arqsz  = sdi->nr_ios ?
+	    (sdi->rd_sect + sdi->wr_sect) / ((double) sdi->nr_ios) : 0.0;
+
 	 j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
-	 st_disk_j = st_disk[!curr] + j;
+	 sdj = st_disk[!curr] + j;
+	 name = get_devname(sdi->major, sdi->minor, flags);
 	
-	 printf("%s;%ld;%s;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time,
-		get_devname(st_disk_i->major, st_disk_i->minor, flags),
-		S_VALUE(st_disk_j->nr_ios, st_disk_i->nr_ios, itv),
-		ll_s_value(st_disk_j->rd_sect, st_disk_i->rd_sect, itv),
-		ll_s_value(st_disk_j->wr_sect, st_disk_i->wr_sect, itv),
-		arqsz,
-		((double) st_disk_i->rq_ticks) / itv * HZ / 1000.0,
-		await,
-		svctm,
-		util / 10.0);
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\ttps", "%s",
+		cons(sv, name, NULL),
+		NOVAL, S_VALUE(sdj->nr_ios, sdi->nr_ios, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\trd_sec/s", NULL,
+		cons(sv, name, NULL),
+		NOVAL, ll_s_value(sdj->rd_sect, sdi->rd_sect, itv));
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\twr_sec/s", NULL,
+		cons(sv, name, NULL),
+		NOVAL,	ll_s_value(sdj->wr_sect, sdi->wr_sect, itv));
+	
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\tavgrq-sz", NULL,
+		cons(sv, name, NULL),
+		NOVAL, arqsz);
+	
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\tavgqu-sz", NULL,
+		cons(sv, name, NULL),
+		NOVAL, ((double) sdi->rq_ticks) / itv * HZ / 1000.0);
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\tawait", NULL,
+		cons(sv, name, NULL),
+		NOVAL, await);
+
+	 render(isdb, pre, PT_NOFLAG,
+		"%s\tsvctm", NULL,
+		cons(sv, name, NULL),
+		NOVAL, svctm);
+
+	 render(isdb, pre, PT_NEWLIN,
+		"%s\t%%util", NULL,
+		cons(sv, name, NULL),
+		NOVAL, util / 10.0);
       }
+   }
+
+   /* Print NFS client stats */
+   if (GET_NET_NFS(act)) {
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tcall/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfs_rpccnt, fsi->nfs_rpccnt, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tretrans/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfs_rpcretrans, fsi->nfs_rpcretrans, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tread/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfs_readcnt, fsi->nfs_readcnt, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\twrite/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfs_writecnt, fsi->nfs_writecnt, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\taccess/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfs_accesscnt, fsi->nfs_accesscnt, itv));
+      render(isdb, pre, PT_NEWLIN,
+	     "-\tgetatt/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfs_getattcnt, fsi->nfs_getattcnt, itv));
+   }
+
+   /* Print NFS server stats */
+   if (GET_NET_NFSD(act)) {
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tscall/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_rpccnt, fsi->nfsd_rpccnt, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tbadcall/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_rpcbad, fsi->nfsd_rpcbad, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tpacket/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_netcnt, fsi->nfsd_netcnt, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tudp/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_netudpcnt, fsi->nfsd_netudpcnt, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\ttcp/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_nettcpcnt, fsi->nfsd_nettcpcnt, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\thit/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_rchits, fsi->nfsd_rchits, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tmiss/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_rcmisses, fsi->nfsd_rcmisses, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tsread/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_readcnt, fsi->nfsd_readcnt, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tswrite/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_writecnt, fsi->nfsd_writecnt, itv));
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tsaccess/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_accesscnt, fsi->nfsd_accesscnt, itv));
+      render(isdb, pre, PT_NEWLIN,
+	     "-\tsgetatt/s", NULL, NULL,
+	     NOVAL, S_VALUE(fsj->nfsd_getattcnt, fsi->nfsd_getattcnt, itv));
    }
 }
 
@@ -962,12 +924,7 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
    if ((itv % HZ) >= (HZ / 2))
       dt++;
 
-   if (USE_PPC_OPTION(flags))
-      /* Write stats to be used by pattern processing commands */
-      write_stats_for_ppc(curr, act, dt, itv, g_itv, cur_time);
-   else if (USE_DB_OPTION(flags))
-      /* Write stats to be used for loading into a database */
-      write_stats_for_db(curr, act, dt, itv, g_itv, cur_time);
+   write_mech_stats(USE_DB_OPTION(flags), curr, act, dt, itv, g_itv, cur_time);
 
    return 1;
 }
@@ -995,6 +952,27 @@ void write_dummy(short curr, int use_tm_start, int use_tm_end)
    else if (USE_DB_OPTION(flags))
       printf("%s;-1;%s;LINUX-RESTART\n",
 	     file_hdr.sa_nodename, cur_time);
+}
+
+
+/*
+ ***************************************************************************
+ * Display data file header
+ ***************************************************************************
+ */
+void display_file_header(char *dfile, struct file_hdr *file_hdr)
+{
+   printf("File: %s (%#x)\n", dfile, file_hdr->sa_magic);
+
+   print_gal_header(localtime(&(file_hdr->sa_ust_time)), file_hdr->sa_sysname, file_hdr->sa_release,
+		    file_hdr->sa_nodename);
+
+   printf("Activity flag: %#x\n", file_hdr->sa_actflag);
+   printf("#CPU:    %u\n", file_hdr->sa_proc + 1);
+   printf("#IrqCPU: %u\n", file_hdr->sa_irqcpu);
+   printf("#Disks:  %u\n", file_hdr->sa_nr_disk);
+   printf("#Serial: %u\n", file_hdr->sa_serial);
+   printf("#Ifaces: %u\n", file_hdr->sa_iface);
 }
 
 
@@ -1156,6 +1134,12 @@ void read_stats_from_file(char dfile[])
 
    /* Prepare file for reading */
    prep_file_for_reading(&ifd, dfile, &file_hdr, &sadf_actflag, flags);
+
+   if (USE_H_OPTION(sadf_flags)) {
+      /* Display data file header */
+      display_file_header(dfile, &file_hdr);
+      return;
+   }
 
    /* Perform required allocations */
    allocate_structures(USE_SA_FILE);
@@ -1326,12 +1310,15 @@ int main(int argc, char **argv)
 		case 'd':
 		  flags |= F_DB_OPTION;
 		  break;
+		case 'H':
+		  sadf_flags |= F_H_OPTION;
+		  break;
 		case 'p':
 		  flags |= F_PPC_OPTION;
-	       break;
+		  break;
 		case 't':
 		  flags |= F_ORG_TIME;
-	       break;
+		  break;
 		case 'V':
 		default:
 		  usage(argv[0]);

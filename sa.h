@@ -14,6 +14,13 @@
 
 #include "common.h"
 
+/*
+ * System activity daily file magic number
+ * (will vary when file format changes)
+ */
+#define SA_MAGIC	0x2166
+
+
 /* Define activities */
 #define A_PROC		0x000001
 #define A_CTXSW		0x000002
@@ -29,7 +36,8 @@
 #define A_DISK		0x000800
 #define A_PID		0x001000
 #define A_CPID		0x002000
-/* 4000-8000: unused */
+#define A_NET_NFS	0x004000
+#define A_NET_NFSD	0x008000
 #define A_PAGE		0x010000
 #define A_MEM_AMT	0x020000
 #define A_KTABLES	0x040000
@@ -57,6 +65,8 @@
 #define GET_NET_DEV(m)	(((m) & A_NET_DEV) == A_NET_DEV)
 #define GET_NET_EDEV(m)	(((m) & A_NET_EDEV) == A_NET_EDEV)
 #define GET_NET_SOCK(m)	(((m) & A_NET_SOCK) == A_NET_SOCK)
+#define GET_NET_NFS(m)	(((m) & A_NET_NFS) == A_NET_NFS)
+#define GET_NET_NFSD(m)	(((m) & A_NET_NFSD) == A_NET_NFSD)
 #define GET_QUEUE(m)	(((m) & A_QUEUE) == A_QUEUE)
 #define GET_DISK(m)	(((m) & A_DISK) == A_DISK)
 
@@ -74,26 +84,28 @@
 #define K_SADC	"SADC"
 #define K_DEV	"DEV"
 #define K_EDEV	"EDEV"
+#define K_NFS	"NFS"
+#define K_NFSD	"NFSD"
 #define K_SOCK	"SOCK"
 #define K_FULL	"FULL"
 
 /* Define flags */
-#define F_ALL_PROC      0x0001
-#define F_SA_ROTAT      0x0002
-#define F_FLT_INC	0x0004
-#define F_A_OPTION	0x0008
-#define F_F_OPTION	0x0010
-#define F_PPC_OPTION	0x0020
-#define F_ORG_TIME	0x0040
-#define F_DEFAULT_COUNT	0x0080
-#define F_I_OPTION	0x0100
-#define F_DB_OPTION	0x0200
-#define F_DO_SA_ROTAT	0x0400
-#define F_PER_PROC	0x0800
-#define F_L_OPTION	0x1000
-#define F_FILE_LCK	0X2000
-#define F_WANT_DISKS	0x4000
-#define F_DEV_PRETTY	0x8000
+#define F_ALL_PROC      0x00001
+#define F_SA_ROTAT      0x00002
+#define F_FLT_INC	0x00004
+#define F_A_OPTION	0x00008
+#define F_F_OPTION	0x00010
+#define F_PPC_OPTION	0x00020
+#define F_ORG_TIME	0x00040
+#define F_DEFAULT_COUNT	0x00080
+#define F_I_OPTION	0x00100
+#define F_DB_OPTION	0x00200
+#define F_DO_SA_ROTAT	0x00400
+#define F_PER_PROC	0x00800
+#define F_L_OPTION	0x01000
+#define F_FILE_LCK	0X02000
+#define F_WANT_DISKS	0x04000
+#define F_DEV_PRETTY	0x08000
 /* 0x100000:0x800000 -> reserved (cf. common.h) */
 
 #define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
@@ -130,9 +142,9 @@
 #define FRTSIG_MAX	"/proc/sys/kernel/rtsig-max"
 #define NET_DEV		"/proc/net/dev"
 #define NET_SOCKSTAT	"/proc/net/sockstat"
+#define NET_RPC_NFS	"/proc/net/rpc/nfs"
+#define NET_RPC_NFSD	"/proc/net/rpc/nfsd"
 #define SADC		"sadc"
-#define SADC_PATH	"/usr/lib/sysstat/sadc"
-#define SADC_LOCAL_PATH	"/usr/local/lib/sysstat/sadc"
 #define LOADAVG		"/proc/loadavg"
 #define VMSTAT		"/proc/vmstat"
 
@@ -172,11 +184,6 @@
 #define SOFT_SIZE	0
 #define HARD_SIZE	1
 
-/*
- * System activity daily file magic number
- * (will vary when file format changes)
- */
-#define SA_MAGIC	0x2165
 
 /*
  * IMPORTANT NOTE:
@@ -275,9 +282,7 @@ struct file_stats {
    unsigned long pgfault			__attribute__ ((aligned (8)));
    unsigned long pgmajfault			__attribute__ ((aligned (8)));
    /* --- INT --- */
-   /* Nb of processes (set only when using '-x SUM') */
-   unsigned int  nr_processes			__attribute__ ((aligned (8)));
-   unsigned int  dk_drive			__attribute__ ((packed));
+   unsigned int  dk_drive			__attribute__ ((aligned (8)));
    unsigned int  dk_drive_rio			__attribute__ ((packed));
    unsigned int  dk_drive_wio			__attribute__ ((packed));
    unsigned int  dk_drive_rblk			__attribute__ ((packed));
@@ -300,6 +305,23 @@ struct file_stats {
    unsigned int  load_avg_5			__attribute__ ((packed));
    unsigned int  load_avg_15			__attribute__ ((packed));
    unsigned int  nr_threads			__attribute__ ((packed));
+   unsigned int  nfs_rpccnt			__attribute__ ((packed));
+   unsigned int  nfs_rpcretrans			__attribute__ ((packed));
+   unsigned int  nfs_readcnt			__attribute__ ((packed));
+   unsigned int  nfs_writecnt			__attribute__ ((packed));
+   unsigned int  nfs_accesscnt			__attribute__ ((packed));
+   unsigned int  nfs_getattcnt			__attribute__ ((packed));
+   unsigned int  nfsd_rpccnt			__attribute__ ((packed));
+   unsigned int  nfsd_rpcbad			__attribute__ ((packed));
+   unsigned int  nfsd_netcnt			__attribute__ ((packed));
+   unsigned int  nfsd_netudpcnt			__attribute__ ((packed));
+   unsigned int  nfsd_nettcpcnt			__attribute__ ((packed));
+   unsigned int  nfsd_rchits			__attribute__ ((packed));
+   unsigned int  nfsd_rcmisses			__attribute__ ((packed));
+   unsigned int  nfsd_readcnt			__attribute__ ((packed));
+   unsigned int  nfsd_writecnt			__attribute__ ((packed));
+   unsigned int  nfsd_accesscnt			__attribute__ ((packed));
+   unsigned int  nfsd_getattcnt			__attribute__ ((packed));
    /* --- CHAR --- */
    /* Record type: R_STATS or R_DUMMY */
    unsigned char record_type			__attribute__ ((packed));
@@ -439,6 +461,7 @@ struct tstamp {
 #define DEF_TMSTART	"08:00:00"
 #define DEF_TMEND	"18:00:00"
 
+
 /* Using 'do ... while' makes this macro safer to use (trailing semicolon) */
 #define CLOSE_ALL(_fd_)		do { \
 				close(_fd_[0]); \
@@ -446,40 +469,42 @@ struct tstamp {
 				} while (0)
 
 /* Functions */
-extern int  check_disk_reg(struct file_hdr *, struct disk_stats * [],
-			  short, short, int);
-extern unsigned int check_iface_reg(struct file_hdr *, struct stats_net_dev * [],
+extern int	    check_disk_reg(struct file_hdr *, struct disk_stats * [],
+				   short, short, int);
+extern unsigned int check_iface_reg(struct file_hdr *,
+				    struct stats_net_dev * [],
 				    short, short, unsigned int);
-extern int  datecmp(struct tm *, struct tstamp *);
-unsigned long long get_per_cpu_interval(struct stats_one_cpu *,
-					struct stats_one_cpu *);
-extern char *get_devname(unsigned int, unsigned int, unsigned int);
-extern void init_bitmap(unsigned char [], unsigned char, unsigned int);
-extern void init_stats(struct file_stats [], unsigned int [][]);
-extern int  next_slice(unsigned long long, unsigned long long,
-		      struct file_hdr *, int, long);
-extern int  parse_sar_opt(char * [], int, unsigned int *, unsigned int *,
-			 short *, int);
-extern int  parse_sar_I_opt(char * [], int *, unsigned int *, short *,
-			   unsigned char []);
-extern int  parse_sa_P_opt(char * [], int *, unsigned int *, short *,
-			  unsigned char []);
-extern int  parse_sar_n_opt(char * [], int *, unsigned int *, short *);
-extern int  parse_timestamp(char * [], int *, struct tstamp *,
-			   const char *);
-extern void prep_file_for_reading(int *, char *, struct file_hdr *,
-				  unsigned int *, unsigned int);
-extern int  prep_time(struct file_stats *, struct file_stats *,
-		     struct file_hdr *, struct tm *, struct tstamp *, int,
-		     unsigned long long *, unsigned long long *);
-extern void print_report_hdr(unsigned int, struct tm *,
-			     struct file_hdr *);
-extern int  sa_fread(int, void *, int, int);
-extern void salloc_cpu_array(struct stats_one_cpu * [], unsigned int);
-extern void salloc_disk_array(struct disk_stats * [], int);
-extern void salloc_irqcpu_array(struct stats_irq_cpu * [],
-				unsigned int, unsigned int);
-extern void salloc_net_dev_array(struct stats_net_dev * [], unsigned int);
-extern void salloc_serial_array(struct stats_serial * [], int);
+extern int	    datecmp(struct tm *, struct tstamp *);
+unsigned long long  get_per_cpu_interval(struct stats_one_cpu *,
+					 struct stats_one_cpu *);
+extern char	   *get_devname(unsigned int, unsigned int, unsigned int);
+extern void	    init_bitmap(unsigned char [], unsigned char, unsigned int);
+extern void	    init_stats(struct file_stats [], unsigned int [][]);
+extern int	    next_slice(unsigned long long, unsigned long long,
+			       struct file_hdr *, int, long);
+extern int	    parse_sar_opt(char * [], int, unsigned int *,
+				  unsigned int *, short *, int);
+extern int	    parse_sar_I_opt(char * [], int *, unsigned int *, short *,
+				    unsigned char []);
+extern int	    parse_sa_P_opt(char * [], int *, unsigned int *, short *,
+				   unsigned char []);
+extern int	    parse_sar_n_opt(char * [], int *, unsigned int *, short *);
+extern int	    parse_timestamp(char * [], int *, struct tstamp *,
+				    const char *);
+extern void	    prep_file_for_reading(int *, char *, struct file_hdr *,
+					  unsigned int *, unsigned int);
+extern int	    prep_time(struct file_stats *, struct file_stats *,
+			      struct file_hdr *, struct tm *, struct tstamp *,
+			      int, unsigned long long *, unsigned long long *);
+extern void	    print_report_hdr(unsigned int, struct tm *,
+				     struct file_hdr *);
+extern int	    sa_fread(int, void *, int, int);
+extern void	    salloc_cpu_array(struct stats_one_cpu * [], unsigned int);
+extern void	    salloc_disk_array(struct disk_stats * [], int);
+extern void	    salloc_irqcpu_array(struct stats_irq_cpu * [],
+					unsigned int, unsigned int);
+extern void	    salloc_net_dev_array(struct stats_net_dev * [],
+					 unsigned int);
+extern void	   salloc_serial_array(struct stats_serial * [], int);
 
 #endif  /* _SA_H */

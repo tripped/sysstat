@@ -673,7 +673,8 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 	 *actflag |= A_PROC + A_PAGE + A_IRQ + A_IO + A_CPU +
 	    A_CTXSW + A_SWAP + A_MEMORY + A_SERIAL +
 	    A_MEM_AMT + A_KTABLES + A_NET_DEV +
-	    A_NET_EDEV + A_NET_SOCK + A_QUEUE + A_DISK;
+	    A_NET_EDEV + A_NET_SOCK + A_NET_NFS + A_NET_NFSD +
+	    A_QUEUE + A_DISK;
 	 *flags |= F_A_OPTION;
 	 break;
        case 'B':
@@ -756,8 +757,12 @@ int parse_sar_n_opt(char *argv[], int *opt, unsigned int *actflag,
       *actflag |= A_NET_EDEV;
    else if (!strcmp(argv[*opt], K_SOCK))
       *actflag |= A_NET_SOCK;
+   else if (!strcmp(argv[*opt], K_NFS))
+      *actflag |= A_NET_NFS;
+   else if (!strcmp(argv[*opt], K_NFSD))
+      *actflag |= A_NET_NFSD;
    else if (!strcmp(argv[*opt], K_FULL)) {
-      *actflag |= A_NET_DEV + A_NET_EDEV + A_NET_SOCK;
+      *actflag |= A_NET_DEV + A_NET_EDEV + A_NET_SOCK + A_NET_NFS + A_NET_NFSD;
       *dis_hdr = 9;
    }
    else

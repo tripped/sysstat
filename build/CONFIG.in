@@ -4,6 +4,7 @@
 # Directories
 PREFIX =
 SA_LIB_DIR =
+SADC_PATH = ${SA_LIB_DIR}/sadc
 SA_DIR =
 MAN_DIR =
 CLEAN_SA_DIR =

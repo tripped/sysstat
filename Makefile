@@ -2,7 +2,7 @@
 # (C) 1999-2004 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 5.1.3
+VERSION = 5.1.4
 
 include build/CONFIG
 
@@ -39,8 +39,7 @@ SYSCONFIG_DIR = /etc/sysstat
 CFLAGS = -Wall -Wstrict-prototypes -pipe -g -fno-strength-reduce
 LFLAGS = -L. -lsyscom -s
 LSAFLAG = -lsyssa
-LIOCFLAG = -lsysioc
-SAS_DFLAGS += -DSA_DIR=\"$(SA_DIR)\"
+SAS_DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
   CFLAGS += -O0
@@ -81,7 +80,7 @@ endif
 all: sa1 sa2 crontab sysstat sysstat.sysconfig sysstat.crond \
 	sadc sar sadf iostat mpstat locales
 
-common.o: common.c common.h
+common.o: common.c common.h ioconf.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
 sa_common.o: sa_common.c sa.h common.h ioconf.h
@@ -90,47 +89,40 @@ sa_common.o: sa_common.c sa.h common.h ioconf.h
 ioconf.o: ioconf.c ioconf.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
-libsyscom.a: common.o
-	$(AR) r $@ $<
+libsyscom.a: common.o ioconf.o
+	$(AR) r $@ common.o ioconf.o
 	$(AR) s $@
 
 libsyssa.a: sa_common.o
 	$(AR) r $@ $<
 	$(AR) s $@
 
-libsysioc.a: ioconf.o
-	$(AR) r $@ $<
-	$(AR) s $@
-
 version.h: version.in
 	$(SED) s+VERSION_NUMBER+$(VERSION)+g $< > $@
-
-sapath.h: sapath.in
-	$(SED) s+ALTLOC+$(SA_LIB_DIR)+g $< > $@
 
 sadc.o: sadc.c sa.h common.h version.h ioconf.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
-sadc: sadc.o libsyscom.a libsyssa.a libsysioc.a
-	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG) $(LIOCFLAG)
+sadc: sadc.o libsyscom.a libsyssa.a
+	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG)
 
-sar.o: sar.c sa.h common.h version.h sapath.h
+sar.o: sar.c sa.h common.h version.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
-sar: sar.o libsyscom.a libsyssa.a libsysioc.a
-	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG) $(LIOCFLAG)
+sar: sar.o libsyscom.a libsyssa.a
+	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG)
 
-sadf.o: sadf.c sa.h common.h version.h
+sadf.o: sadf.c sadf.h sa.h common.h version.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
-sadf: sadf.o libsyscom.a libsyssa.a libsysioc.a
-	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG) $(LIOCFLAG)
+sadf: sadf.o libsyscom.a libsyssa.a
+	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG)
 
 iostat.o: iostat.c iostat.h common.h version.h ioconf.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
-iostat: iostat.o libsyscom.a libsysioc.a
-	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LIOCFLAG)
+iostat: iostat.o libsyscom.a
+	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS)
 
 mpstat.o: mpstat.c mpstat.h common.h version.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
@@ -393,12 +385,13 @@ endif
 
 clean:
 	rm -f sadc sa1 sa2 sysstat sar sadf iostat mpstat *.o *.a core TAGS crontab
-	rm -f sapath.h version.h sysstat.sysconfig sysstat.crond
+	rm -f version.h sysstat.sysconfig sysstat.crond
 	find nls -name "*.gmo" -exec rm -f {} \;
 
 distclean: clean
 	$(CP) build/CONFIG.def build/CONFIG
 	rm -f *.save *.old .*.swp data
+	find . -name "*~" -exec rm -f {} \;
 
 dist: distclean
 	cd .. && (tar -cvf - sysstat-$(VERSION) | gzip -v9 > sysstat-$(VERSION).tar.gz)

@@ -5,6 +5,7 @@
 PREFIX = /usr
 SA_LIB_DIR = /usr/lib/sysstat
 SA_DIR = /var/log/sysstat
+SADC_PATH = ${SA_LIB_DIR}/sadc
 MAN_DIR = ${PREFIX}/share/man
 CLEAN_SA_DIR = n
 YESTERDAY =

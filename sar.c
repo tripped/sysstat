@@ -30,7 +30,6 @@
 #include "version.h"
 #include "sa.h"
 #include "common.h"
-#include "sapath.h"
 
 
 #ifdef USE_NLS
@@ -85,7 +84,7 @@ void usage(char *progname)
 	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 		   "[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-		   "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
+		   "[ -n { DEV | EDEV | NFS | NFSD | SOCK | FULL } ]\n"
 		   "[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 	           "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 		   "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"),
@@ -617,7 +616,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
       double tput, util, await, svctm, arqsz;
 
       if (dis)
-	 printf(_("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz  avgqu-sz     await     svctm     %%util\n"), prev_string);
+	 printf(_("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz  avgqu-sz     await     svctm     %%util\n"),
+		prev_string);
 
       for (i = 0; i < file_hdr.sa_nr_disk; i++) {
 	
@@ -650,6 +650,42 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 		svctm,
 		util / 10.0);
       }
+   }
+
+   /* Print NFS client stats */
+   if (GET_NET_NFS(act)) {
+      if (dis)
+	 printf(_("\n%-11s    call/s retrans/s    read/s   write/s  access/s  getatt/s\n"),
+		prev_string);
+
+      printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n", curr_string,
+	     S_VALUE(file_stats[prev].nfs_rpccnt,     file_stats[curr].nfs_rpccnt,     itv),
+	     S_VALUE(file_stats[prev].nfs_rpcretrans, file_stats[curr].nfs_rpcretrans, itv),
+	     S_VALUE(file_stats[prev].nfs_readcnt,    file_stats[curr].nfs_readcnt,    itv),
+	     S_VALUE(file_stats[prev].nfs_writecnt,   file_stats[curr].nfs_writecnt,   itv),
+	     S_VALUE(file_stats[prev].nfs_accesscnt,  file_stats[curr].nfs_accesscnt,  itv),
+	     S_VALUE(file_stats[prev].nfs_getattcnt,  file_stats[curr].nfs_getattcnt,  itv));
+   }
+
+   /* Print NFS server stats */
+   if (GET_NET_NFSD(act)) {
+      if (dis)
+	 printf(_("\n%-11s   scall/s badcall/s  packet/s     udp/s     tcp/s     hit/s    miss/s   sread/s  swrite/s saccess/s sgetatt/s\n"),
+		prev_string);
+
+      printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+	     curr_string,
+	     S_VALUE(file_stats[prev].nfsd_rpccnt,    file_stats[curr].nfsd_rpccnt,    itv),
+	     S_VALUE(file_stats[prev].nfsd_rpcbad,    file_stats[curr].nfsd_rpcbad,    itv),
+	     S_VALUE(file_stats[prev].nfsd_netcnt,    file_stats[curr].nfsd_netcnt,    itv),
+	     S_VALUE(file_stats[prev].nfsd_netudpcnt, file_stats[curr].nfsd_netudpcnt, itv),
+	     S_VALUE(file_stats[prev].nfsd_nettcpcnt, file_stats[curr].nfsd_nettcpcnt, itv),
+	     S_VALUE(file_stats[prev].nfsd_rchits,    file_stats[curr].nfsd_rchits,    itv),
+	     S_VALUE(file_stats[prev].nfsd_rcmisses,  file_stats[curr].nfsd_rcmisses,  itv),
+	     S_VALUE(file_stats[prev].nfsd_readcnt,   file_stats[curr].nfsd_readcnt,   itv),
+	     S_VALUE(file_stats[prev].nfsd_writecnt,  file_stats[curr].nfsd_writecnt,  itv),
+	     S_VALUE(file_stats[prev].nfsd_accesscnt, file_stats[curr].nfsd_accesscnt, itv),
+	     S_VALUE(file_stats[prev].nfsd_getattcnt, file_stats[curr].nfsd_getattcnt, itv));
    }
 }
 
@@ -1761,9 +1797,7 @@ int main(int argc, char **argv)
 
       /* Call now the data collector */
       execv(SADC_PATH, args);
-      execv(SADC_LOCAL_PATH, args);
       execvp(SADC, args);
-      execv(SADC_ALT_PATH, args);
       /*
        * Note: don't use execl/execlp since we don't have a fixed number of
        * args to give to sadc.

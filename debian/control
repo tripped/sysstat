@@ -28,7 +28,7 @@ Description: sar, iostat and mpstat - system performance tools for Linux
 
 Package: isag
 Architecture: all
-Depends: sysstat (>= 3.3.6), tk8.3|wish, gnuplot
+Depends: sysstat (>= ${Source-Version}), tk8.3|wish, gnuplot
 Description: Interactive System Activity Grapher for sysstat.
  This package includes the isag command, which graphically displays the 
  system activity data stored in a binary data produced by a sar command

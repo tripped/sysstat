@@ -21,8 +21,28 @@ ENABLED="$ENABLED"
 # Options passed to sadc in the /etc/init.d/sysstat script.
 # See sadc(8) for more information
 OPTIONS="-F -L -"
+
+# How long to keep log files (days), maximum is a month.
+# Used by the sa2(8) script.
+HISTORY=7
 EOF
     chmod 644 "$DEFAULT"
+}
+
+
+update_default_file() {
+    if dpkg --compare-versions "$2" lt-nl "5.1.2-1"; then
+        if ! grep -q ^HISTORY "$DEFAULT"; then
+            cat "$DEFAULT" > "$DEFAULT.dpkg-tmp"
+            cat >> "$DEFAULT.dpkg-tmp" << EOF
+
+# How long to keep log files (days), maximum is a month.
+# Used by the sa2(8) script.
+HISTORY=7
+EOF
+            mv -f "$DEFAULT.dpkg-tmp" "$DEFAULT"
+        fi
+    fi
 }
 
 
@@ -60,6 +80,10 @@ if [ "$1" = "configure" ] ; then
             print "ENABLED=\"$enabled\"\n" if ($cnt==0);
           ' "$ENABLED" < "$DEFAULT" > "$DEFAULT.dpkg-tmp" &&
         mv -f "$DEFAULT.dpkg-tmp" "$DEFAULT"
+
+        # add history line
+            update_default_file
+        fi
     else
         create_default_file "$ENABLED"
     fi

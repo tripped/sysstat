@@ -1010,7 +1010,7 @@ int sa_read(void *buffer, int size)
 	 return 1;	/* EOF */
 
       size -= n;
-      (char *) buffer += n;
+      buffer = (char *) buffer + n;
    }
 
    return 0;

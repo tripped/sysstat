@@ -8,6 +8,6 @@ RPT=SA_DIR/sar${DATE}
 ENDIR=BIN_DIR
 DFILE=SA_DIR/sa${DATE}
 cd ${ENDIR}
-${ENDIR}/sar $* -f ${DFILE} > ${RPT}
+${ENDIR}/sar.sysstat $* -f ${DFILE} > ${RPT}
 find SA_DIR \( -name 'sar*' -o -name 'sa*' \) -mtime +7 -exec rm -f {} \;
 

@@ -1,3 +1,10 @@
+sysstat (3.3.2-2) unstable; urgency=low
+
+  * sa2 executes sar.sysstat instead of sar.
+  * Add gettext to Build-Depends.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 17 Dec 2000 12:09:18 +0100
+
 sysstat (3.3.2-1) unstable; urgency=low
 
   * Initial release. (closes: #78140)

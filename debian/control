@@ -2,7 +2,7 @@ Source: sysstat
 Section: admin
 Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
-Build-Depends: debhelper (>= 2.1.0)
+Build-Depends: debhelper (>= 2.1.0), gettext
 Standards-Version: 3.2.1
 Origin: debian
 Bugs: debbugs://bugs.debian.org
@@ -15,6 +15,7 @@ Conflicts: atsar (<< 1.5-3)
 Description: sar, iostat and mpstat - system performance tools for Linux
  The sysstat package contains the sar, mpstat and iostat
  commands for Linux.
+ .
  The sar command collects and reports system activity
  information. The iostat command reports CPU utilization
  and I/O statistics for disks. The mpstat command reports

@@ -1,7 +1,5 @@
 Here are the things I would like (or I should) do for the next releases:
 
-* iostat should now be able to display kB/s with default 2.4.x kernels.
-
 * sar -q should also display ldavg-15.
 
 * Remove kbmemshrd from sar -r.

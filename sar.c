@@ -548,8 +548,55 @@ int check_iface_reg(struct stats_net_dev *st_net_dev[], short curr, short ref, i
 	     (st_net_dev_i->rx_fifo_errors < st_net_dev_j->rx_fifo_errors) ||
 	     (st_net_dev_i->tx_fifo_errors < st_net_dev_j->tx_fifo_errors)) {
 
-	    memset(st_net_dev_j, 0, STATS_NET_DEV_SIZE);
-	    strcpy(st_net_dev_j->interface, st_net_dev_i->interface);
+	    /*
+	     * Special processing for rx_bytes (_packets) and tx_bytes (_packets) counters:
+	     * If the number of bytes (packets) has decreased, whereas the number
+	     * of packets (bytes) has increased, then assume that the relevant
+	     * counter has met an overflow condition, and that the interface
+	     * was not unregistered, which is all the more plausible that the
+	     * previous value for the counter was > ULONG_MAX/2.
+	     * NB: the average value displayed will be wrong in this case...
+	     */
+	    unsigned long diff = 0;
+	    int f = 0;
+	
+	    if ((st_net_dev_i->rx_bytes < st_net_dev_j->rx_bytes) &&
+		(st_net_dev_i->rx_packets > st_net_dev_j->rx_packets) &&
+		(st_net_dev_j->rx_bytes > (~0UL >> 1))) {
+	       diff = ~0UL - st_net_dev_j->rx_bytes;
+	       st_net_dev_i->rx_bytes += diff;
+	       st_net_dev_j->rx_bytes = 0;
+	       f = 1;
+	    }
+	    if ((st_net_dev_i->tx_bytes < st_net_dev_j->tx_bytes) &&
+		(st_net_dev_i->tx_packets > st_net_dev_j->tx_packets) &&
+		(st_net_dev_j->tx_bytes > (~0UL >> 1))) {
+	       diff = ~0UL - st_net_dev_j->tx_bytes;
+	       st_net_dev_i->tx_bytes += diff;
+	       st_net_dev_j->tx_bytes = 0;
+	       f = 1;
+	    }
+	    if ((st_net_dev_i->rx_packets < st_net_dev_j->rx_packets) &&
+		(st_net_dev_i->rx_bytes > st_net_dev_j->rx_bytes) &&
+		(st_net_dev_j->rx_packets > (~0UL >> 1))) {
+	       diff = ~0UL - st_net_dev_j->rx_packets;
+	       st_net_dev_i->rx_packets += diff;
+	       st_net_dev_j->rx_packets = 0;
+	       f = 1;
+	    }
+	    if ((st_net_dev_i->tx_packets < st_net_dev_j->tx_packets) &&
+		(st_net_dev_i->tx_bytes > st_net_dev_j->tx_bytes) &&
+		(st_net_dev_j->tx_packets > (~0UL >> 1))) {
+	       diff = ~0UL - st_net_dev_j->tx_packets;
+	       st_net_dev_i->tx_packets += diff;
+	       st_net_dev_j->tx_packets = 0;
+	       f = 1;
+	    }
+	    if (!f) {
+	       /* OK: assume here that the device was actually unregistered... */
+	       memset(st_net_dev_j, 0, STATS_NET_DEV_SIZE);
+	       strcpy(st_net_dev_j->interface, st_net_dev_i->interface);
+	    }
 	 }
 	 return index;
       }
@@ -1051,7 +1098,7 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
    if (GET_DISK(act)) {
       if (dis)
-	 printf(_("\nAverage:          DEV       tps    blks/s\n"));
+	 printf(_("\nAverage:          DEV       tps    sect/s\n"));
 
       for (i = 0; i < file_hdr.sa_nr_disk; i++) {
 	
@@ -1601,7 +1648,7 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Print disk statistics */
    if (GET_DISK(act)) {
       if (dis)
-	 printf(_("\n%-11s       DEV       tps    blks/s\n"), cur_time[!curr]);
+	 printf(_("\n%-11s       DEV       tps    sect/s\n"), cur_time[!curr]);
 
       for (i = 0; i < file_hdr.sa_nr_disk; i++) {
 	
@@ -1726,7 +1773,7 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
    if (GET_SWAP(act)) {
       printf("%s\t%ld\t%s\t-\tpswpin/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pswpin, file_stats[curr].pswpin, itv));
-      printf("%s\t%ld\t%s\t-\tpgpgout/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tpswpout/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pswpout, file_stats[curr].pswpout, itv));
    }
 
@@ -2003,7 +2050,7 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 	 printf("%s\t%ld\t%s\tdev%d-%d\ttps\t%.2f\n",
 		file_hdr.sa_nodename, dt, cur_time, st_disk_i->major, st_disk_i->index,
 		S_VALUE(st_disk_j->dk_drive, st_disk_i->dk_drive, itv));
-	 printf("%s\t%ld\t%s\tdev%d-%d\tblks/s\t%.2f\n",
+	 printf("%s\t%ld\t%s\tdev%d-%d\tsect/s\t%.2f\n",
 		file_hdr.sa_nodename, dt, cur_time, st_disk_i->major, st_disk_i->index,
 		S_VALUE(st_disk_j->dk_drive_rwblk, st_disk_i->dk_drive_rwblk, itv));
       }
@@ -3107,7 +3154,7 @@ int main(int argc, char **argv)
       fprintf(stderr, _("-f and -o options are mutually exclusive\n"));
       exit(1);
    }
-   /* Use time start or options -i/-h only when reading stats from a file */
+   /* Use time start or options -i/-h/-H only when reading stats from a file */
    if ((tm_start.use || (USE_I_OPTION(flags)) || USE_H_OPTION(flags) || USE_DB_OPTION(flags))
        && !from_file[0]) {
       fprintf(stderr, _("Not reading from a system activity file (use -f option)\n"));

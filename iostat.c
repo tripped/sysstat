@@ -65,7 +65,7 @@ void usage(char *progname)
 		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 	           "Usage: %s [ options... ]\n"
 		   "Options are:\n"
-		   "[ -c | -d ] [ -t ] [ -V ] [ -x [ <device> ] ]\n"
+		   "[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x [ <device> ] ]\n"
 		   "[ <interval> [ <count> ] ]\n"),
 	   VERSION, progname);
    exit(1);
@@ -393,10 +393,15 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	    }
 	 }
       }
-
       else {
+	 int fct = 1;
 
-	 printf(_("Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
+	 if (DISPLAY_KILOBYTES(flags)) {
+	    printf(_("Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n"));
+	    fct = 2;
+	 }
+	 else
+	    printf(_("Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
 
 	 for (disk_index = 0; disk_index < part_nr; disk_index++) {
 
@@ -405,15 +410,14 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	       printf("\n             ");
 	    printf(" %8.2f %12.2f %12.2f %10u %10u\n",
 		   S_VALUE(disk_stats[!curr][disk_index].dk_drive,      disk_stats[curr][disk_index].dk_drive,      itv),
-		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_rblk, disk_stats[curr][disk_index].dk_drive_rblk, itv),
-		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_wblk, disk_stats[curr][disk_index].dk_drive_wblk, itv),
-		   (disk_stats[curr][disk_index].dk_drive_rblk - disk_stats[!curr][disk_index].dk_drive_rblk),
-		   (disk_stats[curr][disk_index].dk_drive_wblk - disk_stats[!curr][disk_index].dk_drive_wblk));
+		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_rblk, disk_stats[curr][disk_index].dk_drive_rblk, itv) / fct,
+		   S_VALUE(disk_stats[!curr][disk_index].dk_drive_wblk, disk_stats[curr][disk_index].dk_drive_wblk, itv) / fct,
+		   (disk_stats[curr][disk_index].dk_drive_rblk - disk_stats[!curr][disk_index].dk_drive_rblk) / fct,
+		   (disk_stats[curr][disk_index].dk_drive_wblk - disk_stats[!curr][disk_index].dk_drive_wblk) / fct);
 	 }
       }
       printf("\n");
    }
-
    return 1;
 }
 
@@ -468,6 +472,10 @@ int main(int argc, char **argv)
 	       flags &= ~D_CPU_ONLY;
 	       break;
 	
+	     case 'k':
+	       flags |= D_KILOBYTES;	/* Display stats in kB/s       		*/
+	       break;
+
 	     case 't':
 	       flags |= D_TIMESTAMP;	/* Display timestamp	       		*/
 	       break;

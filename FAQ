@@ -1,0 +1,120 @@
+This is sysstat's Frequently Asked Questions!
+Be sure to read this carefully before calling for help...
+
+#################
+
+Q> When I compile sysstat, it fails with the following message:
+make: msgfmt: Command not found
+make: ***[locales] Error 127
+
+A> The msgfmt command belongs to the GNU gettext package.
+If you don't have it on your system, just answer 'n' (for "no") at the
+question
+"Enable National Language Support (NLS)? [y]"
+during config stage (make config), then compile sysstat as usual (make ;
+make install).
+Please the README-nls file included in sysstat source package to learn
+some more about National Language Support.
+
+#################
+
+Q> The sar command complains with the following message:
+Cannot append data to that file
+
+A> The format of the daily data files created by the sar command you are
+now using is not compatible with the format of the files created by a
+previous version of sar.
+The solution is easy: just log in as root and remove by hand the files
+located in the /var/log/sa directory:
+# rm /var/log/sa/sa??
+
+#################
+
+Q> Is sar daily data files fully compatible with Sun Solaris format of
+sar files?
+
+A> No, the format of the binary data files created by sysstat's sar command
+is not compatible with formats from other Unixes, because it contains
+data which are closely linked to Linux.
+For the same reason, sysstat cannot work on other platforms than Linux...
+
+#################
+
+Q> I have some troubles running sar on my SMP box. My server crashes
+with a kernel oops:
+Feb 17 04:05:00 bolums1 kernel: Unable to handle kernel paging request
+at virtual address fffffc1c
+Feb 17 04:05:00 bolums1 kernel: current->tss.cr3 = 19293000, %cr3 = 19293000
+Feb 17 04:05:00 bolums1 kernel: *pde = 0026b067
+Feb 17 04:05:00 bolums1 kernel: *pte = 00000000
+Feb 17 04:05:00 bolums1 kernel: Oops: 0000
+Feb 17 04:05:00 bolums1 kernel: CPU:    0
+Feb 17 04:05:00 bolums1 kernel: EIP:
+<...>
+
+A> The trouble you have is triggered by a *Linux* kernel bug, not a sysstat
+one... The best solution is to upgrade your kernel to the latest stable
+release.
+Also, if you cannot upgrade your box, try to compile sysstat after
+answering 'y' to the question:
+"Linux SMP race in serial driver workaround?"
+at config stage (make config). Indeed, we found that 2.2.x kernels
+(with x <= 15) have an SMP race condition, that the sar command
+may trigger when it reads the /proc/tty/driver/serial file.
+
+#################
+
+Q> My database (e.g. MySQL) doesn't appear to understand the time zone
+displayed by 'sar -H'...
+
+A> The format includes the timezone detail in the output. This is to make
+sure it is communicated clearly that UTC is how the data is always
+converted and printed. Moreover we don't depend on the TZ environment
+variable and we don't have some data converted to a different timezone
+for any reason, known or unknown.
+When you deal with accounting data, when you have raw data you always 
+want it in UTC.  Of course, you want it to all be the same when loading 
+into a database. If your database has no way to deal with timezones,
+then write a short script to strip the "UTC" characters to load into the
+database.
+
+#################
+
+Q> I cannot see all my disks when I use the iostat command...
+
+A> Yes. This is a kernel limit. At the present time Linux doesn't maintain
+statistics for every devices. Old kernels (2.2.x for instance) used to
+maintain stats for the first four devices. The accounting code was changed
+in 2.4 kernels, and the result may (or may not) be better for your system.
+
+#################
+
+Q> iostat -x doesn't report disk I/O statistics...
+
+A> From sysstat's README file: The iostat command has been updated to take
+advantage of Stephen Tweedie's kernel patch to display extended I/O statistics
+(option '-x' for iostat).
+You can find Stephen's patch here:
+ftp://ftp.uk.linux.org/pub/linux/sct/fs/profiling
+Stephen used to maintain his patch for various kernel versions, but it is
+no longer the case. You will have to get one of the relevant patch and
+update it by hand to suit your kernel.
+Note that some distros have this patch already applied.
+
+#################
+
+Q> I don't understand the output of iostat. It doesn't match what I expect it to be...
+
+A> By default iostat displays I/O activity in blocks per second. With old kernels (i.e. 
+older than 2.4.x) a block is of indeterminate size and therefore the displayed values
+are not useful.
+With recent kernels (kernels 2.4 and later), iostat is now able to get disk activities
+from the kernel expressed in a number of sectors. If you take a look at the kernel code,
+the sector size is actually allowed to vary although I have never seen anything other than
+512 bytes.
+
+
+--	
+Sebastien Godard <sebastien.godard@wanadoo.fr> is the author and the current
+maintainer of this package.
+

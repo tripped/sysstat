@@ -1,3 +1,10 @@
+sysstat (5.0.0-2) unstable; urgency=low
+
+  * Added Japanese translation of debconf template (closes: #225801).
+    Thanks to Hideki Yamane <henrich@samba.gr.jp>.
+
+ -- Robert Luberda <robert@debian.org>  Mon, 12 Jan 2004 20:51:18 +0100
+
 sysstat (5.0.0-1) unstable; urgency=low
 
   * New upstream (stable) version.

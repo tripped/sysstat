@@ -1,0 +1,60 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+#    Developers do not need to manually edit POT or PO files.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: sysstat 5.0.0-1\n"
+"POT-Creation-Date: 2003-03-22 21:55+0100\n"
+"PO-Revision-Date: 2003-11-20 20:12+0900\n"
+"Last-Translator: Hideki Yamane <henrich@samba.gr.jp>\n"
+"Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=EUC-JP\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Description
+#: ../sysstat.templates:3
+msgid "WARNING: daily data files format has changed!"
+msgstr "警告: 日次データファイル形式が変更されました!"
+
+#. Description
+#: ../sysstat.templates:3
+msgid ""
+"Format of daily data statistics files has changed in version ${s_version} of "
+"sysstat and is *not* compatible with the previous one!"
+msgstr "日次統計データファイルの形式は sysstat バージョン ${s_version} で変更されました。これは以前のものと互換性は「ありません」!"
+
+#. Description
+#: ../sysstat.templates:3
+msgid "Existing data files need to be deleted."
+msgstr "現在のデータファイルは削除する必要があります。"
+
+#. Description
+#: ../sysstat.templates:12
+msgid "Do you want post-installation script to remove these data files?"
+msgstr "このデータファイルをインストール後に自動で削除しますか?"
+
+#. Description
+#: ../sysstat.templates:12
+msgid ""
+"If you activate this option, any existing data files in /var/log/sysstat/ "
+"directory will be deleted."
+msgstr "このオプションを有効にすると、 /var/log/sysstat/ ディレクトリにある現在のデータファイルは全て削除されます。"
+
+#. Description
+#: ../sysstat.templates:12
+msgid ""
+"If you don't want to remove them automatically, please remove them by hand "
+"later, in order to the sar command work properly."
+msgstr "これらを自動的に削除したくなければ、 sar コマンドが正常に動作するように後ほど手動で削除してください。"

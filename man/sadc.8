@@ -1,8 +1,8 @@
-.TH SADC 8 "MARCH 2003" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "AUGUST 2003" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
-.B /usr/lib/sa/sadc [ -I ] [ -V ] [ -x
+.B /usr/lib/sa/sadc [ -F ] [ -I ] [ -V ] [ -x
 .I pid
 .B ] [ -X
 .I pid
@@ -58,6 +58,14 @@ command reports only local activity.
 -x and -X options are ignored when writing data to a file.
 
 .SH OPTIONS
+.IP -F
+The creation of
+.I outfile
+will be forced. If the file already exists and has not the format expected by
+.B sadc
+then it will be truncated. This may be particularly useful for daily data files
+created by an older version of sadc and whose format is no longer compatible
+with current one.
 .IP -I
 Tell
 .B sadc

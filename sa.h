@@ -76,7 +76,7 @@
 #define F_SA_ROTAT      0x002
 #define F_FLT_INC	0x004
 #define F_A_OPTION	0x008
-/* 0x10: unused */
+#define F_F_OPTION	0x010
 #define F_H_OPTION	0x020
 #define F_ORG_TIME	0x040
 #define F_DEFAULT_COUNT	0x080
@@ -90,6 +90,7 @@
 #define WANT_SA_ROTAT(m)	(((m) & F_SA_ROTAT) == F_SA_ROTAT)
 #define FLT_ARE_INC(m)		(((m) & F_FLT_INC) == F_FLT_INC)
 #define USE_A_OPTION(m)		(((m) & F_A_OPTION) == F_A_OPTION)
+#define USE_F_OPTION(m)		(((m) & F_F_OPTION) == F_F_OPTION)
 #define USE_H_OPTION(m)		(((m) & F_H_OPTION) == F_H_OPTION)
 #define PRINT_ORG_TIME(m)	(((m) & F_ORG_TIME) == F_ORG_TIME)
 #define USE_DEFAULT_COUNT(m)	(((m) & F_DEFAULT_COUNT) == F_DEFAULT_COUNT)
@@ -155,7 +156,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x2161
+#define SA_MAGIC	0x2162
 
 /*
  * IMPORTANT NOTE:
@@ -227,8 +228,11 @@ struct file_stats {
    unsigned int  nr_processes			__attribute__ ((packed));
    /* Time stamp (number of seconds since the epoch) */
    unsigned long ust_time			__attribute__ ((aligned (8)));
-   /* Stats... */
+   /* Machine uptime (multiplied by the # of proc) */
    unsigned long uptime				__attribute__ ((aligned (8)));
+   /* Uptime reduced to one processor. Set *only* on SMP machines */
+   unsigned long uptime0			__attribute__ ((aligned (8)));
+   /* Stats... */
    unsigned long processes			__attribute__ ((aligned (8)));
    unsigned int  context_swtch			__attribute__ ((aligned (8)));
    unsigned int  cpu_user			__attribute__ ((packed));
@@ -416,7 +420,10 @@ struct tstamp {
 #define DEF_TMSTART	"08:00:00"
 #define DEF_TMEND	"18:00:00"
 
-#define CLOSE_ALL(_fd_)		close(_fd_[0]); \
-				close(_fd_[1])
+/* Using 'do ... while' makes this macro safer to use */
+#define CLOSE_ALL(_fd_)		do { \
+				close(_fd_[0]); \
+				close(_fd_[1]); \
+				} while (0)
 
 #endif  /* _SA_H */

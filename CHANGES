@@ -1,5 +1,28 @@
 Changes:
 
+2003/08/20: Version 4.1.6 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x2162]
+	* Machine uptime calculation is now optimized on SMP machines
+	  to minimize the consequences if an overflow condition happens.
+	  Especially useful when asking for stats since system boot.
+	* -F option added to sadc. Useful to force the creation of the
+	  daily data file: an already existing file with a wrong format
+	  will be truncated by sadc if this is option is used.
+	* sa1 script now calls sadc with -F option.
+	* The processor number to which the process is attached was no
+	  longer displayed by sar -x. Make it appear again.
+	* CPU usage for processes, as displayed by sar -x and sar -X, should
+	  now be correct on machines where HZ <> 100 (eg IA64 architecture).
+	* iostat still assumed that jiffies were 100ths of a second in some
+	  places. Now use Linux HZ definition *everywhere*.
+	* The average I/O requests queue length as displayed by iostat -x was
+	  wrongly calculated. This is now fixed.
+	* Manual pages updated.
+	* NLS updated.
+	* Cosmetic changes in various parts of the code.
+	* FAQ, README and CREDITS files updated.
+
 2003/07/21: Version 4.1.5 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! Delete existing data files

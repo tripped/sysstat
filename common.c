@@ -100,7 +100,9 @@ int get_cpu_nr(int *cpu_nr, unsigned int max_nr_cpus)
    /*
     * cpu_nr initial value: -1
     * If cpu_nr < 0 then there is only one proc.
-    * If cpu_nr = 0 then there is only one proc but this is an SMP kernel
+    * If cpu_nr > 0 then this is an SMP machine.
+    * If cpu_nr = 0 then there is only one proc but this is a Linux 2.2 SMP or
+    * Linux 2.4 kernel.
     */
    smp_box = (*cpu_nr > 0);
    if (*cpu_nr < 0)

@@ -156,7 +156,7 @@ A> This is because no data belong to the specified time interval!
 In fact, -h option makes sar display its timestamp as a UTC value (Coordinated
 Universal Time), as indicated in the manual page. The UTC value may be
 different from the value that sar displays when option -h is not used.
-The same remark concerns -H option.
+The same remark applies to the use of -H option.
 
 #################
 
@@ -184,8 +184,15 @@ Q> I cannot see all my disks when I use the sar/iostat command...
 
 A> Yes. This is a kernel limit. At the present time Linux doesn't maintain
 statistics for every devices. Old kernels (2.2.x for instance) used to
-maintain stats for the first four devices. The accounting code has changed
-in 2.4 kernels, and the result may (or may not) be better for your system.
+maintain stats for the first four devices.
+The accounting code has changed in 2.4 kernels, and the result may (or
+may not) be better for your system. Indeed, Linux 2.4 maintains the stats
+in a two dimensional arrays, with a maximum of 16 devices (DK_MAX_DISK
+in the kernel sources). Moreover, if the device major number exceeds
+DK_MAX_MAJOR (whose value also defaults to 16 in the kernel sources),
+then stats for this device will not be collected.
+So, a solution may be simply to change the values of these limits in 
+linux/include/linux/kernel_stat.h and recompile your kernel.
 
 #################
 

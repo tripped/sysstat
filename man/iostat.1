@@ -1,4 +1,4 @@
-.TH IOSTAT 1 "APRIL 2003" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "AUGUST 2003" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices and partitions.
@@ -139,7 +139,7 @@ request to the device. A transfer is of indeterminate size.
 .B Blk_read/s
 .RS
 Indicate the amount of data read from the drive expressed in a number of
-blocks per second. Blocks are equivalent to sectors with post 2.4 kernels
+blocks per second. Blocks are equivalent to sectors with 2.4 kernels and newer
 and therefore have a size of 512 bytes. With older kernels, a block is of
 indeterminate size.
 
@@ -163,25 +163,25 @@ The total number of blocks written.
 .B kB_read/s
 .RS
 Indicate the amount of data read from the drive expressed in kilobytes
-per second. Data displayed are valid only with kernels 2.4 and later.
+per second. Data displayed are valid only with kernels 2.4 and newer.
 
 .RE
 .B kB_wrtn/s
 .RS
 Indicate the amount of data written to the drive expressed in kilobytes
-per second. Data displayed are valid only with kernels 2.4 and later.
+per second. Data displayed are valid only with kernels 2.4 and newer.
 
 .RE
 .B kB_read
 .RS
 The total number of kilobytes read. Data displayed are valid only with
-kernels 2.4 and later.
+kernels 2.4 and newer.
 
 .RE
 .B kB_wrtn
 .RS
 The total number of kilobytes written. Data displayed are valid only with
-kernels 2.4 and later.
+kernels 2.4 and newer.
 
 .RE
 .B rrqm/s
@@ -260,7 +260,7 @@ The -d option is exclusive of the -c option and displays only the
 device utilization report.
 .IP -k
 Display statistics in kilobytes per second instead of blocks per second.
-Data displayed are valid only with kernels 2.4 and later.
+Data displayed are valid only with kernels 2.4 and newer.
 .IP "-p device | ALL"
 The -p option is exclusive of the -x option and displays statistics for the block
 device

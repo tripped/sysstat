@@ -13,7 +13,7 @@ Here are the things I would like (or I should) do for the next releases:
   example), but I am rather reluctant to display them: There are too many of
   them and sar becomes bigger and bigger...
 
-* Use ./configure to configure sysstat.
+* Use autoconf to configure sysstat.
 
 * Add support for hotplug CPU ?
 
@@ -23,8 +23,6 @@ Here are the things I would like (or I should) do for the next releases:
   Also check the meaning of /sys/.../stat fields.
 
 * Check the meaning of the different fields in /sys/.../stat, in particular for iostat -x.
-
-* Update translations (RU).
 
 * Make the code more rock solid by avoiding assumptions.
 

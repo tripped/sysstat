@@ -35,6 +35,7 @@
 
 struct comm_stats {
    unsigned long uptime;
+   unsigned long uptime0;
    unsigned long cpu_iowait;
    unsigned long cpu_idle;
    unsigned int  cpu_user;

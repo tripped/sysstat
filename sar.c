@@ -295,7 +295,7 @@ void salloc_pid(int nr_pid)
  ***************************************************************************
  * Use time stamp to fill tstamp structure
  ***************************************************************************
-*/
+ */
 void decode_time_stamp(char time_stamp[], struct tstamp *tse)
 {
    time_stamp[2] = time_stamp[5] = '\0';
@@ -512,20 +512,23 @@ void print_report_hdr(void)
  * Check time and get interval value
  ***************************************************************************
  */
-int prep_time(int use_tm_start, short curr, unsigned long *itv, unsigned long *itv0)
+int prep_time(int use_tm_start, short curr, unsigned long *itv, unsigned long *g_itv)
 {
    if (use_tm_start && (datecmp(&loc_time, &tm_start) < 0))
       return 1;
 
    /* Interval value in jiffies */
-   *itv0 = file_stats[curr].uptime - file_stats[!curr].uptime;
-   *itv  = *itv0 / (file_hdr.sa_proc + 1);
+   *g_itv = file_stats[curr].uptime - file_stats[!curr].uptime;
+   if (!(*g_itv))	/* Paranoia checking */
+      *g_itv = 1;
 
-   if (!(*itv)) {	/* Paranoia checking */
-      *itv = 1;
-      if (!(*itv0))
-	 *itv0 = 1;
+   if (file_hdr.sa_proc){
+      *itv = file_stats[curr].uptime0 - file_stats[!curr].uptime0;
+      if (!(*itv))
+	 *itv = 1;
    }
+   else
+      *itv = *g_itv;
 
    return 0;
 }
@@ -782,7 +785,7 @@ unsigned long get_per_cpu_interval(struct stats_one_cpu *st_cpu_i,
  */
 void write_stats_core(short prev, short curr, short dis, char *prev_string,
 		      char *curr_string, unsigned int act, unsigned long itv,
-		      unsigned long itv0, int disp_avg, int want_since_boot)
+		      unsigned long g_itv, int disp_avg, int want_since_boot)
 {
    int i, j = 0, k;
    struct stats_irq_cpu *p, *q, *p0, *q0;
@@ -822,16 +825,16 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 printf(_("%-11s       all"), curr_string);
 
 	 printf("    %6.2f    %6.2f    %6.2f    %6.2f",
-		SP_VALUE(file_stats[prev].cpu_user,   file_stats[curr].cpu_user,   itv0),
-		SP_VALUE(file_stats[prev].cpu_nice,   file_stats[curr].cpu_nice,   itv0),
-		SP_VALUE(file_stats[prev].cpu_system, file_stats[curr].cpu_system, itv0),
-		SP_VALUE(file_stats[prev].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
+		SP_VALUE(file_stats[prev].cpu_user,   file_stats[curr].cpu_user,   g_itv),
+		SP_VALUE(file_stats[prev].cpu_nice,   file_stats[curr].cpu_nice,   g_itv),
+		SP_VALUE(file_stats[prev].cpu_system, file_stats[curr].cpu_system, g_itv),
+		SP_VALUE(file_stats[prev].cpu_iowait, file_stats[curr].cpu_iowait, g_itv));
 
 	 if (file_stats[curr].cpu_idle < file_stats[prev].cpu_idle)
 	    printf("      %.2f\n", 0.0);  /* Handle buggy RTC (or kernels?) */
 	 else
 	    printf("    %6.2f\n",
-		   SP_VALUE(file_stats[prev].cpu_idle, file_stats[curr].cpu_idle, itv0));
+		   SP_VALUE(file_stats[prev].cpu_idle, file_stats[curr].cpu_idle, g_itv));
       }
 
       if (WANT_PER_PROC(flags) && file_hdr.sa_proc) {
@@ -938,7 +941,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
       if (dis) {
 	 printf(_("\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s"),
 		prev_string);
-	 if (disp_avg)
+	 if (!disp_avg)
 	    printf(_("   CPU\n"));
 	 else
 	    printf("\n");
@@ -953,11 +956,11 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 printf(" %9.2f %9.2f    %6.2f    %6.2f %9.2f",
 		S_VALUE(pid_stats[prev][i]->minflt, pid_stats[curr][i]->minflt, itv),
 		S_VALUE(pid_stats[prev][i]->majflt, pid_stats[curr][i]->majflt, itv),
-		S_VALUE(pid_stats[prev][i]->utime,  pid_stats[curr][i]->utime,  itv),
-		S_VALUE(pid_stats[prev][i]->stime,  pid_stats[curr][i]->stime,  itv),
+		SP_VALUE(pid_stats[prev][i]->utime,  pid_stats[curr][i]->utime,  itv),
+		SP_VALUE(pid_stats[prev][i]->stime,  pid_stats[curr][i]->stime,  itv),
 		((double) ((long) pid_stats[curr][i]->nswap - (long) pid_stats[prev][i]->nswap))
 		/ itv * HZ);
-	 if (disp_avg)
+	 if (!disp_avg)
 	    printf("   %3d\n", pid_stats[curr][i]->processor);
 	 else
 	    printf("\n");
@@ -978,8 +981,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 printf(" %9.2f %9.2f    %6.2f    %6.2f %9.2f\n",
 		S_VALUE(pid_stats[prev][i]->cminflt, pid_stats[curr][i]->cminflt, itv),
 		S_VALUE(pid_stats[prev][i]->cmajflt, pid_stats[curr][i]->cmajflt, itv),
-		S_VALUE(pid_stats[prev][i]->cutime,  pid_stats[curr][i]->cutime,  itv),
-		S_VALUE(pid_stats[prev][i]->cstime,  pid_stats[curr][i]->cstime,  itv),
+		SP_VALUE(pid_stats[prev][i]->cutime,  pid_stats[curr][i]->cutime,  itv),
+		SP_VALUE(pid_stats[prev][i]->cstime,  pid_stats[curr][i]->cstime,  itv),
 		((double) ((long) pid_stats[curr][i]->cnswap - (long) pid_stats[prev][i]->cnswap))
 		/ itv * HZ);
       }
@@ -1169,13 +1172,17 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
  */
 void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 {
-   unsigned long itv, itv0;
+   unsigned long itv, g_itv;
    char string[16];
 
    /* Interval value in jiffies */
-   itv0 = file_stats[curr].uptime - file_stats[2].uptime;
-   itv  = itv0 / (file_hdr.sa_proc + 1);
-   if (!itv) {	/* Should no longer happen with version 3.0 and higher... */
+   g_itv = file_stats[curr].uptime - file_stats[2].uptime;
+   if (file_hdr.sa_proc)
+      itv = file_stats[curr].uptime0 - file_stats[2].uptime0;
+   else
+      itv = g_itv;
+
+   if (!itv || !g_itv) { /* Should no longer happen with recent versions */
       /*
        * Aiee: null interval... This should only happen when reading stats
        * from a system activity file with a far too big interval value...
@@ -1185,7 +1192,7 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
    }
 
    strcpy(string, _("Average:"));
-   write_stats_core(2, curr, dis, string, string, act, itv, itv0, TRUE, FALSE);
+   write_stats_core(2, curr, dis, string, string, act, itv, g_itv, TRUE, FALSE);
 
    if (GET_PAGE(act)) {
       if (dis)
@@ -1311,7 +1318,7 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 		int use_tm_start, int use_tm_end, int reset, int want_since_boot)
 {
    char cur_time[2][14];
-   unsigned long itv, itv0;
+   unsigned long itv, g_itv;
 
    /* Check time (1) */
    if (read_from_file) {
@@ -1328,14 +1335,14 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    cur_time[curr][11] = cur_time[!curr][11] = '\0';
 
    /* Check time (2) */
-   if (prep_time(use_tm_start, curr, &itv, &itv0))
+   if (prep_time(use_tm_start, curr, &itv, &g_itv))
       /* It's too soon... */
       return 0;
 
    (asum.count)++;	/* Nb of lines printed */
 
    write_stats_core(!curr, curr, dis, cur_time[!curr], cur_time[curr], act,
-		    itv, itv0, FALSE, want_since_boot);
+		    itv, g_itv, FALSE, want_since_boot);
 
    /* Print number of pages the system paged in and out */
    if (GET_PAGE(act)) {
@@ -1517,7 +1524,7 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
  ***************************************************************************
  */
 void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
-			unsigned long itv, unsigned long itv0, char *cur_time)
+			unsigned long itv, unsigned long g_itv, char *cur_time)
 {
    int i, j, k;
    struct stats_one_cpu *st_cpu_i, *st_cpu_j;
@@ -1543,23 +1550,23 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
       printf("%s\t%ld\t%s\tall\t%%user\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
-	     SP_VALUE(file_stats[!curr].cpu_user, file_stats[curr].cpu_user, itv0));
+	     SP_VALUE(file_stats[!curr].cpu_user, file_stats[curr].cpu_user, g_itv));
       printf("%s\t%ld\t%s\tall\t%%nice\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
-	     SP_VALUE(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, itv0));
+	     SP_VALUE(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, g_itv));
       printf("%s\t%ld\t%s\tall\t%%system\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
-	     SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0));
+	     SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, g_itv));
       printf("%s\t%ld\t%s\tall\t%%iowait\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
-	     SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
+	     SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, g_itv));
       printf("%s\t%ld\t%s\tall\t%%idle\t",
 	     file_hdr.sa_nodename, dt, cur_time);
       if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
 	 printf("%.2f\n", 0.0);	/* Handle buggy RTC (or kernels?) */
       else
 	 printf("%.2f\n",
-		SP_VALUE(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, itv0));
+		SP_VALUE(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, g_itv));
    }
 
    if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc) {
@@ -1970,7 +1977,7 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
  ***************************************************************************
  */
 void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
-		       unsigned long itv, unsigned long itv0, char *cur_time)
+		       unsigned long itv, unsigned long g_itv, char *cur_time)
 {
    int i, j, k;
    struct stats_one_cpu *st_cpu_i, *st_cpu_j;
@@ -1995,15 +2002,15 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
       printf("%s;%ld;%s;-1;%.2f;%.2f;%.2f;%.2f;",
 	     file_hdr.sa_nodename, dt, cur_time,
-	     SP_VALUE(file_stats[!curr].cpu_user, file_stats[curr].cpu_user, itv0),
-	     SP_VALUE(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, itv0),
-	     SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0),
-	     SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
+	     SP_VALUE(file_stats[!curr].cpu_user, file_stats[curr].cpu_user, g_itv),
+	     SP_VALUE(file_stats[!curr].cpu_nice, file_stats[curr].cpu_nice, g_itv),
+	     SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, g_itv),
+	     SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, g_itv));
       if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
 	 printf("%.2f\n", 0.0);	/* Handle buggy RTC (or kernels?) */
       else
 	 printf("%.2f\n",
-		SP_VALUE(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, itv0));
+		SP_VALUE(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, g_itv));
    }
 
    if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc) {
@@ -2303,7 +2310,7 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
 			 int use_tm_start, int use_tm_end)
 {
-   unsigned long dt, itv, itv0;
+   unsigned long dt, itv, g_itv;
    char cur_time[26];
 
    /* Check time (1) */
@@ -2317,7 +2324,7 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
       sprintf(cur_time, "%ld", file_stats[curr].ust_time);
 
    /* Check time (2) */
-   if (prep_time(use_tm_start, curr, &itv, &itv0))
+   if (prep_time(use_tm_start, curr, &itv, &g_itv))
       /* It's too soon... */
       return 0;
 
@@ -2328,10 +2335,10 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
 
    if (USE_H_OPTION(flags))
       /* Write stats to be used by pattern processing commands */
-      write_stats_for_ppc(curr, act, dt, itv, itv0, cur_time);
+      write_stats_for_ppc(curr, act, dt, itv, g_itv, cur_time);
    else if (USE_DB_OPTION(flags))
       /* Write stats to be used for loading into a database */
-      write_stats_for_db(curr, act, dt, itv, itv0, cur_time);
+      write_stats_for_db(curr, act, dt, itv, g_itv, cur_time);
 
    /* Check time (3) */
    if (use_tm_end && (datecmp(&loc_time, &tm_end) >= 0)) {

@@ -1,7 +1,8 @@
 #!/bin/sh
 # PREFIX/lib/sa/sa1.sh
-# (C) 1999-2001 Sebastien Godard <sebastien.godard@wanadoo.fr>
+# (C) 1999-2002 Sebastien Godard <sebastien.godard@wanadoo.fr>
 #
+umask 0022
 DATE=`date +%d`
 ENDIR=PREFIX/lib/sa
 DFILE=SA_DIR/sa${DATE}

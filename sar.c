@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2001 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2002 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -335,7 +335,7 @@ void prep_smp_option(int proc_used)
 	 for (i = proc_used + 1; i < ((NR_CPUS / 32) + 1) * 32; i++)
 	    /*
 	     * Reset every bit for proc > proc_used
-	     * (only done when -U -1 entered on the command line)
+	     * (only done when -U ALL entered on the command line)
 	     */
 	    cpu_bitmap[i >> 5] &= ~(1 << (i & 0x1f));
       check_smp_option(proc_used);
@@ -2862,8 +2862,10 @@ int main(int argc, char **argv)
       else if (!strcmp(argv[opt], "-o")) {
 	 /* Save stats to a file */
 	 if ((argv[++opt]) && strncmp(argv[opt], "-", 1) &&
-	     (strspn(argv[opt], DIGITS) != strlen(argv[opt])))
-	    strcpy(to_file, argv[opt++]);
+	     (strspn(argv[opt], DIGITS) != strlen(argv[opt]))) {
+	    strncpy(to_file, argv[opt++], MAX_FILE_LEN);
+	    to_file[MAX_FILE_LEN - 1] = '\0';
+	 }
 	 else
 	    strcpy(to_file, "-");
       }
@@ -2871,11 +2873,14 @@ int main(int argc, char **argv)
       else if (!strcmp(argv[opt], "-f")) {
 	 /* Read stats from a file */
 	 if ((argv[++opt]) && strncmp(argv[opt], "-", 1) &&
-	     (strspn(argv[opt], DIGITS) != strlen(argv[opt])))
-	    strcpy(from_file, argv[opt++]);
+	     (strspn(argv[opt], DIGITS) != strlen(argv[opt]))) {
+	    strncpy(from_file, argv[opt++], MAX_FILE_LEN);
+	    from_file[MAX_FILE_LEN - 1] = '\0';
+	 }
 	 else {
 	    get_localtime(&loc_time);
-	    sprintf(from_file, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+	    snprintf(from_file, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+	    from_file[MAX_FILE_LEN - 1] = '\0';
 	 }
       }
 
@@ -3090,7 +3095,8 @@ int main(int argc, char **argv)
    if ((argc == 1) ||
        (!interval && !WANT_BOOT_STATS(flags) && !from_file[0] && !to_file[0])) {
       get_localtime(&loc_time);
-      sprintf(from_file, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+      snprintf(from_file, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+      from_file[MAX_FILE_LEN - 1] = '\0';
    }
 
    /*

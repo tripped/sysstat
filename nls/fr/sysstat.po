@@ -26,7 +26,7 @@ msgstr "sysstat version %s\n"
 "Utilisation: %s [ options... ]\n"
 "Options possibles:\n"
 "[ -P { <cpu> | ALL } ] [ -V ]\n"
-"[ <intervalle> [ <nombre_de_fois> ] ]\n"
+"[ <intervalle> [ <itérations> ] ]\n"
 
 #: mpstat.c:123
 msgid "\nAverage:     CPU   %%user   %%nice %%system   %%idle    intr/s\n"
@@ -60,7 +60,7 @@ msgstr "sysstat version %s\n"
 "Utilisation: %s [ options... ]\n"
 "Options possibles:\n"
 "[ -c | -d ] [ -t ] [ -V ] [ -x [ <device> ] ]\n"
-"[ <intervalle> [ <nombre_de_fois> ] ]\n"
+"[ <intervalle> [ <itérations> ] ]\n"
 
 #: iostat.c:534
 msgid "avg-cpu:  %%user   %%nice    %%sys   %%idle\n"
@@ -75,8 +75,8 @@ msgid "Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"
 msgstr "Device:            tps    Blk_lus/s Blk_écrits/s    Blk_lus Blk_écrits\n"
 
 #: iostat.c
-msgid "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
-msgstr "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
+msgid "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
+msgstr "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
 
 #: sar.c:91
 msgid "sysstat version %s\n"
@@ -102,7 +102,7 @@ msgstr "sysstat version %s\n"
 "[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 "[ -o [ <fichier> ] | -f [ <fichier> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ <intervalle> [ <nombre_de_fois> ] ]\n"
+"[ <intervalle> [ <itérations> ] ]\n"
 
 #: sar.c:184
 msgid "Not an SMP machine...\n"
@@ -422,7 +422,7 @@ msgstr "sysstat version %s\n"
 "Utilisation: %s [ options... ]\n"
 "Options possibles:\n"
 "[ -x <pid> ] [ -X <pid> ] [ -I ] [ -V ]\n"
-"[ <intervalle> [ <nombre_de_fois> ] ] [ <fichier> ]\n"
+"[ <intervalle> [ <itérations> ] ] [ <fichier> ]\n"
 
 #: sadc.c:614
 msgid "Cannot append data to that file\n"

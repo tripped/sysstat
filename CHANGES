@@ -222,7 +222,7 @@ Changes:
 	  fixed.
 	* iostat command is no longer able to save its data to a file.
 	  In fact, iostat has never been supposed to work that way, and I
-	  have never really maintained this function.
+	  have never really maintained this option.
 	* iostat now also works with 2.4 kernels. It can handle the format
 	  of the /proc/stat file for both 2.2 and 2.4 kernels.
 	* sar now reports statistics on allocated disk quotas entries
@@ -307,4 +307,15 @@ Changes:
 	* Configuration script updated.
 	* sar manual page updated.
 	* NLS updated: Norwegian translation added.
+
+2002/01/27: Version 4.0.3 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* iostat now displays statistics in kB/s when option -x is used.
+	* Configuration script updated.
+	* sar and iostat manual pages updated.
+	* umask also set in sa1 shell script.
+	* Various sanity checks added.
+	* Fixed potential segmentation faults that could happen with some
+	  locales.
+	* KB (standing for kilobytes) replaced with kB in various places.
+	* NLS updated: Italian translation added.
 

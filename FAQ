@@ -25,18 +25,18 @@ A> The format of the daily data files created by the sar command you are
 now using is not compatible with the format of the files created by a
 previous version of sar.
 The solution is easy: just log in as root and remove by hand the files
-located in the /var/log/sa directory:
-# rm /var/log/sa/sa??
+located in the /var/log/sysstat directory:
+# rm /var/log/sysstat/sa??
 
 #################
 
 Q> I get the following error message when I try to run sar:
 
 $ sar
-Cannot open /var/log/sa/sa30: No such file or directory
+Cannot open /var/log/sysstat/sa30: No such file or directory
 
 A> Please read sar(1) manual page! Daily data files are created in the
-/var/log/sa directory using the data collector (sadc) or using option
+/var/log/sysstat directory using the data collector (sadc) or using option
 -o with sar. Once they are created, sar can display statistics saved
 in those files.
 But sar can also display statistics collected "on the fly": just enter

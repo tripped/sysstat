@@ -207,7 +207,7 @@ int get_sysfs_dev_nr(int flags)
 int get_disk_io_nr(void)
 {
    FILE *statfp;
-   char line[1024];
+   char line[8192];
    int dsk = 0;
    int pos;
 
@@ -217,7 +217,7 @@ int get_disk_io_nr(void)
       exit(2);
    }
 
-   while (fgets(line, 1024, statfp) != NULL) {
+   while (fgets(line, 8192, statfp) != NULL) {
 
       if (!strncmp(line, "disk_io: ", 9)) {
 	 for (pos = 9; pos < strlen(line) - 1; pos +=strcspn(line + pos, " ") + 1)

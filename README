@@ -49,15 +49,11 @@ Of course tell me if there are any problems. This is the only way I can improve
 successful use instead of bug reports ;-)
 Please also remember to read the FAQ included in this package.
 
-NB: The iostat command has been updated to take advantage of Stephen Tweedie's
-kernel patch to display extended I/O statistics (option '-x' for iostat).
-You can find Stephen's patch here:
-ftp://ftp.uk.linux.org/pub/linux/sct/fs/profiling
-Stephen used to maintain his patch for various kernel versions, but it is
-no longer the case. You will have to get one of the relevant patch and
-update it by hand to suit your kernel.
-Note that some distros have this patch already applied. Just try 'iostat -x'
-to see if it is there...
+NB: The iostat command no longer looks for statistics in the /proc/partitions
+file, but rather tries to read data from the sysfs filesystem which is
+included in recent 2.5.x Linux kernels. As a consequence, you will now
+need the sysfs filesystem for iostat to be able to display extended
+statistics (option -x).
 
 With regard to sysstat, patches and suggestions for improvements are always
 welcome! Send them to <sebastien.godard@wanadoo.fr>.
@@ -95,6 +91,7 @@ ${PREFIX}/share/locale/nn_NO/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/it/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/ru/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/ro/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/pl/LC_MESSAGES/sysstat.mo
 ${PREFIX}/doc/sysstat-x.y.z/*
 /var/log/sa
 ${INIT_DIR}/sysstat
@@ -126,7 +123,7 @@ present in old kernels.
 It has been designed with National Language Support (NLS) in mind, using
 the GNU gettext package (available at http://www.gnu.org).
 At the present time, English, French, German, Spanish, Portuguese,
-Afrikaans, Norwegian, Italian, Russian and Romanian translations are
+Afrikaans, Norwegian, Italian, Russian, Romanian and Polish translations are
 available. You are welcome if you want to make other languages available ;-)
 Please read the README-nls file in the nls directory before.
 

@@ -27,18 +27,6 @@ msgstr ""
 "Допустимые опции:\n"
 "[ -P { <cpu> | ALL } ] [ -V ]\n"
 
-#: mpstat.c:123
-msgid "\nAverage:     CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
-msgstr "\nСреднее:     CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
-
-#: mpstat.c:132
-msgid "Average:     all"
-msgstr "Среднее:     все"
-
-#: mpstat.c:134
-msgid "Average:    %4d"
-msgstr "Среднее:    %4d"
-
 #: mpstat.c:207
 msgid "\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
 msgstr "\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"
@@ -96,7 +84,7 @@ msgid "sysstat version %s\n"
 "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 "[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
 "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
-"[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
+"[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr "sysstat версия %s\n"
@@ -107,7 +95,7 @@ msgstr "sysstat версия %s\n"
 "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 "[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
 "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
-"[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
+"[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 "[ -o [ <имя_файла> ] | -f [ <имя_файла> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 
@@ -139,165 +127,25 @@ msgstr "Неправильный файл системной активности\n"
 msgid "Invalid data format\n"
 msgstr "Неправильный формат данных\n"
 
-#: sar.c:536
-msgid "\nAverage:       proc/s\n"
-msgstr "\nСреднее:       proc/s\n"
-
-#: sar.c:538
-msgid "Average:    %9.2f\n"
-msgstr "Среднее:    %9.2f\n"
-
-#: sar.c:624
-msgid "Average:    %9.0f"
-msgstr "Среднее:    %9.0f"
-
-#: sar.c
-msgid "Average:    %9.0f %9.0f"
-msgstr "Среднее:    %9.0f %9.0f"
-
-#: sar.c
-msgid "Average:    %9.9s %9.2f %9.2f\n"
-msgstr "Среднее:    %9.9s %9.2f %9.2f\n"
-
-#: sar.c
-msgid "Average:    %9.0f %9.0f %9.0f %9.0f %9.0f\n"
-msgstr "Среднее:    %9.0f %9.0f %9.0f %9.0f %9.0f\n"
-
-#: sar.c
-msgid "Average:    %9.0f %9.0f %9.2f %9.2f %9.2f\n"
-msgstr "Среднее:    %9.0f %9.0f %9.2f %9.2f %9.2f\n"
-
-#: sar.c
-msgid "Average:    %9.2f %9.2f %9.2f %9.2f\n"
-msgstr "Среднее:    %9.2f %9.2f %9.2f %9.2f\n"
-
-#: sar.c
-msgid "Average:    %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n"
-msgstr "Среднее:    %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n"
-
-#: sar.c:545
-msgid "\nAverage:      cswch/s\n"
-msgstr "\nСреднее:      cswch/s\n"
-
-#: sar.c:554
-msgid "\nAverage:          CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"
-msgstr "\nСреднее:          CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"
-
-#: sar.c:557
-msgid "Average:          all"
-msgstr "Среднее:          all"
+#: sar.c:
+msgid "Average:"
+msgstr "Среднее:"
 
 #: sar.c:568
 msgid "Requested activities not available in file\n"
 msgstr "Запрошенных активностей нет в файле\n"
 
-#: sar.c:582
-msgid "Average:          %3d"
-msgstr "Среднее:          %3d"
-
-#: sar.c:612
-msgid "\nAverage:         INTR    intr/s\n"
-msgstr "\nСреднее:         INTR    intr/s\n"
-
-#: sar.c:614
-msgid "Average:    %9.2f %9.2f\n"
-msgstr "Среднее:    %9.2f %9.2f\n"
-
-#: sar.c:615
-msgid "Average:          sum"
-msgstr "Среднее:          sum"
-
-#: sar.c:636
-msgid "Average:    %9.2f %9.2f %9.2f %9.2f %9.2f\n"
-msgstr "Среднее:    %9.2f %9.2f %9.2f %9.2f %9.2f\n"
-
-#: sar.c
-msgid "Average:       %6s"
-msgstr "Среднее:       %6s"
-
-#: sar.c:638
-msgid "\nAverage:     pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
-msgstr "\nСреднее:     pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
-
-#: sar.c:651
-msgid "\nAverage:     pswpin/s pswpout/s\n"
-msgstr "\nСреднее:     pswpin/s pswpout/s\n"
-
-#: sar.c:664
-msgid "\nAverage:          tps      rtps      wtps   bread/s   bwrtn/s\n"
-msgstr "\nСреднее:          tps      rtps      wtps   bread/s   bwrtn/s\n"
-
-#: sar.c:692
-msgid "\nAverage:      frmpg/s   shmpg/s   bufpg/s   campg/s\n"
-msgstr "\nСреднее:      frmpg/s   shmpg/s   bufpg/s   campg/s\n"
-
-#: sar.c:718
-msgid "\nAverage:          PID  minflt/s  majflt/s     %%user   %%system   nswap/s\n"
-msgstr "\nСреднее:          PID  minflt/s  majflt/s     %%юзер   %%система  nswap/s\n"
-
-#: sar.c:723
-msgid "Average:    %9ld"
-msgstr "Среднее:    %9ld"
-
-#: sar.c:749
-msgid "\nAverage:         PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
-msgstr "\nСреднее:         PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
-
-#: sar.c:786
-msgid "\nAverage:     minflt/s  majflt/s\n"
-msgstr "\nСреднее:     minflt/s  majflt/s\n"
-
-#: sar.c:789
-msgid "Average:          N/A       N/A\n"
-msgstr "Среднее:          N/A       N/A\n"
-
 #: sar.c:797
 msgid "Cannot write system activity file header: %s\n"
 msgstr "Невозможно записать заголовок файла системной активности: %s\n"
-
-#: sar.c:804
-msgid "\nAverage:          TTY   rcvin/s   xmtin/s\n"
-msgstr "\nСреднее:          TTY   rcvin/s   xmtin/s\n"
-
-#: sar.c:807
-msgid "Average:          "
-msgstr "Среднее:          "
-
-#: sar.c:823
-msgid "\nAverage:    kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
-msgstr "\nСреднее:    kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
-
-#: sar.c:847
-msgid "\nAverage:     CPU"
-msgstr "\nСреднее:     CPU"
 
 #: sar.c:850
 msgid "  i%03d/s"
 msgstr "  i%03d/s"
 
-#: sar.c:864
-msgid "Average:     %3d"
-msgstr "Среднее:     %3d"
-
-#: sar.c:954
-msgid "\nAverage:       totsck    tcpsck    udpsck    rawsck   ip-frag\n"
-msgstr "\nСреднее:       totsck    tcpsck    udpsck    rawsck   ip-frag\n"
-
 #: sar.c:970
 msgid "Cannot write data to system activity file: %s\n"
 msgstr "Невозможно записать данные в файл системной активности: %s\n"
-
-#: sar.c:871
-msgid "\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
-msgstr "\nСреднее:    dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
-
-#: sar.c:903
-msgid "\nAverage:        IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
-msgstr "\nСреднее:        IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
-
-#: sar.c:941
-msgid "\nAverage:        IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
-msgstr "\nСреднее:        IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
 
 #: sar.c
 msgid "\n%-11s       DEV       tps    sect/s\n"
@@ -306,14 +154,6 @@ msgstr "\n%-11s       DEV       tps    sect/s\n"
 #: sar.c
 msgid "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"
 msgstr "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"
-
-#: sar.c
-msgid "\nAverage:          DEV       tps    sect/s\n"
-msgstr "\nСреднее:          DEV       tps    sect/s\n"
-
-#: sar.c
-msgid "\nAverage:      runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"
-msgstr "\nСреднее:      runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"
 
 #: sar.c:1043
 msgid "\n%-11s    proc/s\n"
@@ -360,16 +200,16 @@ msgid "\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"
 msgstr "\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"
 
 #: sar.c:1234
-msgid "\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s   CPU\n"
-msgstr "\n%-11s       PID  minflt/s  majflt/s     %%юзер  %%система   nswap/s  Проц\n"
+msgid "\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s"
+msgstr "\n%-11s       PID  minflt/s  majflt/s     %%юзер  %%система   nswap/s"
+
+#: sar.c:1234
+msgid "   CPU\n"
+msgstr "  Проц\n"
 
 #: sar.c:1269
 msgid "\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
 msgstr "\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
-
-#: sar.c:1302
-msgid "\n%-11s  minflt/s  majflt/s\n"
-msgstr "\n%-11s  minflt/s  majflt/s\n"
 
 #: sar.c:1331
 msgid "\n%-11s       TTY   rcvin/s   xmtin/s\n"

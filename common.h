@@ -8,6 +8,7 @@
 
 #include <time.h>
 
+#define FALSE	0
 #define TRUE	1
 
 /* Keywords */
@@ -52,14 +53,6 @@
 #define DIGITS		"0123456789"
 
 #define UTSNAME_LEN	65
-
-/*
- * Size of a long int: 8 bytes. We will always reserve 8 bytes for a long int
- * using aligned(8) attributes, because they are actually 8-byte long on
- * 64-bit systems.
- */
-/* FIXME: to be removed */
-#define SIZEOF_LONG	8
 
 #define NR_DISKS	4
 

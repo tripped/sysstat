@@ -42,6 +42,7 @@ struct comm_stats {
    unsigned int  cpu_system;
 };
 
+#define COMM_STATS_SIZE	(sizeof(struct comm_stats))
 
 /*
  * Structures for I/O stats.
@@ -88,6 +89,7 @@ struct io_stats {
    unsigned int  dk_drive_wblk			__attribute__ ((packed));
 };
 
+#define IO_STATS_SIZE	(sizeof(struct io_stats))
 
 struct io_hdr_stats {
    unsigned int  active				__attribute__ ((aligned (8)));
@@ -96,6 +98,7 @@ struct io_hdr_stats {
             char name[MAX_NAME_LEN]		__attribute__ ((packed));
 };
 
+#define IO_HDR_STATS_SIZE	(sizeof(struct io_hdr_stats))
 
 /* List of devices entered on the command line */
 struct io_dlist {
@@ -105,5 +108,6 @@ struct io_dlist {
    char dev_name[MAX_NAME_LEN]			__attribute__ ((packed));
 };
 
+#define IO_DLIST_SIZE	(sizeof(struct io_dlist))
 
 #endif  /* _IOSTAT_H */

@@ -49,7 +49,7 @@
 int cpu_nr = -1;
 int serial_used = 0, irqcpu_used = 0, iface_used = 0, disk_used = 0;
 unsigned int sadc_actflag;
-long interval = 0, count = 0;
+long interval = 0;
 int kb_shift = 0;
 
 struct file_hdr file_hdr;
@@ -432,47 +432,44 @@ void get_irqcpu_nb(int *irqcpu_used, unsigned int max_nr_irqcpu)
 
 /*
  ***************************************************************************
- * Get total number of minor and major faults made by the system
+ * Allocate and init structures, according to system state
  ***************************************************************************
  */
-void read_sysfaults(void)
+void sa_sys_init(void)
 {
-   DIR *dir;
-   struct dirent *drp;
-   FILE *pidfp;
-   unsigned long minflt, majflt;
-   static char filename[24];
+   /* How many processors on this machine ? */
+   get_cpu_nr(&cpu_nr, NR_CPUS);
+   if (cpu_nr > 0)
+      salloc_cpu(cpu_nr + 1);
 
-   file_stats.nr_processes = 0;
-   file_stats.minflt       = 0;
-   file_stats.majflt       = 0;
-
-   /* Open /proc directory */
-   if ((dir = opendir(PROC)) == NULL) {
-      perror("opendir");
-      exit(4);
+   /* Get serial lines that support accounting */
+   get_serial_lines(&serial_used);
+   if (serial_used) {
+      sadc_actflag |= A_SERIAL;
+      salloc_serial(serial_used);
    }
-
-   /* Get directory entries */
-   while ((drp = readdir(dir)) != NULL) {
-      if (isdigit(drp->d_name[0])) {
-	 sprintf(filename, "%s/%s/%s", PROC, drp->d_name, PSTAT);
-	 if ((pidfp = fopen(filename, "r")) != NULL) {
-	    fscanf(pidfp, "%*d %*s %*s %*d %*d %*d %*d %*d %*u %lu %*u %lu %*u %*u %*u %*u %*u %*d %*d %*u %*u %*d %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u\n",
-		   &minflt, &majflt);
-
-	    /* Close /proc/<pid>/stat file */
-	    fclose(pidfp);
-
-	    file_stats.nr_processes++;
-	    file_stats.minflt += minflt;
-	    file_stats.majflt += majflt;
-	 }
-      }
+   /* Get number of interrupts available per processor */
+   if (cpu_nr > 0) {
+      get_irqcpu_nb(&irqcpu_used, NR_IRQS);
+      if (irqcpu_used)
+	 salloc_irqcpu(cpu_nr + 1, irqcpu_used);
    }
+   else
+      /* IRQ per processor are not provided by sadc on UP machines */
+      irqcpu_used = 0;
 
-   /* Close /proc directory */
-   (void) closedir(dir);
+   /* Get number of network devices (interfaces) */
+   get_net_dev(&iface_used);
+   if (iface_used) {
+      sadc_actflag |= A_NET_DEV + A_NET_EDEV;
+      salloc_net_dev(iface_used);
+   }
+   /* Get number of disk_io entries in /proc/stat */
+   if ((disk_used = get_disk_io_nr()) > 0) {
+      sadc_actflag |= A_DISK;
+      disk_used += NR_DISK_PREALLOC;
+      salloc_disk(disk_used);
+   }
 }
 
 
@@ -488,7 +485,7 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
    struct utsname header;
 
    /* First reset the structure */
-   memset(&file_hdr, 0, sizeof(file_hdr));
+   memset(&file_hdr, 0, FILE_HDR_SIZE);
 
    /* Then get current date */
    file_hdr.sa_ust_time = get_localtime(&loc_time);
@@ -540,7 +537,7 @@ void write_dummy_record(int ofd, size_t file_stats_size)
    struct tm loc_time;
 
    /* Reset the structure (not compulsory, but a bit cleaner */
-   memset(&file_stats, 0, sizeof(file_stats));
+   memset(&file_stats, 0, FILE_STATS_SIZE);
 
    file_stats.record_type = R_DUMMY;
 
@@ -720,7 +717,7 @@ void read_proc_stat(void)
    FILE *statfp;
    struct stats_one_cpu *st_cpu_i;
    struct disk_stats *st_disk_i;
-   static char line[2560];
+   static char line[8192];
    unsigned int cc_user, cc_nice, cc_system;
    unsigned long cc_idle, cc_iowait;
    unsigned int v_tmp[5], v_major, v_index;
@@ -732,7 +729,7 @@ void read_proc_stat(void)
       exit(2);
    }
 
-   while (fgets(line, 2560, statfp) != NULL) {
+   while (fgets(line, 8192, statfp) != NULL) {
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
@@ -911,14 +908,8 @@ void read_proc_loadavg(void)
    int load_tmp[3];
 
    /* Open loadavg file */
-   if ((loadfp = fopen(LOADAVG, "r")) == NULL) {
-      file_stats.nr_running = 0;
-      file_stats.nr_threads = 0;
-      file_stats.load_avg_1 = file_stats.load_avg_5
-			    = file_stats.load_avg_15
-			    = 0;
-   }
-   else {
+   if ((loadfp = fopen(LOADAVG, "r")) != NULL) {
+
       /* Read load averages and queue length */
       fscanf(loadfp, "%d.%d %d.%d %d.%d %d/%d %*d\n",
 	     &(load_tmp[0]), &(file_stats.load_avg_1),
@@ -947,79 +938,66 @@ void read_proc_loadavg(void)
 void read_proc_meminfo(void)
 {
    FILE *memfp;
-   static char line[64];
+   static char line[128];
    unsigned int mtemp;
    unsigned long lmtemp;
 
    /* Open meminfo file */
-   if ((memfp = fopen(MEMINFO, "r")) == NULL) {
-      file_stats.tlmkb = 0;
-      file_stats.frmkb = 0;
-      file_stats.shmkb = 0;
-      file_stats.bufkb = 0;
-      file_stats.camkb = 0;
-      file_stats.tlskb = 0;
-      file_stats.frskb = 0;
-      file_stats.nr_active_pages         = 0;
-      file_stats.nr_inactive_dirty_pages = 0;
-      file_stats.nr_inactive_clean_pages = 0;
-      file_stats.inactive_target         = 0;
+   if ((memfp = fopen(MEMINFO, "r")) == NULL)
       return;
-   }
 
-   while (fgets(line, 64, memfp) != NULL) {
+   while (fgets(line, 128, memfp) != NULL) {
 
       if (!strncmp(line, "MemTotal:", 9))
 	 /* Read the total amount of memory in kB */
-	 sscanf(line + 10, "%8lu", &(file_stats.tlmkb));
-
+	 sscanf(line + 10, "%lu", &(file_stats.tlmkb));
       else if (!strncmp(line, "MemFree:", 8))
 	 /* Read the amount of free memory in kB */
-	 sscanf(line + 10, "%8lu", &(file_stats.frmkb));
+	 sscanf(line + 10, "%lu", &(file_stats.frmkb));
 
       else if (!strncmp(line, "MemShared:", 10))
 	 /* Read the amount of shared memory in kB */
-	 sscanf(line + 10, "%8lu", &(file_stats.shmkb));
+	 sscanf(line + 10, "%lu", &(file_stats.shmkb));
 
       else if (!strncmp(line, "Buffers:", 8))
 	 /* Read the amount of buffered memory in kB */
-	 sscanf(line + 10, "%8lu", &(file_stats.bufkb));
+	 sscanf(line + 10, "%lu", &(file_stats.bufkb));
 
       else if (!strncmp(line, "Cached:", 7))
 	 /* Read the amount of cached memory in kB */
-	 sscanf(line + 10, "%8lu", &(file_stats.camkb));
+	 sscanf(line + 10, "%lu", &(file_stats.camkb));
 
       else if (!strncmp(line, "Active:", 7)) {
 	 /* Read the amount of active memory in kB */
-	 sscanf(line + 10, "%8u", &mtemp);
+	 sscanf(line + 10, "%u", &mtemp);
 	 file_stats.nr_active_pages = PG(mtemp);
       }
 
       else if (!strncmp(line, "Inact_dirty:", 12)) {
 	 /* Read the amount of inactive dirty memory in kB */
-	 sscanf(line + 13, "%8u", &mtemp);
+	 sscanf(line + 13, "%u", &mtemp);
 	 file_stats.nr_inactive_dirty_pages = PG(mtemp);
       }
 
       else if (!strncmp(line, "Inact_clean:", 12)) {
 	 /* Read the amount of inactive clean memory in kB */
-	 sscanf(line + 13, "%8u", &mtemp);
+	 sscanf(line + 13, "%u", &mtemp);
 	 file_stats.nr_inactive_clean_pages = PG(mtemp);
       }
 
       else if (!strncmp(line, "Inact_target:", 13)) {
 	 /* Read the amount of inactive target memory in kB */
-	 sscanf(line + 13, "%8lu", &lmtemp);
+	 sscanf(line + 13, "%lu", &lmtemp);
 	 file_stats.inactive_target = PG(lmtemp);
       }
 
       else if (!strncmp(line, "SwapTotal:", 10))
 	 /* Read the total amount of swap memory in kB */
-	 sscanf(line + 10, "%8lu", &(file_stats.tlskb));
+	 sscanf(line + 10, "%lu", &(file_stats.tlskb));
 
       else if (!strncmp(line, "SwapFree:", 9))
 	 /* Read the amount of free swap memory in kB */
-	 sscanf(line + 10, "%8lu", &(file_stats.frskb));
+	 sscanf(line + 10, "%lu", &(file_stats.frskb));
    }
 
    /* Close meminfo file */
@@ -1186,29 +1164,21 @@ void read_ktables_stat(void)
    int parm;
 
    /* Open /proc/sys/fs/dentry-state file */
-   if ((ktfp = fopen(FDENTRY_STATE, "r")) == NULL)
-      file_stats.dentry_stat = 0;
-   else {
+   if ((ktfp = fopen(FDENTRY_STATE, "r")) != NULL) {
       fscanf(ktfp, "%*d %u %*d %*d %*d %*d\n",
 	     &(file_stats.dentry_stat));
       fclose(ktfp);
    }
 
    /* Open /proc/sys/fs/file-nr file */
-   if ((ktfp = fopen(FFILE_NR, "r")) == NULL) {
-      file_stats.file_used = 0;
-      file_stats.file_max  = 0;
-   }
-   else {
+   if ((ktfp = fopen(FFILE_NR, "r")) != NULL) {
       fscanf(ktfp, "%*d %u %u\n",
 	     &(file_stats.file_used), &(file_stats.file_max));
       fclose(ktfp);
    }
 
    /* Open /proc/sys/fs/inode-state file */
-   if ((ktfp = fopen(FINODE_STATE, "r")) == NULL)
-      file_stats.inode_used = 0;
-   else {
+   if ((ktfp = fopen(FINODE_STATE, "r")) != NULL) {
       fscanf(ktfp, "%u %u %*d %*d %*d %*d %*d\n",
 	     &(file_stats.inode_used), &parm);
       fclose(ktfp);
@@ -1216,19 +1186,13 @@ void read_ktables_stat(void)
    }
 
    /* Open /proc/sys/fs/super-max file */
-   if ((ktfp = fopen(FSUPER_MAX, "r")) == NULL) {
-      file_stats.super_max  = 0;
-      file_stats.super_used = 0;
-   }
-   else {
+   if ((ktfp = fopen(FSUPER_MAX, "r")) != NULL) {
       fscanf(ktfp, "%u\n",
 	     &(file_stats.super_max));
       fclose(ktfp);
 
       /* Open /proc/sys/fs/super-nr file */
-      if ((ktfp = fopen(FSUPER_NR, "r")) == NULL)
-	 file_stats.super_used = 0;
-      else {
+      if ((ktfp = fopen(FSUPER_NR, "r")) != NULL) {
 	 fscanf(ktfp, "%u\n",
 		&(file_stats.super_used));
 	 fclose(ktfp);
@@ -1236,19 +1200,13 @@ void read_ktables_stat(void)
    }
 
    /* Open /proc/sys/fs/dquot-max file */
-   if ((ktfp = fopen(FDQUOT_MAX, "r")) == NULL) {
-      file_stats.dquot_max  = 0;
-      file_stats.dquot_used = 0;
-   }
-   else {
+   if ((ktfp = fopen(FDQUOT_MAX, "r")) != NULL) {
       fscanf(ktfp, "%u\n",
 	     &(file_stats.dquot_max));
       fclose(ktfp);
 
       /* Open /proc/sys/fs/dquot_nr file */
-      if ((ktfp = fopen(FDQUOT_NR, "r")) == NULL)
-	 file_stats.dquot_used = 0;
-      else {
+      if ((ktfp = fopen(FDQUOT_NR, "r")) != NULL) {
 	 fscanf(ktfp, "%u %*u\n",
 		&(file_stats.dquot_used));
 	 fclose(ktfp);
@@ -1256,19 +1214,13 @@ void read_ktables_stat(void)
    }
 
    /* Open /proc/sys/kernel/rtsig-max file */
-   if ((ktfp = fopen(FRTSIG_MAX, "r")) == NULL) {
-      file_stats.rtsig_max    = 0;
-      file_stats.rtsig_queued = 0;
-   }
-   else {
+   if ((ktfp = fopen(FRTSIG_MAX, "r")) != NULL) {
       fscanf(ktfp, "%u\n",
 	     &(file_stats.rtsig_max));
       fclose(ktfp);
 
       /* Open /proc/sys/kernel/rtsig-nr file */
-      if ((ktfp = fopen(FRTSIG_NR, "r")) == NULL)
-	 file_stats.rtsig_queued = 0;
-      else {
+      if ((ktfp = fopen(FRTSIG_NR, "r")) != NULL) {
 	 fscanf(ktfp, "%u\n",
 		&(file_stats.rtsig_queued));
 	 fclose(ktfp);
@@ -1352,12 +1304,6 @@ void read_net_sock_stat(void)
    FILE *sockfp;
    static char line[96];
 
-   file_stats.sock_inuse = 0;
-   file_stats.tcp_inuse  = 0;
-   file_stats.udp_inuse  = 0;
-   file_stats.raw_inuse  = 0;
-   file_stats.frag_inuse = 0;
-
    /* Open /proc/net/sockstat file */
    if ((sockfp = fopen(NET_SOCKSTAT, "r")) != NULL) {
 
@@ -1388,6 +1334,98 @@ void read_net_sock_stat(void)
 
 /*
  ***************************************************************************
+ * Main loop: read stats from the relevant sources,
+ * and display them.
+ ***************************************************************************
+ */
+void rw_sa_stat_loop(unsigned int flags, long count, struct tm *loc_time,
+		     int ofd, size_t file_stats_size, char ofile[], char new_ofile[])
+{
+
+   /* Main loop */
+   do {
+
+      /* Init stat structure */
+      memset(&file_stats, 0, FILE_STATS_SIZE);
+
+      /* Set record type */
+      file_stats.record_type = R_STATS;
+
+      /* Save time */
+      file_stats.ust_time = get_localtime(loc_time);
+      file_stats.hour   = loc_time->tm_hour;
+      file_stats.minute = loc_time->tm_min;
+      file_stats.second = loc_time->tm_sec;
+
+      /* Read stats */
+      read_proc_stat();
+      read_proc_meminfo();
+      read_proc_loadavg();
+      read_ktables_stat();
+      read_net_sock_stat();
+      if (pid_nr)
+ 	 read_pid_stat();
+      if (serial_used)
+	 read_serial_stat();
+      if (irqcpu_used)
+	 read_interrupts_stat();
+      if (iface_used)
+	 read_net_dev_stat();
+
+      /* Write stats */
+      write_stats(ofd, file_stats_size);
+
+      if DO_SA_ROTAT(flags) {
+	 /*
+	  * Stats are written at the end of previous file *and* at the
+	  * beginning of the new one.
+	  */
+	 flags &= ~F_DO_SA_ROTAT;
+	 if (fdatasync(ofd) < 0) {	/* Flush previous file */
+	    perror("fdatasync");
+	    exit(4);
+	 }
+	 close(ofd);
+	 strcpy(ofile, new_ofile);
+	 open_ofile(&ofd, ofile, &file_stats_size);	/* Open and init new file */
+	 write_stats(ofd, file_stats_size);		/* Write stats again */
+      }
+
+      /* Flush data */
+      fflush(stdout);
+      if (ofile[0] && (fdatasync(ofd) < 0)) {
+	 perror("fdatasync");
+	 exit(4);
+      }
+
+      if (count > 0)
+	 count--;
+
+      if (count)
+	 pause();
+
+      /* Rotate activity file if necessary */
+      if (WANT_SA_ROTAT(flags)) {
+	 /* The user specified '-' as the filename to use */
+	 get_localtime(loc_time);
+	 snprintf(new_ofile, MAX_FILE_LEN,
+		  "%s/sa%02d", SA_DIR, loc_time->tm_mday);
+	 new_ofile[MAX_FILE_LEN - 1] = '\0';
+
+	 if (strcmp(ofile, new_ofile))
+	    flags |= F_DO_SA_ROTAT;
+      }
+   }
+   while (count);
+
+   /* Close output file */
+   close(ofd);
+
+}
+
+
+/*
+ ***************************************************************************
  * Main entry to the program
  ***************************************************************************
  */
@@ -1400,6 +1438,7 @@ int main(int argc, char **argv)
    unsigned int flags = 0;
    struct tm loc_time;
    int ofd;
+   long count = 0;
    /*
     * This variable contains:
     * - FILE_STATS_SIZE defined in sa.h if creating a new daily data file or
@@ -1430,42 +1469,8 @@ int main(int argc, char **argv)
    sadc_actflag = A_PROC + A_PAGE + A_IRQ + A_IO + A_CPU + A_CTXSW + A_SWAP +
                   A_MEMORY + A_MEM_AMT + A_KTABLES + A_NET_SOCK + A_QUEUE;
 
-   /* Init stat structure */
-   memset(&file_stats, 0, FILE_STATS_SIZE);
-
-   /* How many processors on this machine ? */
-   get_cpu_nr(&cpu_nr, NR_CPUS);
-   if (cpu_nr > 0)
-      salloc_cpu(cpu_nr + 1);
-
-   /* Get serial lines that support accounting */
-   get_serial_lines(&serial_used);
-   if (serial_used) {
-      sadc_actflag |= A_SERIAL;
-      salloc_serial(serial_used);
-   }
-   /* Get number of interrupts available per processor */
-   if (cpu_nr > 0) {
-      get_irqcpu_nb(&irqcpu_used, NR_IRQS);
-      if (irqcpu_used)
-	 salloc_irqcpu(cpu_nr + 1, irqcpu_used);
-   }
-   else
-      /* IRQ per processor are not provided by sadc on UP machines */
-      irqcpu_used = 0;
-
-   /* Get number of network devices (interfaces) */
-   get_net_dev(&iface_used);
-   if (iface_used) {
-      sadc_actflag |= A_NET_DEV + A_NET_EDEV;
-      salloc_net_dev(iface_used);
-   }
-   /* Get number of disk_io entries in /proc/stat */
-   if ((disk_used = get_disk_io_nr()) > 0) {
-      sadc_actflag |= A_DISK;
-      disk_used += NR_DISK_PREALLOC;
-      salloc_disk(disk_used);
-   }
+   /* Init structures according to machine architecture */
+   sa_sys_init();
 
    while (++opt < argc) {
 
@@ -1476,17 +1481,13 @@ int main(int argc, char **argv)
 	 usage(argv[0]);
 
       else if (!strcmp(argv[opt], "-x") || !strcmp(argv[opt], "-X")) {
-	 if (!strcmp(argv[++opt], K_SUM)) {
-	    sadc_actflag |= A_SUM_PID;
-	    continue;	/* Next option */
-	 }
 	 if (!GET_PID(sadc_actflag))
 	    /* Get PID list */
 	    get_pid_list();
 	 sadc_actflag |= A_PID;
 	 if (!strcmp(argv[opt], K_ALL)) {
 	    set_pflag(strcmp(argv[opt - 1], "-x"), 0);
-	    continue;	/* Next option */
+		    continue;	/* Next option */
 	 }
 	 else if (!strcmp(argv[opt], K_SELF))
 	    pid = getpid();
@@ -1546,7 +1547,6 @@ int main(int argc, char **argv)
    if (ofile[0]) {
       pid_nr = 0;
       sadc_actflag &= ~A_PID;
-      sadc_actflag &= ~A_SUM_PID;
    }
 
    if (GET_PID(sadc_actflag))
@@ -1566,92 +1566,9 @@ int main(int argc, char **argv)
    /* Set a handler for SIGALRM */
    alarm_handler(0);
 
-   /* Set record type. Done only once. */
-   file_stats.record_type = R_STATS;
-
    /* Main loop */
-   do {
-
-      /*
-       * Resetting the structure is not needed since all the fields
-       * (that will be written) will be filled. If one of them is not
-       * filled, this is because its value cannot be read from /proc
-       * with current kernel, which doesn't matter since the structure
-       * has been set to zero at the beginning (see above).
-       */
-
-      /* Save time */
-      file_stats.ust_time = get_localtime(&loc_time);
-
-      file_stats.hour   = loc_time.tm_hour;
-      file_stats.minute = loc_time.tm_min;
-      file_stats.second = loc_time.tm_sec;
-
-      /* Read stats */
-      read_proc_stat();
-      read_proc_meminfo();
-      read_proc_loadavg();
-      read_ktables_stat();
-      read_net_sock_stat();
-      if (pid_nr)
- 	 read_pid_stat();
-      if (GET_SUM_PID(sadc_actflag))
-	 read_sysfaults();
-      if (serial_used)
-	 read_serial_stat();
-      if (irqcpu_used)
-	 read_interrupts_stat();
-      if (iface_used)
-	 read_net_dev_stat();
-
-      /* Write stats */
-      write_stats(ofd, file_stats_size);
-
-      if DO_SA_ROTAT(flags) {
-	 /*
-	  * Stats are written at the end of previous file *and* at the
-	  * beginning of the new one.
-	  */
-	 flags &= ~F_DO_SA_ROTAT;
-	 if (fdatasync(ofd) < 0) {	/* Flush previous file */
-	    perror("fdatasync");
-	    exit(4);
-	 }
-	 close(ofd);
-	 strcpy(ofile, new_ofile);
-	 open_ofile(&ofd, ofile, &file_stats_size);	/* Open and init new file */
-	 write_stats(ofd, file_stats_size);		/* Write stats again */
-      }
-
-      /* Flush data */
-      fflush(stdout);
-      if (ofile[0] && (fdatasync(ofd) < 0)) {
-	 perror("fdatasync");
-	 exit(4);
-      }
-
-      if (count > 0)
-	 count--;
-
-      if (count)
-	 pause();
-
-      /* Rotate activity file if necessary */
-      if (WANT_SA_ROTAT(flags)) {
-	 /* The user specified '-' as the filename to use */
-	 get_localtime(&loc_time);
-	 snprintf(new_ofile, MAX_FILE_LEN,
-		  "%s/sa%02d", SA_DIR, loc_time.tm_mday);
-	 new_ofile[MAX_FILE_LEN - 1] = '\0';
-
-	 if (strcmp(ofile, new_ofile))
-	    flags |= F_DO_SA_ROTAT;
-      }
-   }
-   while (count);
-
-   /* Close output file */
-   close(ofd);
+   rw_sa_stat_loop(flags, count, &loc_time, ofd, file_stats_size,
+		   ofile, new_ofile);
 
    return 0;
 }

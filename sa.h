@@ -13,26 +13,24 @@
 #define A_CTXSW		0x000002
 #define A_CPU		0x000004
 #define A_IRQ		0x000008
-#define A_PAGE		0x000010
+#define A_ONE_IRQ	0x000010
 #define A_SWAP		0x000020
 #define A_IO		0x000040
-/* 80: unused */
-#define A_ONE_IRQ	0x000100
-#define A_MEMORY	0x000200
-#define A_PID		0x000400
-#define A_CPID		0x000800
-#define A_SUM_PID	0x001000
-#define A_SERIAL	0x002000
-#define A_MEM_AMT	0x004000
-/* 8000: unused */
-#define A_KTABLES	0x010000
-#define A_NET_DEV	0x020000
-#define A_NET_EDEV	0x040000
+#define A_MEMORY	0x000080
+#define A_SERIAL	0x000100
+#define A_NET_DEV	0x000200
+#define A_NET_EDEV	0x000400
+#define A_DISK		0x000800
+#define A_PID		0x001000
+#define A_CPID		0x002000
+/* 4000-8000: unused */
+#define A_PAGE		0x010000
+#define A_MEM_AMT	0x020000
+#define A_KTABLES	0x040000
 #define A_NET_SOCK	0x080000
 #define A_QUEUE		0x100000
-#define A_DISK		0x200000
 
-#define A_LAST		0x200000
+#define A_LAST		0x100000
 
 #define GET_PROC(m)	(((m) & A_PROC) == A_PROC)
 #define GET_CTXSW(m)	(((m) & A_CTXSW) == A_CTXSW)
@@ -45,7 +43,6 @@
 #define GET_MEMORY(m)	(((m) & A_MEMORY) == A_MEMORY)
 #define GET_PID(m)	(((m) & A_PID) == A_PID)
 #define GET_CPID(m)	(((m) & A_CPID) == A_CPID)
-#define GET_SUM_PID(m)	(((m) & A_SUM_PID) == A_SUM_PID)
 #define GET_CPID(m)	(((m) & A_CPID) == A_CPID)
 #define GET_ALL_PID(m)	(((m) & A_ALL_PID) == A_ALL_PID)
 #define GET_SERIAL(m)	(((m) & A_SERIAL) == A_SERIAL)
@@ -159,7 +156,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x215f
+#define SA_MAGIC	0x2160
 
 /*
  * IMPORTANT NOTE:
@@ -218,14 +215,7 @@ struct file_hdr {
    char          sa_release[UTSNAME_LEN]	__attribute__ ((packed));
 };
 
-/*
- * Note that sizeof(file_hdr)==FILE_HDR_SIZE,
- * since we use SIZEOF_LONG instead of sizeof(long).
- */
-#define FILE_HDR_SIZE	(SIZEOF_LONG + \
-			 sizeof(int)   * 4 + \
-                         sizeof(short) * 2 + \
-                         sizeof(char)  * (6 + 3 * UTSNAME_LEN))
+#define FILE_HDR_SIZE	(sizeof(struct file_hdr))
 
 struct file_stats {
    /* Record type: R_STATS or R_DUMMY */
@@ -265,9 +255,6 @@ struct file_stats {
    unsigned long tlmkb				__attribute__ ((aligned (8)));
    unsigned long frskb				__attribute__ ((aligned (8)));
    unsigned long tlskb				__attribute__ ((aligned (8)));
-   /* minflt and majflt set only when using '-x SUM' */
-   unsigned long minflt				__attribute__ ((aligned (8)));
-   unsigned long majflt				__attribute__ ((aligned (8)));
    unsigned int  dentry_stat			__attribute__ ((aligned (8)));
    unsigned int  file_used			__attribute__ ((packed));
    unsigned int  file_max			__attribute__ ((packed));
@@ -286,8 +273,6 @@ struct file_stats {
    unsigned int  nr_active_pages		__attribute__ ((packed));
    unsigned int  nr_inactive_dirty_pages	__attribute__ ((packed));
    unsigned int  nr_inactive_clean_pages	__attribute__ ((packed));
-   /* This field of type 'long' _must_ be aligned(8) even if the attribute
-    * here wasn't used. Else, FILE_STATS_SIZE below would be wrong! */
    unsigned long inactive_target		__attribute__ ((aligned (8)));
    unsigned int  load_avg_1			__attribute__ ((aligned (8)));
    unsigned int  load_avg_5			__attribute__ ((packed));
@@ -296,9 +281,7 @@ struct file_stats {
    unsigned int  nr_threads			__attribute__ ((packed));
 };
 
-#define FILE_STATS_SIZE	(sizeof(int)  * 38 + \
-			 sizeof(char) *  4 + \
-			 SIZEOF_LONG  * 15)
+#define FILE_STATS_SIZE	(sizeof(struct file_stats))
 
 struct stats_one_cpu {
    unsigned long per_cpu_idle			__attribute__ ((aligned (8)));
@@ -314,9 +297,7 @@ struct stats_one_cpu {
  */
 };
 
-#define STATS_ONE_CPU_SIZE	(sizeof(int)  * 3 + \
-				 sizeof(char) * 4 + \
-				 SIZEOF_LONG  * 2)
+#define STATS_ONE_CPU_SIZE	(sizeof(struct stats_one_cpu))
 
 struct pid_stats {
    /* If pid is null, the process has been killed */
@@ -337,9 +318,7 @@ struct pid_stats {
    /* See IMPORTANT NOTE above */
 };
 
-#define PID_STATS_SIZE	(sizeof(int) + \
-			 sizeof(char) * 4 + \
-			 SIZEOF_LONG  * 11)
+#define PID_STATS_SIZE	(sizeof(struct pid_stats))
 
 struct stats_serial {
    unsigned int  rx				__attribute__ ((aligned (8)));
@@ -349,8 +328,7 @@ struct stats_serial {
    /* See IMPORTANT NOTE above */
 };
 
-#define STATS_SERIAL_SIZE	(sizeof(int)  * 2 + \
-				 sizeof(char) * 8)
+#define STATS_SERIAL_SIZE	(sizeof(struct stats_serial))
 
 /* See linux source file linux/include/linux/netdevice.h */
 struct stats_net_dev {
@@ -375,8 +353,7 @@ struct stats_net_dev {
    /* See IMPORTANT NOTE above */
 };
 
-#define STATS_NET_DEV_SIZE	(SIZEOF_LONG  * 16 + \
-				 sizeof(char) * 8)
+#define STATS_NET_DEV_SIZE	(sizeof(struct stats_net_dev))
 
 struct stats_irq_cpu {
    unsigned int interrupt			__attribute__ ((aligned (8)));
@@ -384,9 +361,8 @@ struct stats_irq_cpu {
    /* See IMPORTANT NOTE above */
 };
 
-#define STATS_IRQ_CPU_SIZE	(sizeof(int) * 2)
+#define STATS_IRQ_CPU_SIZE	(sizeof(struct stats_irq_cpu))
 #define STATS_ONE_IRQ_SIZE	(sizeof(int) * NR_IRQS)
-
 
 struct disk_stats {
    unsigned int major				__attribute__ ((aligned (8)));
@@ -396,8 +372,7 @@ struct disk_stats {
    /* See IMPORTANT NOTE above */
 };
 
-#define DISK_STATS_SIZE		(sizeof(int) * 4)
-
+#define DISK_STATS_SIZE		(sizeof(struct disk_stats))
 
 struct stats_sum {
    unsigned long count				__attribute__ ((aligned (8)));
@@ -429,7 +404,7 @@ struct stats_sum {
    unsigned long load_avg_15			__attribute__ ((packed));
 };
 
-#define STATS_SUM_SIZE	(sizeof(long) * 27)
+#define STATS_SUM_SIZE	(sizeof(struct stats_sum))
 
 struct tstamp {
    int tm_sec;

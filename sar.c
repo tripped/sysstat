@@ -88,7 +88,7 @@ void usage(char *progname)
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 		   "[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
 		   "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
-		   "[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
+		   "[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 	           "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 		   "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"),
 	   VERSION, progname);
@@ -302,7 +302,7 @@ void decode_time_stamp(char time_stamp[], struct tstamp *tse)
    tse->tm_sec  = atoi(&(time_stamp[6]));
    tse->tm_min  = atoi(&(time_stamp[3]));
    tse->tm_hour = atoi(time_stamp);
-   tse->use = 1;
+   tse->use = TRUE;
 }
 
 
@@ -637,43 +637,32 @@ int check_iface_reg(struct stats_net_dev *st_net_dev[], short curr, short ref, i
 	     * interface was not unregistered, which is all the more plausible
 	     * that the previous value for the counter was > ULONG_MAX/2.
 	     * NB: the average value displayed will be wrong in this case...
+	     *
+	     * If such an overflow is detected, just set the flag. There is no
+	     * need to handle this in a special way: the difference is still
+	     * properly calculated if the result is of the same type (i.e.
+	     * unsigned long) as the two values.
 	     */
-	    unsigned long diff = 0;
-	    int f = 0;
+	    int ovfw = FALSE;
 	
 	    if ((st_net_dev_i->rx_bytes < st_net_dev_j->rx_bytes) &&
 		(st_net_dev_i->rx_packets > st_net_dev_j->rx_packets) &&
-		(st_net_dev_j->rx_bytes > (~0UL >> 1))) {
-	       diff = ~0UL - st_net_dev_j->rx_bytes;
-	       st_net_dev_i->rx_bytes += diff;
-	       st_net_dev_j->rx_bytes = 0;
-	       f = 1;
-	    }
+		(st_net_dev_j->rx_bytes > (~0UL >> 1)))
+	       ovfw = TRUE;
 	    if ((st_net_dev_i->tx_bytes < st_net_dev_j->tx_bytes) &&
 		(st_net_dev_i->tx_packets > st_net_dev_j->tx_packets) &&
-		(st_net_dev_j->tx_bytes > (~0UL >> 1))) {
-	       diff = ~0UL - st_net_dev_j->tx_bytes;
-	       st_net_dev_i->tx_bytes += diff;
-	       st_net_dev_j->tx_bytes = 0;
-	       f = 1;
-	    }
+		(st_net_dev_j->tx_bytes > (~0UL >> 1)))
+	       ovfw = TRUE;
 	    if ((st_net_dev_i->rx_packets < st_net_dev_j->rx_packets) &&
 		(st_net_dev_i->rx_bytes > st_net_dev_j->rx_bytes) &&
-		(st_net_dev_j->rx_packets > (~0UL >> 1))) {
-	       diff = ~0UL - st_net_dev_j->rx_packets;
-	       st_net_dev_i->rx_packets += diff;
-	       st_net_dev_j->rx_packets = 0;
-	       f = 1;
-	    }
+		(st_net_dev_j->rx_packets > (~0UL >> 1)))
+	       ovfw = TRUE;
 	    if ((st_net_dev_i->tx_packets < st_net_dev_j->tx_packets) &&
 		(st_net_dev_i->tx_bytes > st_net_dev_j->tx_bytes) &&
-		(st_net_dev_j->tx_packets > (~0UL >> 1))) {
-	       diff = ~0UL - st_net_dev_j->tx_packets;
-	       st_net_dev_i->tx_packets += diff;
-	       st_net_dev_j->tx_packets = 0;
-	       f = 1;
-	    }
-	    if (!f) {
+		(st_net_dev_j->tx_packets > (~0UL >> 1)))
+	       ovfw = TRUE;
+
+	    if (!ovfw) {
 	       /* OK: assume here that the device was actually unregistered */
 	       memset(st_net_dev_j, 0, STATS_NET_DEV_SIZE);
 	       strcpy(st_net_dev_j->interface, st_net_dev_i->interface);
@@ -790,13 +779,14 @@ unsigned long get_per_cpu_interval(struct stats_one_cpu *st_cpu_i,
 
 /*
  ***************************************************************************
- * Print statistics average
+ * Core function used to display statistics
  ***************************************************************************
  */
-void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
+void write_stats_core(short prev, short curr, short dis, char *prev_string,
+		      char *curr_string, unsigned int act, unsigned long itv,
+		      unsigned long itv0, int disp_avg, int want_since_boot)
 {
    int i, j = 0, k;
-   unsigned long itv, itv0;
    struct stats_irq_cpu *p, *q, *p0, *q0;
    struct stats_serial *st_serial_i, *st_serial_j;
    struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
@@ -804,54 +794,46 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
    struct disk_stats *st_disk_i, *st_disk_j;
    char stemp[16];
 
-   /* Interval value in jiffies */
-   itv0 = file_stats[curr].uptime - file_stats[2].uptime;
-   itv  = itv0 / (file_hdr.sa_proc + 1);
-   if (!itv) {	/* Should no longer happen with version 3.0 and higher... */
-      /*
-       * Aiee: null interval... This should only happen when reading stats
-       * from a system activity file with a far too big interval value...
-       */
-      fprintf(stderr, _("Please give a smaller interval value\n"));
-      exit(1);
-   }
-
+   /* Print number of processes created per second */
    if (GET_PROC(act)) {
       if (dis)
-	 printf(_("\nAverage:       proc/s\n"));
+	 printf(_("\n%-11s    proc/s\n"), prev_string);
 
-      printf(_("Average:    %9.2f\n"),
-	     S_VALUE(file_stats[2].processes, file_stats[curr].processes, itv));
+      printf("%-11s %9.2f\n", curr_string,
+	     S_VALUE(file_stats[prev].processes, file_stats[curr].processes, itv));
    }
 
+   /* Print number of context switches per second */
    if (GET_CTXSW(act)) {
       if (dis)
-	 printf(_("\nAverage:      cswch/s\n"));
+	 printf(_("\n%-11s   cswch/s\n"), prev_string);
 
-      printf(_("Average:    %9.2f\n"),
-	     S_VALUE(file_stats[2].context_swtch, file_stats[curr].context_swtch, itv));
+      printf("%-11s %9.2f\n", curr_string,
+	     S_VALUE(file_stats[prev].context_swtch, file_stats[curr].context_swtch, itv));
    }
 
+   /* Print CPU usage */
    if (GET_CPU(act)) {
       if (dis)
-	 printf(_("\nAverage:          CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"));
+	 printf(_("\n%-11s       CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"),
+		prev_string);
 
       if (!WANT_PER_PROC(flags) ||
 	  (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags))) {
-	
-	 printf(_("Average:          all"));
+
+	 printf(_("%-11s       all"), curr_string);
 
 	 printf("    %6.2f    %6.2f    %6.2f    %6.2f",
-		SP_VALUE(file_stats[2].cpu_user,   file_stats[curr].cpu_user,   itv0),
-		SP_VALUE(file_stats[2].cpu_nice,   file_stats[curr].cpu_nice,   itv0),
-		SP_VALUE(file_stats[2].cpu_system, file_stats[curr].cpu_system, itv0),
-		SP_VALUE(file_stats[2].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
+		SP_VALUE(file_stats[prev].cpu_user,   file_stats[curr].cpu_user,   itv0),
+		SP_VALUE(file_stats[prev].cpu_nice,   file_stats[curr].cpu_nice,   itv0),
+		SP_VALUE(file_stats[prev].cpu_system, file_stats[curr].cpu_system, itv0),
+		SP_VALUE(file_stats[prev].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
 
-	 if (file_stats[curr].cpu_idle < file_stats[2].cpu_idle)
+	 if (file_stats[curr].cpu_idle < file_stats[prev].cpu_idle)
 	    printf("      %.2f\n", 0.0);  /* Handle buggy RTC (or kernels?) */
 	 else
 	    printf("    %6.2f\n",
-		   SP_VALUE(file_stats[2].cpu_idle, file_stats[curr].cpu_idle, itv0));
+		   SP_VALUE(file_stats[prev].cpu_idle, file_stats[curr].cpu_idle, itv0));
       }
 
       if (WANT_PER_PROC(flags) && file_hdr.sa_proc) {
@@ -860,13 +842,13 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	 for (i = 0; i <= file_hdr.sa_proc; i++) {
 	    if (cpu_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
-	       printf(_("Average:          %3d"), i);
+	       printf("%-11s       %3d", curr_string, i);
 	       st_cpu_i = st_cpu[curr] + i;
-	       st_cpu_j = st_cpu[2]    + i;
+	       st_cpu_j = st_cpu[prev] + i;
 	
 	       /* Recalculate itv for current proc */
 	       pc_itv = get_per_cpu_interval(st_cpu_i, st_cpu_j);
-
+	
 	       printf("    %6.2f    %6.2f    %6.2f    %6.2f",
 		      SP_VALUE(st_cpu_j->per_cpu_user,   st_cpu_i->per_cpu_user,   pc_itv),
 		      SP_VALUE(st_cpu_j->per_cpu_nice,   st_cpu_i->per_cpu_nice,   pc_itv),
@@ -888,149 +870,138 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
 
 	 if (dis)
-	    printf(_("\nAverage:         INTR    intr/s\n"));
+	    printf(_("\n%-11s      INTR    intr/s\n"), prev_string);
 
-	 printf(_("Average:          sum"));
+	 /* Print number of interrupts per second */
+	 printf(_("%-11s       sum"), curr_string);
 
 	 printf(" %9.2f\n",
-		S_VALUE(file_stats[2].irq_sum, file_stats[curr].irq_sum, itv));
+		S_VALUE(file_stats[prev].irq_sum, file_stats[curr].irq_sum, itv));
    }
 
    if (GET_ONE_IRQ(act)) {
       if (dis)
-	 printf(_("\nAverage:         INTR    intr/s\n"));
+	 printf(_("\n%-11s      INTR    intr/s\n"), prev_string);
 
+      /* Print number of interrupts per second */
       for (i = 0; i < NR_IRQS; i++) {
 	 if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
 
-	    printf(_("Average:          %3d"), i);
+	    printf("%-11s       %3d", curr_string, i);
 
 	    printf(" %9.2f\n",
-		   S_VALUE(interrupts[2][i], interrupts[curr][i], itv));
+		   S_VALUE(interrupts[prev][i], interrupts[curr][i], itv));
 	 }
       }
    }
 
-   if (GET_PAGE(act)) {
-      if (dis)
-	 printf(_("\nAverage:     pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"));
-
-      printf(_("Average:    %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n"),
-	     S_VALUE(file_stats[2].pgpgin,  file_stats[curr].pgpgin,  itv),
-	     S_VALUE(file_stats[2].pgpgout, file_stats[curr].pgpgout, itv),
-	     (double) asum.nr_active_pages         / asum.count,
-	     (double) asum.nr_inactive_dirty_pages / asum.count,
-	     (double) asum.nr_inactive_clean_pages / asum.count,
-	     (double) asum.inactive_target         / asum.count);
-   }
-
+   /* Print number of swap pages brought in and out */
    if (GET_SWAP(act)) {
       if (dis)
-	 printf(_("\nAverage:     pswpin/s pswpout/s\n"));
+	 printf(_("\n%-11s  pswpin/s pswpout/s\n"), prev_string);
 
-      printf(_("Average:    %9.2f %9.2f\n"),
-	     S_VALUE(file_stats[2].pswpin,  file_stats[curr].pswpin,  itv),
-	     S_VALUE(file_stats[2].pswpout, file_stats[curr].pswpout, itv));
+      printf("%-11s %9.2f %9.2f\n", curr_string,
+	     S_VALUE(file_stats[prev].pswpin,  file_stats[curr].pswpin,  itv),
+	     S_VALUE(file_stats[prev].pswpout, file_stats[curr].pswpout, itv));
    }
 
+   /* Print I/O stats (no distinction made between disks) */
    if (GET_IO(act)) {
       if (dis)
-	 printf(_("\nAverage:          tps      rtps      wtps   bread/s   bwrtn/s\n"));
+	 printf(_("\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n"),
+		prev_string);
 
-      printf(_("Average:    %9.2f %9.2f %9.2f %9.2f %9.2f\n"),
-	     S_VALUE(file_stats[2].dk_drive,      file_stats[curr].dk_drive,      itv),
-	     S_VALUE(file_stats[2].dk_drive_rio,  file_stats[curr].dk_drive_rio,  itv),
-	     S_VALUE(file_stats[2].dk_drive_wio,  file_stats[curr].dk_drive_wio,  itv),
-	     S_VALUE(file_stats[2].dk_drive_rblk, file_stats[curr].dk_drive_rblk, itv),
-	     S_VALUE(file_stats[2].dk_drive_wblk, file_stats[curr].dk_drive_wblk, itv));
+      printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f\n", curr_string,
+	     S_VALUE(file_stats[prev].dk_drive,      file_stats[curr].dk_drive,      itv),
+	     S_VALUE(file_stats[prev].dk_drive_rio,  file_stats[curr].dk_drive_rio,  itv),
+	     S_VALUE(file_stats[prev].dk_drive_wio,  file_stats[curr].dk_drive_wio,  itv),
+	     S_VALUE(file_stats[prev].dk_drive_rblk, file_stats[curr].dk_drive_rblk, itv),
+	     S_VALUE(file_stats[prev].dk_drive_wblk, file_stats[curr].dk_drive_wblk, itv));
    }
 
+   /* Print memory stats */
    if (GET_MEMORY(act)) {
       if (dis)
-	 printf(_("\nAverage:      frmpg/s   shmpg/s   bufpg/s   campg/s\n"));
+	 printf(_("\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"), prev_string);
 
-      printf(_("Average:    %9.2f %9.2f %9.2f %9.2f\n"),
-	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[2].frmkb))
+      printf("%-11s %9.2f %9.2f %9.2f %9.2f\n", curr_string,
+	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[prev].frmkb))
 	     / itv * HZ,
-	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[2].shmkb))
+	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[prev].shmkb))
 	     / itv * HZ,
-	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[2].bufkb))
+	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[prev].bufkb))
 	     / itv * HZ,
-	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[2].camkb))
+	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[prev].camkb))
 	     / itv * HZ);
    }
 
+   /* Print per-process statistics */
    if (GET_PID(act)) {
-      if (dis)
-	 printf(_("\nAverage:          PID  minflt/s  majflt/s     %%user   %%system   nswap/s\n"));
+      if (dis) {
+	 printf(_("\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s"),
+		prev_string);
+	 if (disp_avg)
+	    printf(_("   CPU\n"));
+	 else
+	    printf("\n");
+      }
 
       for (i = 0; i < pid_nr; i++) {
 	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & 0x01))
 	    continue;
-	 printf(_("Average:    %9ld"), pid_stats[curr][i]->pid);
 
-	 printf(" %9.2f %9.2f    %6.2f    %6.2f %9.2f\n",
-		S_VALUE(pid_stats[2][i]->minflt, pid_stats[curr][i]->minflt, itv),
-		S_VALUE(pid_stats[2][i]->majflt, pid_stats[curr][i]->majflt, itv),
-		S_VALUE(pid_stats[2][i]->utime,  pid_stats[curr][i]->utime,  itv),
-		S_VALUE(pid_stats[2][i]->stime,  pid_stats[curr][i]->stime,  itv),
-		((double) ((long) pid_stats[curr][i]->nswap - (long) pid_stats[2][i]->nswap))
+ 	 printf("%-11s %9ld", curr_string, pid_stats[curr][i]->pid);
+
+	 printf(" %9.2f %9.2f    %6.2f    %6.2f %9.2f",
+		S_VALUE(pid_stats[prev][i]->minflt, pid_stats[curr][i]->minflt, itv),
+		S_VALUE(pid_stats[prev][i]->majflt, pid_stats[curr][i]->majflt, itv),
+		S_VALUE(pid_stats[prev][i]->utime,  pid_stats[curr][i]->utime,  itv),
+		S_VALUE(pid_stats[prev][i]->stime,  pid_stats[curr][i]->stime,  itv),
+		((double) ((long) pid_stats[curr][i]->nswap - (long) pid_stats[prev][i]->nswap))
 		/ itv * HZ);
+	 if (disp_avg)
+	    printf("   %3d\n", pid_stats[curr][i]->processor);
+	 else
+	    printf("\n");
       }
    }
 
+   /* Print statistics about children of a given process */
    if (GET_CPID(act)) {
       if (dis)
-	 printf(_("\nAverage:         PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"));
+	 printf(_("\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"),
+		prev_string);
 
       for (i = 0; i < pid_nr; i++) {
 	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & 0x02))
 	    continue;
-	 printf(_("Average:    %9ld"), pid_stats[curr][i]->pid);
+	 printf("%-11s %9ld", curr_string, pid_stats[curr][i]->pid);
 
 	 printf(" %9.2f %9.2f    %6.2f    %6.2f %9.2f\n",
-		S_VALUE(pid_stats[2][i]->cminflt, pid_stats[curr][i]->cminflt, itv),
-		S_VALUE(pid_stats[2][i]->cmajflt, pid_stats[curr][i]->cmajflt, itv),
-		S_VALUE(pid_stats[2][i]->cutime,  pid_stats[curr][i]->cutime,  itv),
-		S_VALUE(pid_stats[2][i]->cstime,  pid_stats[curr][i]->cstime,  itv),
-		((double) ((long) pid_stats[curr][i]->cnswap - (long) pid_stats[2][i]->cnswap))
+		S_VALUE(pid_stats[prev][i]->cminflt, pid_stats[curr][i]->cminflt, itv),
+		S_VALUE(pid_stats[prev][i]->cmajflt, pid_stats[curr][i]->cmajflt, itv),
+		S_VALUE(pid_stats[prev][i]->cutime,  pid_stats[curr][i]->cutime,  itv),
+		S_VALUE(pid_stats[prev][i]->cstime,  pid_stats[curr][i]->cstime,  itv),
+		((double) ((long) pid_stats[curr][i]->cnswap - (long) pid_stats[prev][i]->cnswap))
 		/ itv * HZ);
       }
    }
 
-   /*
-    * Average not available for A_SUM_PID activity if a process was
-    * killed during sar execution (total number of major and minor faults
-    * can be lower than the previous time).
-    */
-   if (GET_SUM_PID(act)) {
-      if (dis)
-	 printf(_("\nAverage:     minflt/s  majflt/s\n"));
-
-      if (FLT_ARE_INC(flags))
-	 printf(_("Average:          N/A       N/A\n"));
-      else {
-	 printf(_("Average:    %9.2f %9.2f\n"),
-		S_VALUE(file_stats[2].minflt, file_stats[curr].minflt, itv),
-		S_VALUE(file_stats[2].majflt, file_stats[curr].majflt, itv));
-      }
-   }
-
+   /* Print TTY statistics (serial lines) */
    if (GET_SERIAL(act)) {
       if (dis)
-	 printf(_("\nAverage:          TTY   rcvin/s   xmtin/s\n"));
+	 printf(_("\n%-11s       TTY   rcvin/s   xmtin/s\n"), prev_string);
 
       for (i = 0; i < file_hdr.sa_serial; i++) {
 
 	 st_serial_i = st_serial[curr] + i;
-	 st_serial_j = st_serial[2]    + i;
+	 st_serial_j = st_serial[prev] + i;
 	 if (st_serial_i->line == 0xff)
 	    continue;
+	
+	 printf("%-11s       %3d", curr_string, st_serial_i->line);
 
-	 printf(_("Average:          "));
-	 printf("%3d", st_serial_i->line);
-
-	 if (st_serial_i->line == st_serial_j->line) {
+	 if ((st_serial_i->line == st_serial_j->line) || want_since_boot) {
 	    printf(" %9.2f %9.2f\n",
 		   S_VALUE(st_serial_j->rx, st_serial_i->rx, itv),
 		   S_VALUE(st_serial_j->tx, st_serial_i->tx, itv));
@@ -1040,11 +1011,204 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
       }
    }
 
+   if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
+      int offset;
+
+      j = 0;
+      /* Check if number of interrupts has changed */
+      if (!dis && !want_since_boot && !disp_avg) {
+	 do {
+	    p0 = st_irq_cpu[curr] + j;
+	    if (p0->irq != ~0) {
+	       q0 = st_irq_cpu[prev] + j;
+	       if (p0->irq != q0->irq)
+		  j = -2;
+	    }
+	    j++;
+	 }
+	 while ((j > 0) && (j <= file_hdr.sa_irqcpu));
+      }
+
+      if (dis || (j < 0)) {
+	 /* Print header */
+	 printf(_("\n%-11s  CPU"), prev_string);
+	 for (j = 0; j < file_hdr.sa_irqcpu; j++) {
+	    p0 = st_irq_cpu[curr] + j;
+	    if (p0->irq != ~0)	/* Nb of irq per proc may have varied... */
+	       printf(_("  i%03d/s"), p0->irq);
+	 }
+	 printf("\n");
+      }
+
+      for (k = 0; k <= file_hdr.sa_proc; k++) {
+	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
+
+	    printf("%-11s  %3d", curr_string, k);
+
+	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
+	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
+	       /*
+		* A value of ~0 means it is a remaining interrupt
+		* which is no longer used, for example because the
+		* number of interrupts has decreased in /proc/interrupts
+		* or because we are appending data to an old sa file
+		* with more interrupts than are actually available now.
+		*/
+	       if (p0->irq != ~0) {	
+		  q0 = st_irq_cpu[prev] + j;
+		  offset = j;
+
+		  /*
+		   * If we want stats for the time since system startup,
+		   * we have p0->irq != q0->irq, since q0 structure is
+		   * completely set to zero.
+		   */
+		  if ((p0->irq != q0->irq) && !want_since_boot) {
+		     if (j)
+			offset = j - 1;
+		     q0 = st_irq_cpu[prev] + offset;
+		     if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
+			offset = j + 1;
+		     q0 = st_irq_cpu[prev] + offset;
+		  }
+		  if ((p0->irq == q0->irq) || want_since_boot) {
+		     p = st_irq_cpu[curr] + k * file_hdr.sa_irqcpu + j;
+		     q = st_irq_cpu[prev] + k * file_hdr.sa_irqcpu + offset;
+		     printf(" %7.2f",
+			    S_VALUE(q->interrupt, p->interrupt, itv));
+		  }
+		  else
+		     printf("     N/A");
+	       }
+	    }
+	    printf("\n");
+	 }
+      }
+   }
+
+   /* Print network interface statistics */
+   if (GET_NET_DEV(act)) {
+      if (dis)
+	 printf(_("\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"),
+		prev_string);
+
+      for (i = 0; i < file_hdr.sa_iface; i++) {
+
+	 st_net_dev_i = st_net_dev[curr] + i;
+	 if (!strcmp(st_net_dev_i->interface, "?"))
+	    continue;
+	 j = check_iface_reg(st_net_dev, curr, prev, i);
+	 st_net_dev_j = st_net_dev[prev] + j;
+	
+	 printf("%-11s    %6s", curr_string, st_net_dev_i->interface);
+	
+	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+		S_VALUE(st_net_dev_j->rx_packets,    st_net_dev_i->rx_packets,    itv),
+		S_VALUE(st_net_dev_j->tx_packets,    st_net_dev_i->tx_packets,    itv),
+		S_VALUE(st_net_dev_j->rx_bytes,      st_net_dev_i->rx_bytes,      itv),
+		S_VALUE(st_net_dev_j->tx_bytes,      st_net_dev_i->tx_bytes,      itv),
+		S_VALUE(st_net_dev_j->rx_compressed, st_net_dev_i->rx_compressed, itv),
+		S_VALUE(st_net_dev_j->tx_compressed, st_net_dev_i->tx_compressed, itv),
+		S_VALUE(st_net_dev_j->multicast,     st_net_dev_i->multicast,     itv));
+      }
+   }
+
+   /* Print network interface statistics (errors) */
+   if (GET_NET_EDEV(act)) {
+      if (dis)
+	 printf(_("\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"),
+		prev_string);
+
+      for (i = 0; i < file_hdr.sa_iface; i++) {
+
+	 st_net_dev_i = st_net_dev[curr] + i;
+	 if (!strcmp(st_net_dev_i->interface, "?"))
+	    continue;
+	 j = check_iface_reg(st_net_dev, curr, prev, i);
+	 st_net_dev_j = st_net_dev[prev] + j;
+	
+	 printf("%-11s    %6s", curr_string, st_net_dev_i->interface);
+
+	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+		S_VALUE(st_net_dev_j->rx_errors,         st_net_dev_i->rx_errors,         itv),
+		S_VALUE(st_net_dev_j->tx_errors,         st_net_dev_i->tx_errors,         itv),
+		S_VALUE(st_net_dev_j->collisions,        st_net_dev_i->collisions,        itv),
+		S_VALUE(st_net_dev_j->rx_dropped,        st_net_dev_i->rx_dropped,        itv),
+		S_VALUE(st_net_dev_j->tx_dropped,        st_net_dev_i->tx_dropped,        itv),
+		S_VALUE(st_net_dev_j->tx_carrier_errors, st_net_dev_i->tx_carrier_errors, itv),
+		S_VALUE(st_net_dev_j->rx_frame_errors,   st_net_dev_i->rx_frame_errors,   itv),
+		S_VALUE(st_net_dev_j->rx_fifo_errors,    st_net_dev_i->rx_fifo_errors,    itv),
+		S_VALUE(st_net_dev_j->tx_fifo_errors,    st_net_dev_i->tx_fifo_errors,    itv));
+      }
+   }
+
+   /* Print disk statistics */
+   if (GET_DISK(act)) {
+      if (dis)
+	 printf(_("\n%-11s       DEV       tps    sect/s\n"), prev_string);
+
+      for (i = 0; i < file_hdr.sa_nr_disk; i++) {
+	
+	 st_disk_i = st_disk[curr]  + i;
+	 if (!(st_disk_i->major + st_disk_i->index))
+	    continue;
+	 j = check_disk_reg(st_disk, curr, prev, i);
+	 st_disk_j = st_disk[prev] + j;
+
+	 sprintf(stemp, "dev%d-%d", st_disk_i->major, st_disk_i->index);
+	 printf("%-11s %9.9s %9.2f %9.2f\n", curr_string, stemp,
+		S_VALUE(st_disk_j->dk_drive,       st_disk_i->dk_drive,       itv),
+		S_VALUE(st_disk_j->dk_drive_rwblk, st_disk_i->dk_drive_rwblk, itv));
+      }
+   }
+}
+
+
+/*
+ ***************************************************************************
+ * Print statistics average
+ ***************************************************************************
+ */
+void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
+{
+   unsigned long itv, itv0;
+   char string[16];
+
+   /* Interval value in jiffies */
+   itv0 = file_stats[curr].uptime - file_stats[2].uptime;
+   itv  = itv0 / (file_hdr.sa_proc + 1);
+   if (!itv) {	/* Should no longer happen with version 3.0 and higher... */
+      /*
+       * Aiee: null interval... This should only happen when reading stats
+       * from a system activity file with a far too big interval value...
+       */
+      fprintf(stderr, _("Please give a smaller interval value\n"));
+      exit(1);
+   }
+
+   strcpy(string, _("Average:"));
+   write_stats_core(2, curr, dis, string, string, act, itv, itv0, TRUE, FALSE);
+
+   if (GET_PAGE(act)) {
+      if (dis)
+	 printf(_("\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"),
+		string);
+
+      printf("%-11s %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n", string,
+	     S_VALUE(file_stats[2].pgpgin,  file_stats[curr].pgpgin,  itv),
+	     S_VALUE(file_stats[2].pgpgout, file_stats[curr].pgpgout, itv),
+	     (double) asum.nr_active_pages         / asum.count,
+	     (double) asum.nr_inactive_dirty_pages / asum.count,
+	     (double) asum.nr_inactive_clean_pages / asum.count,
+	     (double) asum.inactive_target         / asum.count);
+   }
+
    if (GET_MEM_AMT(act)) {
       if (dis)
-	 printf(_("\nAverage:    kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"));
+	 printf(_("\n%-11s kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"),
+		string);
 
-      printf(_("Average:    %9.0f %9.0f"),
+      printf("%-11s %9.0f %9.0f", string,
 	     (double) asum.frmkb / asum.count,
 	     (double) file_stats[curr].tlmkb - ((double) asum.frmkb / asum.count));
       if (file_stats[curr].tlmkb)
@@ -1066,59 +1230,12 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	 printf("      %.2f\n", 0.0);
    }
 
-   if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
-      int offset;
-
-      if (dis) {
-	 /* Print header */
-	 printf(_("\nAverage:     CPU"));
-	 for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	    p0 = st_irq_cpu[curr] + j;
-	    if (p0->irq != ~0)	/* Nb of irq per proc may have varied... */
-	       printf(_("  i%03d/s"), p0->irq);
-	 }
-	 printf("\n");
-      }
-
-      for (k = 0; k <= file_hdr.sa_proc; k++) {
-	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
-	
-	    printf(_("Average:     %3d"), k);
-
-	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
-	       if (p0->irq != ~0) {
-		  q0 = st_irq_cpu[2] + j;
-		  offset = j;
-
-		  if (p0->irq != q0->irq) {
-		     if (j)
-			offset = j - 1;
-		     q0 = st_irq_cpu[2] + offset;
-		     if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-			offset = j + 1;
-		     q0 = st_irq_cpu[2] + offset;
-		  }
-		  if (p0->irq == q0->irq) {
-		     p = st_irq_cpu[curr] + k * file_hdr.sa_irqcpu + j;
-		     q = st_irq_cpu[2]    + k * file_hdr.sa_irqcpu + offset;
-		     printf(" %7.2f",
-			    S_VALUE(q->interrupt, p->interrupt, itv));
-		  }
-		  else
-		     printf("     N/A");
-	       }
-	    }
-	    printf("\n");
-	 }
-      }
-   }
-
    if (GET_KTABLES(act)) {
       if (dis)
-	 printf(_("\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"));
+	 printf(_("\n%-11s dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"),
+		string);
 
-      printf(_("Average:    %9.0f"), (double) asum.dentry_stat / asum.count);
+      printf("%-11s %9.0f", string, (double) asum.dentry_stat / asum.count);
 
       printf(" %9.0f", (double) asum.file_used / asum.count);
       if (file_stats[curr].file_max)
@@ -1155,63 +1272,12 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 	 printf("      %.2f\n", 0.0);
    }
 
-   if (GET_NET_DEV(act)) {
-      if (dis)
-	 printf(_("\nAverage:        IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"));
-
-      for (i = 0; i < file_hdr.sa_iface; i++) {
-
-	 st_net_dev_i = st_net_dev[curr] + i;
-	 if (!strcmp(st_net_dev_i->interface, "?"))
-	    continue;
-	 j = check_iface_reg(st_net_dev, curr, 2, i);
-	 st_net_dev_j = st_net_dev[2] + j;
-
-	 printf(_("Average:       %6s"), st_net_dev_i->interface);
-	
-	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-		S_VALUE(st_net_dev_j->rx_packets,    st_net_dev_i->rx_packets,    itv),
-		S_VALUE(st_net_dev_j->tx_packets,    st_net_dev_i->tx_packets,    itv),
-		S_VALUE(st_net_dev_j->rx_bytes,      st_net_dev_i->rx_bytes,      itv),
-		S_VALUE(st_net_dev_j->tx_bytes,      st_net_dev_i->tx_bytes,      itv),
-		S_VALUE(st_net_dev_j->rx_compressed, st_net_dev_i->rx_compressed, itv),
-		S_VALUE(st_net_dev_j->tx_compressed, st_net_dev_i->tx_compressed, itv),
-		S_VALUE(st_net_dev_j->multicast,     st_net_dev_i->multicast,     itv));
-      }
-   }
-
-   if (GET_NET_EDEV(act)) {
-      if (dis)
-	 printf(_("\nAverage:        IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"));
-
-      for (i = 0; i < file_hdr.sa_iface; i++) {
-
-	 st_net_dev_i = st_net_dev[curr] + i;
-	 if (!strcmp(st_net_dev_i->interface, "?"))
-	    continue;
-	 j = check_iface_reg(st_net_dev, curr, 2, i);
-	 st_net_dev_j = st_net_dev[2] + j;
-
-	 printf(_("Average:       %6s"), st_net_dev_i->interface);
-	
-	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-		S_VALUE(st_net_dev_j->rx_errors,         st_net_dev_i->rx_errors,         itv),
-		S_VALUE(st_net_dev_j->tx_errors,         st_net_dev_i->tx_errors,         itv),
-		S_VALUE(st_net_dev_j->collisions,        st_net_dev_i->collisions,        itv),
-		S_VALUE(st_net_dev_j->rx_dropped,        st_net_dev_i->rx_dropped,        itv),
-		S_VALUE(st_net_dev_j->tx_dropped,        st_net_dev_i->tx_dropped,        itv),
-		S_VALUE(st_net_dev_j->tx_carrier_errors, st_net_dev_i->tx_carrier_errors, itv),
-		S_VALUE(st_net_dev_j->rx_frame_errors,   st_net_dev_i->rx_frame_errors,   itv),
-		S_VALUE(st_net_dev_j->rx_fifo_errors,    st_net_dev_i->rx_fifo_errors,    itv),
-		S_VALUE(st_net_dev_j->tx_fifo_errors,    st_net_dev_i->tx_fifo_errors,    itv));
-      }
-   }
-
    if (GET_NET_SOCK(act)) {
       if (dis)
-	 printf(_("\nAverage:       totsck    tcpsck    udpsck    rawsck   ip-frag\n"));
+	 printf(_("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag\n"),
+		string);
 
-      printf(_("Average:    %9.0f %9.0f %9.0f %9.0f %9.0f\n"),
+      printf("%-11s %9.0f %9.0f %9.0f %9.0f %9.0f\n", string,
 	     (double) asum.sock_inuse / asum.count,
 	     (double) asum.tcp_inuse  / asum.count,
 	     (double) asum.udp_inuse  / asum.count,
@@ -1221,33 +1287,15 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
    if (GET_QUEUE(act)) {
       if (dis)
-	 printf(_("\nAverage:      runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"));
+	 printf(_("\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"),
+		string);
 
-      printf(_("Average:    %9.0f %9.0f %9.2f %9.2f %9.2f\n"),
+      printf("%-11s %9.0f %9.0f %9.2f %9.2f %9.2f\n", string,
 	     (double) asum.nr_running  / asum.count,
 	     (double) asum.nr_threads  / asum.count,
 	     (double) asum.load_avg_1  / (asum.count * 100),
 	     (double) asum.load_avg_5  / (asum.count * 100),
 	     (double) asum.load_avg_15 / (asum.count * 100));
-   }
-
-   if (GET_DISK(act)) {
-      if (dis)
-	 printf(_("\nAverage:          DEV       tps    sect/s\n"));
-
-      for (i = 0; i < file_hdr.sa_nr_disk; i++) {
-	
-	 st_disk_i = st_disk[curr] + i;
-	 if (!(st_disk_i->major + st_disk_i->index))
-	    continue;
-	 j = check_disk_reg(st_disk, curr, 2, i);
-	 st_disk_j = st_disk[2] + j;
-	
-	 sprintf(stemp, "dev%d-%d", st_disk_i->major, st_disk_i->index);
-	 printf(_("Average:    %9.9s %9.2f %9.2f\n"), stemp,
-		S_VALUE(st_disk_j->dk_drive,       st_disk_i->dk_drive,       itv),
-		S_VALUE(st_disk_j->dk_drive_rwblk, st_disk_i->dk_drive_rwblk, itv));
-      }
    }
 
    if (read_from_file)
@@ -1258,21 +1306,14 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
 /*
  ***************************************************************************
- * Print system statistics onto the screen
+ * Print system statistics
  ***************************************************************************
  */
 int write_stats(short curr, short dis, unsigned int act, int read_from_file, long *cnt,
 		int use_tm_start, int use_tm_end, int reset, int want_since_boot)
 {
-   int i, j = 0, k;
    char cur_time[2][14];
    unsigned long itv, itv0;
-   struct stats_irq_cpu *p, *q, *p0, *q0;
-   struct stats_serial *st_serial_i, *st_serial_j;
-   struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
-   struct stats_one_cpu *st_cpu_i, *st_cpu_j;
-   struct disk_stats *st_disk_i, *st_disk_j;
-   char stemp[16];
 
    /* Check time (1) */
    if (read_from_file) {
@@ -1295,106 +1336,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
 
    (asum.count)++;	/* Nb of lines printed */
 
-   /* Print number of processes created per second */
-   if (GET_PROC(act)) {
-      if (dis)
-	 printf(_("\n%-11s    proc/s\n"), cur_time[!curr]);
-
-      printf("%-11s %9.2f\n", cur_time[curr],
-	     S_VALUE(file_stats[!curr].processes, file_stats[curr].processes, itv));
-   }
-
-   /* Print number of context switches per second */
-   if (GET_CTXSW(act)) {
-      if (dis)
-	 printf(_("\n%-11s   cswch/s\n"), cur_time[!curr]);
-
-      printf("%-11s %9.2f\n", cur_time[curr],
-	     S_VALUE(file_stats[!curr].context_swtch, file_stats[curr].context_swtch, itv));
-   }
-
-   /* Print CPU usage */
-   if (GET_CPU(act)) {
-      if (dis)
-	 printf(_("\n%-11s       CPU     %%user     %%nice   %%system   %%iowait     %%idle\n"),
-		cur_time[!curr]);
-
-      if (!WANT_PER_PROC(flags) ||
-	  (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags))) {
-
-	 printf(_("%-11s       all"), cur_time[curr]);
-
-	 printf("    %6.2f    %6.2f    %6.2f    %6.2f",
-		SP_VALUE(file_stats[!curr].cpu_user,   file_stats[curr].cpu_user,   itv0),
-		SP_VALUE(file_stats[!curr].cpu_nice,   file_stats[curr].cpu_nice,   itv0),
-		SP_VALUE(file_stats[!curr].cpu_system, file_stats[curr].cpu_system, itv0),
-		SP_VALUE(file_stats[!curr].cpu_iowait, file_stats[curr].cpu_iowait, itv0));
-
-	 if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
-	    printf("      %.2f\n", 0.0);  /* Handle buggy RTC (or kernels?) */
-	 else
-	    printf("    %6.2f\n",
-		   SP_VALUE(file_stats[!curr].cpu_idle, file_stats[curr].cpu_idle, itv0));
-      }
-
-      if (WANT_PER_PROC(flags) && file_hdr.sa_proc) {
-	 unsigned long pc_itv;
-	
-	 for (i = 0; i <= file_hdr.sa_proc; i++) {
-	    if (cpu_bitmap[i >> 5] & (1 << (i & 0x1f))) {
-
-	       printf("%-11s       %3d", cur_time[curr], i);
-	       st_cpu_i = st_cpu[curr]  + i;
-	       st_cpu_j = st_cpu[!curr] + i;
-	
-	       /* Recalculate itv for current proc */
-	       pc_itv = get_per_cpu_interval(st_cpu_i, st_cpu_j);
-	
-	       printf("    %6.2f    %6.2f    %6.2f    %6.2f",
-		      SP_VALUE(st_cpu_j->per_cpu_user,   st_cpu_i->per_cpu_user,   pc_itv),
-		      SP_VALUE(st_cpu_j->per_cpu_nice,   st_cpu_i->per_cpu_nice,   pc_itv),
-		      SP_VALUE(st_cpu_j->per_cpu_system, st_cpu_i->per_cpu_system, pc_itv),
-		      SP_VALUE(st_cpu_j->per_cpu_iowait, st_cpu_i->per_cpu_iowait, pc_itv));
-
-	       if (st_cpu_i->per_cpu_idle < st_cpu_j->per_cpu_idle)
-		  printf("      %.2f\n", 0.0);	/* Handle buggy RTC (or kernels?) */
-	       else
-		  printf("    %6.2f\n",
-			 SP_VALUE(st_cpu_j->per_cpu_idle, st_cpu_i->per_cpu_idle, pc_itv));
-	    }
-	 }
-      }
-   }
-
-   if (GET_IRQ(act) &&
-       (!WANT_PER_PROC(flags) ||
-	(WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
-
-	 if (dis)
-	    printf(_("\n%-11s      INTR    intr/s\n"), cur_time[!curr]);
-
-	 /* Print number of interrupts per second */
-	 printf(_("%-11s       sum"), cur_time[curr]);
-
-	 printf(" %9.2f\n",
-		S_VALUE(file_stats[!curr].irq_sum, file_stats[curr].irq_sum, itv));
-   }
-
-   if (GET_ONE_IRQ(act)) {
-      if (dis)
-	 printf(_("\n%-11s      INTR    intr/s\n"), cur_time[!curr]);
-
-      /* Print number of interrupts per second */
-      for (i = 0; i < NR_IRQS; i++) {
-	 if (irq_bitmap[i >> 5] & (1 << (i & 0x1f))) {
-
-	    printf("%-11s       %3d", cur_time[curr], i);
-
-	    printf(" %9.2f\n",
-		   S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
-	 }
-      }
-   }
+   write_stats_core(!curr, curr, dis, cur_time[!curr], cur_time[curr], act,
+		    itv, itv0, FALSE, want_since_boot);
 
    /* Print number of pages the system paged in and out */
    if (GET_PAGE(act)) {
@@ -1418,138 +1361,6 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       asum.nr_inactive_dirty_pages += file_stats[curr].nr_inactive_dirty_pages;
       asum.nr_inactive_clean_pages += file_stats[curr].nr_inactive_clean_pages;
       asum.inactive_target         += file_stats[curr].inactive_target;
-   }
-
-   /* Print number of swap pages brought in and out */
-   if (GET_SWAP(act)) {
-      if (dis)
-	 printf(_("\n%-11s  pswpin/s pswpout/s\n"), cur_time[!curr]);
-
-      printf("%-11s %9.2f %9.2f\n", cur_time[curr],
-	     S_VALUE(file_stats[!curr].pswpin,  file_stats[curr].pswpin,  itv),
-	     S_VALUE(file_stats[!curr].pswpout, file_stats[curr].pswpout, itv));
-   }
-
-   /* Print I/O stats (no distinction made between disks) */
-   if (GET_IO(act)) {
-      if (dis)
-	 printf(_("\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n"),
-		cur_time[!curr]);
-
-      printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f\n", cur_time[curr],
-	     S_VALUE(file_stats[!curr].dk_drive,      file_stats[curr].dk_drive,      itv),
-	     S_VALUE(file_stats[!curr].dk_drive_rio,  file_stats[curr].dk_drive_rio,  itv),
-	     S_VALUE(file_stats[!curr].dk_drive_wio,  file_stats[curr].dk_drive_wio,  itv),
-	     S_VALUE(file_stats[!curr].dk_drive_rblk, file_stats[curr].dk_drive_rblk, itv),
-	     S_VALUE(file_stats[!curr].dk_drive_wblk, file_stats[curr].dk_drive_wblk, itv));
-   }
-
-   /* Print memory stats */
-   if (GET_MEMORY(act)) {
-      if (dis)
-	 printf(_("\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"), cur_time[!curr]);
-
-      printf("%-11s %9.2f %9.2f %9.2f %9.2f\n", cur_time[curr],
-	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb))
-	     / itv * HZ,
-	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb))
-	     / itv * HZ,
-	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb))
-	     / itv * HZ,
-	     ((double) PG(file_stats[curr].camkb) - (double) PG(file_stats[!curr].camkb))
-	     / itv * HZ);
-   }
-
-   /* Print per-process statistics */
-   if (GET_PID(act)) {
-      if (dis)
-	 printf(_("\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s   CPU\n"),
-		cur_time[!curr]);
-
-      for (i = 0; i < pid_nr; i++) {
-	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & 0x01))
-	    continue;
-
- 	 printf("%-11s %9ld", cur_time[curr], pid_stats[curr][i]->pid);
-
-	 printf(" %9.2f %9.2f    %6.2f    %6.2f %9.2f   %3d\n",
-		S_VALUE(pid_stats[!curr][i]->minflt, pid_stats[curr][i]->minflt, itv),
-		S_VALUE(pid_stats[!curr][i]->majflt, pid_stats[curr][i]->majflt, itv),
-		S_VALUE(pid_stats[!curr][i]->utime,  pid_stats[curr][i]->utime,  itv),
-		S_VALUE(pid_stats[!curr][i]->stime,  pid_stats[curr][i]->stime,  itv),
-		((double) ((long) pid_stats[curr][i]->nswap - (long) pid_stats[!curr][i]->nswap))
-		/ itv * HZ,
-		pid_stats[curr][i]->processor);
-      }
-   }
-
-   /* Print statistics about children of a given process */
-   if (GET_CPID(act)) {
-      if (dis)
-	 printf(_("\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"),
-		cur_time[!curr]);
-
-      for (i = 0; i < pid_nr; i++) {
-	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & 0x02))
-	    continue;
-	 printf("%-11s %9ld", cur_time[curr], pid_stats[curr][i]->pid);
-
-	 printf(" %9.2f %9.2f    %6.2f    %6.2f %9.2f\n",
-		S_VALUE(pid_stats[!curr][i]->cminflt, pid_stats[curr][i]->cminflt, itv),
-		S_VALUE(pid_stats[!curr][i]->cmajflt, pid_stats[curr][i]->cmajflt, itv),
-		S_VALUE(pid_stats[!curr][i]->cutime,  pid_stats[curr][i]->cutime,  itv),
-		S_VALUE(pid_stats[!curr][i]->cstime,  pid_stats[curr][i]->cstime,  itv),
-		((double) ((long) pid_stats[curr][i]->cnswap - (long) pid_stats[!curr][i]->cnswap))
-		/ itv * HZ);
-      }
-   }
-
-   /* Print number of system minor/major faults */
-   if (GET_SUM_PID(act)) {
-      if (dis)
-	 printf(_("\n%-11s  minflt/s  majflt/s\n"), cur_time[!curr]);
-
-      printf("%-11s", cur_time[curr]);
-
-      /*
-       * Results are meaningful only if no processes have terminated
-       * since the last time.
-       */
-      if ((file_stats[curr].nr_processes - file_stats[!curr].nr_processes) !=
-	  (file_stats[curr].processes    - file_stats[!curr].processes)) {
-	 printf("      ????      ????\n");
-	 /* A process was killed: cannot compute the average */
-	 flags |= F_FLT_INC;
-      }
-      else {
-	 printf(" %9.2f %9.2f\n",
-		S_VALUE(file_stats[!curr].minflt, file_stats[curr].minflt, itv),
-		S_VALUE(file_stats[!curr].majflt, file_stats[curr].majflt, itv));
-      }
-   }
-
-   /* Print TTY statistics (serial lines) */
-   if (GET_SERIAL(act)) {
-      if (dis)
-	 printf(_("\n%-11s       TTY   rcvin/s   xmtin/s\n"), cur_time[!curr]);
-
-      for (i = 0; i < file_hdr.sa_serial; i++) {
-
-	 st_serial_i = st_serial[curr]  + i;
-	 st_serial_j = st_serial[!curr] + i;
-	 if (st_serial_i->line == 0xff)
-	    continue;
-	
-	 printf("%-11s       %3d", cur_time[curr], st_serial_i->line);
-
-	 if ((st_serial_i->line == st_serial_j->line) || want_since_boot) {
-	    printf(" %9.2f %9.2f\n",
-		   S_VALUE(st_serial_j->rx, st_serial_i->rx, itv),
-		   S_VALUE(st_serial_j->tx, st_serial_i->tx, itv));
-	 }
-	 else
-	    printf("      ????      ????\n");
-      }
    }
 
    /* Print amount and usage of memory */
@@ -1592,81 +1403,6 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       asum.camkb += file_stats[curr].camkb;
       asum.frskb += file_stats[curr].frskb;
       asum.tlskb += file_stats[curr].tlskb;
-   }
-
-   if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
-      int offset;
-
-      j = 0;
-      /* Check if number of interrupts has changed */
-      if (!dis && !want_since_boot) {
-	 do {
-	    p0 = st_irq_cpu[curr] + j;
-	    if (p0->irq != ~0) {
-	       q0 = st_irq_cpu[!curr] + j;
-	       if (p0->irq != q0->irq)
-		  j = -2;
-	    }
-	    j++;
-	 }
-	 while ((j > 0) && (j <= file_hdr.sa_irqcpu));
-      }
-
-      if (dis || (j < 0)) {
-	 /* Print header */
-	 printf(_("\n%-11s  CPU"), cur_time[!curr]);
-	 for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	    p0 = st_irq_cpu[curr] + j;
-	    if (p0->irq != ~0)
-	       printf(_("  i%03d/s"), p0->irq);
-	 }
-	 printf("\n");
-      }
-
-      for (k = 0; k <= file_hdr.sa_proc; k++) {
-	 if (cpu_bitmap[k >> 5] & (1 << (k & 0x1f))) {
-
-	    printf("%-11s  %3d", cur_time[curr], k);
-
-	    for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	       p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
-	       /*
-		* A value of ~0 means it is a remaining interrupt
-		* which is no longer used, for example because the
-		* number of interrupts has decreased in /proc/interrupts
-		* or because we are appending data to an old sa file
-		* with more interrupts than are actually available now.
-		*/
-	       if (p0->irq != ~0) {	
-		  q0 = st_irq_cpu[!curr] + j;
-		  offset = j;
-
-		  /*
-		   * If we want stats for the time since system startup,
-		   * we have p0->irq != q0->irq, since q0 structure is
-		   * completely set to zero.
-		   */
-		  if ((p0->irq != q0->irq) && !want_since_boot) {
-		     if (j)
-			offset = j - 1;
-		     q0 = st_irq_cpu[!curr] + offset;
-		     if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-			offset = j + 1;
-		     q0 = st_irq_cpu[!curr] + offset;
-		  }
-		  if ((p0->irq == q0->irq) || want_since_boot) {
-		     p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
-		     q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
-		     printf(" %7.2f",
-			    S_VALUE(q->interrupt, p->interrupt, itv));
-		  }
-		  else
-		     printf("     N/A");
-	       }
-	    }
-	    printf("\n");
-	 }
-      }
    }
 
    /* Print values of some kernel tables */
@@ -1724,62 +1460,6 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       asum.rtsig_queued += file_stats[curr].rtsig_queued;
    }
 
-   /* Print network interface statistics */
-   if (GET_NET_DEV(act)) {
-      if (dis)
-	 printf(_("\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"),
-		cur_time[!curr]);
-
-      for (i = 0; i < file_hdr.sa_iface; i++) {
-
-	 st_net_dev_i = st_net_dev[curr] + i;
-	 if (!strcmp(st_net_dev_i->interface, "?"))
-	    continue;
-	 j = check_iface_reg(st_net_dev, curr, !curr, i);
-	 st_net_dev_j = st_net_dev[!curr] + j;
-	
-	 printf("%-11s    %6s", cur_time[curr], st_net_dev_i->interface);
-	
-	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-		S_VALUE(st_net_dev_j->rx_packets,    st_net_dev_i->rx_packets,    itv),
-		S_VALUE(st_net_dev_j->tx_packets,    st_net_dev_i->tx_packets,    itv),
-		S_VALUE(st_net_dev_j->rx_bytes,      st_net_dev_i->rx_bytes,      itv),
-		S_VALUE(st_net_dev_j->tx_bytes,      st_net_dev_i->tx_bytes,      itv),
-		S_VALUE(st_net_dev_j->rx_compressed, st_net_dev_i->rx_compressed, itv),
-		S_VALUE(st_net_dev_j->tx_compressed, st_net_dev_i->tx_compressed, itv),
-		S_VALUE(st_net_dev_j->multicast,     st_net_dev_i->multicast,     itv));
-      }
-   }
-
-   /* Print network interface statistics (errors) */
-   if (GET_NET_EDEV(act)) {
-      if (dis)
-	 printf(_("\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"),
-		cur_time[!curr]);
-
-      for (i = 0; i < file_hdr.sa_iface; i++) {
-
-	 st_net_dev_i = st_net_dev[curr] + i;
-	 if (!strcmp(st_net_dev_i->interface, "?"))
-	    continue;
-	 j = check_iface_reg(st_net_dev, curr, !curr, i);
-	 st_net_dev_j = st_net_dev[!curr] + j;
-	
-	 printf("%-11s    %6s", cur_time[curr], st_net_dev_i->interface);
-
-	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-		S_VALUE(st_net_dev_j->rx_errors,         st_net_dev_i->rx_errors,         itv),
-		S_VALUE(st_net_dev_j->tx_errors,         st_net_dev_i->tx_errors,         itv),
-		S_VALUE(st_net_dev_j->collisions,        st_net_dev_i->collisions,        itv),
-		S_VALUE(st_net_dev_j->rx_dropped,        st_net_dev_i->rx_dropped,        itv),
-		S_VALUE(st_net_dev_j->tx_dropped,        st_net_dev_i->tx_dropped,        itv),
-		S_VALUE(st_net_dev_j->tx_carrier_errors, st_net_dev_i->tx_carrier_errors, itv),
-		S_VALUE(st_net_dev_j->rx_frame_errors,   st_net_dev_i->rx_frame_errors,   itv),
-		S_VALUE(st_net_dev_j->rx_fifo_errors,    st_net_dev_i->rx_fifo_errors,    itv),
-		S_VALUE(st_net_dev_j->tx_fifo_errors,    st_net_dev_i->tx_fifo_errors,    itv));
-      }
-   }
-
    /* Print number of sockets in use */
    if (GET_NET_SOCK(act)) {
       if (dis)
@@ -1820,26 +1500,6 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       asum.load_avg_1  += file_stats[curr].load_avg_1;
       asum.load_avg_5  += file_stats[curr].load_avg_5;
       asum.load_avg_15 += file_stats[curr].load_avg_15;
-   }
-
-   /* Print disk statistics */
-   if (GET_DISK(act)) {
-      if (dis)
-	 printf(_("\n%-11s       DEV       tps    sect/s\n"), cur_time[!curr]);
-
-      for (i = 0; i < file_hdr.sa_nr_disk; i++) {
-	
-	 st_disk_i = st_disk[curr]  + i;
-	 if (!(st_disk_i->major + st_disk_i->index))
-	    continue;
-	 j = check_disk_reg(st_disk, curr, !curr, i);
-	 st_disk_j = st_disk[!curr] + j;
-
-	 sprintf(stemp, "dev%d-%d", st_disk_i->major, st_disk_i->index);
-	 printf("%-11s %9.9s %9.2f %9.2f\n", cur_time[curr], stemp,
-		S_VALUE(st_disk_j->dk_drive,       st_disk_i->dk_drive,       itv),
-		S_VALUE(st_disk_j->dk_drive_rwblk, st_disk_i->dk_drive_rwblk, itv));
-      }
    }
 
    /* Check time (3) */
@@ -2900,7 +2560,7 @@ void read_curr_act_stats(int ifd, off_t fpos, short curr, long *cnt, int *eosaf,
 
    if (davg && !USE_H_OPTION(flags) && !USE_DB_OPTION(flags))
       write_stats_avg(!curr, dis, act, USE_SA_FILE);
-   *reset = 1;
+   *reset = TRUE;
 }
 
 
@@ -2914,7 +2574,7 @@ void read_stats_from_file(char from_file[])
    short curr = 1;
    unsigned int act;
    int ifd, nb;
-   int rows = 23, eosaf = 1, reset = 0;
+   int rows = 23, eosaf = TRUE, reset = FALSE;
    long cnt = 1;
    off_t fpos;
 
@@ -2995,7 +2655,7 @@ void read_stats_from_file(char from_file[])
       /* Save the first stats collected. Will be used to compute the average */
       copy_structures(2, 0, USE_SA_FILE);
 
-      reset = 1;	/* Set flag to reset last_uptime variable */
+      reset = TRUE;	/* Set flag to reset last_uptime variable */
 
       /* Save current file position */
       if ((fpos = lseek(ifd, 0, SEEK_CUR)) < 0) {
@@ -3210,7 +2870,7 @@ int main(int argc, char **argv)
    init_nls();
 #endif
 
-   tm_start.use = tm_end.use = 0;
+   tm_start.use = tm_end.use = FALSE;
    init_irq_bitmap(0);
    init_cpu_bitmap(0);
    init_stats();
@@ -3342,16 +3002,6 @@ int main(int argc, char **argv)
 	    if (!strcmp(argv[opt], K_SADC)) {
 	       strcpy(ltemp, K_SELF);
 	       opt++;
-	    }
-	    else if (!strcmp(argv[opt], K_SUM) &&
-		     !strcmp(argv[opt - 1], "-x")) {
-	       if (args_idx < MAX_ARGV_NR - 7) {
-		  salloc(args_idx++, "-x");
-		  salloc(args_idx++, K_SUM);
-		  sar_actflag |= A_SUM_PID;
-	       }
-	       opt++;
-	       continue;	/* Next option */
 	    }
 	    else if (!strcmp(argv[opt], K_ALL)) {
 	       if (args_idx < MAX_ARGV_NR - 7) {
@@ -3556,7 +3206,6 @@ int main(int argc, char **argv)
    if (to_file[0]) {
       sar_actflag &= ~A_PID;
       sar_actflag &= ~A_CPID;
-      sar_actflag &= ~A_SUM_PID;
    }
 
    /* Default is CPU activity... */

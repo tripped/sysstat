@@ -1,3 +1,11 @@
+sysstat (5.0.3-2) unstable; urgency=low
+
+  * UNRELEASED
+  * Updated French tranalstion of debconf templates (closes: #247364).
+    Thanks to Christian Perrier <bubulle@debian.org>.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 16 May 2004 20:18:09 +0200
+
 sysstat (5.0.3-1) unstable; urgency=low
 
   * New upstream (stable) version:

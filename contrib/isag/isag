@@ -882,16 +882,22 @@ proc create_gnuplot_file {gp_term ext fn title xlabel ylabel y2label yrange plot
 }
 
 # this variable should be renamed (this is a fix)
-array set fngr_files []
+# array set fngr_files []
+set fngr_tmpdir  [exec mktemp -t -d "isag.XXXXXX"]
+
 
 proc fngr {l} {
 #	return "/tmp/gp_$l[pid]"
-	global fngr_files
-	if {0 == [info exists fngr_files($l)]} {
-		set fngr_files($l) [exec mktemp -t "gp_$l.XXXXXX"]
-#		file delete fngr_files($l)
-	}
-	return $fngr_files($l)
+	global fngr_tmpdir
+
+	return "$fngr_tmpdir/gp_$l[pid]"
+		
+	
+#	if {0 == [info exists fngr_files($l)]} {
+#		set fngr_files($l) [exec mktemp -t "gp_$l.XXXXXX"]
+##		file delete fngr_files($l)
+#	}
+#	return $fngr_files($l)
 }
 
 # $Source: /var/CVSROOT/cvs/i-sag/isag/isag.Other.Funcs.m4,v $
@@ -1132,13 +1138,13 @@ proc sag_if_proc_line_generic {l fp line} {
 
 proc sag_prepare_datafile {l} {
 	global sh sar_data_path sag_if_cmd sag_if_out_tokens \
-		sag_opt_whole_day sag_if_last_time
+		sag_opt_whole_day sag_if_last_time fngr_tmpdir
 
 		
 	set sag_if_last_time ""
 
 #	set fn "/tmp/sag_$l[pid]"
-	set fn [exec mktemp -t "sag_$l.XXXXXXXX"]
+	set fn "$fngr_tmpdir/sag_$l[pid]"
 	set fp [open $fn w]
 	puts $fp "#!$sh"
 	puts $fp " "
@@ -1367,7 +1373,7 @@ if {[file isfile $isag_cfg_file] == 1} {
 proc exit_program {} {
 	global isag_cfg_file prog_swtch val_max val_cur last_graph \
 		sag_opt_whole_day sag_opt_grid \
-		fngr_files
+		fngr_tmpdir
 
 	set fp [open $isag_cfg_file w]
 	foreach l $prog_swtch {
@@ -1385,9 +1391,10 @@ proc exit_program {} {
 	
 	close $fp
 	
-	foreach ndx [array names fngr_files] {
-		file delete $fngr_files($ndx)
-	}
+#	foreach ndx [array names fngr_files] {
+#		file delete $fngr_files($ndx)
+#	}
+	file delete -force -- "$fngr_tmpdir"
 
 	destroy .
 	exit

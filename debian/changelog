@@ -1,13 +1,14 @@
 sysstat (5.0.2-1) unstable; urgency=high
 
-  * New upstream (stable) version:
-    + This version includes security fix for insecure temporary files handling
-      in isag (described in DSA-460, CAN-2004-0108; closes: #237297).
-  * isag: call mktemp with "-t" option.
+  * New upstream (stable) version.
+  * isag: SECURITY FIX for temporary files handling vulnerability described
+    in DSA-460 and CVE CAN-2004-0108. 
+    Create temporary directory with `mktemp -t -d' and ensure that all used
+    temporary files are put there (closes: #237297).
   * Add Catalan translation of debconf templates (closes: #236648).
-    Thanks to  Aleix Badia i Bosch <abadia@ica.es>.
+    Thanks to Aleix Badia i Bosch <abadia@ica.es>.
 
- -- Robert Luberda <robert@debian.org>  Thu, 11 Mar 2004 19:55:32 +0100
+ -- Robert Luberda <robert@debian.org>  Thu, 11 Mar 2004 22:38:29 +0100
 
 sysstat (5.0.1-1) unstable; urgency=low
 

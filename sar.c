@@ -2545,7 +2545,7 @@ void read_stats_from_file(char from_file[])
    /* Read sa data file header */
    nb = read(ifd, &file_hdr, FILE_HDR_SIZE);
    if ((nb != FILE_HDR_SIZE) || (file_hdr.sa_magic != SA_MAGIC)) {
-      fprintf(stderr, _("Invalid system activity file\n"));
+      fprintf(stderr, _("Invalid system activity file: %s\n"), from_file);
       exit(3);
    }
 

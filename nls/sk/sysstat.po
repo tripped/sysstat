@@ -2,17 +2,15 @@
 # Copyright (C) 1999 Free Software Foundation, Inc.
 # Sébastien GODARD <sebastien.godard@wanadoo.fr>, 1999.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 1.1\n"
-"PO-Revision-Date: 1999-05-28 20:27\n"
-"Last-Translator: Frederic L. W. Meunier <linux@olympiquedemarseille.org>\n"
-"Language-Team: Brazilian portuguese <lie-br@conectiva.com.br>\n"
+"Project-Id-Version: sysstat 4.1.3\n"
+"PO-Revision-Date: 2003-05-17 19:30\n"
+"Last-Translator: Miroslav David <md20128@decef.elf.stuba.sk>\n"
+"Language-Team: Slovak\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=ISO-8859-1\n"
+"Content-Type: text/plain; charset=ISO-8859-2\n"
 "Content-Transfer-Encoding: 8bit\n"
-
 
 #: mpstat.c:62
 msgid "sysstat version %s\n"
@@ -20,10 +18,10 @@ msgid "sysstat version %s\n"
 "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
 "[ -P { <cpu> | ALL } ] [ -V ]\n"
-msgstr "sysstat versão %s\n"
+msgstr "sysstat verzia %s\n"
 "(C) Sebastien Godard\n"
-"Utilização: %s [ opções... ] [ <intervalo> [ <número_de_vezes> ] ]\n"
-"Opções são:\n"
+"Pou¾itie: %s [ voµby... ] [ <interval> [ <poèet> ] ]\n"
+"Mo¾né voµby:\n"
 "[ -P { <cpu> | ALL } ] [ -V ]\n"
 
 #: mpstat.c:207
@@ -41,36 +39,36 @@ msgid "sysstat version %s\n"
 "Options are:\n"
 "[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ]\n"
 "[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]\n"
-msgstr "sysstat versão %s\n"
+msgstr "sysstat verzia %s\n"
 "(C) Sebastien Godard\n"
-"Utilização: %s [ opções... ] [ <intervalo> [ <número_de_vezes> ] ]\n"
-"Opções são:\n"
+"Pou¾itie: %s [ voµby... ] [ <interval> [ <poèet> ] ]\n"
+"Mo¾né voµby:\n"
 "[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ]\n"
-"[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]\n"
+"[ { <zariadenie> [ ... ] | ALL } ] [ -p [ { <zariadenie> | ALL } ] ]\n"
 
 #: iostat.c:534
 msgid "avg-cpu:  %%user   %%nice    %%sys %%iowait   %%idle\n"
-msgstr "cpu-moy:  %%user   %%nice    %%sys %%iowait   %%idle\n"
+msgstr "avg-cpu:  %%user   %%nice    %%sys %%iowait   %%idle\n"
 
 #: iostat.c:555
 msgid "Time: %s\n"
-msgstr "Hora: %s\n"
+msgstr "Èas: %s\n"
 
 #: iostat.c:400
 msgid "Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n"
-msgstr "Device:            tps   kB_lidos/s   kB_escr./s   kB_lidos   kB_escr.\n"
+msgstr "Zariadenie:        tps    kB_èít/s     kB_zápis/s   kB_èít     kB_zápis\n"
 
 #: iostat.c:617
 msgid "Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"
-msgstr "Device:            tps  Blk_lidos/s  Blk_escr./s  Blk_lidos  Blk_escr.\n"
+msgstr "Zariadenie:        tps   Blk_èít/s    Blk_zapis/s  Blk_èít    Blk_zapis\n"
 
 #: iostat.c
 msgid "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
-msgstr "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
+msgstr "Zariadenie: rrqm/s wrqm/s  r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
 
 #: iostat.c
 msgid "-x and -p options are mutually exclusive\n"
-msgstr "As opções -x e -p não podem ser utilizadas juntas\n"
+msgstr "Voµby -x a -p sa navzájom vyluèujú\n"
 
 #: sar.c:91
 msgid "sysstat version %s\n"
@@ -84,57 +82,57 @@ msgid "sysstat version %s\n"
 "[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-msgstr "sysstat versão %s\n"
+msgstr "sysstat verzia %s\n"
 "(C) Sebastien Godard\n"
-"Utilização: %s [ opções... ] [ <intervalo> [ <número_de_vezes> ] ]\n"
-"Possíveis opções:\n"
-"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i <intervalo> ] [ -q ]\n"
-"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-"[ -n { DEV | EDEV | SOCK | FULL } ]\n"
+"Pou¾itie: %s [ voµby... ] [ <interval> [ <poèet> ] ]\n"
+"Mo¾né voµby:\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -H ] [ -h ] [ -i <interval> ] [ -q ]\n"
+"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n" 
+"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n" 
+"[ -n { DEV | EDEV | SOCK | FULL } ]\n" 
 "[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
-"[ -o [ <arquivo> ] | -f [ <arquivo> ] ]\n"
+"[ -o [ <súbor> ] | -f [ <súbor> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 
 #: sar.c:184
 msgid "Not an SMP machine...\n"
-msgstr "Não é uma máquina multiprocessadora...\n"
+msgstr "Poèítaè nie je multiprocesorový...\n"
 
 #: sar.c:194
 msgid "Not that many processors!\n"
-msgstr "Não tantos processadores!\n"
+msgstr "Nie a¾ tak veµa procesorov!\n"
 
 #: sar.c:284
 msgid "Error while reading system activity file: %s\n"
-msgstr "Erro durante a leitura do arquivo de atividade do sistema: %s\n"
+msgstr "Chyba poèas èítania súboru aktivity systému: %s\n"
 
 #: sar.c:288
 msgid "End of system activity file unexpected\n"
-msgstr "Fim do arquivo de atividade do sistema inesperado\n"
+msgstr "Neoèakávaný koniec súboru aktivity systému\n"
 
 #: sar.c:402
 msgid "Cannot open %s: %s\n"
-msgstr "Impossível abrir %s: %s\n"
+msgstr "Nie je mo¾né otvori» %s: %s\n"
 
 #: sar.c:521
 msgid "Invalid system activity file: %s\n"
-msgstr "Arquivo de atividade do sistema inválido: %s\n"
+msgstr "Nesprávny súbor aktivity systému: %s\n"
 
 #:
 msgid "Invalid data format\n"
-msgstr "Formato de dados inválido\n"
+msgstr "Nesprávny formát údajov\n"
 
 #: sar.c:
 msgid "Average:"
-msgstr "Média:"
+msgstr "Priemer:"
 
 #: sar.c:568
 msgid "Requested activities not available in file\n"
-msgstr "Atividades pedidas não foram gravadas no arquivo\n"
+msgstr "®iadané ¹tatistiky nie sú dostupné v súbore\n"
 
 #: sar.c:797
 msgid "Cannot write system activity file header: %s\n"
-msgstr "Impossível escrever cabeçalho do arquivo de atividade do sistema: %s\n"
+msgstr "Nie je mo¾né zapísa» hlavièku súboru aktivity systému: %s\n"
 
 #: sar.c:850
 msgid "  i%03d/s"
@@ -142,7 +140,7 @@ msgstr "  i%03d/s"
 
 #: sar.c:970
 msgid "Cannot write data to system activity file: %s\n"
-msgstr "Impossível escrever os dados no arquivo de atividade do sistema: %s\n"
+msgstr "Nie je mo¾né zapísa» údaje do súboru aktivity systému: %s\n"
 
 #: sar.c
 msgid "\n%-11s       DEV       tps  rd_sec/s  wr_sec/s\n"
@@ -170,7 +168,7 @@ msgstr "%-11s       all"
 
 #: sar.c:1074
 msgid "Please give a smaller interval value\n"
-msgstr "Queira dar um intervalo menor\n"
+msgstr "Prosím zadaj men¹iu hodnotu intervalu\n"
 
 #: sar.c:1121
 msgid "\n%-11s      INTR    intr/s\n"
@@ -185,6 +183,7 @@ msgid "\n%-11s  pgpgin/s pgpgout/s   fault/s  majflt/s\n"
 msgstr "\n%-11s  pgpgin/s pgpgout/s   fault/s  majflt/s\n"
 
 #: sar.c:1163
+
 msgid "\n%-11s  pswpin/s pswpout/s\n"
 msgstr "\n%-11s  pswpin/s pswpout/s\n"
 
@@ -222,9 +221,7 @@ msgstr "\n%-11s  CPU"
 
 #: sar.c:1419
 msgid "Not reading from a system activity file (use -f option)\n"
-msgstr ""
-"Não lendo de um arquivo de atividade do sistema "
-"(utilize a opção -f)\n"
+msgstr "Nie je èítané zo súboru aktivity systému (pou¾i voµbu -f)\n"
 
 #: sar.c:1447
 msgid "\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
@@ -248,11 +245,11 @@ msgstr "\n%-11s       LINUX RESTART\n"
 
 #: sar.c:1610
 msgid "-f and -o options are mutually exclusive\n"
-msgstr "As opções -f e -o não podem ser utilizadas juntas\n"
+msgstr "Voµby -f a -o sa navzájom vyluèujú\n"
 
 #: sar.c:1846
 msgid "Requested activities not available\n"
-msgstr "Atividades pedidas não estão disponíveis\n"
+msgstr "®iadané ¹tatistiky nie sú dostupné\n"
 
 #: sadc.c:74
 msgid "sysstat version %s\n"
@@ -260,16 +257,16 @@ msgid "sysstat version %s\n"
 "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
 "Options are:\n"
 "[ -x <pid> ] [ -X <pid> ] [ -F ] [ -I ] [ -V ]\n"
-msgstr "sysstat versão %s\n"
+msgstr "sysstat verzia %s\n"
 "(C) Sebastien Godard\n"
-"Utilização: %s [ opções... ] [ <intervalo> [ <número_de_vezes> ] ] [ <arquivo> ]\n"
-"Opções são:\n"
+"Pou¾itie: %s [ voµby... ] [ <interval> [ <poèet> ] ] [ <výstupný_súbor> ]\n"
+"Mo¾né voµby:\n"
 "[ -x <pid> ] [ -X <pid> ] [ -F ] [ -I ] [ -V ]\n"
 
 #: sadc.c:614
 msgid "Cannot append data to that file\n"
-msgstr "Não posso adicionar dados neste arquivo\n"
+msgstr "Nie je mo¾né dopísa» údaje do toho súboru\n"
 
 #: common.c:91
 msgid "Cannot handle so many processors!\n"
-msgstr "Não posso usar tantos processadores!\n"
+msgstr "Nie je mo¾né obslú¾i» toµko procesorov!\n"

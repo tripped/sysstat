@@ -73,17 +73,18 @@ ${PREFIX}(/share)/man/man8/sa2.8
 ${PREFIX}(/share)/man/man1/sar.1
 ${PREFIX}(/share)/man/man1/iostat.1
 ${PREFIX}(/share)/man/man1/mpstat.1
-${PREFIX}/share/locale/fr/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/af/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/de/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/es/LC_MESSAGES/sysstat.mo
-${PREFIX}/share/locale/pt/LC_MESSAGES/sysstat.mo
-${PREFIX}/share/locale/af/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/fr/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/it/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/nb_NO/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/nn_NO/LC_MESSAGES/sysstat.mo
-${PREFIX}/share/locale/it/LC_MESSAGES/sysstat.mo
-${PREFIX}/share/locale/ru/LC_MESSAGES/sysstat.mo
-${PREFIX}/share/locale/ro/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/pl/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/pt/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/ro/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/ru/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/sk/LC_MESSAGES/sysstat.mo
 ${PREFIX}/doc/sysstat-x.y.z/*
 /var/log/sa
 ${INIT_DIR}/sysstat
@@ -117,8 +118,9 @@ present in old kernels.
 It has been designed with National Language Support (NLS) in mind, using
 the GNU gettext package (available at http://www.gnu.org).
 At the present time, English, French, German, Spanish, Portuguese,
-Afrikaans, Norwegian, Italian, Russian, Romanian and Polish translations are
-available. You are welcome if you want to make other languages available ;-)
+Afrikaans, Norwegian, Italian, Russian, Romanian, Polish and Slovak
+translations are available. You are welcome if you want to make other
+languages available ;-)
 Please read the README-nls file in the nls directory before.
 
 --

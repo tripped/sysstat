@@ -331,9 +331,11 @@ void save_dev_stats(char *dev_name, int curr, struct io_stats *sdev)
 /*
  ***************************************************************************
  * Read stats from /proc/stat file...
- * (see linux source file linux/fs/proc/array.c)
  * Useful at least for CPU utilization.
  * May be useful to get disk stats if /sys not available.
+ * See kernel sources:
+ * 2.4: linux/fs/proc/proc_misc.c: kstat_read_proc()
+ * 2.6: linux/fs/proc/proc_misc.c: show_stat()
  ***************************************************************************
  */
 void read_stat(int curr, int flags)
@@ -345,8 +347,8 @@ void read_stat(int curr, int flags)
    unsigned int v_major, v_index;
    struct io_stats *st_iodev_tmp[4], *st_iodev_i;
    struct io_hdr_stats *st_hdr_iodev_i;
-   unsigned long cc_idle, cc_iowait;
-   unsigned long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
+   unsigned long long cc_idle, cc_iowait;
+   unsigned long long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
 
 
    /*
@@ -373,7 +375,8 @@ void read_stat(int curr, int flags)
 	  */
 	 comm_stats[curr].cpu_iowait = 0;	/* For pre 2.6 kernels */
 	 cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 5, "%lu %lu %lu %lu %lu %lu %lu",
+	 /* CPU counters became unsigned long long with kernel 2.6.5 */
+	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu",
 	        &(comm_stats[curr].cpu_user), &(comm_stats[curr].cpu_nice),
 		&(comm_stats[curr].cpu_system), &(comm_stats[curr].cpu_idle),
 		&(comm_stats[curr].cpu_iowait), &cc_hardirq, &cc_softirq);
@@ -402,7 +405,7 @@ void read_stat(int curr, int flags)
 	  * with fewer risks to get an overflow...
 	  */
 	 cc_iowait = cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 5, "%lu %lu %lu %lu %lu %lu %lu",
+	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu",
 		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
 		&cc_hardirq, &cc_softirq);
 	 comm_stats[curr].uptime0 = cc_user + cc_nice + cc_system +
@@ -523,6 +526,8 @@ void read_stat(int curr, int flags)
 /*
  ***************************************************************************
  * Read sysfs stat for current block device or partition
+ * See kernel sources:
+ * 2.6: linux/drivers/block/genhd.c: disk_stats_read()
  ***************************************************************************
  */
 int read_sysfs_file_stat(int curr, char *filename, char *dev_name,
@@ -537,14 +542,14 @@ int read_sysfs_file_stat(int curr, char *filename, char *dev_name,
       return 0;
 	
    if (dev_type == DT_DEVICE)
-      i = (fscanf(sysfp, "%lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+      i = (fscanf(sysfp, "%lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
 		  &sdev.rd_ios, &sdev.rd_merges,
 		  &sdev.rd_sectors, &sdev.rd_ticks,
 		  &sdev.wr_ios, &sdev.wr_merges,
 		  &sdev.wr_sectors, &sdev.wr_ticks,
 		  &sdev.ios_pgr, &sdev.tot_ticks, &sdev.rq_ticks) == 11);
    else
-      i = (fscanf(sysfp, "%lu %lu %lu %lu",
+      i = (fscanf(sysfp, "%lu %llu %lu %llu",
 		  &sdev.rd_ios, &sdev.rd_sectors,
 		  &sdev.wr_ios, &sdev.wr_sectors) == 4);
 
@@ -670,6 +675,8 @@ void read_sysfs_stat(int curr, int flags)
 /*
  ***************************************************************************
  * Read stats from /proc/diskstats
+ * See kernel sources:
+ * 2.6: linux/drivers/block/genhd.c: diskstats_show()
  ***************************************************************************
  */
 void read_diskstats_stat(int curr, int flags)
@@ -678,7 +685,8 @@ void read_diskstats_stat(int curr, int flags)
    char line[256], dev_name[MAX_NAME_LEN];
    struct io_stats sdev;
    int i;
-   unsigned long tmp[11];
+   unsigned long tmp[9];
+   unsigned long long l_tmp[2];
 
    /* Every I/O device entry is potentially unregistered */
    set_entries_inactive(iodev_nr);
@@ -690,26 +698,26 @@ void read_diskstats_stat(int curr, int flags)
    while (fgets(line, 256, dstatsfp) != NULL) {
 
       /* major minor name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
-      i = sscanf(line, "%*d %*d %s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+      i = sscanf(line, "%*u %*u %s %lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
 		 dev_name,
-		 &tmp[0], &tmp[1], &tmp[2], &tmp[3], &tmp[4], &tmp[5],
-		 &tmp[6], &tmp[7], &tmp[8], &tmp[9], &tmp[10]);
+		 &tmp[0], &tmp[1], &l_tmp[0], &tmp[2], &tmp[3], &tmp[4],
+		 &l_tmp[1], &tmp[5], &tmp[6], &tmp[7], &tmp[8]);
 
       if (i == 12) {
 	 /* Device */
-	 sdev.rd_ios     = tmp[0]; sdev.rd_merges = tmp[1];
-	 sdev.rd_sectors = tmp[2]; sdev.rd_ticks  = tmp[3];
-	 sdev.wr_ios     = tmp[4]; sdev.wr_merges = tmp[5];
-	 sdev.wr_sectors = tmp[6]; sdev.wr_ticks  = tmp[7];
-	 sdev.ios_pgr    = tmp[8]; sdev.tot_ticks = tmp[9];
-	 sdev.rq_ticks   = tmp[10];
+	 sdev.rd_ios     = tmp[0];   sdev.rd_merges = tmp[1];
+	 sdev.rd_sectors = l_tmp[0]; sdev.rd_ticks  = tmp[2];
+	 sdev.wr_ios     = tmp[3];   sdev.wr_merges = tmp[4];
+	 sdev.wr_sectors = l_tmp[1]; sdev.wr_ticks  = tmp[5];
+	 sdev.ios_pgr    = tmp[6];   sdev.tot_ticks = tmp[7];
+	 sdev.rq_ticks   = tmp[8];
       }
       else if (i == 5) {
 	 /* Partition */
 	 if (DISPLAY_EXTENDED(flags) || (!dlist_idx && !DISPLAY_PARTITIONS(flags)))
 	    continue;
-	 sdev.rd_ios = tmp[0]; sdev.rd_sectors = tmp[1];
-	 sdev.wr_ios = tmp[2]; sdev.wr_sectors = tmp[3];
+	 sdev.rd_ios = tmp[0];   sdev.rd_sectors = tmp[1];
+	 sdev.wr_ios = l_tmp[0]; sdev.wr_sectors = tmp[2];
       }
       else
 	 /* Unknown entry: ignore it */
@@ -728,6 +736,8 @@ void read_diskstats_stat(int curr, int flags)
 /*
  ***************************************************************************
  * Read stats from /proc/partitions
+ * See kernel sources:
+ * 2.6: linux/drivers/block/genhd.c (see sysfs instead)
  ***************************************************************************
  */
 void read_ppartitions_stat(int curr, int flags)
@@ -735,7 +745,8 @@ void read_ppartitions_stat(int curr, int flags)
    FILE *ppartfp;
    char line[256], dev_name[MAX_NAME_LEN];
    struct io_stats sdev;
-   unsigned long tmp[11];
+   unsigned long tmp[9];
+   unsigned long long l_tmp[2];
 
    /* Every I/O device entry is potentially unregistered */
    set_entries_inactive(iodev_nr);
@@ -746,17 +757,17 @@ void read_ppartitions_stat(int curr, int flags)
 
    while (fgets(line, 256, ppartfp) != NULL) {
       /* major minor #blocks name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
-      if (sscanf(line, "%*d %*d %*d %s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+      if (sscanf(line, "%*u %*u %*u %s %lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
 		 dev_name,
-		 &tmp[0], &tmp[1], &tmp[2], &tmp[3], &tmp[4], &tmp[5],
-		 &tmp[6], &tmp[7], &tmp[8], &tmp[9], &tmp[10]) == 12) {
+		 &tmp[0], &tmp[1], &l_tmp[0], &tmp[2], &tmp[3], &tmp[4],
+		 &l_tmp[1], &tmp[5], &tmp[6], &tmp[7], &tmp[8]) == 12) {
 	 /* Device or partition */
-	 sdev.rd_ios     = tmp[0]; sdev.rd_merges = tmp[1];
-	 sdev.rd_sectors = tmp[2]; sdev.rd_ticks  = tmp[3];
-	 sdev.wr_ios     = tmp[4]; sdev.wr_merges = tmp[5];
-	 sdev.wr_sectors = tmp[6]; sdev.wr_ticks  = tmp[7];
-	 sdev.ios_pgr    = tmp[8]; sdev.tot_ticks = tmp[9];
-	 sdev.rq_ticks   = tmp[10];
+	 sdev.rd_ios     = tmp[0];   sdev.rd_merges = tmp[1];
+	 sdev.rd_sectors = l_tmp[0]; sdev.rd_ticks  = tmp[2];
+	 sdev.wr_ios     = tmp[3];   sdev.wr_merges = tmp[4];
+	 sdev.wr_sectors = l_tmp[1]; sdev.wr_ticks  = tmp[5];
+	 sdev.ios_pgr    = tmp[6];   sdev.tot_ticks = tmp[7];
+	 sdev.rq_ticks   = tmp[8];
       }
       else
 	 /* Unknown entry: ignore it */
@@ -777,21 +788,21 @@ void read_ppartitions_stat(int curr, int flags)
  * Display CPU utilization
  ***************************************************************************
  */
-void write_cpu_stat(int curr, unsigned long itv)
+void write_cpu_stat(int curr, unsigned long long itv)
 {
    printf(_("avg-cpu:  %%user   %%nice    %%sys %%iowait   %%idle\n"));
 
    printf("         %6.2f  %6.2f  %6.2f  %6.2f",
-	  SP_VALUE(comm_stats[!curr].cpu_user,   comm_stats[curr].cpu_user,   itv),
-	  SP_VALUE(comm_stats[!curr].cpu_nice,   comm_stats[curr].cpu_nice,   itv),
-	  SP_VALUE(comm_stats[!curr].cpu_system, comm_stats[curr].cpu_system, itv),
-	  SP_VALUE(comm_stats[!curr].cpu_iowait, comm_stats[curr].cpu_iowait, itv));
+	  ll_sp_value(comm_stats[!curr].cpu_user,   comm_stats[curr].cpu_user,   itv),
+	  ll_sp_value(comm_stats[!curr].cpu_nice,   comm_stats[curr].cpu_nice,   itv),
+	  ll_sp_value(comm_stats[!curr].cpu_system, comm_stats[curr].cpu_system, itv),
+	  ll_sp_value(comm_stats[!curr].cpu_iowait, comm_stats[curr].cpu_iowait, itv));
 
    if (comm_stats[curr].cpu_idle < comm_stats[!curr].cpu_idle)
       printf("    %.2f", 0.0);
    else
       printf("  %6.2f",
-	     SP_VALUE(comm_stats[!curr].cpu_idle, comm_stats[curr].cpu_idle, itv));
+	     ll_sp_value(comm_stats[!curr].cpu_idle, comm_stats[curr].cpu_idle, itv));
 
    printf("\n\n");
 }
@@ -803,7 +814,7 @@ void write_cpu_stat(int curr, unsigned long itv)
  * /sys)
  ***************************************************************************
  */
-void write_ext_stat(int curr, unsigned long itv, int flags)
+void write_ext_stat(int curr, unsigned long long itv, int flags)
 {
    int dev, i;
    struct io_stats sdev;
@@ -914,7 +925,7 @@ void write_ext_stat(int curr, unsigned long itv, int flags)
  * Write basic stats, read from /proc/stat file or from sysfs
  ***************************************************************************
  */
-void write_basic_stat(int curr, unsigned long itv, int flags)
+void write_basic_stat(int curr, unsigned long long itv, int flags)
 {
    int fctr = 1;
    int i, j;
@@ -970,17 +981,17 @@ void write_basic_stat(int curr, unsigned long itv, int flags)
 	 if (HAS_SYSFS(flags) ||
 	     HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) {
 	    /* Print stats coming from /sys or /proc/{diskstats,partitions} */
-	    printf(" %8.2f %12.2f %12.2f %10lu %10lu\n",
+	    printf(" %8.2f %12.2f %12.2f %10llu %10llu\n",
 		   S_VALUE(st_iodev_j->rd_ios + st_iodev_j->wr_ios,
 			   st_iodev_i->rd_ios + st_iodev_i->wr_ios, itv),
 		   S_VALUE(st_iodev_j->rd_sectors,
 			   st_iodev_i->rd_sectors, itv) / fctr,
 		   S_VALUE(st_iodev_j->wr_sectors,
 			   st_iodev_i->wr_sectors, itv) / fctr,
-		   (st_iodev_i->rd_sectors -
-		    st_iodev_j->rd_sectors) / fctr,
-		   (st_iodev_i->wr_sectors -
-		    st_iodev_j->wr_sectors) / fctr);
+		   (unsigned long long) (st_iodev_i->rd_sectors -
+					 st_iodev_j->rd_sectors) / fctr,
+		   (unsigned long long) (st_iodev_i->wr_sectors -
+					 st_iodev_j->wr_sectors) / fctr);
 	 }
 	 else {
 	    /* Print stats coming from /proc/stat */
@@ -1008,7 +1019,7 @@ void write_basic_stat(int curr, unsigned long itv, int flags)
  */
 int write_stat(int curr, int flags, struct tm *loc_time)
 {
-   unsigned long itv;
+   unsigned long long itv;
 
    /*
     * Under very special circumstances, STDOUT may become unavailable,
@@ -1032,7 +1043,17 @@ int write_stat(int curr, int flags, struct tm *loc_time)
     * But itv should be reduced to one processor before displaying disk
     * utilization.
     */
-   itv = comm_stats[curr].uptime - comm_stats[!curr].uptime; /* uptime in jiffies */
+   if (!comm_stats[!curr].uptime)
+      /*
+       * This is the first report displaying stats since system startup.
+       * Only in this case we admit that the interval may be greater
+       * than 0xffffffff, else it was an overflow.
+       */
+      itv = comm_stats[curr].uptime;
+   else
+      /* uptime in jiffies */
+      itv = (comm_stats[curr].uptime - comm_stats[!curr].uptime)
+	 & 0xffffffff;
    if (!itv)
       itv = 1;
 
@@ -1042,7 +1063,11 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
    if (cpu_nr) {
       /* On SMP machines, reduce itv to one processor (see note above) */
-      itv = comm_stats[curr].uptime0 - comm_stats[!curr].uptime0;
+      if (!comm_stats[!curr].uptime0)
+	 itv = comm_stats[curr].uptime0;
+      else
+	 itv = (comm_stats[curr].uptime0 - comm_stats[!curr].uptime0)
+	    & 0xffffffff;
       if (!itv)
 	 itv = 1;
    }

@@ -5,7 +5,7 @@ exec wish "$0" -- "$@"
 
 ###############################################################################
 #
-# Copyright (c) 2000, 2001 David Doubrava (linux_monitor<at>volny<dot>cz)
+# Copyright (c) 2000, 2001 David Doubrava (linux_monitor(at)volny(dot)cz)
 #
 # Primary-site:	http://www.volny.cz:/linux_monitor/isag
 #
@@ -21,12 +21,21 @@ exec wish "$0" -- "$@"
 #
 ###############################################################################
 #
-# $Id: isag.m4,v 1.23 2004/02/24 07:40:14 david Exp $
+# $Id: isag.m4,v 1.26 2004/03/22 19:39:14 david Exp $
 # $State: Exp $
 #
 # $Log: isag.m4,v $
+# Revision 1.26  2004/03/22 19:39:14  david
+# fully avoided shell script, i hope the temp file issue is fixed
+#
+# Revision 1.25  2004/03/22 19:13:18  david
+# eliminated shell script, security issue
+#
+# Revision 1.24  2004/03/02 20:28:00  david
+# replaced <> by () in mangled e-mails
+#
 # Revision 1.23  2004/02/24 07:40:14  david
-# replaced <at> and <dot> in most e-mail addresses
+# replaced (at) and (dot) in most e-mail addresses
 #
 # Revision 1.22  2003/02/26 18:19:09  david
 # realized new layout of files
@@ -262,6 +271,12 @@ set sar_data_mask "sa\[0-9\]\[0-9\]"
 set sar "/usr/bin/sar.sysstat"
 #set sar "/home/sarrep/source/sysstat-3.3.6/sar"
 
+# following check added: Thu Mar 18 21:44:52 GMT+1 2004
+if { 1 != [file executable $sar]} {
+	out_msg "Error" "File: $sar does not exist"
+	exit 
+}
+
 #fix: bug2001060501; set LC_ALL to sane value; see Debian bug #101545 
 set env(LC_ALL) "C"
 
@@ -384,7 +399,6 @@ set val_cur(W) 1
 
 # graph/view names this is shoved in menu-view and as name of the graph
 # and other functional parameters
-#	sag_if_cmd - command line which is used to generate textual source
 #	xlabel - label for x-axis
 #	ylabel - label for y-axis
 #	y2label - label for secondary y-axis
@@ -459,35 +473,27 @@ set sag_if_out_tokens2(w) ""
 set sag_if_out_tokens(W) [list 0 1]
 set sag_if_out_tokens2(W) ""
 
-# sag_if_cmd(line) array - this must be refreshed every time if source file is changing
-# beacuse strings are containing actual data file
-set sag_if_cmd(0) ""
-proc sag_if_reget_cmd {} {
- global sag_if_cmd sar sag_if_archive grep sar_data_path
-
- # this can avoid some errors, WARNING on pipe symbol on beggining
- set commstr "| $grep '^\[0-9\]' | $grep -v '^$'"
-
- set sag_if_cmd(b) "$sar -b -f $sar_data_path/$sag_if_archive | $grep -v 'tps' $commstr"
- set sag_if_cmd(B) "$sar -B -f $sar_data_path/$sag_if_archive | $grep -v 'pgpgin' $commstr"
- set sag_if_cmd(c) "$sar -c -f $sar_data_path/$sag_if_archive | $grep -v 'proc' $commstr"
- set sag_if_cmd(n) ""
- set sag_if_cmd(q) "$sar -q -f $sar_data_path/$sag_if_archive | $grep -v 'runq-sz' $commstr"
- set sag_if_cmd(r) "$sar -r -f $sar_data_path/$sag_if_archive | $grep -v 'kbmemfree' $commstr"
- set sag_if_cmd(R) "$sar -R -f $sar_data_path/$sag_if_archive | $grep -v 'campg' $commstr"
- set sag_if_cmd(u) "$sar -u -f $sar_data_path/$sag_if_archive | $grep -v 'user' $commstr"
- set sag_if_cmd(v) "$sar -v -f $sar_data_path/$sag_if_archive | $grep -v 'dentunusd' $commstr"
- set sag_if_cmd(w) "$sar -w -f $sar_data_path/$sag_if_archive | $grep -v 'cswch' $commstr"
- set sag_if_cmd(W) "$sar -W -f $sar_data_path/$sag_if_archive | $grep -v 'pswpin' $commstr"
-}
-sag_if_reget_cmd
+#
+# The sar_elim() array contains string which have to be eliminated from sar's output
+#
+set sar_elim(b) "tps"
+set sar_elim(B) "pgpgin"
+set sar_elim(c) "proc"
+set sar_elim(n) ""
+set sar_elim(q) "runq-sz"
+set sar_elim(r) "kbmemfree"
+set sar_elim(R) "frmpg"
+set sar_elim(u) "user"
+set sar_elim(v) "dentunusd"
+set sar_elim(w) "cswch"
+set sar_elim(W) "pswpin"
 
 # Functions which are responsible for data source selection and processing
 # funcs are referred from GUI
 proc fill_file_menu {} {
 	global sar_data_path sar_data_mask
 
-		set fp [open "| sh -c \"ls $sar_data_path/$sar_data_mask\""]
+			set fp [open "| sh -c \"ls $sar_data_path/$sar_data_mask\""]
 	menu .file.menu.m -tearoff false
 	while {[gets $fp line] != -1} {
 		set l [string last "/" $line]
@@ -496,7 +502,7 @@ proc fill_file_menu {} {
 		
 	}
 	catch {close $fp}
-}
+	}
 
 proc set_file {name} {
 	global sag_if_archive last_graph
@@ -504,7 +510,6 @@ proc set_file {name} {
 	set sag_if_archive $name
 	.file.lbl configure -text "data source: $name"
 
-	sag_if_reget_cmd
 	if {"" != $last_graph} {
 		new_chart $last_graph
 	}
@@ -513,11 +518,14 @@ proc set_file {name} {
 ###############################################################################
 # GUI
 #
-# $Id: isag.GUI.m4,v 1.13 2004/02/24 07:40:14 david Exp $
+# $Id: isag.GUI.m4,v 1.14 2004/03/02 20:28:00 david Exp $
 # $State: Exp $
 # $Log: isag.GUI.m4,v $
+# Revision 1.14  2004/03/02 20:28:00  david
+# replaced <> by () in mangled e-mails
+#
 # Revision 1.13  2004/02/24 07:40:14  david
-# replaced <at> and <dot> in most e-mail addresses
+# replaced (at) and (dot) in most e-mail addresses
 #
 # Revision 1.12  2003/01/26 20:41:48  david
 # partially renamed variables, 1st implementation of "Save Graph"
@@ -674,7 +682,7 @@ proc new_chart {l} {
 proc About {} {
 	global version
 
-	out_msg About "Sar Grapher\n\nBuild info:$version\n\nhttp://www.volny.cz/linux_monitor/isag/index.html\ne-mail: linux_monitor<at>volny<dot>cz"
+	out_msg About "Sar Grapher\n\nBuild info:$version\n\nhttp://www.volny.cz/linux_monitor/isag/index.html\ne-mail: linux_monitor(at)volny(dot)cz"
 }
 
 # $Source: /var/CVSROOT/cvs/i-sag/isag/isag.GUI.m4,v $
@@ -733,9 +741,12 @@ proc ResizeAll {} {
 ###############################################################################
 # Other functions
 #
-# $Id: isag.Other.Funcs.m4,v 1.16 2003/02/23 21:07:35 david Exp $
-# $State:#
-# $Log:#
+# $Id: isag.Other.Funcs.m4,v 1.20 2004/03/22 19:39:14 david Exp $
+# $State: Exp $
+# $Log: isag.Other.Funcs.m4,v $
+# Revision 1.20  2004/03/22 19:39:14  david
+# fully avoided shell script, i hope the temp file issue is fixed
+#
 #
 ###############################################################################
 
@@ -881,46 +892,29 @@ proc create_gnuplot_file {gp_term ext fn title xlabel ylabel y2label yrange plot
 	close $fp
 }
 
-# this variable should be renamed (this is a fix)
-# array set fngr_files []
 set fngr_tmpdir  [exec mktemp -t -d "isag.XXXXXX"]
-
-
-proc fngr {l} {
-#	return "/tmp/gp_$l[pid]"
-	global fngr_tmpdir
-
-	return "$fngr_tmpdir/gp_$l[pid]"
-		
-	
-#	if {0 == [info exists fngr_files($l)]} {
-#		set fngr_files($l) [exec mktemp -t "gp_$l.XXXXXX"]
-##		file delete fngr_files($l)
-#	}
-#	return $fngr_files($l)
-}
 
 # $Source: /var/CVSROOT/cvs/i-sag/isag/isag.Other.Funcs.m4,v $
 
 ###############################################################################
 #
-# Remaining graph paramaters, function fngr() must be defined before this
+# Remaining graph paramaters
 #
 
 # plotstr array
 # in future - this string will not be fixed but functions will coming
 
-set plotstr(b) "\"[fngr b]\" using 1:2 t \"rtps\" with line, \"[fngr b]\" using 1:3 t \"wtps\" with line, \"[fngr b]\" using 1:4 t \"bread/s\" with line,  \"[fngr b]\" using 1:5 t \"bwrtn/s\" with line"
-set plotstr(B) "\"[fngr B]\" using 1:2 t \"pgpgin/s\" with line, \"[fngr B]\" using 1:3 t \"pgpgout/s\" with line, \"[fngr B]\" using 1:4 t \"activepg\" with line, \"[fngr B]\" using 1:5 t \"inadtypg\" with line,  \"[fngr B]\" using 1:6 t \"inaclnpg\" with line, \"[fngr B]\" using 1:7 t \"inatarpg\" with line"
-set plotstr(c) "\"[fngr c]\" using 1:2 t \"proc/s\" with line"
+set plotstr(b) "\"__FNGR__\" using 1:2 t \"rtps\" with line, \"__FNGR__\" using 1:3 t \"wtps\" with line, \"__FNGR__\" using 1:4 t \"bread/s\" with line,  \"__FNGR__\" using 1:5 t \"bwrtn/s\" with line"
+set plotstr(B) "\"__FNGR__\" using 1:2 t \"pgpgin/s\" with line, \"__FNGR__\" using 1:3 t \"pgpgout/s\" with line, \"__FNGR__\" using 1:4 t \"activepg\" with line, \"__FNGR__\" using 1:5 t \"inadtypg\" with line,  \"__FNGR__\" using 1:6 t \"inaclnpg\" with line, \"__FNGR__\" using 1:7 t \"inatarpg\" with line"
+set plotstr(c) "\"__FNGR__\" using 1:2 t \"proc/s\" with line"
 set plotstr(n) ""
-set plotstr(q) "\"[fngr q]\" using 1:2 t \"runq-sz\" with line, \"[fngr q]\" using 1:3 t \"plist-sz\" with line, \"[fngr q]\" using 1:4 t \"ldavg-1\" with line, \"[fngr q]\" using 1:5 t \"ldavg-5\" with line"
-set plotstr(r) "\"[fngr r]\" using 1:2 t \"kbmemfree\" with line, \"[fngr r]\" using 1:3 t \"kbmemused\" with line, \"[fngr r]\" using 1:4 t \"kbmemshrd\" with line, \"[fngr r]\" using 1:5 t \"kbbuffers\" with line, \"[fngr r]\" using 1:6 t \"kbcached\" with line, \"[fngr r]\" using 1:7 t \"kbswpfree\" with line, \"[fngr r]\" using 1:8 t \"kbswpused\" with line"
-set plotstr(R) "\"[fngr R]\" using 1:2 t \"frmpg/s\" with line, \"[fngr R]\" using 1:3 t \"shmpg/s\" with line, \"[fngr R]\" using 1:4 t \"bufpg/s\" with line, \"[fngr R]\" using 1:5 t \"campg/s\" with line"
-set plotstr(u) "\"[fngr u]\" using 1:2 t \"%user\" with line, \"[fngr u]\" using 1:3 t \"%nice\" with line, \"[fngr u]\" using 1:4 t \"%system\" with line"
-set plotstr(v) "\"[fngr v]\" using 1:2 t \"file-sz\" with line, \"[fngr v]\" using 1:3 t \"inode-sz\" with line, \"[fngr v]\" using 1:4 t \"super-sz\" with line, \"[fngr v]\" using 1:5 t \"dquot-sz\" with line, \"[fngr v]\" using 1:6 t \"rtsig-sz\" with line"
-set plotstr(w) "\"[fngr w]\" using 1:2 t \"cswch/s\" with line"
-set plotstr(W) "\"[fngr W]\" using 1:2 t \"pswpin/s\" with line, \"[fngr W]\" using 1:3 t \"pswpout/s\" with line"
+set plotstr(q) "\"__FNGR__\" using 1:2 t \"runq-sz\" with line, \"__FNGR__\" using 1:3 t \"plist-sz\" with line, \"__FNGR__\" using 1:4 t \"ldavg-1\" with line, \"__FNGR__\" using 1:5 t \"ldavg-5\" with line"
+set plotstr(r) "\"__FNGR__\" using 1:2 t \"kbmemfree\" with line, \"__FNGR__\" using 1:3 t \"kbmemused\" with line, \"__FNGR__\" using 1:4 t \"kbmemshrd\" with line, \"__FNGR__\" using 1:5 t \"kbbuffers\" with line, \"__FNGR__\" using 1:6 t \"kbcached\" with line, \"__FNGR__\" using 1:7 t \"kbswpfree\" with line, \"__FNGR__\" using 1:8 t \"kbswpused\" with line"
+set plotstr(R) "\"__FNGR__\" using 1:2 t \"frmpg/s\" with line, \"__FNGR__\" using 1:3 t \"shmpg/s\" with line, \"__FNGR__\" using 1:4 t \"bufpg/s\" with line, \"__FNGR__\" using 1:5 t \"campg/s\" with line"
+set plotstr(u) "\"__FNGR__\" using 1:2 t \"%user\" with line, \"__FNGR__\" using 1:3 t \"%nice\" with line, \"__FNGR__\" using 1:4 t \"%system\" with line"
+set plotstr(v) "\"__FNGR__\" using 1:2 t \"file-sz\" with line, \"__FNGR__\" using 1:3 t \"inode-sz\" with line, \"__FNGR__\" using 1:4 t \"super-sz\" with line, \"__FNGR__\" using 1:5 t \"dquot-sz\" with line, \"__FNGR__\" using 1:6 t \"rtsig-sz\" with line"
+set plotstr(w) "\"__FNGR__\" using 1:2 t \"cswch/s\" with line"
+set plotstr(W) "\"__FNGR__\" using 1:2 t \"pswpin/s\" with line, \"__FNGR__\" using 1:3 t \"pswpout/s\" with line"
 
 ###############################################################################
 # Performance data processing
@@ -996,9 +990,12 @@ proc sag_if__output_zero_metrics_u {time} {
 # Performance Data Processing and Drawing functions
 #	proces line functions
 #
-# $Id: proc_line_generic.m4,v 1.10 2003/01/26 20:41:49 david Rel $
-# $State: Rel $
+# $Id: proc_line_generic.m4,v 1.11 2004/03/22 19:39:14 david Exp $
+# $State: Exp $
 # $Log: proc_line_generic.m4,v $
+# Revision 1.11  2004/03/22 19:39:14  david
+# fully avoided shell script, i hope the temp file issue is fixed
+#
 # Revision 1.10  2003/01/26 20:41:49  david
 # partially renamed variables, 1st implementation of "Save Graph"
 #
@@ -1105,9 +1102,18 @@ proc sag_if_proc_line_generic {l fp line} {
 #	generic draw function
 #	parametrical draw func for each kind of graph
 #
-# $Id: draw.m4,v 1.13 2003/02/23 19:48:16 david Rel $
-# $State: Rel $
+# $Id: draw.m4,v 1.16 2004/03/22 19:39:14 david Exp $
+# $State: Exp $
 # $Log: draw.m4,v $
+# Revision 1.16  2004/03/22 19:39:14  david
+# fully avoided shell script, i hope the temp file issue is fixed
+#
+# Revision 1.15  2004/03/22 19:13:18  david
+# eliminated shell script, security issue
+#
+# Revision 1.14  2004/02/27 19:26:06  david
+# fixed bug: CAN-2004-0108
+#
 # Revision 1.13  2003/02/23 19:48:16  david
 # unified redundant code which generates data file
 #
@@ -1137,38 +1143,40 @@ proc sag_if_proc_line_generic {l fp line} {
 ###############################################################################
 
 proc sag_prepare_datafile {l} {
-	global sh sar_data_path sag_if_cmd sag_if_out_tokens \
-		sag_opt_whole_day sag_if_last_time fngr_tmpdir
+	global sar sar_data_path sag_if_archive sag_if_out_tokens \
+		sag_opt_whole_day sag_if_last_time sar_elim fngr_tmpdir
 
 		
 	set sag_if_last_time ""
+		set fp [open "|$sar -$l -f $sar_data_path/$sag_if_archive" "r"]
 
-#	set fn "/tmp/sag_$l[pid]"
-	set fn "$fngr_tmpdir/sag_$l[pid]"
-	set fp [open $fn w]
-	puts $fp "#!$sh"
-	puts $fp " "
-		puts $fp "$sag_if_cmd($l)"
-	close $fp
-	exec chmod u+x $fn
+	set fgrname "$fngr_tmpdir/data.$l"
 
-	set fp [open "| $fn" "r"]
-	set fpgr [open [fngr "$l"] w]
+	set fpgr [open $fgrname w]
 
 	set nlines 0
 	
 # if needed set starting time
 	if { 0 != $sag_opt_whole_day } {
 		set sag_if_last_time "00:00"
+		if {"" != $sag_if_out_tokens($l)} {
+			puts $fpgr [sag_if__output_zero_metrics $sag_if_last_time $l]
+		} else {
+			puts $fpgr [sag_if__output_zero_metrics_$l $sag_if_last_time]
+		}
 	}
 	
 	while {[gets $fp line] != -1} {
-				if {"" != $sag_if_out_tokens($l)} {
-			set n [sag_if_proc_line_generic $l $fpgr "$line"]
-		} else {
-			set n [sag_if_proc_line_$l $fpgr "$line"]
+		if {(1 == [string match \[0-9\]* $line]) && (0 == [string match *$sar_elim($l)* $line])} {
+			
+			if {"" != $sag_if_out_tokens($l)} {
+				set n [sag_if_proc_line_generic $l $fpgr "$line"]
+			} else {
+				set n [sag_if_proc_line_$l $fpgr "$line"]
+			}
+			incr nlines $n
 		}
-		incr nlines $n
+	
 	}
 	
 ## make closing remark if necessary
@@ -1188,12 +1196,10 @@ proc sag_prepare_datafile {l} {
 	
 	catch {close $fp}
 	catch {close $fpgr}
-	file delete $fn
 
-	unset fp fpgr fn line
+	unset fp fpgr line
 
-
-	return nlines
+	return [list $nlines $fgrname]
 }
 
 #
@@ -1205,7 +1211,7 @@ proc sag_draw {l} {
 	global sag_if_archive isag_title sh sar grep sar_data_path gnuplot \
 		sag_gr_scale val_cur val_max view_n sag_if_cmd xlabel sag_if_out_tokens \
 		ylabel y2label plotstr has_negative \
-		sag_if_last_time sag_opt_grid sag_opt_whole_day
+		sag_if_last_time sag_opt_grid sag_opt_whole_day fngr_tmpdir
 
 	
 	if {$sag_if_archive == ""} {
@@ -1215,7 +1221,9 @@ proc sag_draw {l} {
 
 	wm title . "$isag_title: $view_n($l)"
 
-	set nlines [sag_prepare_datafile $l]
+	set prepared [sag_prepare_datafile $l]
+	set nlines  [lindex $prepared 0]
+	set fgrname [lindex $prepared 1]
 
 # at least two lines of data
 	if {$nlines > 1} {
@@ -1226,24 +1234,26 @@ proc sag_draw {l} {
 		} else {
 			set yrange "\[0:$val_cur($l)\]"
 		}
-		create_gnuplot_file tkcanvas tk "[fngr $l]" "$view_n($l)" \
+		set fngr "$fngr_tmpdir/draw.$l"
+		create_gnuplot_file tkcanvas tk $fngr "$view_n($l)" \
 			"$xlabel" \
 			"$ylabel($l)" $y2label($l) \
 			$yrange \
-			"$plotstr($l)" $sag_opt_grid
+			[strrep "$plotstr($l)" __FNGR__ $fgrname] $sag_opt_grid
 
-		exec $gnuplot [fngr $l].gp
+		exec $gnuplot $fngr.gp
 
-		source [fngr $l].tk
+		source $fngr.tk
 		gnuplot .graph.canv
 
-		file delete [fngr $l].gp
-		file delete [fngr $l].tk
+		file delete $fngr.gp
+		file delete $fngr.tk
+		file delete $fngr
 	} else {
 		.graph.canv delete all
 		out_msg "Datafile: sag_if_archive" "No data to show"
 	}
-	file delete [fngr $l]
+	file delete $fgrname
 
 	unset nlines 
 }
@@ -1290,7 +1300,7 @@ proc sag_save_graph {} {
 	global sag_if_archive isag_title sh sar grep sar_data_path gnuplot \
 		sag_gr_scale val_cur val_max view_n sag_if_cmd xlabel sag_if_out_tokens \
 		ylabel y2label plotstr has_negative \
-		sag_if_last_time sag_opt_grid sag_opt_whole_day last_graph
+		sag_if_last_time sag_opt_grid sag_opt_whole_day last_graph fngr_tmpdir
 
 		
 	set l $last_graph
@@ -1300,7 +1310,9 @@ proc sag_save_graph {} {
 		return
 	}
 
-	set nlines [sag_prepare_datafile $l]
+	set prepared [sag_prepare_datafile $l]
+	set nlines  [lindex $prepared 0]
+	set fgrname [lindex $prepared 1]
 
 # at least two lines of data
 	if {$nlines > 1} {
@@ -1315,31 +1327,48 @@ proc sag_save_graph {} {
 		} else {
 			set yrange ""
 		}
-		create_gnuplot_file jpeg jpg [fngr $l] "$view_n($l)" \
+
+		set fngr "$fngr_tmpdir/jpeg.$l"
+		create_gnuplot_file jpeg jpg $fngr "$view_n($l)" \
 			"$xlabel" \
 			"$ylabel($l)" $y2label($l) \
-			"$yrange" \
-			"$plotstr($l)" $sag_opt_grid
+			$yrange \
+			[strrep "$plotstr($l)" __FNGR__ $fgrname] $sag_opt_grid
 
-		exec $gnuplot [fngr $l].gp
 
-		file delete [fngr $l].gp
-		file rename -force [fngr $l].jpg $sag_if_archive.$l.jpg
+		exec $gnuplot $fngr.gp
+
+		file delete $fngr.gp
+		file delete $fngr
+		file rename -force $fngr.jpg $sag_if_archive.$l.jpg
 
 	} else {
 		.graph.canv delete all
 		out_msg "Datafile: sag_if_archive" "No data to show"
 	}
-	file delete [fngr $l]
+	file delete "$fgrname"
 
 	unset nlines 
 }
 
 # $Source: /var/CVSROOT/cvs/i-sag/common/sag.save_graph.m4,v $
 ###############################################################################
-# $Id: isag_cfg_file.m4,v 1.6 2003/01/26 20:41:48 david Rel $
-# $State: Rel $
+# $Id: isag_cfg_file.m4,v 1.10 2004/03/22 19:39:14 david Exp $
+# $State: Exp $
+#
 # $Log: isag_cfg_file.m4,v $
+# Revision 1.10  2004/03/22 19:39:14  david
+# fully avoided shell script, i hope the temp file issue is fixed
+#
+# Revision 1.9  2004/03/22 19:13:18  david
+# eliminated shell script, security issue
+#
+# Revision 1.8  2004/02/27 19:53:28  david
+# hide temporary files
+#
+# Revision 1.7  2004/02/27 19:26:06  david
+# fixed bug: CAN-2004-0108
+#
 # Revision 1.6  2003/01/26 20:41:48  david
 # partially renamed variables, 1st implementation of "Save Graph"
 #
@@ -1375,9 +1404,10 @@ proc exit_program {} {
 		sag_opt_whole_day sag_opt_grid \
 		fngr_tmpdir
 
+	
 	set fp [open $isag_cfg_file w]
 	foreach l $prog_swtch {
-		puts $fp "set val_max($l) $val_max($l)"
+						puts $fp "set val_max($l) $val_max($l)"
 		puts $fp "set val_cur($l) $val_cur($l)"
 	}
 	if {$last_graph == ""} {
@@ -1390,12 +1420,12 @@ proc exit_program {} {
 	puts $fp "set sag_opt_grid $sag_opt_grid"
 	
 	close $fp
-	
+
 #	foreach ndx [array names fngr_files] {
-#		file delete $fngr_files($ndx)
+#				file delete $fngr_files($ndx)
 #	}
 	file delete -force -- "$fngr_tmpdir"
-
+	
 	destroy .
 	exit
 }

@@ -6,6 +6,12 @@
 #ifndef _SA_H
 #define _SA_H
 
+/* Get IFNAMSIZ */
+#include <net/if.h>
+#ifndef IFNAMSIZ
+#define IFNAMSIZ	16
+#endif
+
 #include "common.h"
 
 /* Define activities */
@@ -135,7 +141,7 @@
 /* Maximum number of processes that can be monitored simultaneously */
 #define MAX_PID_NR	256
 /* Maximum length of network interface name */
-#define MAX_IFACE_LEN	16
+#define MAX_IFACE_LEN	IFNAMSIZ
 /*
  * Maximum number of args that can be passed to sadc:
  * sadc -x <pid> [-x <pid> ...] -X <pid> [-X <pid> ...]

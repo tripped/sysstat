@@ -117,8 +117,8 @@ msgid "Cannot open %s: %s\n"
 msgstr "Probleem met oopmaak van %s: %s\n"
 
 #: sar.c:521
-msgid "Invalid system activity file\n"
-msgstr "Ongemagtige aktiviteit proses\n"
+msgid "Invalid system activity file: %s\n"
+msgstr "Ongemagtige aktiviteit proses: %s\n"
 
 #:
 msgid "Invalid data format\n"

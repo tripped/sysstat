@@ -378,8 +378,8 @@ void get_serial_lines(unsigned int *serial_used)
 
 /*
  ***************************************************************************
- * Find number of interfaces (network devices) that are in /proc/net/dev file
- * (see linux source file linux/net/core/dev.c)
+ * Find number of interfaces (network devices) that are in /proc/net/dev
+ * file
  ***************************************************************************
  */
 void get_net_dev(unsigned int *iface_used)
@@ -724,7 +724,7 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
 	       create_sa_file(ofd, ofile, file_stats_size, flags);
 	       return;
 	    }
-	    fprintf(stderr, _("Invalid system activity file\n"));
+	    fprintf(stderr, _("Invalid system activity file: %s\n"), ofile);
 	    exit(3);
 	 }
 	 /*
@@ -791,7 +791,9 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
 /*
  ***************************************************************************
  * Read stats from /proc/stat
- * (see linux source file linux/fs/proc/proc_misc.c)
+ * See kernel sources:
+ * 2.4: linux/fs/proc/proc_misc.c: kstat_read_proc()
+ * 2.6: linux/fs/proc/proc_misc.c: show_stat()
  ***************************************************************************
  */
 void read_proc_stat(void)
@@ -998,7 +1000,8 @@ void read_proc_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/loadavg
- * (see linux source file linux/fs/proc/proc_misc.c)
+ * See kernel sources:
+ * 2.4/2.6: linux/fs/proc/proc_misc.c: loadavg_read_proc()
  ***************************************************************************
  */
 void read_proc_loadavg(void)
@@ -1031,7 +1034,8 @@ void read_proc_loadavg(void)
 /*
  ***************************************************************************
  * Read stats from /proc/meminfo
- * (see linux source file linux/fs/proc/array.c and linux/fs/proc/proc_misc.c)
+ * See kernel sources:
+ * 2.4/2.6: linux/fs/proc/proc_misc.c: meminfo_read_proc()
  ***************************************************************************
  */
 void read_proc_meminfo(void)
@@ -1081,7 +1085,8 @@ void read_proc_meminfo(void)
 /*
  ***************************************************************************
  * Read stats from /proc/vmstat (post 2.5 kernels)
- * (see linux source file linux/include/linux/page-flags.h)
+ * See kernel sources:
+ * 2.6: linux/mm/page_alloc.c: vmstat_show()
  ***************************************************************************
  */
 void read_proc_vmstat(void)
@@ -1132,7 +1137,8 @@ void read_proc_vmstat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/<pid>/stat
- * (see linux source file linux/fs/proc/array.c)
+ * See kernel sources:
+ * 2.4/2.6: linux/fs/proc/array.c: proc_pid_stat()
  ***************************************************************************
  */
 void read_pid_stat(void)
@@ -1175,7 +1181,8 @@ void read_pid_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/tty/driver/serial
- * (see linux source file linux/drivers/char/serial.c)
+ * See kernel sources:
+ * 2.4: linux/driver/char/serial.c: line_info()
  ***************************************************************************
  */
 void read_serial_stat(void)
@@ -1199,10 +1206,10 @@ void read_serial_stat(void)
 		* Read the number of chrs transmitted and received by
 		* current serial line.
 		*/
-	       sscanf(line, "%d", &tty);
+	       sscanf(line, "%u", &tty);
 	       st_serial_i = st_serial + sl;
-	       sscanf(p + 3, "%d", &(st_serial_i->tx));
-	       sscanf(strstr(line, "rx:") + 3, "%d", &(st_serial_i->rx));
+	       sscanf(p + 3, "%u", &(st_serial_i->tx));
+	       sscanf(strstr(line, "rx:") + 3, "%u", &(st_serial_i->rx));
 
 	       st_serial_i->line = tty;
 	       sl++;
@@ -1228,6 +1235,9 @@ void read_serial_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/interrupts
+ * See kernel sources:
+ * 2.4: linux/arch/{i386,...}/kernel/irq.c: get_irq_list()
+ * 2.6: linux/arch/{i386,...}/kernel/irq.c: show_interrupts()
  ***************************************************************************
  */
 void read_interrupts_stat(void)
@@ -1245,7 +1255,7 @@ void read_interrupts_stat(void)
 	 if (isdigit(line[2])) {
 	
 	    p = st_irq_cpu + irq;
-	    sscanf(line, "%3d", &(p->irq));
+	    sscanf(line, "%3u", &(p->irq));
 	
 	    for (cpu = 0; cpu <= cpu_nr; cpu++) {
 	       p = st_irq_cpu + cpu * irqcpu_used + irq;
@@ -1278,8 +1288,9 @@ void read_interrupts_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/sys/fs/...
- * (see linux source file linux/kernel/sysctl.c)
  * Some files may not exist, depending on the kernel configuration.
+ * See kernel sources:
+ * 2.4/2.6: linux/kernel/sysctl.c: fs_table[]
  ***************************************************************************
  */
 void read_ktables_stat(void)
@@ -1360,7 +1371,9 @@ void read_ktables_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/net/dev
- * (see linux source file linux/net/core/dev.c and linux/include/linux/netdevice.h)
+ * See kernel sources:
+ * 2.4: linux/net/core/dev.c: sprintf_stats()
+ * 2.6: linux/net/core/dev.c: dev_seq_printf_stats()
  ***************************************************************************
  */
 void read_net_dev_stat(void)
@@ -1427,8 +1440,9 @@ void read_net_dev_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/net/sockstat
- * (see afinet_get_info() function in linux source file linux/net/ipv4/proc.c
- *  and socket_get_info() function in linux source file linux/net/socket.c)
+ * See kernel sources:
+ * 2.4: linux/net/ipv4/proc.c: afinet_get_info()
+ * 2.6: linux/net/ipv4/proc.c: sockstat_seq_show()
  ***************************************************************************
  */
 void read_net_sock_stat(void)
@@ -1443,19 +1457,19 @@ void read_net_sock_stat(void)
 	
 	 if (!strncmp(line, "sockets:", 8))
 	    /* Sockets */
-	    sscanf(line + 14, "%d", &(file_stats.sock_inuse));
+	    sscanf(line + 14, "%u", &(file_stats.sock_inuse));
 	 else if (!strncmp(line, "TCP:", 4))
 	    /* TCP sockets */
-	    sscanf(line + 11, "%d", &(file_stats.tcp_inuse));
+	    sscanf(line + 11, "%u", &(file_stats.tcp_inuse));
 	 else if (!strncmp(line, "UDP:", 4))
 	    /* UDP sockets */
-	    sscanf(line + 11, "%d", &(file_stats.udp_inuse));
+	    sscanf(line + 11, "%u", &(file_stats.udp_inuse));
 	 else if (!strncmp(line, "RAW:", 4))
 	    /* RAW sockets */
-	    sscanf(line + 11, "%d", &(file_stats.raw_inuse));
+	    sscanf(line + 11, "%u", &(file_stats.raw_inuse));
 	 else if (!strncmp(line, "FRAG:", 5))
 	    /* FRAGments */
-	    sscanf(line + 12, "%d", &(file_stats.frag_inuse));
+	    sscanf(line + 12, "%u", &(file_stats.frag_inuse));
       }
    }
 
@@ -1467,6 +1481,8 @@ void read_net_sock_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/diskstats
+ * See kernel sources:
+ * 2.6: linux/drivers/block/genhd.c: diskstats_show()
  ***************************************************************************
  */
 void read_diskstats_stat(void)
@@ -1482,7 +1498,7 @@ void read_diskstats_stat(void)
 
       while ((fgets(line, 256, dstatsfp) != NULL) && (dsk < disk_used)) {
 	
-	 i = sscanf(line, "%d %d %*s %d %*d %d %*d %d %*d %d",
+	 i = sscanf(line, "%u %u %*s %u %*u %u %*u %u %*u %u",
 		    &tmp[0], &tmp[1], &tmp[2], &tmp[3], &tmp[4], &tmp[5]);
 
 	 if (i == 6) {

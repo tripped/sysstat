@@ -1,9 +1,9 @@
 This is sysstat's Frequently Asked Questions!
 Be sure to read this carefully before asking for help...
-If you don't find the solution of your problem here then send me a mail
+If you don't find the solution to your problem here then send me an email
 (please remember to include sysstat's version number, a sample output
-showing the bug, and the contents of the /proc/stat file of your system.
-Also tell me what the version of your kernel is).
+showing the bug, and the contents of the /proc/stat file for your system.
+Also tell me what version your kernel is).
 
 
 1. GENERAL QUESTIONS
@@ -16,30 +16,30 @@ Also tell me what the version of your kernel is).
 2. QUESTIONS RELATING TO SAR/SADC
 
 2.1. The sar command complains with the following message:
-     "Invalid system activity file".
+     "Invalid system activity file: ...".
 2.2. The sar command complains with the following message:
      "Cannot append data to that file".
 2.3. The sar command complains with the following message:
      "Invalid data format".
 2.4. I get the following error message when I try to run sar:
      "Cannot open /var/log/sa/sa30: No such file or directory".
-2.5. Is sar daily data files fully compatible with Sun Solaris format
-     of sar files?
-2.6. I have some troubles running sar on my SMP box. My server crashes
+2.5. Are sar daily data files fully compatible with Sun Solaris format
+     sar files?
+2.6. I have some trouble running sar on my SMP box. My server crashes
      with a kernel oops.
-2.7. The "Average:" results from the sar command are just rubbishes...
+2.7. The "Average:" results from the sar command are just rubbish...
 2.8. My database (e.g. MySQL) doesn't appear to understand the time zone
      displayed by 'sar -H'...
-2.9. I tried to use the -h option of the sar command together with the
+2.9. I tried to use the -h option of the sar command, together with the
      options -s and -e. Unfortunately, I have nothing displayed at all.
 2.10. I cannot see all my disks when I use the sar -d command...
-2.11. Do you know a tool that can graphically plot the data collected by sar?
+2.11. Do you know a tool which can graphically plot the data collected by sar?
 2.12. When I launch sadc, I get the error message:
       "flock: Resource temporarily unavailable".
 
 3. QUESTIONS RELATING TO IOSTAT
 
-3.1. I cannot see all my disks when I use the iostat command...
+3.1. I can't see all my disks when I use the iostat command...
 3.2. iostat -x doesn't report disk I/O statistics...
 3.3. Why can't iostat display extended statistics for partitions with
      2.6.x kernels?
@@ -88,12 +88,12 @@ lrwxrwxrwx   1 root     root            8 May  5 18:31 /usr/src/linux/include/as
 ############################
 
 2.1. The sar command complains with the following message:
-Invalid system activity file
+Invalid system activity file: ...
 
 The format of the daily data files created by the sar command you are
 now using is not compatible with the format of the files created by a
 previous version of sar.
-The solution is easy: just log in as root and remove by hand the files
+The solution is easy: just log in as root and remove by hand all the files
 located in the /var/log/sa directory:
 # rm /var/log/sa/sa??
 
@@ -105,7 +105,7 @@ Cannot append data to that file
 The internal structure of the data file does not allow sar to append
 data to it. The data file may come from another machine, or the components
 of the current box, such as the number of processors, may have changed.
-Use another data file, or delete current daily data file, and try again.
+Use another data file, or delete the current daily data file, and try again.
 
 ~~~
 
@@ -116,8 +116,8 @@ This error message means that sadc (the system activity data collector that
 sar is using) is not consistent with the sar command. In most cases this is
 because the sar and sadc commands do not belong to the same release of the
 sysstat package. Remember that sar searches for sadc in predefined
-directories (/usr/lib/sa, /usr/local/lib/sa, ...) before looking in current
-directory!
+directories (/usr/lib/sa, /usr/local/lib/sa, ...) before looking in the
+current directory!
 
 ~~~
 
@@ -125,7 +125,7 @@ directory!
 $ sar
 Cannot open /var/log/sa/sa30: No such file or directory
 
-Please read sar(1) manual page! Daily data files are created in the
+Please read the sar(1) manual page! Daily data files are created in the
 /var/log/sa directory using the data collector (sadc) or using option
 -o with sar. Once they are created, sar can display statistics saved
 in those files.
@@ -133,24 +133,23 @@ But sar can also display statistics collected "on the fly": just enter
 the proper option on the command line to indicate which statistics are
 to be displayed, and also specify an <interval> and <count> number.
 Eg:
-# sar 2 5  --> will report CPU utilization for each two seconds five
-times.
-# sar -n DEV 3 0  --> will report network device utilization for each
+# sar 2 5  --> will report CPU utilization every two seconds, five times.
+# sar -n DEV 3 0  --> will report network device utilization every
 3 seconds, in an infinite loop.
 
 ~~~
 
-2.5. Is sar daily data files fully compatible with Sun Solaris format of
+2.5. Are sar daily data files fully compatible with Sun Solaris format
 sar files?
 
 No, the format of the binary data files created by sysstat's sar command
 is not compatible with formats from other Unixes, because it contains
 data which are closely linked to Linux.
-For the same reason, sysstat cannot work on other platforms than Linux...
+For the same reason, sysstat cannot work on platforms other than Linux...
 
 ~~~
 
-2.6. I have some troubles running sar on my SMP box. My server crashes
+2.6. I have some trouble running sar on my SMP box. My server crashes
 with a kernel oops:
 Feb 17 04:05:00 bolums1 kernel: Unable to handle kernel paging request
 at virtual address fffffc1c
@@ -168,13 +167,13 @@ release.
 Also, if you cannot upgrade your box, try to compile sysstat after
 answering 'y' to the question:
 "Linux SMP race in serial driver workaround?"
-at config stage (make config). Indeed, we found that 2.2.x kernels
-(with x <= 15) have an SMP race condition, that the sar command
+at the config stage (make config). Indeed, we found that 2.2.x kernels
+(with x <= 15) have an SMP race condition, which the sar command
 may trigger when it reads the /proc/tty/driver/serial file.
 
 ~~~
 
-2.7. The "Average:" results from the sar command are just rubbishes...
+2.7. The "Average:" results from the sar command are just rubbish...
 Eg.:
  11:10:00 AM       all      0.54      0.00      0.89     98.57
  11:20:01 AM       all      3.02      8.05     22.85     66.08
@@ -206,16 +205,15 @@ sure it is communicated clearly that UTC is how the data is always
 converted and printed. Moreover we don't depend on the TZ environment
 variable and we don't have some data converted to a different timezone
 for any reason, known or unknown.
-When you deal with accounting data, when you have raw data you always 
-want it in UTC.  Of course, you want it to all be the same when loading 
-into a database. If your database has no way to deal with timezones,
-then write a short script to strip the "UTC" characters to load into the
-database.
+When you deal with raw accounting data you always want it in UTC.
+Of course, you want it to all be the same when loading into a database.
+If your database can't deal with timezones, you should write a short script
+to strip the "UTC" characters from the data being loaded into the database.
 
 ~~~
 
-2.9. I tried to use the -h option of the sar command together with the options
--s and -e. Unfortunately, I have nothing displayed at all.
+2.9. I tried to use the -h option of the sar command, together with the
+options -s and -e. Unfortunately, I have nothing displayed at all.
 
 This is because no data belong to the specified time interval!
 In fact, -h option makes sar display its timestamp as a UTC value (Coordinated
@@ -231,17 +229,17 @@ See question 3.1 below.
 
 ~~~
 
-2.11. Do you know a tool that can graphically plot the data collected by sar?
+2.11. Do you know a tool which can graphically plot the data collected by sar?
 
 Several such tools are lying around on the internet. I haven't tested all of
 them and there must still be some way for improvement...
-You can find among others: isag (a Perl script included in sysstat package),
-sarvant (a Python script that you can find at http://sarvant.sourceforge.net),
-sar2gp (http://sar2gp.berlios.de)...
-I also have heard of commercial tools using sysstat: PerfMan comes to mind,
+You can find among others: isag (a Perl script included in the sysstat
+package), sarvant (a Python script which can be found at
+http://sarvant.sourceforge.net); sar2gp (http://sar2gp.berlios.de)...
+I've also heard of commercial tools which use sysstat: PerfMan comes to mind,
 among others.
-If you find other ones that you think are of real interest, please let me
-know so that I can update this list.
+If you find others which you think are of real interest, please let me know
+so that I can update this list.
 
 ~~~
 
@@ -257,13 +255,13 @@ file. Stop all sadc instances and try again.
 3. QUESTIONS RELATING TO IOSTAT
 ###############################
 
-3.1. I cannot see all my disks when I use the iostat command...
+3.1. I can't see all my disks when I use the iostat command...
 
 Yes. This is a kernel limit. Old kernels (2.2.x for instance) used to
 maintain stats for the first four devices.
 The accounting code has changed in 2.4 kernels, and the result may (or
 may not) be better for your system. Indeed, Linux 2.4 maintains the stats
-in a two dimensional arrays, with a maximum of 16 devices (DK_MAX_DISK
+in a two dimensional array, with a maximum of 16 devices (DK_MAX_DISK
 in the kernel sources). Moreover, if the device major number exceeds
 DK_MAX_MAJOR (whose value also defaults to 16 in the kernel sources),
 then stats for this device will not be collected.
@@ -272,7 +270,7 @@ linux/include/linux/kernel_stat.h and recompile your kernel.
 You should no longer have any problem with post 2.5 kernels, since
 statistics are maintained by the kernel for all the devices.
 In the particular case of iostat, also be sure to use the ALL keyword
-on the command line to display statistic information relating to
+on the command line to display statistical information relating to
 every device, including those that are defined but have never been used
 by the system.
 
@@ -286,7 +284,7 @@ Indeed, iostat tries to read data from the /proc/diskstats file or
 from the sysfs filesystem for that.
 But iostat may also be able to display extended statistics with
 older kernels (e.g. 2.4.x) providing that all the necessary
-statistics information is available in the /proc/partitions file,
+statistical information is available in the /proc/partitions file,
 which requires that a patch be applied to the kernel (this is
 often done on kernels included in various distros).
 
@@ -296,8 +294,9 @@ often done on kernels included in various distros).
      2.6.x kernels?
 
 Because the kernel maintains these stats only for devices, and not for
-partitions! Excerpt from the document iostats.txt written by Rick Lindsley
-(ricklind@us.ibm.com) and included in the kernel source documentation:
+partitions! Here is an excerpt from the document iostats.txt written by
+Rick Lindsley (ricklind@us.ibm.com) and included in the kernel source
+documentation:
 "There were significant changes between 2.4 and 2.6 in the I/O subsystem.
 As a result, some statistic information disappeared. The translation from
 a disk address relative to a partition to the disk address relative to

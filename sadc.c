@@ -1301,7 +1301,7 @@ void read_interrupts_stat(void)
 void read_ktables_stat(void)
 {
    FILE *ktfp;
-   int parm;
+   unsigned int parm;
 
    /* Open /proc/sys/fs/dentry-state file */
    if ((ktfp = fopen(FDENTRY_STATE, "r")) != NULL) {
@@ -1312,9 +1312,14 @@ void read_ktables_stat(void)
 
    /* Open /proc/sys/fs/file-nr file */
    if ((ktfp = fopen(FFILE_NR, "r")) != NULL) {
-      fscanf(ktfp, "%*d %u %*u\n",
-	     &(file_stats.file_used));
+      fscanf(ktfp, "%u %u %*u\n",
+	     &(file_stats.file_used), &parm);
       fclose(ktfp);
+      /*
+       * The number of used handles is the number of allocated ones
+       * minus the number of free ones.
+       */
+      file_stats.file_used -= parm;
    }
 
    /* Open /proc/sys/fs/inode-state file */
@@ -1349,7 +1354,7 @@ void read_ktables_stat(void)
 	     &(file_stats.dquot_max));
       fclose(ktfp);
 
-      /* Open /proc/sys/fs/dquot_nr file */
+      /* Open /proc/sys/fs/dquot-nr file */
       if ((ktfp = fopen(FDQUOT_NR, "r")) != NULL) {
 	 fscanf(ktfp, "%u %*u\n",
 		&(file_stats.dquot_used));
@@ -1582,7 +1587,8 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
       if DO_SA_ROTAT(*flags) {
 	 /*
 	  * Stats are written at the end of previous file *and* at the
-	  * beginning of the new one.
+	  * beginning of the new one (outfile must have been specified
+	  * as '-' on the command line).
 	  */
 	 *flags &= ~F_DO_SA_ROTAT;
 	 if (fdatasync(ofd) < 0) {	/* Flush previous file */

@@ -1,5 +1,21 @@
 Changes:
 
+2004/08/09: Version 5.0.6 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* The value for file-sz reported by sar -v was a number of free
+	  handles, and not a number of used ones! This is now fixed (and
+	  this is really now a number of _used_ file handles).
+	* Now ask during config stage for the directory where sadc will
+	  be located. This may be useful for some systems where sadc
+	  needs to be installed in a specific location (e.g. on 64 bit
+	  s390 systems, the proper directory should be /usr/lib64/sa).
+	* sa1 script  updated: Use '-' to specify current daily data file
+	  instead of guessing its name using current date.
+	* NLS updated: be consistent with GNU gettext standards.
+	* iostat manual page updated.
+	* FAQ updated.
+	* Makefile updated.
+	* CREDITS file updated.
+
 2004/06/08: Version 5.0.5 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* Timestamp is no longer limited to 11 characters. This should
 	  avoid problems with somes locales (for example Japanese locale,

@@ -75,9 +75,8 @@ HOW CAN I ADD A NEW LANGUAGE TO SYSSTAT?
 At the present time, sysstat is translated into English, French, German,
 Spanish, Portuguese, Afrikaans, Norwegian, Italian, Russian, Romanian,
 Polish, Slovak and Japanese.
-To add another language, copy an existing Portable Object file (.po) in one
-of your directories (you can copy the file named sysstat.po located in the
-nls/fr directory for instance).
+To add another language, copy an existing Portable Object file (LANG.po) in
+one of your directories (you can copy the file named fr.po for instance).
 Update the header of that file to give your name and email address.
 Then you have to translate all the messages quoted in the lines beginning
 with the 'msgid' token...

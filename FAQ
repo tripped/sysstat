@@ -12,6 +12,8 @@ Also tell me what version your kernel is).
      "make: msgfmt: Command not found".
 1.2. When I try to compile sysstat, it fails and says it cannot find some
      include files.
+1.3. I don't understand why sysstat displays the time sometimes as HH:MM:SS
+     and sometimes as HH:MM:SS AM/PM...
      
 2. QUESTIONS RELATING TO SAR/SADC
 
@@ -36,6 +38,7 @@ Also tell me what version your kernel is).
 2.11. Do you know a tool which can graphically plot the data collected by sar?
 2.12. When I launch sadc, I get the error message:
       "flock: Resource temporarily unavailable".
+2.13. How should I run sysstat / sar so that I get a reading for 00:00:00?
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -47,6 +50,7 @@ Also tell me what version your kernel is).
      it to be...
 3.5. Why values displayed by iostat are so different in the first report
      from those displayed in subsequent ones?
+3.6. iostat -x displays huge numbers for some fields...
 
 
 1. GENERAL QUESTIONS
@@ -86,6 +90,38 @@ Make sure that you have the Linux kernel sources installed in
 lrwxrwxrwx   1 root     root            8 May  5 18:31 /usr/src/linux/include/asm -> asm-i386
 In fact, only the Linux kernel headers should be necessary to be able
 to compile sysstat.
+
+~~~
+
+1.3. I don't understand why sysstat displays the time sometimes as HH:MM:SS
+and sometimes as HH:MM:SS AM/PM...
+
+The time format used by sysstat tools depends on the locale of your system.
+The locale is defined by several environment variables, among which the LANG
+variable is perhaps the most widely used. See the following example:
+$ export LANG=en_US
+$ sar
+Linux 2.4.9 (brooks.seringas.fr) 	07/20/04
+
+04:32:11 PM       LINUX RESTART
+
+05:00:00 PM       CPU     %user     %nice   %system   %iowait     %idle
+05:10:00 PM       all      0.24      0.00     89.64      0.00     10.12
+Average:          all      0.24      0.00     89.64      0.00     10.12
+
+$ export LANG=fr_FR
+$ sar
+Linux 2.4.9 (brooks.seringas.fr) 	20.07.2004
+
+16:32:11          LINUX RESTART
+
+17:00:00          CPU     %user     %nice   %system   %iowait     %idle
+17:10:00          all      0,24      0,00     89,64      0,00     10,12
+Moyenne:          all      0,24      0,00     89,64      0,00     10,12
+
+As you can notice, the time format but also the date, the decimal point, and
+even some words (like "Average") have changed according to the specified
+locale.
 
 
 2. QUESTIONS RELATING TO SAR
@@ -248,12 +284,38 @@ so that I can update this list.
 ~~~
 
 2.12. When I launch sadc, I get the error message:
-      "flock: Resource temporarily unavailable"
+"flock: Resource temporarily unavailable"
 
 You are launching sadc using -L option. With this option, sadc tries to
 get an exclusive lock on the output file. The above error message indicates
 that another sadc process was running and had already locked the same output
 file. Stop all sadc instances and try again.
+
+~~~
+
+2.13. I have sysstat setup to run via cron: 
+0 * * * * /usr/local/lib/sa/sa1 600 6 & 
+so that I get an activity report every 10 minutes. 
+When I use sar to get my output, there is no reading for 00:00:00. This
+means that at midnight everynight there is a spike, or dip, in the graphs. 
+How should I run sysstat / sar so that I get a reading for 00:00:00? 
+
+Sysstat does get its data at midnight, but two data samples are needed to
+display the values.
+When there is a "file rotation" (beginning of a new day), sadc writes its data
+at the end of the previous daily data file (/var/log/sa/sa<DD>) *and* at the
+beginning of the new one (/var/log/sa/sa<DD+1>). Please note that '-' must be
+used to specify the output file for sadc to be able to detect such a file
+rotation. So a crontab like the following one should enable you to get the
+data for midnight at the end of each daily data file : 
+# Activity reports every 10 minutes from 01:00:00 to 22:50:00 
+0 1-22 * * * /usr/local/lib/sa/sa1 600 6 & 
+# Activity reports every 10 minutes from 23:00:00 to 00:00:00 
+# Reporting until 00:00:00 ensures that a file rotation will be detected
+# by sadc 
+0 23 * * * /usr/local/lib/sa/sa1 600 7 & 
+# Activity reports every 10 minutes from 00:10:00 to 00:50:00 
+10 0 * * * /usr/local/lib/sa/sa1 600 5 & 
 
 
 3. QUESTIONS RELATING TO IOSTAT
@@ -331,6 +393,17 @@ Probably because, as written in the manual page, the first report generated
 by iostat concerns the time since system startup, whereas subsequent ones
 cover only the time since the previous report (that is to say, the interval
 of time entered on the command line).
+
+~~~
+
+3.6. iostat -x displays huge numbers for some fields...
+
+Because of a Linux kernel bug, iostat -x may display huge I/O response times
+(svctm) and a bandwidth utilization (%util) of 100% for some devices. Indeed
+these devices have a value for the field #9 in /proc/{partitions,diskstats}
+which is always different from 0, and even negative sometimes. Yet this field
+should go to zero, since it gives the number of I/Os currently in progress
+(it is incremented as requests are submitted, and decremented as they finish).
 
 --	
 Sebastien Godard (sysstat <at> wanadoo.fr) is the author and the current

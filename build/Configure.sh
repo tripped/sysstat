@@ -16,6 +16,19 @@ if [ ! -d ${PREFIX} ]; then
 	PREFIX=/usr/local
 fi
 
+# sadc directory
+if [ -d ${PREFIX}/lib ]; then
+	SADC_DIR=${PREFIX}/lib
+elif [ -d ${PREFIX}/lib64 ]; then
+	SADC_DIR=${PREFIX}/lib64
+else
+	SADC_DIR=${PREFIX}/lib
+fi
+SA_LIB_DIR=`${ASK} 'sadc directory:' "${SADC_DIR}/sa" "sadc-dir"`
+if [ ! -d ${SA_LIB_DIR} ]; then
+	echo "INFO: Directory ${SA_LIB_DIR} will be created during installation stage."
+fi
+
 # System Activity directory
 
 SA_DIR=`${ASK} 'System activity directory:' "/var/log/sa" "sa-dir"`
@@ -136,6 +149,7 @@ echo -n Creating CONFIG file now...
 
 sed <build/CONFIG.in >build/CONFIG \
 	-e "s+^\\(PREFIX =\\)\$+\\1 ${PREFIX}+" \
+	-e "s+^\\(SA_LIB_DIR =\\)\$+\\1 ${SA_LIB_DIR}+" \
 	-e "s+^\\(SA_DIR =\\)\$+\\1 ${SA_DIR}+" \
 	-e "s+^\\(MAN_DIR =\\)\$+\\1 ${MANDIR}+" \
 	-e "s+^\\(CLEAN_SA_DIR =\\)\$+\\1 ${CLEAN_SA_DIR}+" \

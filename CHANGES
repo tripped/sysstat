@@ -1,5 +1,21 @@
 Changes:
 
+2003/07/21: Version 4.1.5 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! Delete existing data files
+	  in /var/log/sa directory! [0x2161]
+	* 'sar -x <pid>' and 'sar -X <pid>' work again.
+	* sar had a longstanding bug that prevented option -P from
+	  working properly if the machine had more than 32 processors.
+	  This is now fixed.
+	* Fixed a bug introduced in 4.1.2, which made some LINUX RESTART
+	  messages to not be displayed by sar.
+	* sar now uses bitmap of char instead of int to avoid endianness
+	  problems.
+	* sar can now handle a huge number of processors, serial lines and
+	  network interfaces.
+	* FAQ updated.
+
 2003/07/01: Version 4.1.4 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! Delete existing data files

@@ -7,8 +7,6 @@ Here are the things I would like (or I should) do for the next releases:
 * Add a vmstat command (not sure about this, since it already exists in common
   Linux distributions).
 
-* Get rid of the limit on the number of processors (NR_CPUS).
-
 * Add more statistics to sar and mpstat (and iostat) when available in Linux
   kernels.
   Numerous network activities are already available (see /proc/snmp for
@@ -18,6 +16,8 @@ Here are the things I would like (or I should) do for the next releases:
 * Use ./configure to configure sysstat.
 
 * Add support for hotplug CPU ?
+
+* Dynamically allocate structures for IRQs (just like for CPUs).
 
 * Check I/O wait type (long int?, int?) read in /proc/stat and in /sys/.../stat.
   Also check the meaning of /sys/.../stat fields.

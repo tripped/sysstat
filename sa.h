@@ -120,9 +120,8 @@
 #define SADC_LOCAL_PATH	"/usr/local/lib/sysstat/sadc"
 #define LOADAVG		"/proc/loadavg"
 
-#define NR_CPUS		64
+#define NR_CPUS		1024
 #define NR_IRQS		224
-#define MAX_IRQS_DIV_8	32	/* Assume NR_IRQS <= 256 */
 
 #define NR_IFACE_PREALLOC	2
 #define NR_SERIAL_PREALLOC	2
@@ -156,7 +155,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x2160
+#define SA_MAGIC	0x2161
 
 /*
  * IMPORTANT NOTE:
@@ -193,6 +192,12 @@ struct file_hdr {
    unsigned long sa_ust_time			__attribute__ ((aligned (8)));
    /* Number of disks */
    unsigned int  sa_nr_disk			__attribute__ ((aligned (8)));
+   /* Number of processors: 1 means two proc */
+   unsigned int sa_proc 			__attribute__ ((packed));
+   /* Number of serial lines: 2 means two lines (ttyS00 and ttyS01) */
+   unsigned int sa_serial 			__attribute__ ((packed));
+   /* Number of network devices (interfaces): 2 means two lines */
+   unsigned int sa_iface 			__attribute__ ((packed));
    /*
     * Current day, month and year.
     * No need to save DST (daylight saving time) flag, since it is not taken
@@ -201,12 +206,6 @@ struct file_hdr {
    unsigned char sa_day				__attribute__ ((packed));
    unsigned char sa_month			__attribute__ ((packed));
    unsigned char sa_year			__attribute__ ((packed));
-   /* Number of processors: 1 means two proc */
-   unsigned char sa_proc 			__attribute__ ((packed));
-   /* Number of serial lines: 2 means two lines (ttyS00 and ttyS01) */
-   unsigned char sa_serial 			__attribute__ ((packed));
-   /* Number of network devices (interfaces): 2 means two lines */
-   unsigned char sa_iface 			__attribute__ ((packed));
    /* Operating system name */
    char          sa_sysname[UTSNAME_LEN]	__attribute__ ((packed));
    /* Machine hostname */
@@ -323,8 +322,8 @@ struct pid_stats {
 struct stats_serial {
    unsigned int  rx				__attribute__ ((aligned (8)));
    unsigned int  tx				__attribute__ ((packed));
-   unsigned char line				__attribute__ ((packed));
-   unsigned char pad[7]				__attribute__ ((packed));
+   unsigned int  line				__attribute__ ((packed));
+   unsigned char pad[4]				__attribute__ ((packed));
    /* See IMPORTANT NOTE above */
 };
 

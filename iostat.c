@@ -813,7 +813,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
    /*
     * itv is multiplied by the number of processors.
     * This is OK to compute CPU usage since the number of jiffies spent in the
-    * different modes (user, nice, etc.) is the sum for all the processors.
+    * different modes (user, nice, etc.) is the sum of all the processors.
     * But itv should be reduced to one processor before displaying disk
     * utilization.
     */

@@ -1,3 +1,9 @@
+sysstat (5.0.0-1) unstable; urgency=low
+
+  * New upstream (stable) version.
+
+ -- Robert Luberda <robert@debian.org>  Wed, 12 Nov 2003 22:00:19 +0100
+
 sysstat (4.1.7-1) unstable; urgency=low
 
   * New upstream version (development):

@@ -37,13 +37,13 @@ msgid "sysstat version %s\n"
 "(C) Sebastien Godard\n"
 "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
-"[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ]\n"
+"[ -c | -d ] [ -k ] [ -m ] [ -t ] [ -V ] [ -x ]\n"
 "[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]\n"
 msgstr "sysstat versiunea %s\n"
 "(C) Sebastien Godard\n"
 "Utilizare: %s [ optiuni... ] [ <interval> [ <repetitii> ] ]\n"
 "Optiuni disponibile:\n"
-"[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ]\n"
+"[ -c | -d ] [ -k ] [ -m ] [ -t ] [ -V ] [ -x ]\n"
 "[ { <dispozitiv> [ ... ] | ALL } ] [ -p [ { <dispozitiv> | ALL } ] ]\n"
 
 #: iostat.c:534
@@ -57,6 +57,10 @@ msgstr "Ora:  %s\n"
 #: iostat.c:400
 msgid "Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n"
 msgstr "Dispozitiv:        tps  kB_cititi/s     kB_scr/s  kB_cititi     kB_scr\n"
+
+#: iostat.c:400
+msgid "Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn\n"
+msgstr "Dispozitiv:        tps  MB_cititi/s     MB_scr/s  MB_cititi     MB_scr\n"
 
 #: iostat.c:617
 msgid "Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"
@@ -255,12 +259,12 @@ msgid "sysstat version %s\n"
 "(C) Sebastien Godard\n"
 "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
 "Options are:\n"
-"[ -F ] [ -I ] [ -V ]\n"
+"[ -d ] [ -F ] [ -I ] [ -V ]\n"
 msgstr "sysstat versiunea %s\n"
 "(C) Sebastien Godard\n"
 "Utilizare: %s [ optiuni... ] [ <interval> [ <repetitii> ] ] [ <fisier> ]\n"
 "Optiuni disponibile:\n"
-"[ -F ] [ -I ] [ -V ]\n"
+"[ -d ] [ -F ] [ -I ] [ -V ]\n"
 
 #: sadc.c:614
 msgid "Cannot append data to that file\n"

@@ -1,8 +1,8 @@
-.TH SADC 8 "AUGUST 2004" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "OCTOBER 2004" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
-.B /usr/lib/sa/sadc [ -F ] [ -I ] [ -L ] [ -V ] [
+.B /usr/lib/sa/sadc [ -d ] [ -F ] [ -I ] [ -L ] [ -V ] [
 .I interval
 .B [
 .I count
@@ -52,6 +52,12 @@ Note: The
 command only reports on local activities.
 
 .SH OPTIONS
+.IP -d
+Tell
+.B sadc
+to report statistics for disks. By default
+.B sadc
+does not report disks activity to prevent data files from growing too large.
 .IP -F
 The creation of
 .I outfile
@@ -63,7 +69,7 @@ with current one.
 .IP -I
 Tell
 .B sadc
-to report statistics for all system interrupts. By default,
+to report statistics for all system interrupts. By default
 .B sadc
 only reports statistics for the total number of interrupts.
 .IP -L

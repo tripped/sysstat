@@ -39,6 +39,8 @@ Also tell me what version your kernel is).
 2.12. When I launch sadc, I get the error message:
       "flock: Resource temporarily unavailable".
 2.13. How should I run sysstat / sar so that I get a reading for 00:00:00?
+2.14. The sar command complains with the following message:
+      "Requested activities not available in file".
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -229,12 +231,16 @@ E.g.:
  05:10:00 PM       all      4.93      0.00      1.29     93.78
  Average:          all    100.22    100.20    100.13      0.00
 
-Your sar command was not installed properly (in fact, you compiled it but
-forgot to run 'make install' as the last stage). Whenever your computer
+Your sar command was not installed properly. Whenever your computer
 is restarted (as it is the case here between 12:00:00 PM and 03:40:01 PM),
-the sysstat shell script must be called by the system, so that the
+the 'sysstat' shell script must be called by the system, so that the
 LINUX RESTART message can be inserted into the daily data file, indicating
 that the relevant kernel counters have been reinitialized...
+You can install the 'sysstat' script by hand in the relevant startup
+directory, or you can ask sysstat to do it for you: answer 'y' to the
+question "Set crontab to start sar automatically" during config stage
+('make config'), then compile sysstat as usual and run 'make install'
+as the last stage.
 
 ~~~
 
@@ -317,6 +323,23 @@ data for midnight at the end of each daily data file :
 0 23 * * * /usr/local/lib/sa/sa1 600 7 &
 # Activity reports every 10 minutes from 00:10:00 to 00:50:00
 10 0 * * * /usr/local/lib/sa/sa1 600 5 &
+
+~~~
+
+2.14. The sar command complains with the following message:
+"Requested activities not available in file".
+
+This error message means that you are trying to extract non-existent activities
+from the data file. Usually sadc reads all the available activities from the
+system and store them in the data file. However, to prevent data files from
+taking too much space on disk, some activities must be explicitly set on the
+command line to be read by sadc. One example is -I option which must be used
+together with sadc to be able to extract statistics for individual interrupts
+from the data file. Other activities cannot be saved into a file even if you
+specify the relevant options on the command line. Process statistics (-x and
+-X options) are such activities.
+Please read sadc manual page to know exactly which activities may be extracted
+from a data file.
 
 
 3. QUESTIONS RELATING TO IOSTAT

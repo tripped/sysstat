@@ -80,7 +80,7 @@ void usage(char *progname)
 		   "(C) Sebastien Godard\n"
 	           "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 		   "Options are:\n"
-		   "[ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ]\n"
+		   "[ -c | -d ] [ -k ] [ -m ] [ -t ] [ -V ] [ -x ]\n"
 		   "[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]\n"),
 	   VERSION, progname);
    exit(1);
@@ -937,6 +937,10 @@ void write_basic_stat(int curr, unsigned long long itv, int flags)
       printf(_("Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n"));
       fctr = 2;
    }
+   else if (DISPLAY_MEGABYTES(flags)) {
+      printf(_("Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn\n"));
+      fctr = 2048;
+   }
    else
       printf(_("Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
 
@@ -1217,6 +1221,10 @@ int main(int argc, char **argv)
 	
 	     case 'k':
 	       flags |= D_KILOBYTES;	/* Display stats in kB/s */
+	       break;
+
+	     case 'm':
+	       flags |= D_MEGABYTES;	/* Display stats in MB/s */
 	       break;
 
 	     case 't':

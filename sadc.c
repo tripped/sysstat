@@ -84,7 +84,7 @@ void usage(char *progname)
 		   "(C) Sebastien Godard\n"
 	           "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
 		   "Options are:\n"
-		   "[ -F ] [ -I ] [ -V ]\n"),
+		   "[ -d ] [ -F ] [ -I ] [ -V ]\n"),
 	   VERSION, progname);
    exit(1);
 }
@@ -480,6 +480,12 @@ void sa_sys_init(unsigned int *flags)
       disk_used += NR_DISK_PREALLOC;
       salloc_disk(disk_used);
    }
+   else if ((disk_used = get_ppartitions_dev_nr()) > 0) {
+      *flags |= F_HAS_PPARTITIONS;
+      sadc_actflag |= A_DISK;
+      disk_used += NR_DISK_PREALLOC;
+      salloc_disk(disk_used);
+   }
    else if ((disk_used = get_disk_io_nr()) > 0) {
       sadc_actflag |= A_DISK;
       disk_used += NR_DISK_PREALLOC;
@@ -616,7 +622,8 @@ void write_dummy_record(int ofd, size_t file_stats_size, unsigned int *flags)
  * -> IRQ per processor (on SMP machines only)
  * -> number of each IRQ (if -I option passed to sadc), including APIC
  *    interrupts sources
- * -> device stats for sar -d (kernels 2.4 and newer only)
+ * -> device stats for sar -d (kernels 2.4 and newer only, and only if
+ *    -d option passed to sadc)
  ***************************************************************************
  */
 void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
@@ -941,10 +948,15 @@ void read_proc_stat(void)
 	 sscanf(line + 5, "%llu", &(file_stats.irq_sum));
 	 pos = strcspn(line + 5, " ") + 5;
 
-	 /* Read number of each interrupts received since system boot */
-	 for (i = 0; i < NR_IRQS; i++) {
-	    sscanf(line + pos, " %u", &interrupts[i]);
-	    pos += strcspn(line + pos + 1, " ") + 1;
+	 if (GET_ONE_IRQ(sadc_actflag)) {
+	    /*
+	     * If -I option set on the command line,
+	     * read number of each interrupts received since system boot.
+	     */
+	    for (i = 0; i < NR_IRQS; i++) {
+	       sscanf(line + pos, " %u", &interrupts[i]);
+	       pos += strcspn(line + pos + 1, " ") + 1;
+	    }
 	 }
       }
 
@@ -1499,7 +1511,7 @@ void read_diskstats_stat(void)
 {
    FILE *dstatsfp;
    static char line[256];
-   int i, dsk = 0;
+   int dsk = 0;
    struct disk_stats *st_disk_i;
    unsigned int tmp[4];
    unsigned long long l_tmp[2];
@@ -1509,23 +1521,71 @@ void read_diskstats_stat(void)
 
       while ((fgets(line, 256, dstatsfp) != NULL) && (dsk < disk_used)) {
 	
-	 i = sscanf(line, "%u %u %*s %u %*u %llu %*u %u %*u %llu",
-		    &tmp[0], &tmp[1], &tmp[2], &l_tmp[0], &tmp[3], &l_tmp[1]);
-
-	 if (i == 6) {
+	 if (sscanf(line, "%u %u %*s %u %*u %llu %*u %u %*u %llu",
+		    &tmp[0], &tmp[1], &tmp[2], &l_tmp[0], &tmp[3], &l_tmp[1]) == 6) {
 	    /* It's a device */
-	    st_disk_i = st_disk + dsk;
+	    st_disk_i = st_disk + dsk++;
 	    st_disk_i->major = tmp[0];
 	    st_disk_i->index = tmp[1];
 	    st_disk_i->nr_ios = tmp[2] + tmp[3];
 	    st_disk_i->rd_sect = l_tmp[0];
 	    st_disk_i->wr_sect = l_tmp[1];
-	    dsk++;
 	 }
       }
 
       /* Close file */
       fclose(dstatsfp);
+   }
+
+   while (dsk < disk_used) {
+      /*
+       * Nb of disks has changed, or appending data to an old file
+       * with more disks than are actually available now.
+       */
+      st_disk_i = st_disk + dsk++;
+      st_disk_i->major = st_disk_i->index = 0;
+   }
+}
+
+
+/*
+ ***************************************************************************
+ * Read stats from /proc/partitions
+ * See kernel sources:
+ * 2.6: linux/drivers/block/genhd.c (see sysfs instead)
+ ***************************************************************************
+ */
+void read_ppartitions_stat(void)
+{
+   FILE *ppartfp;
+   static char line[256];
+   int dsk = 0;
+   struct disk_stats *st_disk_i;
+   unsigned int tmp[4];
+   unsigned long long l_tmp[2];
+
+   /* Open /proc/partitions file */
+   if ((ppartfp = fopen(PPARTITIONS, "r")) != NULL) {
+
+      while ((fgets(line, 256, ppartfp) != NULL) && (dsk < disk_used)) {
+	
+	 if (sscanf(line, "%u %u %*u %*s %u %*u %llu %*u %u %*u %llu",
+		    &tmp[0], &tmp[1], &tmp[2], &l_tmp[0], &tmp[3], &l_tmp[1]) == 6) {
+	    /*
+	     * Unlike when reading /proc/diskstats,
+	     * this line may be a partition or a device.
+	     */
+	    st_disk_i = st_disk + dsk++;
+	    st_disk_i->major = tmp[0];
+	    st_disk_i->index = tmp[1];
+	    st_disk_i->nr_ios = tmp[2] + tmp[3];
+	    st_disk_i->rd_sect = l_tmp[0];
+	    st_disk_i->wr_sect = l_tmp[1];
+	 }
+      }
+
+      /* Close file */
+      fclose(ppartfp);
    }
 
    while (dsk < disk_used) {
@@ -1571,8 +1631,13 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
       read_proc_vmstat();
       read_ktables_stat();
       read_net_sock_stat();
-      if (HAS_DISKSTATS(*flags))	/* Implies (disk_used > 0) */
-	 read_diskstats_stat();
+      if (disk_used) {
+	 if (HAS_DISKSTATS(*flags))
+	    read_diskstats_stat();
+	 else if (HAS_PPARTITIONS(*flags))
+	    read_ppartitions_stat();
+	 /* else disks are in /proc/stat */
+      }
       if (pid_nr)
  	 read_pid_stat();
       if (serial_used)
@@ -1683,6 +1748,9 @@ int main(int argc, char **argv)
       if (!strcmp(argv[opt], "-I"))
 	 sadc_actflag |= A_ONE_IRQ;
 
+      else if (!strcmp(argv[opt], "-d"))
+	 flags |= F_WANT_DISKS;
+
       else if (!strcmp(argv[opt], "-F"))
 	 flags |= F_F_OPTION;
 
@@ -1697,21 +1765,22 @@ int main(int argc, char **argv)
 	    /* Get PID list */
 	    get_pid_list();
 	 sadc_actflag |= A_PID;
-	 if (!strcmp(argv[++opt], K_ALL)) {
-	    set_pflag(strcmp(argv[opt - 1], "-x"), 0);
-		    continue;	/* Next option */
+	 if (argv[++opt]) {
+	    if (!strcmp(argv[opt], K_ALL)) {
+	       set_pflag(strcmp(argv[opt - 1], "-x"), 0);
+	       continue;	/* Next option */
+	    }
+	    else if (!strcmp(argv[opt], K_SELF))
+	       pid = getpid();
+	    else {
+	       if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
+		  usage(argv[0]);
+	       pid = atol(argv[opt]);
+	       if (pid < 1)
+		  usage(argv[0]);
+	    }
+	    set_pflag(strcmp(argv[opt - 1], "-x"), pid);
 	 }
-	 else if (!strcmp(argv[opt], K_SELF))
-	    pid = getpid();
-	 else {
-	    if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
-	       usage(argv[0]);
-	    pid = atol(argv[opt]);
-	    if (pid < 1)
-	       usage(argv[0]);
-	 }
-
-	 set_pflag(strcmp(argv[opt - 1], "-x"), pid);
       }
 
       else if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
@@ -1763,6 +1832,12 @@ int main(int argc, char **argv)
    else
       /* -L option ignored when writing to STDOUT */
       flags &= ~F_L_OPTION;
+
+   /* Don't read disk stats if -d option not set */
+   if (!WANT_DISKS(flags)) {
+      disk_used = 0;
+      sadc_actflag &= ~A_DISK;
+   }
 
    if (GET_PID(sadc_actflag))
       /* Count number of processes to display */

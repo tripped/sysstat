@@ -92,6 +92,7 @@
 #define F_PER_PROC	0x0800
 #define F_L_OPTION	0x1000
 #define F_FILE_LCK	0X2000
+#define F_WANT_DISKS	0x4000
 /* 0x100000:0x800000 -> reserved (cf. common.h) */
 
 #define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
@@ -108,6 +109,7 @@
 #define USE_PPC_OPTION(m)	(((m) & F_PPC_OPTION) == F_PPC_OPTION)
 #define PRINT_ORG_TIME(m)	(((m) & F_ORG_TIME) == F_ORG_TIME)
 #define USE_DB_OPTION(m)	(((m) & F_DB_OPTION) == F_DB_OPTION)
+#define WANT_DISKS(m)		(((m) & F_WANT_DISKS) == F_WANT_DISKS)
 
 /* Files */
 #define PROC		"/proc"

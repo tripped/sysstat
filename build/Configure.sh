@@ -118,7 +118,7 @@ CRON_OWNER=${USR}
 CRON=`${ASK} 'Set crontab to start sar automatically?' "n" "start-crontab"`
 if [ "${CRON}" = "y" ];
 then
-	CRON_OWNER=`${ASK} 'Crontab owner (his crontab will be saved in current directory):' "${USR}" "crontab-owner"`
+	CRON_OWNER=`${ASK} 'Crontab owner (his crontab will be saved in current directory if necessary):' "${USR}" "crontab-owner"`
 
 	grep ^${CRON_OWNER}: /etc/passwd >/dev/null 2>&1
 	if [ $? -eq 1 ];

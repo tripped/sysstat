@@ -1,4 +1,4 @@
-.TH SAR 1 "AUGUST 2004" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "NOVEMBER 2004" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -86,7 +86,7 @@ flags. Not specifying any flags selects only CPU activity.
 Specifying the
 .B -A
 flag is equivalent to specifying
-.BR "-bBcdqrRuvwWy -I SUM -n FULL -P ALL".
+.BR "-bBcdqrRuvwWy -I SUM -I XALL -n FULL -P ALL".
 
 The default version of the
 .B sar
@@ -119,7 +119,8 @@ parameters to select
 records at
 .I interval
 second intervals. If the
-.I count parameter is not set, all the records saved in the
+.I count
+parameter is not set, all the records saved in the
 file will be selected.
 Collection of data in this manner is useful to characterize
 system usage over a period of time and determine peak usage hours.
@@ -131,7 +132,7 @@ command only reports on local activities.
 .SH OPTIONS
 .IP -A
 This is equivalent to specifying
-.BR "-bBcdqrRuvwWy -I SUM -n FULL -P ALL".
+.BR "-bBcdqrRuvwWy -I SUM -I XALL -n FULL -P ALL".
 .IP -b
 Report I/O and transfer rate statistics. This option works only with
 kernels older than 2.5.

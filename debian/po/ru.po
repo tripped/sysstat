@@ -15,7 +15,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-12-13 20:29+0100\n"
+"POT-Creation-Date: 2003-01-18 18:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -49,8 +49,9 @@ msgstr "Хотите, чтобы пост-установочный сценарий удалил эти файлы данных?"
 
 #. Description
 #: ../sysstat.templates:12
+#, fuzzy
 msgid ""
-"If you say 'yes' (default), any existing data files in /var/log/sysstat/ "
+"If you activate this option, any existing data files in /var/log/sysstat/ "
 "directory will be deleted."
 msgstr ""
 "Если вы скажете 'да' (по умолчанию), то все существующие файлы данных в "
@@ -59,8 +60,13 @@ msgstr ""
 #. Description
 #: ../sysstat.templates:12
 msgid ""
-"If you say 'no', these files won't be deleted, but this will break the sar "
-"command, so you will have to delete them by hand."
+"If you don't want to remove them automatically, please remove them by hand "
+"later, in order to the sar command work properly."
 msgstr ""
-"Если вы скажете 'нет', то эти файлы не будут удалены, но будут запорчены "
-"командой sar, так что вам придется удалить их вручную."
+
+#~ msgid ""
+#~ "If you say 'no', these files won't be deleted, but this will break the "
+#~ "sar command, so you will have to delete them by hand."
+#~ msgstr ""
+#~ "Если вы скажете 'нет', то эти файлы не будут удалены, но будут запорчены "
+#~ "командой sar, так что вам придется удалить их вручную."

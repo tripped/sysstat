@@ -10,8 +10,8 @@ Template: sysstat/remove_files
 Type: boolean
 Default: true
 _Description: Do you want post-installation script to remove these data files?
- If you say 'yes' (default), any existing data files in /var/log/sysstat/
+ If you activate this option, any existing data files in /var/log/sysstat/
  directory will be deleted.
  .
- If you say 'no', these files won't be deleted, but this will break the sar
- command, so you will have to delete them by hand.
+ If you don't want to remove them automatically, please remove them by hand later,
+ in order to the sar command work properly.

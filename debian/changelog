@@ -4,12 +4,15 @@ sysstat (4.1.1-1) unstable; urgency=low
     + Warning: Daily data files format has changed (again), and is
       *not* compatible with the previous one! Delete existing data
       files in /var/log/sysstat directory!
-  * debian/systat.{postinst,config}: update $S_VERSION to show debconf
+
+  * debian/systat.{postinst,config}: Update $S_VERSION to show debconf
     warning about above mentioned incompatibility.
+  * debian/systat.templates: Do not misuse `yes'/`no' words (closes: #173788).
+  * Update Polish translation of templates.
   * Add the override file for the following lintian false error:
     `shell-script-fails-syntax-check ./usr/bin/isag'.
 
- -- Robert Luberda <robert@debian.org>  Sat, 18 Jan 2003 17:49:04 +0100
+ -- Robert Luberda <robert@debian.org>  Sun, 19 Jan 2003 15:32:31 +0100
 
 sysstat (4.0.7-2) unstable; urgency=low
 

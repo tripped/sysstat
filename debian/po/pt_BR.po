@@ -15,7 +15,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-12-13 20:29+0100\n"
+"POT-Creation-Date: 2003-01-18 18:31+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -49,8 +49,9 @@ msgstr "Deseja que o script de pós-instalação remove esses arquivos de dados ?"
 
 #. Description
 #: ../sysstat.templates:12
+#, fuzzy
 msgid ""
-"If you say 'yes' (default), any existing data files in /var/log/sysstat/ "
+"If you activate this option, any existing data files in /var/log/sysstat/ "
 "directory will be deleted."
 msgstr ""
 "Caso você responda 'sim' (o padrão), quaisquer arquivos de dados existentes "
@@ -59,9 +60,14 @@ msgstr ""
 #. Description
 #: ../sysstat.templates:12
 msgid ""
-"If you say 'no', these files won't be deleted, but this will break the sar "
-"command, so you will have to delete them by hand."
+"If you don't want to remove them automatically, please remove them by hand "
+"later, in order to the sar command work properly."
 msgstr ""
-"Se você responder 'não', esses arquivos não serão apagados, mas isso irá "
-"fazer com que o comando sar deixe de funcionar, e portanto você deverá apagá-"
-"los manualmente."
+
+#~ msgid ""
+#~ "If you say 'no', these files won't be deleted, but this will break the "
+#~ "sar command, so you will have to delete them by hand."
+#~ msgstr ""
+#~ "Se você responder 'não', esses arquivos não serão apagados, mas isso irá "
+#~ "fazer com que o comando sar deixe de funcionar, e portanto você deverá "
+#~ "apagá-los manualmente."

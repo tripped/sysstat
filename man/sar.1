@@ -8,7 +8,7 @@ sar \- Collect, report, or save system activity information.
 .B [ -n { DEV | EDEV | SOCK | FULL } ]
 .B [ -x {
 .I pid
-.B | SELF | SUM | ALL } ] [ -X {
+.B | SELF | ALL } ] [ -X {
 .I pid
 .B | SELF | ALL } ] [ -I {
 .I irq
@@ -700,7 +700,7 @@ Total number of swap pages the system brought in per second.
 Total number of swap pages the system brought out per second.
 .RE
 .RE
-.IP "-x pid | SELF | SUM | ALL"
+.IP "-x pid | SELF | ALL"
 Report statistics for a given process.
 .B pid
 is the process identification number. The
@@ -710,17 +710,12 @@ keyword indicates that statistics are to be reported for the
 process itself, whereas the
 .B ALL
 keyword indicates that statistics are to be reported for all the system processes.
-When the
-.B SUM
-keyword is used, the total number of minor and major faults made by the system
-is reported. All these statistics cannot be saved to a file.
+All these statistics cannot be saved to a file.
 So this option will be ignored whenever -o option is used.
 At the present time, no more than 256 processes can be monitored
 simultaneously.
 
-When the
-.B SUM
-keyword is not used, the following values are displayed:
+The following values are displayed:
 
 .B minflt/s
 .RS
@@ -756,26 +751,6 @@ Number of pages from the process address space the system has swapped out per se
 .RS
 Processor number to which the process is attached.
 .RE
-
-When the
-.B SUM
-keyword is used on the command line, the following values are displayed:
-
-.B minflt/s
-.RS
-Total number of minor faults the system has made per second, those
-which have not required loading a memory page from disk.
-.RE
-
-.B majflt/s
-.RS
-Total number of major faults the system has made per second, those
-which have required loading a memory page from disk.
-.RE
-
-These last two statistics are consistent only when no processes have terminated.
-If a process is killed during the interval, the statistics are
-not available (marked as ????) and the average number will not be computed.
 .RE
 .IP "-X pid | SELF | ALL"
 Report statistics for the child processes of the process whose PID is
@@ -851,7 +826,7 @@ If this variable exists and its value is
 then the current locale will be ignored when printing the date in the report header.
 The
 .B sar
-command will use the ISO format (YYYY-MM-DD) instead.
+command will use the ISO 8601 format (YYYY-MM-DD) instead.
 
 .SH EXAMPLES
 .B sar -u 2 5

@@ -2,7 +2,7 @@
 # (C) 1999-2003 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 4.1.3
+VERSION = 4.1.4
 
 include build/CONFIG
 
@@ -122,7 +122,7 @@ iostat: iostat.c iostat.h common.h version.h libsysstat.a
 mpstat: mpstat.c mpstat.h common.h version.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $< $(LFLAGS)
 
-locales: nls/fr/$(PACKAGE).po nls/de/$(PACKAGE).po nls/es/$(PACKAGE).po nls/pt/$(PACKAGE).po nls/af/$(PACKAGE).po nls/nb_NO/$(PACKAGE).po nls/nn_NO/$(PACKAGE).po nls/it/$(PACKAGE).po nls/ru/$(PACKAGE).po nls/ro/$(PACKAGE).po
+locales: nls/fr/$(PACKAGE).po nls/de/$(PACKAGE).po nls/es/$(PACKAGE).po nls/pt/$(PACKAGE).po nls/af/$(PACKAGE).po nls/nb_NO/$(PACKAGE).po nls/nn_NO/$(PACKAGE).po nls/it/$(PACKAGE).po nls/ru/$(PACKAGE).po nls/ro/$(PACKAGE).po nls/pl/$(PACKAGE).po
 ifdef REQUIRE_NLS
 	$(MSGFMT) -o nls/fr/$(PACKAGE).mo nls/fr/$(PACKAGE).po
 	$(MSGFMT) -o nls/de/$(PACKAGE).mo nls/de/$(PACKAGE).po
@@ -134,6 +134,7 @@ ifdef REQUIRE_NLS
 	$(MSGFMT) -o nls/it/$(PACKAGE).mo nls/it/$(PACKAGE).po
 	$(MSGFMT) -o nls/ru/$(PACKAGE).mo nls/ru/$(PACKAGE).po
 	$(MSGFMT) -o nls/ro/$(PACKAGE).mo nls/ro/$(PACKAGE).po
+	$(MSGFMT) -o nls/pl/$(PACKAGE).mo nls/pl/$(PACKAGE).po
 endif
 
 # Phony targets
@@ -164,6 +165,7 @@ uninstall_base:
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/it/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/ru/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/ro/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/pl/LC_MESSAGES/$(PACKAGE).mo
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES
@@ -174,6 +176,7 @@ uninstall_base:
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/it/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ru/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ro/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/pl/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es
@@ -184,6 +187,7 @@ uninstall_base:
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/it
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ru
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ro
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/pl
 	rm -f $(DESTDIR)$(DOC_DIR)/*
 	-rmdir $(DESTDIR)$(DOC_DIR)
 	@echo "Please ignore the errors above, if any."
@@ -237,6 +241,7 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES
 	install -m 644 nls/fr/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES
 	install -m 644 nls/de/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES
 	install -m 644 nls/es/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
@@ -247,6 +252,7 @@ ifdef REQUIRE_NLS
 	install -m 644 nls/it/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES
 	install -m 644 nls/ru/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES
 	install -m 644 nls/ro/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES
+	install -m 644 nls/pl/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES
 endif
 
 install_all: install_base

@@ -52,7 +52,6 @@ struct mp_timestamp st_mp_tstamp[DIM];
 int cpu_nr = -1;
 long interval = 0, count = 0;
 unsigned int flags = 0;
-struct tm loc_time;
 
 
 /*
@@ -113,41 +112,43 @@ void salloc_mp_cpu(int nr_cpus)
 
 /*
  ***************************************************************************
- * Print statistics average
+ * Core function used to display statistics
  ***************************************************************************
  */
-void write_stats_avg(short curr, short dis)
+void write_stats_core(short prev, short curr, short dis,
+		      char *prev_string, char *curr_string)
 {
    struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
    unsigned long itv;
    int cpu;
 
    /* Interval value in jiffies, multiplied by the number of proc */
-   itv = st_mp_tstamp[curr].uptime - st_mp_tstamp[2].uptime;
+   itv = st_mp_tstamp[curr].uptime - st_mp_tstamp[prev].uptime;
 
    if (!itv)	/* Paranoia checking */
       itv = 1;
 
    /* Print stats */
    if (dis)
-      printf(_("\nAverage:     CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"));
+      printf(_("\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"),
+	     prev_string);
 
-   /* Check if we want global average stats among all proc */
+   /* Check if we want global stats among all proc */
    if (*cpu_bitmap & 1) {
 
-      printf(_("Average:     all"));
+      printf(_("%-11s  all"), curr_string);
 
       printf("  %6.2f  %6.2f  %6.2f  %6.2f",
-	     SP_VALUE(st_mp_cpu[2]->cpu_user,   st_mp_cpu[curr]->cpu_user,   itv),
-	     SP_VALUE(st_mp_cpu[2]->cpu_nice,   st_mp_cpu[curr]->cpu_nice,   itv),
-	     SP_VALUE(st_mp_cpu[2]->cpu_system, st_mp_cpu[curr]->cpu_system, itv),
-	     SP_VALUE(st_mp_cpu[2]->cpu_iowait, st_mp_cpu[curr]->cpu_iowait, itv));
+	     SP_VALUE(st_mp_cpu[prev]->cpu_user,   st_mp_cpu[curr]->cpu_user,   itv),
+	     SP_VALUE(st_mp_cpu[prev]->cpu_nice,   st_mp_cpu[curr]->cpu_nice,   itv),
+	     SP_VALUE(st_mp_cpu[prev]->cpu_system, st_mp_cpu[curr]->cpu_system, itv),
+	     SP_VALUE(st_mp_cpu[prev]->cpu_iowait, st_mp_cpu[curr]->cpu_iowait, itv));
 
-      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[2]->cpu_idle)
-	 printf("    %.2f", 0.0);	/* Handle buggy RTC (or kernels?) */
+      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[prev]->cpu_idle)
+	 printf("    %.2f", 0.0);	/* Handle buggy kernels */
       else
 	 printf("  %6.2f",
-		SP_VALUE(st_mp_cpu[2]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
+		SP_VALUE(st_mp_cpu[prev]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
    }
 
    /* Here, we reduce the interval value to one processor! */
@@ -157,7 +158,7 @@ void write_stats_avg(short curr, short dis)
 
    if (*cpu_bitmap & 1) {
       printf(" %9.2f\n",
-	  S_VALUE(st_mp_cpu[2]->irq, st_mp_cpu[curr]->irq, itv));
+	  S_VALUE(st_mp_cpu[prev]->irq, st_mp_cpu[curr]->irq, itv));
    }
 
    for (cpu = 1; cpu <= cpu_nr + 1; cpu++) {
@@ -166,10 +167,10 @@ void write_stats_avg(short curr, short dis)
       if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
 	 continue;
 
-      printf(_("Average:    %4d"), cpu - 1);
+      printf("%-11s %4d", curr_string, cpu - 1);
 
-      st_mp_cpu_i = st_mp_cpu[curr]  + cpu;
-      st_mp_cpu_j = st_mp_cpu[2] + cpu;
+      st_mp_cpu_i = st_mp_cpu[curr] + cpu;
+      st_mp_cpu_j = st_mp_cpu[prev] + cpu;
 
       printf("  %6.2f  %6.2f  %6.2f  %6.2f",
 	     SP_VALUE(st_mp_cpu_j->cpu_user,   st_mp_cpu_i->cpu_user,   itv),
@@ -178,7 +179,7 @@ void write_stats_avg(short curr, short dis)
 	     SP_VALUE(st_mp_cpu_j->cpu_iowait, st_mp_cpu_i->cpu_iowait, itv));
 
       if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)
-	 printf("    %.2f", 0.0);	/* Handle buggy RTC (or kernels?) */
+	 printf("    %.2f", 0.0);
       else
 	 printf("  %6.2f",
 		SP_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
@@ -191,99 +192,46 @@ void write_stats_avg(short curr, short dis)
 
 /*
  ***************************************************************************
+ * Print statistics average
+ ***************************************************************************
+ */
+void write_stats_avg(short curr, short dis)
+{
+   char string[16];
+
+   strcpy(string, _("Average:"));
+   write_stats_core(2, curr, dis, string, string);
+}
+
+
+/*
+ ***************************************************************************
  * Print statistics
  ***************************************************************************
  */
-void write_stats(short curr, short dis)
+void write_stats(short curr, short dis, struct tm *loc_time)
 {
    char cur_time[2][14];
-   struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
-   unsigned long itv;
-   int cpu;
 
    /*
     * Get previous timestamp
     * NOTE: loc_time structure must have been init'ed before!
     */
-   loc_time.tm_hour = st_mp_tstamp[!curr].hour;
-   loc_time.tm_min  = st_mp_tstamp[!curr].minute;
-   loc_time.tm_sec  = st_mp_tstamp[!curr].second;
-   strftime(cur_time[!curr], 14, "%X  ", &loc_time);
+   loc_time->tm_hour = st_mp_tstamp[!curr].hour;
+   loc_time->tm_min  = st_mp_tstamp[!curr].minute;
+   loc_time->tm_sec  = st_mp_tstamp[!curr].second;
+   strftime(cur_time[!curr], 14, "%X  ", loc_time);
 
    /* Get current timestamp */
-   loc_time.tm_hour = st_mp_tstamp[curr].hour;
-   loc_time.tm_min  = st_mp_tstamp[curr].minute;
-   loc_time.tm_sec  = st_mp_tstamp[curr].second;
-   strftime(cur_time[curr], 14, "%X  ", &loc_time);
+   loc_time->tm_hour = st_mp_tstamp[curr].hour;
+   loc_time->tm_min  = st_mp_tstamp[curr].minute;
+   loc_time->tm_sec  = st_mp_tstamp[curr].second;
+   strftime(cur_time[curr], 14, "%X  ", loc_time);
 
    /* Only the first 11 characters are printed */
    cur_time[curr][11] = cur_time[!curr][11] = '\0';
 
-   /* Interval value in jiffies, multiplied by the number of proc */
-   itv = st_mp_tstamp[curr].uptime - st_mp_tstamp[!curr].uptime;
-
-   if (!itv)	/* Paranoia checking */
-      itv = 1;
-
-   /* Print stats */
-   if (dis)
-      printf(_("\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"),
-	     cur_time[!curr]);
-
-   /* Check if we want global stats among all proc */
-   if (*cpu_bitmap & 1) {
-
-      printf(_("%-11s  all"), cur_time[curr]);
-
-      printf("  %6.2f  %6.2f  %6.2f  %6.2f",
-	     SP_VALUE(st_mp_cpu[!curr]->cpu_user,   st_mp_cpu[curr]->cpu_user,   itv),
-	     SP_VALUE(st_mp_cpu[!curr]->cpu_nice,   st_mp_cpu[curr]->cpu_nice,   itv),
-	     SP_VALUE(st_mp_cpu[!curr]->cpu_system, st_mp_cpu[curr]->cpu_system, itv),
-	     SP_VALUE(st_mp_cpu[!curr]->cpu_iowait, st_mp_cpu[curr]->cpu_iowait, itv));
-
-      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[!curr]->cpu_idle)
-	 printf("    %.2f", 0.0);	/* Handle buggy RTC (or kernels?) */
-      else
-	 printf("  %6.2f",
-		SP_VALUE(st_mp_cpu[!curr]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
-   }
-
-   /* Here, we reduce the interval value to one processor! */
-   itv /= (cpu_nr + 1);
-   if (!itv)
-      itv = 1;
-
-   if (*cpu_bitmap & 1) {
-      printf(" %9.2f\n",
-	  S_VALUE(st_mp_cpu[!curr]->irq, st_mp_cpu[curr]->irq, itv));
-   }
-
-   for (cpu = 1; cpu <= cpu_nr + 1; cpu++) {
-
-      /* Check if we want stats about this proc */
-      if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
-	 continue;
-
-      printf("%-11s %4d", cur_time[curr], cpu - 1);
-
-      st_mp_cpu_i = st_mp_cpu[curr]  + cpu;
-      st_mp_cpu_j = st_mp_cpu[!curr] + cpu;
-
-      printf("  %6.2f  %6.2f  %6.2f  %6.2f",
-	     SP_VALUE(st_mp_cpu_j->cpu_user,   st_mp_cpu_i->cpu_user,   itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_nice,   st_mp_cpu_i->cpu_nice,   itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_iowait, st_mp_cpu_i->cpu_iowait, itv));
-
-      if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)
-	 printf("    %.2f", 0.0);	/* Handle buggy RTC (or kernels?) */
-      else
-	 printf("  %6.2f",
-		SP_VALUE(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
-
-      printf(" %9.2f\n",
-	  S_VALUE(st_mp_cpu_j->irq, st_mp_cpu_i->irq, itv));
-   }
+   write_stats_core(!curr, curr, dis, cur_time[!curr], cur_time[curr]);
 }
 
 
@@ -408,6 +356,58 @@ void read_interrupts_stat(short curr)
 
 /*
  ***************************************************************************
+ * Main loop: read stats from the relevant sources,
+ * and display them.
+ ***************************************************************************
+ */
+void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
+		     struct tm *loc_time)
+{
+   short curr = 1, dis = 1;
+
+   do {
+
+      /* Resetting the structure not needed since every fields will be set */
+
+      /* Save time */
+      get_localtime(loc_time);
+
+      st_mp_tstamp[curr].hour   = loc_time->tm_hour;
+      st_mp_tstamp[curr].minute = loc_time->tm_min;
+      st_mp_tstamp[curr].second = loc_time->tm_sec;
+
+      /* Read stats */
+      read_proc_stat(curr);
+      read_interrupts_stat(curr);
+
+      /* Write stats */
+      if (!dis_hdr) {
+	 dis = lines / rows;
+	 if (dis)
+	    lines %= rows;
+	 lines++;
+      }
+      write_stats(curr, dis, loc_time);
+
+      /* Flush data */
+      fflush(stdout);
+
+      if (count > 0)
+	 count--;
+      if (count) {
+	 curr ^= 1;
+	 pause();
+      }
+   }
+   while (count);
+
+   /* Write stats average */
+   write_stats_avg(curr, dis_hdr);
+}
+
+
+/*
+ ***************************************************************************
  * Main entry to the program
  ***************************************************************************
  */
@@ -415,9 +415,10 @@ int main(int argc, char **argv)
 {
    int opt = 0, i;
    struct utsname header;
-   short curr = 1, dis_hdr = -1, opt_used = 0, dis = 1;
+   short dis_hdr = -1, opt_used = 0;
    unsigned long lines = 0;
    int rows = 23;
+   struct tm loc_time;
 
 #ifdef USE_NLS
    /* Init National Language Support */
@@ -528,7 +529,7 @@ int main(int argc, char **argv)
 
       memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 2));
 
-      write_stats(0, DISP_HDR);
+      write_stats(0, DISP_HDR, &loc_time);
       exit(0);
    }
 
@@ -547,44 +548,7 @@ int main(int argc, char **argv)
    pause();
 
    /* Main loop */
-   do {
-
-      /* Resetting the structure not needed since every fields will be set */
-
-      /* Save time */
-      get_localtime(&loc_time);
-
-      st_mp_tstamp[curr].hour   = loc_time.tm_hour;
-      st_mp_tstamp[curr].minute = loc_time.tm_min;
-      st_mp_tstamp[curr].second = loc_time.tm_sec;
-
-      /* Read stats */
-      read_proc_stat(curr);
-      read_interrupts_stat(curr);
-
-      /* Write stats */
-      if (!dis_hdr) {
-	 dis = lines / rows;
-	 if (dis)
-	    lines %= rows;
-	 lines++;
-      }
-      write_stats(curr, dis);
-
-      /* Flush data */
-      fflush(stdout);
-
-      if (count > 0)
-	 count--;
-      if (count) {
-	 curr ^= 1;
-	 pause();
-      }
-   }
-   while (count);
-
-   /* Write stats average */
-   write_stats_avg(curr, dis_hdr);
+   rw_mp_stat_loop(dis_hdr, lines, rows, &loc_time);
 
    return 0;
 }

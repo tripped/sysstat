@@ -21,6 +21,7 @@ The following people have contributed to 'sysstat' in one way or another:
 	    into Italian.
 	  * Dennis Selsky <selsky@siberia.net> for the Russian translation.
 	  * Eugen Hoanca <eugenh@urban-grafx.ro> for the Romanian translation.
+	  * Robert Luberda <robert@debian.org> for the translation into Polish.
 
 	Carl-Christian Weber <ccweber@itz-koeln.de> helped me to make sar
 	work on SMP machines.
@@ -78,6 +79,7 @@ I would also thank the following people for their hints or bug reports
 	David Gesswein <djg@drs-esg.com>
 	Tatsuo Ito <tito@miraclelinux.com>
 	David S. Jackson <dsj@sylvester.dsj.net>
+	Erik Jacobson <erikj@subway.americas.sgi.com>	
 	Jordan <ledzep37@home.com>	
 	Jurriaan <thunder7@xs4all.nl>
 	Ivo Letzas <letzas@format.mine.nu>	
@@ -87,7 +89,9 @@ I would also thank the following people for their hints or bug reports
 	Rodney J. Mertz <rjm@elvis.arh.ms.cdc.com>
 	Roy Millar <100044.14@compuserve.com>
 	David J. Morse <David_J_Morse@Dell.com>
+	Hariprasad Nellitheertha <hari@in.ibm.com>
 	Edouard G. Parmelan <edouard.parmelan@quadratec.fr>
+	Oliver Paukstadt <oliver.paukstadt@millenux.com>	
 	Plattner(?) <Plattner.external@infineon.com>
 	ReDragon <redragon@vnsecurity.net>
 	Joseph E. Sacco <jsacco@earthlink.net>

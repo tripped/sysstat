@@ -53,15 +53,13 @@ struct io_stats *st_iodev[2];
 struct io_hdr_stats *st_hdr_iodev;
 struct io_dlist *st_dev_list;
 
-struct tm loc_time;
-
 /* Nb of devices (and possibly partitions if -p option was used) found */
 int iodev_nr = 0;
 
 /* Nb of devices entered on the command line */
 int dlist_idx = 0;
 
-long int interval = 0;
+long interval = 0;
 unsigned char timestamp[64];
 
 /*
@@ -108,8 +106,8 @@ void alarm_handler(int sig)
  */
 void init_stats(void)
 {
-   memset(&comm_stats[0], 0, sizeof(struct comm_stats));
-   memset(&comm_stats[1], 0, sizeof(struct comm_stats));
+   memset(&comm_stats[0], 0, COMM_STATS_SIZE);
+   memset(&comm_stats[1], 0, COMM_STATS_SIZE);
 }
 
 
@@ -125,7 +123,7 @@ void set_entries_inactive(int iodev_nr)
 
    for (i = 0; i < iodev_nr; i++) {
       st_hdr_iodev_i = st_hdr_iodev + i;
-      st_hdr_iodev_i->active = 0;
+      st_hdr_iodev_i->active = FALSE;
    }
 }
 
@@ -159,18 +157,18 @@ void salloc_device(int iodev_nr)
    struct io_hdr_stats *st_hdr_iodev_i;
 
    for (i = 0; i < 2; i++) {
-      if ((st_iodev[i] = (struct io_stats *) malloc(sizeof(struct io_stats) * iodev_nr)) == NULL) {
+      if ((st_iodev[i] = (struct io_stats *) malloc(IO_STATS_SIZE * iodev_nr)) == NULL) {
 	 perror("malloc");
 	 exit(4);
       }
-      memset(st_iodev[i], 0, sizeof(struct io_stats) * iodev_nr);
+      memset(st_iodev[i], 0, IO_STATS_SIZE * iodev_nr);
    }
 
-   if ((st_hdr_iodev = (struct io_hdr_stats *) malloc(sizeof(struct io_hdr_stats) * iodev_nr)) == NULL) {
+   if ((st_hdr_iodev = (struct io_hdr_stats *) malloc(IO_HDR_STATS_SIZE * iodev_nr)) == NULL) {
       perror("malloc");
       exit(4);
    }
-   memset(st_hdr_iodev, 0, sizeof(struct io_hdr_stats) * iodev_nr);
+   memset(st_hdr_iodev, 0, IO_HDR_STATS_SIZE * iodev_nr);
 
    if (iodev_nr == 4) {
       /*
@@ -194,11 +192,11 @@ void salloc_device(int iodev_nr)
  */
 void salloc_dev_list(int list_len)
 {
-   if ((st_dev_list = (struct io_dlist *) malloc(sizeof(struct io_dlist) * list_len)) == NULL) {
+   if ((st_dev_list = (struct io_dlist *) malloc(IO_DLIST_SIZE * list_len)) == NULL) {
       perror("malloc");
       exit(4);
    }
-   memset(st_dev_list, 0, sizeof(struct io_dlist) * list_len);
+   memset(st_dev_list, 0, IO_DLIST_SIZE * list_len);
 }
 
 
@@ -273,7 +271,7 @@ void io_sys_init(int *flags)
 void read_stat(int curr, int flags)
 {
    FILE *statfp;
-   char line[1024];
+   char line[8192];
    int pos, i;
    unsigned int v_tmp[3], v_major, v_index;
    struct io_stats *st_iodev_tmp[4], *st_iodev_i;
@@ -293,7 +291,7 @@ void read_stat(int curr, int flags)
       exit(2);
    }
 
-   while (fgets(line, 1024, statfp) != NULL) {
+   while (fgets(line, 8192, statfp) != NULL) {
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
@@ -399,7 +397,7 @@ void read_stat(int curr, int flags)
 		     st_hdr_iodev_i->index = v_index;
 		     sprintf(st_hdr_iodev_i->name, "dev%d-%d", v_major, v_index);
 		     st_iodev_i = st_iodev[!curr] + i;
-		     memset(st_iodev_i, 0, sizeof(struct io_stats));
+		     memset(st_iodev_i, 0, IO_STATS_SIZE);
 		     break;
 		  }
 	       }
@@ -407,7 +405,7 @@ void read_stat(int curr, int flags)
 	
 	    if (i < iodev_nr) {
 	       st_hdr_iodev_i = st_hdr_iodev + i;
-	       st_hdr_iodev_i->active = 1;
+	       st_hdr_iodev_i->active = TRUE;
 	       st_iodev_i = st_iodev[curr] + i;
 	       st_iodev_i->dk_drive      = v_tmp[0];
 	       st_iodev_i->dk_drive_rblk = v_tmp[1];
@@ -480,14 +478,14 @@ int read_sysfs_file_stat(int curr, char *filename, char *dev_name,
 	       st_hdr_iodev_i->major = 1;	/* Just to indicate it is now used! */
 	       strcpy(st_hdr_iodev_i->name, dev_name);
 	       st_iodev_i = st_iodev[!curr] + i;
-	       memset(st_iodev_i, 0, sizeof(struct io_stats));
+	       memset(st_iodev_i, 0, IO_STATS_SIZE);
 	       break;
 	    }
 	 }
       }
       if (i < iodev_nr) {
 	 st_hdr_iodev_i = st_hdr_iodev + i;
-	 st_hdr_iodev_i->active = 1;
+	 st_hdr_iodev_i->active = TRUE;
 	 st_iodev_i = st_iodev[curr] + i;
 	 *st_iodev_i = sdev;
       }
@@ -848,7 +846,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
  * and display them.
  ***************************************************************************
  */
-void rw_io_stat_loop(int flags, long int count)
+void rw_io_stat_loop(int flags, long int count, struct tm *loc_time)
 {
    int curr = 1;
    int next;
@@ -873,10 +871,10 @@ void rw_io_stat_loop(int flags, long int count)
       }
 
       /* Save time */
-      get_localtime(&loc_time);
+      get_localtime(loc_time);
 
       /* Print results */
-      if ((next = write_stat(curr, flags, &loc_time))
+      if ((next = write_stat(curr, flags, loc_time))
 	  && (count > 0))
 	 count--;
       fflush(stdout);
@@ -902,9 +900,10 @@ int main(int argc, char **argv)
    int it = 0, flags = 0;
    int opt = 1;
    int i;
-   long int count = 1;
+   long count = 1;
    struct utsname header;
    struct io_dlist *st_dev_list_i;
+   struct tm loc_time;
 
 #ifdef USE_NLS
    /* Init National Language Support */
@@ -1013,7 +1012,7 @@ int main(int argc, char **argv)
    alarm_handler(0);
 
    /* Main loop */
-   rw_io_stat_loop(flags, count);
+   rw_io_stat_loop(flags, count, &loc_time);
 
    return 0;
 }

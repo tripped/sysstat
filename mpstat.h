@@ -18,8 +18,7 @@ struct mp_stats {
     * Each structure is *aligned*, and we want the structures to be packed together. */
 };
 
-#define MP_STATS_SIZE	(sizeof(int) * 4 + \
-			 SIZEOF_LONG * 2)
+#define MP_STATS_SIZE	(sizeof(struct mp_stats))
 
 
 struct mp_timestamp {

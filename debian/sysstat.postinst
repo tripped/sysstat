@@ -41,6 +41,8 @@ if [ "$1" = "configure" ] ; then
 		--slave /usr/share/man/man1/sar.1.gz sar.1.gz \
 					/usr/share/man/man1/sar.sysstat.1.gz
   fi
+
+  [ -x /usr/lib/sysstat/sa1 ] && /usr/lib/sysstat/sa1 || true
 fi
 
 #DEBHELPER#

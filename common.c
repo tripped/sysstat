@@ -132,6 +132,7 @@ inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, 
 void init_nls(void)
 {
    setlocale(LC_MESSAGES, "");
+   setlocale(LC_CTYPE, "");
    setlocale(LC_TIME, "");
    setlocale(LC_NUMERIC, "");
 

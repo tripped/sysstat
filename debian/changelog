@@ -1,3 +1,11 @@
+sysstat (4.0.7-2) unstable; urgency=low
+
+  * Aplied patches from Junichi Uekawa:
+    + common.c: set LC_CTYPE in nls_init() (closes: #172903).
+    + sysstat.postinst: call /usr/lib/sysstat/sa1 (closes: #172904).
+    Thanks for the patches, Junichi!
+
+
 sysstat (4.0.7-1) unstable; urgency=low
 
   * New upstream version.

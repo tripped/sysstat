@@ -46,28 +46,22 @@ If you use the (Tab) C shell, you would have entered:
 Here is a complete example with iostat:
 
 $ export LANG=en_US
-$ iostat   
-Linux 2.2.12 (brooks) 	10/29/99
-avg-cpu:  %user   %nice    %sys   %idle
-           1.49    0.00    1.04   97.47
-Disks:      tps    Kb_read/s    Kb_wrtn/s    Kb_read    Kb_wrtn
-hdisk0     1.03         4.37         0.65      28816       4326
-hdisk1     0.00         0.00         0.00          0          0
-hdisk2     0.00         0.00         0.00          0          0
-hdisk3     0.00         0.00         0.00          0          0
-Total:     1.03         4.37         0.65      28816       4326
+$ iostat -V 
+sysstat version 5.1.4
+(C) Sebastien Godard
+Usage: iostat [ options... ] [ <interval> [ <count> ] ]
+Options are:
+[ -c | -d ] [ -k ] [ -m ] [ -t ] [ -V ] [ -x ]
+[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]
 
 $ export LANG=fr_FR
-$ iostat
-Linux 2.2.12 (brooks) 	29.10.1999
-cpu-moy:  %user   %nice    %sys   %idle
-           1,49    0,00    1,04   97,47
-Disques:    tps     Ko_lus/s  Ko_écrits/s     Ko_lus  Ko_écrits
-disque0    1,03         4,37         0,65      28816       4340
-disque1    0,00         0,00         0,00          0          0
-disque2    0,00         0,00         0,00          0          0
-disque3    0,00         0,00         0,00          0          0
-Total:     1,03         4,37         0,65      28816       4340
+$ iostat -V
+sysstat version 5.1.4
+(C) Sebastien Godard
+Utilisation: iostat [ options... ] [ <intervalle> [ <itérations> ] ]
+Options possibles:
+[ -c | -d ] [ -k ] [ -m ] [ -t ] [ -V ] [ -x ]
+[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]
 
 
 HOW CAN I ADD A NEW LANGUAGE TO SYSSTAT?

@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 2000-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -150,27 +150,24 @@ void write_stats_core(short prev, short curr, short dis,
 
    /* Print stats */
    if (dis)
-      printf(_("\n%-11s  CPU   %%user   %%nice    %%sys %%iowait    %%irq   %%soft   %%idle    intr/s\n"),
+      printf("\n%-11s  CPU   %%user   %%nice    %%sys %%iowait    %%irq   %%soft   %%idle    intr/s\n",
 	     prev_string);
 
    /* Check if we want global stats among all proc */
    if (*cpu_bitmap & 1) {
 
-      printf(_("%-11s  all"), curr_string);
+      printf("%-11s  all", curr_string);
 
-      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f",
+      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f",
 	     ll_sp_value(st_mp_cpu[prev]->cpu_user,    st_mp_cpu[curr]->cpu_user,    itv),
  	     ll_sp_value(st_mp_cpu[prev]->cpu_nice,    st_mp_cpu[curr]->cpu_nice,    itv),
 	     ll_sp_value(st_mp_cpu[prev]->cpu_system,  st_mp_cpu[curr]->cpu_system,  itv),
 	     ll_sp_value(st_mp_cpu[prev]->cpu_iowait,  st_mp_cpu[curr]->cpu_iowait,  itv),
 	     ll_sp_value(st_mp_cpu[prev]->cpu_hardirq, st_mp_cpu[curr]->cpu_hardirq, itv),
-	     ll_sp_value(st_mp_cpu[prev]->cpu_softirq, st_mp_cpu[curr]->cpu_softirq, itv));
-
-      if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[prev]->cpu_idle)
-	 printf("    %.2f", 0.0);	/* Handle buggy kernels */
-      else
-	 printf("  %6.2f",
-		ll_sp_value(st_mp_cpu[prev]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
+	     ll_sp_value(st_mp_cpu[prev]->cpu_softirq, st_mp_cpu[curr]->cpu_softirq, itv),
+	     (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[prev]->cpu_idle) ?
+	     0.0 :	/* Handle buggy kernels */
+	     ll_sp_value(st_mp_cpu[prev]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
    }
 
    /*
@@ -202,21 +199,16 @@ void write_stats_core(short prev, short curr, short dis,
       st_mp_cpu_i = st_mp_cpu[curr] + cpu;
       st_mp_cpu_j = st_mp_cpu[prev] + cpu;
 
-      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f",
+      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f %9.2f\n",
 	     ll_sp_value(st_mp_cpu_j->cpu_user,    st_mp_cpu_i->cpu_user,    itv),
 	     ll_sp_value(st_mp_cpu_j->cpu_nice,    st_mp_cpu_i->cpu_nice,    itv),
 	     ll_sp_value(st_mp_cpu_j->cpu_system,  st_mp_cpu_i->cpu_system,  itv),
 	     ll_sp_value(st_mp_cpu_j->cpu_iowait,  st_mp_cpu_i->cpu_iowait,  itv),
 	     ll_sp_value(st_mp_cpu_j->cpu_hardirq, st_mp_cpu_i->cpu_hardirq, itv),
-	     ll_sp_value(st_mp_cpu_j->cpu_softirq, st_mp_cpu_i->cpu_softirq, itv));
-
-      if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)
-	 printf("    %.2f", 0.0);
-      else
-	 printf("  %6.2f",
-		ll_sp_value(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv));
-
-      printf(" %9.2f\n",
+	     ll_sp_value(st_mp_cpu_j->cpu_softirq, st_mp_cpu_i->cpu_softirq, itv),
+	     (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle) ?
+	     0.0 :
+	     ll_sp_value(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv),
 	     ll_s_value(st_mp_cpu_j->irq, st_mp_cpu_i->irq, itv));
    }
 }
@@ -534,7 +526,7 @@ int main(int argc, char **argv)
 	    usage(argv[0]);
 	 interval = atol(argv[opt]);
 	 if (!interval)
-	    flags |= F_BOOT_STATS;
+	    flags |= M_F_BOOT_STATS;
 	 else if (interval < 0)
 	   usage(argv[0]);
 	 count = -1;
@@ -564,7 +556,7 @@ int main(int argc, char **argv)
    }
    if (!interval)
       /* Interval not set => display stats since boot time */
-      flags |= F_BOOT_STATS;
+      flags |= M_F_BOOT_STATS;
 
    /* Get time */
    get_localtime(&loc_time);

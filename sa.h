@@ -1,6 +1,6 @@
 /*
  * sar/sadc: report system activity
- * (C) 1999-2004 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2005 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _SA_H
@@ -89,41 +89,50 @@
 #define K_SOCK	"SOCK"
 #define K_FULL	"FULL"
 
-/* Define flags */
-#define F_ALL_PROC      0x00001
-#define F_SA_ROTAT      0x00002
-#define F_FLT_INC	0x00004
-#define F_A_OPTION	0x00008
-#define F_F_OPTION	0x00010
-#define F_PPC_OPTION	0x00020
-#define F_ORG_TIME	0x00040
-#define F_DEFAULT_COUNT	0x00080
-#define F_I_OPTION	0x00100
-#define F_DB_OPTION	0x00200
-#define F_DO_SA_ROTAT	0x00400
-#define F_PER_PROC	0x00800
-#define F_L_OPTION	0x01000
-#define F_FILE_LCK	0X02000
-#define F_WANT_DISKS	0x04000
-#define F_DEV_PRETTY	0x08000
-/* 0x100000:0x800000 -> reserved (cf. common.h) */
+/* S_: sar/sadc/sadf - F_: Flag */
+#define S_F_ALL_PROC      	0x000001
+#define S_F_SA_ROTAT      	0x000002
+#define S_F_FLT_INC		0x000004
+#define S_F_A_OPTION		0x000008
+#define S_F_F_OPTION		0x000010
+#define S_F_PPC_OPTION		0x000020
+#define S_F_TRUE_TIME		0x000040
+#define S_F_DEFAULT_COUNT	0x000080
+#define S_F_I_OPTION		0x000100
+#define S_F_DB_OPTION		0x000200
+#define S_F_DO_SA_ROTAT		0x000400
+#define S_F_PER_PROC		0x000800
+#define S_F_L_OPTION		0x001000
+#define S_F_FILE_LCK		0X002000
+#define S_F_WANT_DISKS		0x004000
+#define S_F_DEV_PRETTY		0x008000
+#define S_F_BOOT_STATS		0x010000
+#define S_F_HAS_DISKSTATS	0x020000
+#define S_F_HAS_PPARTITIONS	0x040000
+#define S_F_H_OPTION		0x080000
+#define S_F_XML_OPTION		0x100000
 
-#define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
-#define WANT_SA_ROTAT(m)	(((m) & F_SA_ROTAT) == F_SA_ROTAT)
-#define FLT_ARE_INC(m)		(((m) & F_FLT_INC) == F_FLT_INC)
-#define USE_A_OPTION(m)		(((m) & F_A_OPTION) == F_A_OPTION)
-#define USE_F_OPTION(m)		(((m) & F_F_OPTION) == F_F_OPTION)
-#define USE_DEFAULT_COUNT(m)	(((m) & F_DEFAULT_COUNT) == F_DEFAULT_COUNT)
-#define USE_I_OPTION(m)		(((m) & F_I_OPTION) == F_I_OPTION)
-#define DO_SA_ROTAT(m)		(((m) & F_DO_SA_ROTAT) == F_DO_SA_ROTAT)
-#define WANT_PER_PROC(m)	(((m) & F_PER_PROC) == F_PER_PROC)
-#define USE_L_OPTION(m)		(((m) & F_L_OPTION) == F_L_OPTION)
-#define FILE_LOCKED(m)		(((m) & F_FILE_LCK) == F_FILE_LCK)
-#define USE_PPC_OPTION(m)	(((m) & F_PPC_OPTION) == F_PPC_OPTION)
-#define PRINT_ORG_TIME(m)	(((m) & F_ORG_TIME) == F_ORG_TIME)
-#define USE_DB_OPTION(m)	(((m) & F_DB_OPTION) == F_DB_OPTION)
-#define WANT_DISKS(m)		(((m) & F_WANT_DISKS) == F_WANT_DISKS)
-#define USE_PRETTY_OPTION(m)	(((m) & F_DEV_PRETTY) == F_DEV_PRETTY)
+#define WANT_ALL_PROC(m)	(((m) & S_F_ALL_PROC) == S_F_ALL_PROC)
+#define WANT_SA_ROTAT(m)	(((m) & S_F_SA_ROTAT) == S_F_SA_ROTAT)
+#define FLT_ARE_INC(m)		(((m) & S_F_FLT_INC) == S_F_FLT_INC)
+#define USE_A_OPTION(m)		(((m) & S_F_A_OPTION) == S_F_A_OPTION)
+#define USE_F_OPTION(m)		(((m) & S_F_F_OPTION) == S_F_F_OPTION)
+#define USE_DEFAULT_COUNT(m)	(((m) & S_F_DEFAULT_COUNT) == S_F_DEFAULT_COUNT)
+#define USE_I_OPTION(m)		(((m) & S_F_I_OPTION) == S_F_I_OPTION)
+#define DO_SA_ROTAT(m)		(((m) & S_F_DO_SA_ROTAT) == S_F_DO_SA_ROTAT)
+#define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC) == S_F_PER_PROC)
+#define USE_L_OPTION(m)		(((m) & S_F_L_OPTION) == S_F_L_OPTION)
+#define FILE_LOCKED(m)		(((m) & S_F_FILE_LCK) == S_F_FILE_LCK)
+#define USE_PPC_OPTION(m)	(((m) & S_F_PPC_OPTION) == S_F_PPC_OPTION)
+#define PRINT_TRUE_TIME(m)	(((m) & S_F_TRUE_TIME) == S_F_TRUE_TIME)
+#define USE_DB_OPTION(m)	(((m) & S_F_DB_OPTION) == S_F_DB_OPTION)
+#define WANT_DISKS(m)		(((m) & S_F_WANT_DISKS) == S_F_WANT_DISKS)
+#define USE_PRETTY_OPTION(m)	(((m) & S_F_DEV_PRETTY) == S_F_DEV_PRETTY)
+#define WANT_BOOT_STATS(m)	(((m) & S_F_BOOT_STATS) == S_F_BOOT_STATS)
+#define HAS_DISKSTATS(m)	(((m) & S_F_HAS_DISKSTATS) == S_F_HAS_DISKSTATS)
+#define HAS_PPARTITIONS(m)	(((m) & S_F_HAS_PPARTITIONS) == S_F_HAS_PPARTITIONS)
+#define USE_H_OPTION(m)		(((m) & S_F_H_OPTION) == S_F_H_OPTION)
+#define USE_XML_OPTION(m)	(((m) & S_F_XML_OPTION) == S_F_XML_OPTION)
 
 /* Files */
 #define PROC		"/proc"
@@ -215,7 +224,7 @@ struct file_hdr {
    unsigned int	  sa_actflag			__attribute__ ((aligned (8)));
    /* Number of processes to monitor ( {-x | -X } ALL) */
    unsigned int   sa_nr_pid			__attribute__ ((packed));
-   /* Number of interrupts per procesor: 2 means two interrupts */
+   /* Number of interrupts per processor: 2 means two interrupts */
    unsigned int   sa_irqcpu			__attribute__ ((packed));
    /* Number of disks */
    unsigned int   sa_nr_disk			__attribute__ ((packed));
@@ -270,7 +279,7 @@ struct file_stats {
    unsigned long pgpgout			__attribute__ ((aligned (8)));
    unsigned long pswpin				__attribute__ ((aligned (8)));
    unsigned long pswpout			__attribute__ ((aligned (8)));
-   /* Memory stats in Kb */
+   /* Memory stats in kB */
    unsigned long frmkb				__attribute__ ((aligned (8)));
    unsigned long bufkb				__attribute__ ((aligned (8)));
    unsigned long camkb				__attribute__ ((aligned (8)));
@@ -325,7 +334,10 @@ struct file_stats {
    /* --- CHAR --- */
    /* Record type: R_STATS or R_DUMMY */
    unsigned char record_type			__attribute__ ((packed));
-   /* Time stamp: hour, minute and second */
+   /*
+    * Time stamp: hour, minute and second.
+    * Used to determine TRUE time (immutable, non locale dependent time).
+    */
    unsigned char hour		/* (0-23) */	__attribute__ ((packed));
    unsigned char minute		/* (0-59) */	__attribute__ ((packed));
    unsigned char second		/* (0-59) */	__attribute__ ((packed));
@@ -477,7 +489,7 @@ extern unsigned int check_iface_reg(struct file_hdr *,
 extern int	    datecmp(struct tm *, struct tstamp *);
 unsigned long long  get_per_cpu_interval(struct stats_one_cpu *,
 					 struct stats_one_cpu *);
-extern char	   *get_devname(unsigned int, unsigned int, unsigned int);
+extern char	   *get_devname(unsigned int, unsigned int, int);
 extern void	    init_bitmap(unsigned char [], unsigned char, unsigned int);
 extern void	    init_stats(struct file_stats [], unsigned int [][]);
 extern int	    next_slice(unsigned long long, unsigned long long,
@@ -493,9 +505,9 @@ extern int	    parse_timestamp(char * [], int *, struct tstamp *,
 				    const char *);
 extern void	    prep_file_for_reading(int *, char *, struct file_hdr *,
 					  unsigned int *, unsigned int);
-extern int	    prep_time(struct file_stats *, struct file_stats *,
-			      struct file_hdr *, struct tm *, struct tstamp *,
-			      int, unsigned long long *, unsigned long long *);
+extern void	    get_itv_value(struct file_stats *, struct file_stats *,
+				  unsigned int, unsigned long long *,
+				  unsigned long long *);
 extern void	    print_report_hdr(unsigned int, struct tm *,
 				     struct file_hdr *);
 extern int	    sa_fread(int, void *, int, int);

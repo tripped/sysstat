@@ -1,10 +1,17 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2004 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 2000-2005 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _MPSTAT_H
 #define _MPSTAT_H
+
+
+/* M_: mpstat - F_: Flag */
+#define M_F_BOOT_STATS	0x0001
+
+#define WANT_BOOT_STATS(m)	(((m) & M_F_BOOT_STATS) == M_F_BOOT_STATS)
+
 
 
 struct mp_stats {

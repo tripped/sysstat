@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -491,13 +491,13 @@ void sa_sys_init(unsigned int *flags)
     * or number of disk_io entries in /proc/stat.
     */
    if ((disk_used = get_diskstats_dev_nr(CNT_DEV)) > 0) {
-      *flags |= F_HAS_DISKSTATS;
+      *flags |= S_F_HAS_DISKSTATS;
       sadc_actflag |= A_DISK;
       disk_used += NR_DISK_PREALLOC;
       salloc_disk(disk_used);
    }
    else if ((disk_used = get_ppartitions_dev_nr(CNT_DEV)) > 0) {
-      *flags |= F_HAS_PPARTITIONS;
+      *flags |= S_F_HAS_PPARTITIONS;
       sadc_actflag |= A_DISK;
       disk_used += NR_DISK_PREALLOC;
       salloc_disk(disk_used);
@@ -539,7 +539,7 @@ int ask_for_flock(int fd, unsigned int *flags, int fatal)
       }
       else
 	 /* File successfully locked */
-	 *flags |= F_FILE_LCK;
+	 *flags |= S_F_FILE_LCK;
    }
    return 0;
 }
@@ -752,7 +752,8 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
 	       create_sa_file(ofd, ofile, file_stats_size, flags);
 	       return;
 	    }
-	    fprintf(stderr, _("Invalid system activity file: %s\n"), ofile);
+	    fprintf(stderr, _("Invalid system activity file: %s (%#x)\n"),
+		    ofile, file_hdr.sa_magic);
 	    exit(3);
 	 }
 	 /*
@@ -1787,7 +1788,7 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
 	  * beginning of the new one (outfile must have been specified
 	  * as '-' on the command line).
 	  */
-	 *flags &= ~F_DO_SA_ROTAT;
+	 *flags &= ~S_F_DO_SA_ROTAT;
 	 if (fdatasync(ofd) < 0) {	/* Flush previous file */
 	    perror("fdatasync");
 	    exit(4);
@@ -1822,7 +1823,7 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
 	 new_ofile[MAX_FILE_LEN - 1] = '\0';
 
 	 if (strcmp(ofile, new_ofile))
-	    *flags |= F_DO_SA_ROTAT;
+	    *flags |= S_F_DO_SA_ROTAT;
       }
    }
    while (count);
@@ -1881,13 +1882,13 @@ int main(int argc, char **argv)
 	 sadc_actflag |= A_ONE_IRQ;
 
       else if (!strcmp(argv[opt], "-d"))
-	 flags |= F_WANT_DISKS;
+	 flags |= S_F_WANT_DISKS;
 
       else if (!strcmp(argv[opt], "-F"))
-	 flags |= F_F_OPTION;
+	 flags |= S_F_F_OPTION;
 
       else if (!strcmp(argv[opt], "-L"))
-	 flags |= F_L_OPTION;
+	 flags |= S_F_L_OPTION;
 
       else if (!strcmp(argv[opt], "-V"))
 	 usage(argv[0]);
@@ -1923,7 +1924,7 @@ int main(int argc, char **argv)
 	       snprintf(ofile, MAX_FILE_LEN,
 			"%s/sa%02d", SA_DIR, loc_time.tm_mday);
 	       ofile[MAX_FILE_LEN - 1] = '\0';
-	       flags |= F_SA_ROTAT;
+	       flags |= S_F_SA_ROTAT;
 	    }
 	    else if (!strncmp(argv[opt], "-", 1))
 	       /* Bad option */
@@ -1963,7 +1964,7 @@ int main(int argc, char **argv)
    }
    else
       /* -L option ignored when writing to STDOUT */
-      flags &= ~F_L_OPTION;
+      flags &= ~S_F_L_OPTION;
 
    /* Don't read disk stats if -d option not set */
    if (!WANT_DISKS(flags)) {

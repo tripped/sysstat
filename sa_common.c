@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -185,14 +185,14 @@ void salloc_disk_array(struct disk_stats *st_disk[], int nr_disk)
  * disk activities are read from /proc/stat.
  ***************************************************************************
  */
-char *get_devname(unsigned int major, unsigned int minor, unsigned int flags)
+char *get_devname(unsigned int major, unsigned int minor, int pretty)
 {
    static char buf[32];
    char *name;
 
    snprintf(buf, 32, "dev%d-%d", major, minor);
 
-   if (!USE_PRETTY_OPTION(flags))
+   if (!pretty)
       return (buf);
    if ((name = ioc_name(major, minor)) == NULL)
       return (buf);
@@ -209,18 +209,21 @@ char *get_devname(unsigned int major, unsigned int minor, unsigned int flags)
 int next_slice(unsigned long long uptime_ref, unsigned long long uptime,
 	       struct file_hdr *file_hdr, int reset, long interval)
 {
-   unsigned long file_interval;
+   unsigned long file_interval, entry;
    static unsigned long long last_uptime = 0;
    int min, max, pt1, pt2;
-
+   double f;
 
    if (!last_uptime || reset)
       last_uptime = uptime_ref;
 
    /* Interval cannot be greater than 0xffffffff here */
-   file_interval =
-      (((uptime - last_uptime) & 0xffffffff) /
+   f = (((double) ((uptime - last_uptime) & 0xffffffff)) /
 	(file_hdr->sa_proc + 1)) / HZ;
+   file_interval = (unsigned long) f;
+   if ((f * 10) - (file_interval * 10) >= 5)
+      file_interval++; /* Rounding to correct value */
+
    last_uptime = uptime;
 
    /*
@@ -236,19 +239,16 @@ int next_slice(unsigned long long uptime_ref, unsigned long long uptime,
     *       (Pn * Iu) or (P'n * Iu) belongs to In
     * with  Pn = En / Iu and P'n = En / Iu + 1
     */
-   min =
-      ((((uptime - uptime_ref) & 0xffffffff) /
-	(file_hdr->sa_proc + 1)) / HZ) - (file_interval / 2);
-   max =
-      ((((uptime - uptime_ref) & 0xffffffff) /
-	(file_hdr->sa_proc + 1)) / HZ) + (file_interval / 2) + (file_interval & 0x1);
+   f = (((double) ((uptime - uptime_ref) & 0xffffffff)) /
+	(file_hdr->sa_proc + 1)) / HZ;
+   entry = (unsigned long) f;
+   if ((f * 10) - (entry * 10) >= 5)
+      entry++;
 
-   pt1 =
-      (((((uptime - uptime_ref) & 0xffffffff) /
-	 (file_hdr->sa_proc + 1)) / HZ) / interval) * interval;
-   pt2 =
-      ((((((uptime - uptime_ref) & 0xffffffff) /
-	  (file_hdr->sa_proc + 1)) / HZ) / interval) + 1) * interval;
+   min = entry - (file_interval / 2);
+   max = entry + (file_interval / 2) + (file_interval & 0x1);
+   pt1 = (entry / interval) * interval;
+   pt2 = ((entry / interval) + 1) * interval;
 
    return (((pt1 >= min) && (pt1 < max)) || ((pt2 >= min) && (pt2 < max)));
 }
@@ -316,24 +316,22 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
 
 /*
  ***************************************************************************
- * Check time and get interval value
+ * Set interval value.
+ * g_itv is the interval in jiffies multiplied by the # of proc.
+ * itv is the interval in jiffies.
  ***************************************************************************
  */
-int prep_time(struct file_stats *file_stats_curr,
-	      struct file_stats *file_stats_prev,
-	      struct file_hdr *file_hdr, struct tm *loc_time,
-	      struct tstamp *tm_start, int use_tm_start,
-	      unsigned long long *itv, unsigned long long *g_itv)
+void get_itv_value(struct file_stats *file_stats_curr,
+		   struct file_stats *file_stats_prev,
+		   unsigned int nr_proc,
+		   unsigned long long *itv, unsigned long long *g_itv)
 {
-   if (use_tm_start && (datecmp(loc_time, tm_start) < 0))
-      return 1;
-
    /* Interval value in jiffies */
    if (!file_stats_prev->uptime)
       /*
        * Stats from boot time to be displayed: only in this case we admit
-       * that the interval may be greater than 0xffffffff, else
-       * it was an overflow.
+       * that the interval (which is unsigned long long) may be greater
+       * than 0xffffffff, else it was an overflow.
        */
       *g_itv = file_stats_curr->uptime;
    else
@@ -343,7 +341,7 @@ int prep_time(struct file_stats *file_stats_curr,
    if (!(*g_itv))	/* Paranoia checking */
       *g_itv = 1;
 
-   if (file_hdr->sa_proc) {
+   if (nr_proc) {
       if (!file_stats_prev->uptime0)
 	 *itv = file_stats_curr->uptime0;
       else
@@ -355,8 +353,6 @@ int prep_time(struct file_stats *file_stats_curr,
    }
    else
       *itv = *g_itv;
-
-   return 0;
 }
 
 
@@ -368,7 +364,7 @@ int prep_time(struct file_stats *file_stats_curr,
 void print_report_hdr(unsigned int flags, struct tm *loc_time, struct file_hdr *file_hdr)
 {
 
-   if (PRINT_ORG_TIME(flags)) {
+   if (PRINT_TRUE_TIME(flags)) {
       /* Get local time */
       get_localtime(loc_time);
 
@@ -385,7 +381,7 @@ void print_report_hdr(unsigned int flags, struct tm *loc_time, struct file_hdr *
    else
       loc_time = localtime(&(file_hdr->sa_ust_time));
 
-   if (!USE_PPC_OPTION(flags) && !USE_DB_OPTION(flags))
+   if (!USE_PPC_OPTION(flags) && !USE_DB_OPTION(flags) && !USE_XML_OPTION(flags))
       print_gal_header(loc_time, file_hdr->sa_sysname, file_hdr->sa_release,
 		       file_hdr->sa_nodename);
 }
@@ -625,7 +621,8 @@ void prep_file_for_reading(int *ifd, char *dfile, struct file_hdr *file_hdr,
    /* Read sa data file header */
    nb = read(*ifd, file_hdr, FILE_HDR_SIZE);
    if ((nb != FILE_HDR_SIZE) || (file_hdr->sa_magic != SA_MAGIC)) {
-      fprintf(stderr, _("Invalid system activity file: %s\n"), dfile);
+      fprintf(stderr, _("Invalid system activity file: %s (%#x)\n"),
+	      dfile, file_hdr->sa_magic);
       close(*ifd);
       exit(3);
    }
@@ -675,7 +672,7 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 	    A_MEM_AMT + A_KTABLES + A_NET_DEV +
 	    A_NET_EDEV + A_NET_SOCK + A_NET_NFS + A_NET_NFSD +
 	    A_QUEUE + A_DISK;
-	 *flags |= F_A_OPTION;
+	 *flags |= S_F_A_OPTION;
 	 break;
        case 'B':
 	 *actflag |= A_PAGE;
@@ -694,7 +691,7 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 	 (*dis_hdr)++;
 	 break;
        case 'p':
-	 *flags |= F_DEV_PRETTY;
+	 *flags |= S_F_DEV_PRETTY;
 	 break;
        case 'q':
 	 *actflag |= A_QUEUE;
@@ -710,7 +707,7 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 	 break;
        case 't':
 	 if (caller == C_SAR)
-	    *flags |= F_ORG_TIME;
+	    *flags |= S_F_TRUE_TIME;
 	 else
 	    return 1;
 	 break;
@@ -826,7 +823,7 @@ int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags,
    int i;
 
    if (argv[++(*opt)]) {
-      *flags |= F_PER_PROC;
+      *flags |= S_F_PER_PROC;
       (*dis_hdr)++;
       if (!strcmp(argv[*opt], K_ALL)) {
 	 *dis_hdr = 9;
@@ -836,7 +833,7 @@ int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags,
 	  * from a file or not...
 	  */
 	 init_bitmap(cpu_bitmap, ~0, NR_CPUS);
-	 *flags |= F_ALL_PROC;
+	 *flags |= S_F_ALL_PROC;
       }
       else {
 	 if (strspn(argv[*opt], DIGITS) != strlen(argv[*opt]))

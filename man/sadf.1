@@ -1,8 +1,8 @@
-.TH SADF 1 "DECEMBER 2004" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "FEBRUARY 2005" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
-.B sadf [ -d ] [ -H ] [ -p ] [ -V ] [ -P {
+.B sadf [ -d ] [ -H ] [ -p ] [ -t ] [ -V ] [ -x ] [ -P {
 .I cpu
 .B | ALL } ] [ -s [
 .I hh:mm:ss
@@ -114,17 +114,20 @@ Note that if you also use
 .B -p
 option, starting time will have to be given in UTC (Coordinated Universal Time).
 .IP -t
-Indicate that
-.B sadf
-should display the timestamps in the original locale time of
-the data file creator. Without this option, the
-.B sadf
-command displays the timestamps in the user locale time.
-When this option is used together with option -d, the timestamp
+When this option is used together with options -d or -x, the timestamp
 is displayed in local time instead of UTC (Coordinated Universal Time).
 This option is ignored when option -p is used.
 .IP -V
 Print version number and usage then exit.
+.IP -x
+Print the contents of the data file in XML format. Every activity and the whole
+file contents will be displayed.
+Timestamps are displayed in UTC (Coordinated Universal Time)
+unless option -t is used, in which case they are displayed
+in local time. The corresponding
+DTD (Document Type Definition) is included in the sysstat source package.
+It is also available at
+.I http://perso.wanadoo.fr/sebastien.godard/sysstat.dtd
 
 .SH EXAMPLES
 .B sadf -d /var/log/sa/sa21 -- -r -n DEV

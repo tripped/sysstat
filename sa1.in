@@ -1,6 +1,6 @@
 #!/bin/sh
 # SA_LIB_DIR/sa1.sh
-# (C) 1999-2004 Sebastien Godard (sysstat <at> wanadoo.fr)
+# (C) 1999-2005 Sebastien Godard (sysstat <at> wanadoo.fr)
 #
 umask 0022
 ENDIR=SA_LIB_DIR

@@ -1,5 +1,30 @@
 Changes:
 
+2005/02/25: Version 5.1.5 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* -x option added to sadf: it is now able to display the contents of
+	  a sar datafile in XML. The corresponding DTD (Document Type
+	  Definition) is included in the sysstat package.
+	* Small code change so that sysstat may be compiled with gcc-4.0.
+	* A few typos fixed in formulas used by sadf to display stats 
+	  on machines where HZ<>100 (typos appeared in sysstat 5.1.4).
+	* Fixed a bug in the stats displayed by sar -d.
+	* Removed a false workaround in iostat: better show that the kernel
+	  is buggy rather than display a value that seems correct but which
+	  is actually not...
+	* Fixed sar -i option which might not select records at the specified
+	  interval on machines with multiple processors.
+	* NLS updated and cleaned. Do no longer translate fields names (sar,
+	  iostat, etc.). Changed nb_NO.po and nn_NO.po files to nb.po and
+	  nn.po.
+	* Bug fixed in spec file: when installing sysstat i586 RPM package,
+	  sa1 and sa2 scripts were pointing to the wrong sadc location.
+	* Now sar and sadc display the magic number when they meet an
+	  invalid system activity file.
+	* sadf manual page updated.
+	* sysstat RPM spec file is now included in source package.
+	* Code cleaned.
+	* FAQ, Makefile and CREDITS files updated.
+
 2005/01/02: Version 5.1.4 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x2166]

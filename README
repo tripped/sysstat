@@ -81,8 +81,8 @@ ${PREFIX}/share/locale/es/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/fr/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/it/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/ja/LC_MESSAGES/sysstat.mo
-${PREFIX}/share/locale/nb_NO/LC_MESSAGES/sysstat.mo
-${PREFIX}/share/locale/nn_NO/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/nb/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/nn/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/pl/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/pt/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/ro/LC_MESSAGES/sysstat.mo

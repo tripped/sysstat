@@ -41,6 +41,7 @@ Also tell me what version your kernel is).
 2.13. How should I run sysstat / sar so that I get a reading for 00:00:00?
 2.14. The sar command complains with the following message:
       "Requested activities not available in file".
+2.15. Does sar need a lot of resources to run?
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -331,7 +332,7 @@ data for midnight at the end of each daily data file :
 
 This error message means that you are trying to extract non-existent activities
 from the data file. Usually sadc reads all the available activities from the
-system and store them in the data file. However, to prevent data files from
+system and stores them in the data file. However, to prevent data files from
 taking too much space on disk, some activities must be explicitly set on the
 command line to be read by sadc. One example is -I option which must be used
 together with sadc to be able to extract statistics for individual interrupts
@@ -340,6 +341,20 @@ specify the relevant options on the command line. Process statistics (-x and
 -X options) are such activities.
 Please read sadc manual page to know exactly which activities may be extracted
 from a data file.
+
+~~~
+
+2.15. Does sar need a lot of resources to run?
+
+No, sar doesn't need a lot of CPU to run, nor does it make your system slow,
+contrary to what some people think. In the first place, it only runs every ten
+minutes by default. Secondly, when it does run, it is over and done very quickly.
+Try:
+time /usr/lib/sa/sa1
+to verify that for yourself.
+Nor do you have to be concerned about using up all your disk space.
+sar will use about 220 kB for a whole day's worth of data, and it normally only
+stores one week worth, and won't keep more than a month. It is entirely self limiting. 
 
 
 3. QUESTIONS RELATING TO IOSTAT

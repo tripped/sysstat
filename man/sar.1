@@ -41,7 +41,10 @@ at the specified intervals in seconds.
 If the interval parameter is set to zero, the
 .B sar
 command displays the average statistics for the time
-since the system was booted.
+since the system was started. The default value for the
+.I count
+parameter is 1. If its value is set to zero, then reports are
+generated continuously.
 The collected data can also
 be saved in the file specified by the
 .B -o
@@ -351,6 +354,13 @@ keyword is equivalent to specifying all the keywords above and therefore all the
 activities are reported.
 .RE
 .RE
+.IP "-o filename"
+Save the readings in the file in binary form. Each reading
+is in a separate record. The default value of the
+.B filename
+parameter is the current daily data file, the
+.IR /var/log/sa/sa dd
+file. The -o option is exclusive of the -f option.
 .IP -r
 Report memory and swap space utilization statistics.
 The following values are displayed:
@@ -432,20 +442,6 @@ Number of additionnal memory pages cached by the system per second.
 A negative value means fewer pages in the cache.
 .RE
 .RE
-.IP -t
-When reading data from a daily data file, indicate that
-.B sar
-should display the timestamps in the original locale time of
-the data file creator. Without this option, the
-.B sar
-command displays the timestamps in the user locale time.
-.IP "-o filename"
-Save the readings in the file in binary form. Each reading
-is in a separate record. The default value of the
-.B filename
-parameter is the current daily data file, the
-.IR /var/log/sa/sa dd
-file. The -o option is exclusive of the -f option.
 .IP "-s hh:mm:ss"
 Set the starting time of the data, causing the
 .B sar
@@ -455,6 +451,13 @@ Hours must be given in 24-hour format. This option can be
 used only when data are read from a file (option
 .B -f
 ).
+.IP -t
+When reading data from a daily data file, indicate that
+.B sar
+should display the timestamps in the original locale time of
+the data file creator. Without this option, the
+.B sar
+command displays the timestamps in the user locale time.
 .IP -u
 Report CPU utilization. The following values are displayed:
 
@@ -767,6 +770,7 @@ Sebastien Godard <sebastien.godard@wanadoo.fr>
 .BR sadc (8),
 .BR sa1 (8),
 .BR sa2 (8),
+.BR isag (1),
 .BR mpstat (1),
 .BR iostat (1),
 .BR vmstat (8)

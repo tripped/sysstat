@@ -1,6 +1,6 @@
 sysstat: system performance tools for the Linux operating system...
 --
-(C) 1999,2001 Sebastien Godard <sebastien.godard@wanadoo.fr>
+(C) 1999-2001 Sebastien Godard <sebastien.godard@wanadoo.fr>
 
 The latest version of sysstat can always be found at Metalab in the
 following directory:
@@ -16,7 +16,7 @@ INSTALLATION
 ------------
 
 The sysstat utilities are a collection of performance monitoring tools for
-Linux. These include mpstat, iostat, sar and sa tools. 
+Linux. These include mpstat, iostat, sar, isag and sa tools. 
 
 The current release of the sysstat package no longer contains a patch for the
 Linux kernel. I do not want to maintain it any more. The last patch (version 4)
@@ -52,7 +52,9 @@ Of course tell me if there are any problems. This is the only way I can improve
 'sysstat'. But if you wanna raise my morale, you can also send me reports of
 successful use instead of bug reports ;-)
 Patches and suggestions for improvements are always welcome!
-Send everything to <sebastien.godard@wanadoo.fr>.
+Send them to <sebastien.godard@wanadoo.fr>.
+Bugs and questions concerning the "isag" command should be sent to David
+Doubrava <linux_monitor@volny.cz>.
 
 
 FILES THAT ARE INSTALLED
@@ -71,12 +73,14 @@ ${PREFIX}/lib/sa/sa2
 ${PREFIX}/bin/sar
 ${PREFIX}/bin/iostat
 ${PREFIX}/bin/mpstat
+${PREFIX}/bin/isag
 ${PREFIX}/man/man8/sadc.8
 ${PREFIX}/man/man8/sa1.8
 ${PREFIX}/man/man8/sa2.8
 ${PREFIX}/man/man1/sar.1
 ${PREFIX}/man/man1/iostat.1
 ${PREFIX}/man/man1/mpstat.1
+${PREFIX}/man/man1/isag.1
 ${PREFIX}/share/locale/fr/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/de/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/es/LC_MESSAGES/sysstat.mo

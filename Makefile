@@ -2,7 +2,7 @@
 # (C) 1999-2000 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 3.3.4
+VERSION = 3.3.5
 
 include build/CONFIG
 
@@ -62,7 +62,7 @@ ifndef INITD_DIR
 INITD_DIR = init.d
 endif
 
-all: sadc sa1 sa2 crontab sysstat sar iostat mpstat locales
+all: sadc sa1 sa2 crontab sysstat sar iostat mpstat isag/isag locales
 
 common.o: common.c common.h
 	$(CC) -c -o $@ $(CFLAGS) $(DFLAGS) $<
@@ -75,31 +75,31 @@ sadc: sadc.c sa.h common.h version.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $< $(LFLAGS)
 
 sapath.h: sapath.in
-	$(SED) s+ALTLOC+$(PREFIX)+g sapath.in > sapath.h
+	$(SED) s+ALTLOC+$(PREFIX)+g $< > $@
 
 sa1: sa1.sh
-	$(SED) -e s+PREFIX+$(PREFIX)+g -e s+SA_DIR+$(SA_DIR)+g sa1.sh > sa1
-	$(CHMOD) 755 sa1
+	$(SED) -e s+PREFIX+$(PREFIX)+g -e s+SA_DIR+$(SA_DIR)+g $< > $@
+	$(CHMOD) 755 $@
 
 sa2: sa2.sh
 	$(SED) -e s+BIN_DIR+$(BIN_DIR)+g -e s+SA_DIR+$(SA_DIR)+g \
-		-e s+PREFIX+$(PREFIX)+g sa2.sh > sa2
-	$(CHMOD) 755 sa2
+		-e s+PREFIX+$(PREFIX)+g $< > $@
+	$(CHMOD) 755 $@
 
 sysstat_base: sysstat.sh
-	$(SED) s+PREFIX/+$(PREFIX)/+g sysstat.sh > sysstat
+	$(SED) s+PREFIX/+$(PREFIX)/+g $< > sysstat
 	$(CHMOD) 755 sysstat
 
 sysstat_all: sysstat.sh
 ifeq ($(CRON_OWNER),root)
-	$(SED) s+PREFIX/+$(PREFIX)/+g sysstat.sh > sysstat
+	$(SED) s+PREFIX/+$(PREFIX)/+g $< > sysstat
 else
-	$(SED) 's+PREFIX/+su $(CRON_OWNER) -c $(PREFIX)/+g' sysstat.sh > sysstat
+	$(SED) 's+PREFIX/+su $(CRON_OWNER) -c $(PREFIX)/+g' $< > sysstat
 endif
 	$(CHMOD) 755 sysstat
 
 crontab: crontab.sample
-	$(SED) s+PREFIX/+$(PREFIX)/+g crontab.sample > crontab
+	$(SED) s+PREFIX/+$(PREFIX)/+g $< > $@
 
 sar: sar.c sa.h common.h version.h sapath.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $< $(LFLAGS)
@@ -109,6 +109,10 @@ iostat: iostat.c iostat.h common.h version.h libsysstat.a
 
 mpstat: mpstat.c mpstat.h common.h version.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $< $(LFLAGS)
+
+isag/isag: isag/isag.in
+	$(SED) -e s+SA_DIR+$(SA_DIR)+g -e s+PREFIX+$(PREFIX)+g $< > $@
+	$(CHMOD) 755 $@
 
 locales: nls/fr/$(PACKAGE).po nls/de/$(PACKAGE).po nls/es/$(PACKAGE).po nls/pt/$(PACKAGE).po
 ifdef REQUIRE_NLS
@@ -134,6 +138,8 @@ uninstall_base:
 	rm -f $(DESTDIR)$(MAN1_DIR)/iostat.1
 	rm -f $(DESTDIR)$(BIN_DIR)/mpstat
 	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1
+	rm -f $(DESTDIR)$(BIN_DIR)/isag
+	rm -f $(DESTDIR)$(MAN1_DIR)/isag.1
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(LIB_DIR)/sa
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES/$(PACKAGE).mo
@@ -162,7 +168,7 @@ uninstall_all: uninstall_base
 	rm -f $(DESTDIR)$(RC3_DIR)/S03sysstat
 	rm -f $(DESTDIR)$(RC5_DIR)/S03sysstat
 
-install_base: all man/sadc.8 man/sar.1 man/sa1.8 man/sa2.8 man/iostat.1
+install_base: all man/sadc.8 man/sar.1 man/sa1.8 man/sa2.8 man/iostat.1 isag/isag.1
 	mkdir -p $(DESTDIR)$(LIB_DIR)/sa
 	mkdir -p $(DESTDIR)$(MAN1_DIR)
 	mkdir -p $(DESTDIR)$(MAN8_DIR)
@@ -181,6 +187,8 @@ install_base: all man/sadc.8 man/sar.1 man/sa1.8 man/sa2.8 man/iostat.1
 	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
 	install -s -m 755 mpstat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
+	install -m 755 isag/isag $(DESTDIR)$(BIN_DIR)
+	install -m 644 $(MANGRPARG) isag/isag.1 $(DESTDIR)$(MAN1_DIR)
 	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
 	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
 	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)
@@ -231,7 +239,7 @@ endif
 
 clean:
 	rm -f sadc sa1 sa2 sysstat sar iostat mpstat *.o *.a core TAGS data crontab
-	rm -f sapath.h
+	rm -f sapath.h isag/isag
 	find nls -name "*.mo" -exec rm -f {} \;
 
 distclean: clean

@@ -3,7 +3,7 @@ The following people have contributed to 'sysstat' in one way or another:
 	First I would like to thank Michael <michael@roka.net>: he is the
 	very first person to have given me feedback about sysstat, and to
 	point out to me that certain fields in /proc/stat didn't have the
-	meaning I thought they had.
+	meaning I thought they had. This was in 1999!
 
 	Many thanks to the translators involved in sysstat:
 
@@ -31,13 +31,17 @@ The following people have contributed to 'sysstat' in one way or another:
 	Jason (Jay) R. Fink <jay_rf@exis.net> set up and maintained the
 	first web site for sysstat.
 
-	Preston Brown <pbrown@redhat.com> sent me the redhat patch to
+	Preston Brown <pbrown@redhat.com> sent me the RedHat patch to
 	enable good packaging.
+
+	David Doubrava <linux_monitor@volny.cz> created the isag
+	command (Interactive System Activity Graph).
 
 
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
+	Des Atkinson <Des.Atkinson@metron.co.uk>
 	Pascal Bleser <pbleser@atos-group.com>
 	Nicolas Denis <denisn@wanadoo.fr>
 	Andrew Donkin <ard@waikato.ac.nz>

@@ -55,8 +55,6 @@
 #define GET_NET_EDEV(m)	(((m) & A_NET_EDEV) == A_NET_EDEV)
 #define GET_NET_SOCK(m)	(((m) & A_NET_SOCK) == A_NET_SOCK)
 
-#define INT_VAL(a,b)	(((a) * 100) / (b))
-#define DEC_VAL(a,b)	(((((a) * 100) % (b)) * 100) / (b))
 
 /* Keywords */
 #define K_XALL	"XALL"

@@ -62,7 +62,6 @@ unsigned char f_pids[MAX_PID_NR];
 unsigned int interrupts[NR_IRQS];
 unsigned int u_tmp[NR_DISKS - 1];
 int pid_nr = 0, apid_nr = 0;
-char dp = '.';
 
 
 /*
@@ -262,7 +261,7 @@ void get_pid_list(void)
 {
    int i;
    DIR *dir;
-   struct dirent *dp;
+   struct dirent *drp;
 
 
    apid_nr = 0;
@@ -274,9 +273,9 @@ void get_pid_list(void)
    }
 
    /* Get directory entries */
-   while ((dp = readdir(dir)) != NULL) {
-      if (isdigit(dp->d_name[0]) && (apid_nr < MAX_PID_NR))
-	 all_pids[apid_nr++] = atol(dp->d_name);
+   while ((drp = readdir(dir)) != NULL) {
+      if (isdigit(drp->d_name[0]) && (apid_nr < MAX_PID_NR))
+	 all_pids[apid_nr++] = atol(drp->d_name);
    }
 
    /* Close /proc directory */
@@ -392,7 +391,7 @@ void get_irqcpu_nb(int *irqcpu_used, unsigned int max_nr_irqcpu)
 void read_sysfaults(void)
 {
    DIR *dir;
-   struct dirent *dp;
+   struct dirent *drp;
    FILE *pidfp;
    unsigned long minflt, majflt;
    static char filename[24];
@@ -409,9 +408,9 @@ void read_sysfaults(void)
    }
 
    /* Get directory entries */
-   while ((dp = readdir(dir)) != NULL) {
-      if (isdigit(dp->d_name[0])) {
-	 sprintf(filename, "%s/%s/%s", PROC, dp->d_name, PSTAT);
+   while ((drp = readdir(dir)) != NULL) {
+      if (isdigit(drp->d_name[0])) {
+	 sprintf(filename, "%s/%s/%s", PROC, drp->d_name, PSTAT);
 	 if ((pidfp = fopen(filename, "r")) != NULL) {
 	    fscanf(pidfp, "%*d %*s %*s %*d %*d %*d %*d %*d %*u %lu %*u %lu %*u %*u %*u %*u %*u %*d %*d %*u %*u %*d %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u\n",
 		   &minflt, &majflt);
@@ -1230,7 +1229,7 @@ int main(int argc, char **argv)
 
 #ifdef USE_NLS
    /* Init National Language Support */
-   init_nls(&dp);
+   init_nls();
 #endif
 
    if (argc == 1) {

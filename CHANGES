@@ -229,3 +229,19 @@ Changes:
 	  instead of on used ones (sar -v).
 	* Manual pages updated for sar and iostat.
 
+2001/02/11: Version 3.3.5 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* iostat command improved. Take now full advantage of Stephen
+	  Tweedie's I/O accounting patch to display extended statistics
+	  (option -x).
+	* The default value for the count parameter of the sar command is
+	  now 1 (this is how sar works with other Un*xes...). A value of
+	  0 will indicate that reports are to be generated continuously.
+	* Code cleaned: now always use 'double' numbers instead of the
+	  INT_PART, INT_VAL, DEC_PART and DEC_VAL macros.
+	* Don't assume that jiffies are 100ths of a second. Use Linux
+	  HZ definition instead.
+	* NLS updated (small fix).
+	* sar and iostat manual pages updated.
+	* isag (Interactive System Activity Graph) command added.
+	* Makefile updated.
+

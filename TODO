@@ -19,8 +19,3 @@ Here are the things I would like (or I should) do for the next releases:
 * Implement a "-P" option for sar to display all statistics on a per-processor
   basis.
 
-* Add a plotting program, something like "sagd". But I really lack experience
-  in gtk, tcl/tk etc. programming. A volunteer out there ?
-
-* Should clean the code (smaller functions, etc.), perhaps with more modules.
-

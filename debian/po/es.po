@@ -11,14 +11,14 @@
 #
 #    Developers do not need to manually edit POT or PO files.
 #
-#    Carlos Alberto Martín Edo <carlos@dat.etsit.upm.es>, 2003
+#    Carlos Alberto Martín Edo <carlos@dat.etsit.upm.es>, 2004
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 4.1.4-1\n"
+"Project-Id-Version: sysstat 5.0.6-1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2004-04-27 20:37+0200\n"
-"PO-Revision-Date: 2003-07-14 11:20+0200\n"
+"PO-Revision-Date: 2004-11-24 13:19+0100\n"
 "Last-Translator: Carlos Alberto Martín Edo <carlos@dat.etsit.upm.es>\n"
 "Language-Team: Debian L10n Spanish <debian-l10n-spanish@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -62,8 +62,8 @@ msgid ""
 "If you activate this option, any existing data files in /var/log/sysstat/ "
 "directory will be deleted."
 msgstr ""
-"Si activa esta opción, cualquier fichero de datos que exista en el "
-"directorio /var/log/sysstat/ será borrado."
+"Si activa esta opción, se borrará cualquier fichero de datos que exista en "
+"el directorio /var/log/sysstat/."
 
 #. Type: boolean
 #. Description
@@ -79,7 +79,7 @@ msgstr ""
 #. Description
 #: ../sysstat.templates:22
 msgid "Do you want to activate sysstat's cron job?"
-msgstr ""
+msgstr "¿Quiere activar la tarea de sysstat en el cron?"
 
 #. Type: boolean
 #. Description
@@ -89,6 +89,10 @@ msgid ""
 "daemon and init.d script) binary data concerning system activities and store "
 "them in log files within /var/log/sysstat/ directory."
 msgstr ""
+"Si está habilitada esta opción, el paquete sysstat recopilará (utilizando el "
+"demonio del cron y el script de init.d) los datos binarios relacionados con " 
+"las actividades del sistema y los almacénara en ficheros log dentro del "
+"directorio /var/log/sysstat/." 
 
 #. Type: boolean
 #. Description
@@ -97,6 +101,8 @@ msgid ""
 "With this data the sar(1) command will be able to display day-long system "
 "statistics."
 msgstr ""
+"Con estos datos, el programa sar(1) podrá mostrar estadísticas del sistema "
+"de un día entero."
 
 #. Type: boolean
 #. Description
@@ -105,3 +111,6 @@ msgid ""
 "If you don't enable this option, the sar(1) command will show only the "
 "current statistics."
 msgstr ""
+"Si no habilita esta opción, el programa sar(1) mostrará sólo las "
+"estadísticas actuales."
+

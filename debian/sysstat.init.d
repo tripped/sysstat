@@ -23,7 +23,7 @@ set -e
 
 case "$1" in
   start|restart|reload|force-reload)
-        if "$ENABLED" = "true" ; then
+        if [ "$ENABLED" = "true" ] ; then
                 echo -n "Starting $DESC: "
                 start-stop-daemon --start --quiet --exec $DAEMON -- $OPTIONS
                 echo "$NAME."

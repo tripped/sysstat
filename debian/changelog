@@ -1,3 +1,9 @@
+sysstat (5.0.6-5) unstable; urgency=medium
+
+  * init.d: enclose condition with square brackets (closes: #298722).
+
+ -- Robert Luberda <robert@debian.org>  Wed,  9 Mar 2005 22:08:08 +0100
+
 sysstat (5.0.6-4) unstable; urgency=low
 
   * sar.c: Fix FTBFS on amd64 with gcc-4.0 (closes: 288582).

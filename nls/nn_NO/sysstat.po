@@ -75,8 +75,8 @@ msgid "Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"
 msgstr "Enhet:             tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"
 
 #: iostat.c
-msgid "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
-msgstr "Enhet:     rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
+msgid "Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
+msgstr "Enhet:     rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
 
 #: sar.c:91
 msgid "sysstat version %s\n"

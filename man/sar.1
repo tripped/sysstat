@@ -1,4 +1,4 @@
-.TH SAR 1 "FEBRUARY 2001" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "OCTOBER 2001" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -160,7 +160,7 @@ Total number of blocks the system paged out to disk per second.
 .B activepg
 .RS
 Number of active (recently touched) pages in memory.
-Note that a page has a size of 4 KB or 8 KB according to the machine architecture.
+Note that a page has a size of 4 kB or 8 kB according to the machine architecture.
 .RE
 
 .B inadtypg
@@ -236,8 +236,8 @@ file. The -f option is exclusive of the -o option.
 .IP -h
 When  reading data from a file, print its contents in a format that can
 easily be handled by pattern processing commands like awk.
-The output consists of columns separated by a tab. The columns are: The machine
-hostname, the interval value (or -1 if not applicable), the timestamp (UST time)
+The output consists of fields separated by a tab. Each record contains the
+hostname of the host where sar was run, the interval value (or -1 if not applicable), the timestamp (UST time)
 in seconds from the epoch,
 the device name (or - if not applicable), the field name and its value.
 .IP -H
@@ -501,7 +501,7 @@ Report memory statistics. The following values are displayed:
 .RS
 Number of memory pages freed by the system per second.
 A negative value represents a number of pages allocated by the system.
-Note that a page has a size of 4 KB or 8 KB according to the machine architecture.
+Note that a page has a size of 4 kB or 8 kB according to the machine architecture.
 .RE
 
 .B shmpg/s
@@ -821,6 +821,16 @@ Report CPU utilization for each 2 seconds. 5 lines are displayed.
 Report statistics on IRQ 14 for each 2 seconds. 10 lines are displayed.
 Data are stored in a file called
 .IR int14.file .
+.RE
+
+.B sar -r -n DEV -f /var/log/sa/sa16
+.RS
+Display memory, swap space and network statistics saved in daily data file 'sa16'.
+.RE
+
+.B sar -A
+.RS
+Display all the statistics saved in current daily data file.
 .SH BUGS
 .I /proc
 filesystem must be mounted for the

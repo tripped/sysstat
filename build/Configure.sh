@@ -1,6 +1,6 @@
 #!/bin/sh
 # Configuration script for sysstat
-# (C) 2000-2001 Sebastien GODARD <sebastien.godard@wanadoo.fr>
+# (C) 2000-2002 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 ASK="sh build/Ask.sh"
 
@@ -37,7 +37,7 @@ ISAG=`${ASK} 'Compile and install isag command?' "y" "isag"`
 
 SMPRACE=`${ASK} 'Linux SMP race in serial driver workaround?' "n" "smp-race"`
 
-# sa2.sh processes data file of the day before
+# sa2 processes data file of the day before
 
 YESTERDAY=`${ASK} 'sa2 uses daily data file of previous day?' "n" "yesterday"`
 if [ "${YESTERDAY}" = "y" ];
@@ -46,6 +46,10 @@ then
 else
 	YDAY=""
 fi
+
+# Data history to keep by sa2
+
+HISTORY=`${ASK} 'Number of daily data files to keep:' "7" "history"`
 
 # Manual page group
 
@@ -139,6 +143,7 @@ sed <build/CONFIG.in >build/CONFIG \
 	-e "s+^\\(WANT_ISAG =\\)\$+\\1 ${ISAG}+" \
 	-e "s+^\\(ENABLE_SMP_WRKARD =\\)\$+\\1 ${SMPRACE}+" \
 	-e "s+^\\(YESTERDAY =\\)\$+\\1 ${YDAY}+" \
+	-e "s+^\\(HISTORY =\\)\$+\\1 ${HISTORY}+" \
 	-e "s+^\\(MAN_GROUP =\\)\$+\\1 ${MAN}+" \
 	-e "s+^\\(RC_DIR =\\)\$+\\1 ${RC_DIR}+" \
 	-e "s+^\\(INIT_DIR =\\)\$+\\1 ${INIT_DIR}+" \

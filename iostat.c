@@ -1,6 +1,6 @@
 /*
  * iostat: report I/O statistics
- * (C) 1998-2001 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1998-2002 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -53,7 +53,7 @@ struct tm loc_time;
 int part_nr = 0;	/* Nb of partitions */
 long int interval = 0;
 int proc_used = -1;	/* Nb of proc on the machine. A value of 1 means two procs... */
-unsigned char timestamp[14];
+unsigned char timestamp[64];
 
 
 /*
@@ -209,7 +209,7 @@ void read_stat(int curr, int flags)
 		  sscanf(pline, "%u %u %*u %63s", &major, &minor, disk_name);
 
 		  if (((minor & 0x0f) == 0) && (major == v_major) && ((minor >> 4) == v_index)) {
-		     sprintf(disk_hdr_stats[i].name, "/dev/%s", disk_name);
+		     snprintf(disk_hdr_stats[i].name, MAX_NAME_LEN, "/dev/%s", disk_name);
 		     break;
 		  }
 	       }
@@ -311,7 +311,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
    /* Print time stamp */
    if (DISPLAY_TIMESTAMP(flags)) {
-      strftime(timestamp, 14, "%X  ", loc_time);
+      strftime(timestamp, sizeof(timestamp), "%X  ", loc_time);
       printf(_("Time: %s\n"), timestamp);
    }
 
@@ -350,7 +350,8 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	 struct disk_stats current;
 	 double tput, util, await, svctm, arqsz, nr_ios;
 	
-	 printf(_("Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"));
+	 printf(_("Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"));
+	 	/* /dev/xxxxx 999.99 999.99 99.99 99.99 9999.99 9999.99 99999.99 99999.99 99999.99 99999.99 9999.99 999.99 %999.99 */
 	
 	 for (disk_index = 0; disk_index < part_nr; disk_index++) {
 
@@ -377,10 +378,12 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	       printf("/dev/%-5s", disk_hdr_stats[disk_index].name);
 	       if (strlen(disk_hdr_stats[disk_index].name) > 5)
 		  printf("\n          ");
-	       printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
+	       /*       rrq/s wrq/s   r/s   w/s  rsec  wsec   rkB   wkB  rqsz  qusz await svctm %util */
+	       printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
 		      ((double) current.rd_merges) / itv * HZ, ((double) current.wr_merges) / itv * HZ,
 		      ((double) current.rd_ios) / itv * HZ, ((double) current.wr_ios) / itv * HZ,
 		      ((double) current.rd_sectors) / itv * HZ, ((double) current.wr_sectors) / itv * HZ,
+		      ((double) current.rd_sectors) / itv * HZ / 2, ((double) current.wr_sectors) / itv * HZ / 2,
 		      arqsz,
 		      ((double) current.aveq) / itv,
 		      await,

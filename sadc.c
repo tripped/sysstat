@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2001 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2002 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -933,55 +933,55 @@ void read_proc_meminfo(void)
    while (fgets(line, 64, memfp) != NULL) {
 
       if (!strncmp(line, "MemTotal:", 9))
-	 /* Read the total amount of memory in KB */
+	 /* Read the total amount of memory in kB */
 	 sscanf(line + 10, "%8lu", &(file_stats.tlmkb));
 
       else if (!strncmp(line, "MemFree:", 8))
-	 /* Read the amount of free memory in KB */
+	 /* Read the amount of free memory in kB */
 	 sscanf(line + 10, "%8lu", &(file_stats.frmkb));
 
       else if (!strncmp(line, "MemShared:", 10))
-	 /* Read the amount of shared memory in KB */
+	 /* Read the amount of shared memory in kB */
 	 sscanf(line + 10, "%8lu", &(file_stats.shmkb));
 
       else if (!strncmp(line, "Buffers:", 8))
-	 /* Read the amount of buffered memory in KB */
+	 /* Read the amount of buffered memory in kB */
 	 sscanf(line + 10, "%8lu", &(file_stats.bufkb));
 
       else if (!strncmp(line, "Cached:", 7))
-	 /* Read the amount of cached memory in KB */
+	 /* Read the amount of cached memory in kB */
 	 sscanf(line + 10, "%8lu", &(file_stats.camkb));
 
       else if (!strncmp(line, "Active:", 7)) {
-	 /* Read the amount of active memory in KB */
+	 /* Read the amount of active memory in kB */
 	 sscanf(line + 10, "%8u", &mtemp);
 	 file_stats.nr_active_pages = PG(mtemp);
       }
 
       else if (!strncmp(line, "Inact_dirty:", 12)) {
-	 /* Read the amount of inactive dirty memory in KB */
+	 /* Read the amount of inactive dirty memory in kB */
 	 sscanf(line + 13, "%8u", &mtemp);
 	 file_stats.nr_inactive_dirty_pages = PG(mtemp);
       }
 
       else if (!strncmp(line, "Inact_clean:", 12)) {
-	 /* Read the amount of inactive clean memory in KB */
+	 /* Read the amount of inactive clean memory in kB */
 	 sscanf(line + 13, "%8u", &mtemp);
 	 file_stats.nr_inactive_clean_pages = PG(mtemp);
       }
 
       else if (!strncmp(line, "Inact_target:", 13)) {
-	 /* Read the amount of inactive target memory in KB */
+	 /* Read the amount of inactive target memory in kB */
 	 sscanf(line + 13, "%8lu", &lmtemp);
 	 file_stats.inactive_target = PG(lmtemp);
       }
 
       else if (!strncmp(line, "SwapTotal:", 10))
-	 /* Read the total amount of swap memory in KB */
+	 /* Read the total amount of swap memory in kB */
 	 sscanf(line + 10, "%8lu", &(file_stats.tlskb));
 
       else if (!strncmp(line, "SwapFree:", 9))
-	 /* Read the amount of free swap memory in KB */
+	 /* Read the amount of free swap memory in kB */
 	 sscanf(line + 10, "%8lu", &(file_stats.frskb));
    }
 
@@ -1362,7 +1362,8 @@ int main(int argc, char **argv)
    if (argc == 1) {
       /* sadc called with no args */
       get_localtime(&loc_time);
-      sprintf(ofile, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+      snprintf(ofile, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+      ofile[MAX_FILE_LEN - 1] = '\0';
    }
 
    /* Init activity flag */
@@ -1443,15 +1444,18 @@ int main(int argc, char **argv)
 	    if (!strcmp(argv[opt], "-")) {
 	       /* File name set to '-' */
 	       get_localtime(&loc_time);
-	       sprintf(ofile, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+	       snprintf(ofile, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+	       ofile[MAX_FILE_LEN - 1] = '\0';
 	       flags |= F_SA_ROTAT;
 	    }
 	    else if (!strncmp(argv[opt], "-", 1))
 	       /* Bad option */
 	       usage(argv[0]);
-	    else
+	    else {
 	       /* Write data to file */
-	       strcpy(ofile, argv[opt]);
+	       strncpy(ofile, argv[opt], MAX_FILE_LEN);
+	       ofile[MAX_FILE_LEN - 1] = '\0';
+	    }
 	 }
 	 else
 	    /* Outfile already specified */
@@ -1557,7 +1561,8 @@ int main(int argc, char **argv)
       if (WANT_SA_ROTAT(flags)) {
 	 /* The user specified '-' as the filename to use */
 	 get_localtime(&loc_time);
-	 sprintf(new_ofile, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+	 snprintf(new_ofile, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
+	 new_ofile[MAX_FILE_LEN - 1] = '\0';
 
 	 if (strcmp(ofile, new_ofile)) {
 	    close(ofd);

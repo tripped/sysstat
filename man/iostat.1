@@ -1,4 +1,4 @@
-.TH IOSTAT 1 "FEBRUARY 2001" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "JANUARY 2002" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices and partitions.
@@ -174,6 +174,16 @@ The number of sectors read from the device per second.
 The number of sectors written to the device per second.
 
 .RE
+.B rkB/s
+.RS
+The number of kilobytes read from the device per second.
+
+.RE
+.B wkB/s
+.RS
+The number of kilobytes written to the device per second.
+
+.RE
 .B avgrq-sz
 .RS
 The average size (in sectors) of the requests that were issued to the device.
@@ -247,11 +257,6 @@ Display a continuous device report at two second intervals.
 .RS
 Display six reports at two second intervals for all devices.
 .SH BUGS
-Statistics in KB/s for each block device are not available by default
-due to Linux poor disk accounting.
-For the same reason, a kernel patch needs to be applied for extended
-statistics to be displayed.
-
 .I /proc
 filesystem must be mounted for
 .B iostat

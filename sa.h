@@ -1,6 +1,6 @@
 /*
  * sar/sadc: report system activity
- * (C) 1999-2001 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2002 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
 #ifndef _SA_H
@@ -61,7 +61,7 @@
 
 
 /*
- * KB -> number of pages.
+ * kB -> number of pages.
  * Page size depends on machine architecture (4 kB, 8 kB, 16 kB, 64 kB...)
  */
 #define PG(k)	((k) >> kb_shift)

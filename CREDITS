@@ -17,6 +17,8 @@ The following people have contributed to 'sysstat' in one way or another:
 	    into Afrikaans.
 	  * Roy Sigurd Karlsbakk <roy@karlsbakk.net> for the Norwegian
 	    translation.
+	  * Stefano Barni <barninga@altavista.net> for the translation
+	    into Italian.
 
 	Carl-Christian Weber <ccweber@itz-koeln.de> helped me to make sar
 	work on SMP machines.
@@ -53,6 +55,10 @@ The following people have contributed to 'sysstat' in one way or another:
 	Victor Hazlewood <victor@sdsc.edu> sent me a patch to implement
 	a database friendly option for sar (option -H).
 
+	Christopher Blizzard <blizzard@redhat.com> added the ability to
+	display kB/s transfers to devices in iostat reporting when
+	option -x is used.
+
 
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
@@ -74,6 +80,7 @@ I would also thank the following people for their hints or bug reports
 	David J. Morse <David_J_Morse@Dell.com>
 	Edouard G. Parmelan <edouard.parmelan@quadratec.fr>
 	Plattner(?) <Plattner.external@infineon.com>
+	ReDragon <redragon@vnsecurity.net>
 	Michel Simoni <m_simoni@club-internet.fr>
 	Rod Skinner <rod.skinner@intel.com>	
 	Graham Swallow <gps@trix.dircon.co.uk>

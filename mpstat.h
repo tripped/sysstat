@@ -13,6 +13,8 @@ struct mp_stats {
    unsigned int  cpu_user			__attribute__ ((aligned (8)));
    unsigned int  cpu_nice			__attribute__ ((packed));
    unsigned int  cpu_system			__attribute__ ((packed));
+   unsigned int  cpu_hardirq			__attribute__ ((packed));
+   unsigned int  cpu_softirq			__attribute__ ((packed));
    unsigned int  irq				__attribute__ ((packed));
    /* Structure must be a multiple of 8 bytes, since we use an array of structures.
     * Each structure is *aligned*, and we want the structures to be packed together. */

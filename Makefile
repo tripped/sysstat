@@ -2,7 +2,7 @@
 # (C) 1999-2003 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 4.1.7
+VERSION = 5.0.0
 
 include build/CONFIG
 
@@ -72,6 +72,9 @@ libsysstat.a: common.o
 	$(AR) r $@ $<
 	$(AR) s $@
 
+version.h: version.in
+	$(SED) s+VERSION_NUMBER+$(VERSION)+g $< > $@
+
 sadc: sadc.c sa.h common.h version.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $< $(LFLAGS)
 
@@ -88,18 +91,18 @@ sa2: sa2.sh
 		-e s+HISTORY+$(HISTORY)+g $< > $@
 	$(CHMOD) 755 $@
 
-sysstat_base: sysstat.sh
-	$(SED) s+PREFIX/+$(PREFIX)/+g $< > sysstat
-	$(CHMOD) 755 sysstat
-
-sysstat_all: sysstat.sh
+sysstat: sysstat.sh
+ifeq ($(INSTALL_CRON),y)
 ifeq ($(CRON_OWNER),root)
 	$(SED) s+PREFIX/+$(PREFIX)/+g $< > sysstat
 else
 	$(SED) 's+PREFIX/+su $(CRON_OWNER) -c $(PREFIX)/+g' $< > sysstat
 endif
+else
+	$(SED) s+PREFIX/+$(PREFIX)/+g $< > sysstat
+endif
 	$(CHMOD) 755 sysstat
-
+	
 crontab: crontab.sample
 	$(SED) s+PREFIX/+$(PREFIX)/+g $< > $@
 
@@ -112,23 +115,47 @@ iostat: iostat.c iostat.h common.h version.h libsysstat.a
 mpstat: mpstat.c mpstat.h common.h version.h libsysstat.a
 	$(CC) -o $@ $(CFLAGS) $(DFLAGS) $< $(LFLAGS)
 
-locales: nls/fr/$(PACKAGE).po nls/de/$(PACKAGE).po nls/es/$(PACKAGE).po nls/pt/$(PACKAGE).po nls/af/$(PACKAGE).po nls/nb_NO/$(PACKAGE).po nls/nn_NO/$(PACKAGE).po nls/it/$(PACKAGE).po nls/ru/$(PACKAGE).po nls/ro/$(PACKAGE).po nls/pl/$(PACKAGE).po
 ifdef REQUIRE_NLS
-	$(MSGFMT) -o nls/fr/$(PACKAGE).mo nls/fr/$(PACKAGE).po
-	$(MSGFMT) -o nls/de/$(PACKAGE).mo nls/de/$(PACKAGE).po
-	$(MSGFMT) -o nls/es/$(PACKAGE).mo nls/es/$(PACKAGE).po
-	$(MSGFMT) -o nls/pt/$(PACKAGE).mo nls/pt/$(PACKAGE).po
-	$(MSGFMT) -o nls/af/$(PACKAGE).mo nls/af/$(PACKAGE).po
-	$(MSGFMT) -o nls/nb_NO/$(PACKAGE).mo nls/nb_NO/$(PACKAGE).po
-	$(MSGFMT) -o nls/nn_NO/$(PACKAGE).mo nls/nn_NO/$(PACKAGE).po
-	$(MSGFMT) -o nls/it/$(PACKAGE).mo nls/it/$(PACKAGE).po
-	$(MSGFMT) -o nls/ru/$(PACKAGE).mo nls/ru/$(PACKAGE).po
-	$(MSGFMT) -o nls/ro/$(PACKAGE).mo nls/ro/$(PACKAGE).po
-	$(MSGFMT) -o nls/pl/$(PACKAGE).mo nls/pl/$(PACKAGE).po
+locales: nls/fr/$(PACKAGE).mo nls/de/$(PACKAGE).mo nls/es/$(PACKAGE).mo nls/pt/$(PACKAGE).mo nls/af/$(PACKAGE).mo nls/nb_NO/$(PACKAGE).mo nls/nn_NO/$(PACKAGE).mo nls/it/$(PACKAGE).mo nls/ru/$(PACKAGE).mo nls/ro/$(PACKAGE).mo nls/pl/$(PACKAGE).mo
+else
+locales:
 endif
 
+nls/fr/$(PACKAGE).mo: nls/fr/$(PACKAGE).po
+	$(MSGFMT) -o nls/fr/$(PACKAGE).mo nls/fr/$(PACKAGE).po
+
+nls/de/$(PACKAGE).mo: nls/de/$(PACKAGE).po
+	$(MSGFMT) -o nls/de/$(PACKAGE).mo nls/de/$(PACKAGE).po
+
+nls/es/$(PACKAGE).mo: nls/es/$(PACKAGE).po
+	$(MSGFMT) -o nls/es/$(PACKAGE).mo nls/es/$(PACKAGE).po
+
+nls/pt/$(PACKAGE).mo: nls/pt/$(PACKAGE).po
+	$(MSGFMT) -o nls/pt/$(PACKAGE).mo nls/pt/$(PACKAGE).po
+
+nls/af/$(PACKAGE).mo: nls/af/$(PACKAGE).po
+	$(MSGFMT) -o nls/af/$(PACKAGE).mo nls/af/$(PACKAGE).po
+
+nls/nb_NO/$(PACKAGE).mo: nls/nb_NO/$(PACKAGE).po
+	$(MSGFMT) -o nls/nb_NO/$(PACKAGE).mo nls/nb_NO/$(PACKAGE).po
+
+nls/nn_NO/$(PACKAGE).mo: nls/nn_NO/$(PACKAGE).po
+	$(MSGFMT) -o nls/nn_NO/$(PACKAGE).mo nls/nn_NO/$(PACKAGE).po
+
+nls/it/$(PACKAGE).mo: nls/it/$(PACKAGE).po
+	$(MSGFMT) -o nls/it/$(PACKAGE).mo nls/it/$(PACKAGE).po
+
+nls/ru/$(PACKAGE).mo: nls/ru/$(PACKAGE).po
+	$(MSGFMT) -o nls/ru/$(PACKAGE).mo nls/ru/$(PACKAGE).po
+
+nls/ro/$(PACKAGE).mo: nls/ro/$(PACKAGE).po
+	$(MSGFMT) -o nls/ro/$(PACKAGE).mo nls/ro/$(PACKAGE).po
+
+nls/pl/$(PACKAGE).mo: nls/pl/$(PACKAGE).po
+	$(MSGFMT) -o nls/pl/$(PACKAGE).mo nls/pl/$(PACKAGE).po
+
 # Phony targets
-.PHONY: clean distclean config install install_base install_all uninstall uninstall_base uninstall_all dist squeeze sysstat sysstat_base sysstat_all
+.PHONY: clean distclean config install install_base install_all uninstall uninstall_base uninstall_all dist squeeze
 
 uninstall_base:
 	rm -f $(DESTDIR)$(LIB_DIR)/sa/sadc
@@ -271,20 +298,14 @@ else
 install: install_base
 endif
 
-ifeq ($(INSTALL_CRON),y)
-sysstat: sysstat_all
-else
-sysstat: sysstat_base
-endif
-
 clean:
-	rm -f sadc sa1 sa2 sysstat sar iostat mpstat *.o *.a core TAGS data crontab
-	rm -f sapath.h
+	rm -f sadc sa1 sa2 sysstat sar iostat mpstat *.o *.a core TAGS crontab
+	rm -f sapath.h version.h
 	find nls -name "*.mo" -exec rm -f {} \;
 
 distclean: clean
 	$(CP) build/CONFIG.def build/CONFIG
-	rm -f *.save *.old .*.swp
+	rm -f *.save *.old .*.swp data
 
 dist: distclean
 	cd .. && (tar -cvf - sysstat-$(VERSION) | gzip -v9 > sysstat-$(VERSION).tar.gz)
@@ -314,8 +335,8 @@ squeeze:
 	mv squeeze-file mpstat.h
 	sed 's/ *$$//g' sa.h > squeeze-file
 	mv squeeze-file sa.h
-	sed 's/ *$$//g' version.h > squeeze-file
-	mv squeeze-file version.h
+	sed 's/ *$$//g' version.in > squeeze-file
+	mv squeeze-file version.in
 	sed 's/ *$$//g' sapath.in > squeeze-file
 	mv squeeze-file sapath.in
 

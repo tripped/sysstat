@@ -1,13 +1,13 @@
-.TH IOSTAT 1 "SEPTEMBER 2003" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "NOVEMBER 2003" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices and partitions.
 .SH SYNOPSIS
-.B iostat [ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ] [
+.B iostat [ -c | -d ] [ -k ] [ -t ] [ -V ] [ -x ] [ {
 .I device
-.B [ ... ] ] [ -p { ALL |
+.B [ ... ] | ALL } ] [ -p [ {
 .I device
-.B } ] [
+.B | ALL } ] ] [
 .I interval
 .B [
 .I count
@@ -110,9 +110,15 @@ If no
 .I device
 nor
 .I partition
-is given on the command line, then statistics are displayed
-for every device available in the system, providing that the kernel maintains
-statistics for it. The report may show the following fields,
+is entered, then statistics are displayed
+for every device used by the system, and
+providing that the kernel maintains statistics for it.
+If the
+.B ALL
+keyword is given on the command line, then statistics are
+displayed for every device defined by the system, includind those
+that have never been used.
+The report may show the following fields,
 depending on the flags used:
 
 .B Device:
@@ -240,7 +246,8 @@ The average queue length of the requests that were issued to the device.
 .B await
 .RS
 The average time (in milliseconds) for I/O requests issued to the device
-to be served.
+to be served. This includes the time spent by the requests in queue and
+the time spent servicing them.
 
 .RE
 .B svctm
@@ -251,7 +258,9 @@ to the device.
 .RE
 .B %util
 .RS
-Percentage of CPU time during which I/O requests were issued to the device.
+Percentage of CPU time during which I/O requests were issued to the device
+(bandwidth utilization for the device). Device saturation occurs when this
+value is close to 100%.
 .RE
 .RE
 .SH OPTIONS
@@ -265,14 +274,15 @@ device utilization report.
 Display statistics in kilobytes per second instead of blocks per second.
 Data displayed are valid only with kernels 2.4 and newer.
 .IP "-p device | ALL"
-The -p option is exclusive of the -x option and displays statistics for the
-block device
-.I device
-and all its partitions. Note that sysfs must be mounted for this option to be
-able to display statistics for partitions (post 2.5 kernels). The
+The -p option is exclusive of the -x option and displays statistics for
+block devices and all their partitions that are used by the system.
+If a device name is entered on the command line, then statistics for it
+and all its partitions are displayed. Last, the
 .B ALL
-keyword indicates that statistics for every block devices and all their
-partitions are to be displayed.
+keyword indicates that statistics have to be displayed for all the block
+devices and partitions defined by the system, including those that have
+never been used.
+Note that this option works only with post 2.5 kernels.
 .IP -t
 Print the time for each report displayed.
 .IP -V
@@ -328,10 +338,8 @@ filesystem must be mounted for
 .B iostat
 to work.
 
-.I /sys
-filesystem must be mounted for
-.B iostat
-to be able to display extended statistics.
+Extended statistics are available only with
+post 2.5 kernels.
 .SH FILE
 .I /proc/stat
 contains system statisitics.
@@ -344,8 +352,8 @@ contains statistics for block devices (post 2.5 kernels).
 .SH AUTHOR
 Sebastien Godard <sebastien.godard@wanadoo.fr>
 .SH SEE ALSO
-.BR vmstat (8),
 .BR sar (1),
-.BR mpstat (1)
+.BR mpstat (1),
+.BR vmstat (8)
 
 .I http://perso.wanadoo.fr/sebastien.godard/

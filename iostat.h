@@ -18,6 +18,7 @@
 #define D_KILOBYTES	0x020
 #define F_HAS_SYSFS	0x040
 #define F_OLD_KERNEL	0x080
+#define D_UNFILTERED	0x100
 /* 0x100000:0x800000 -> reserved (cf. common.h) */
 
 #define DISPLAY_CPU_ONLY(m)	(((m) & D_CPU_ONLY) == D_CPU_ONLY)
@@ -28,6 +29,7 @@
 #define DISPLAY_KILOBYTES(m)	(((m) & D_KILOBYTES) == D_KILOBYTES)
 #define HAS_SYSFS(m)		(((m) & F_HAS_SYSFS) == F_HAS_SYSFS)
 #define HAS_OLD_KERNEL(m)	(((m) & F_OLD_KERNEL) == F_OLD_KERNEL)
+#define DISPLAY_UNFILTERED(m)	(((m) & D_UNFILTERED) == D_UNFILTERED)
 
 #define DT_DEVICE	0
 #define DT_PARTITION	1

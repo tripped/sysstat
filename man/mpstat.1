@@ -1,4 +1,4 @@
-.TH MPSTAT 1 "JANUARY 2003" Linux "Linux User's Manual" -*- nroff -*-
+.TH MPSTAT 1 "NOVEMBER 2003" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 mpstat \- Report processors related statistics.
 .SH SYNOPSIS
@@ -66,12 +66,21 @@ executing at the user level with nice priority.
 .B %system
 .RS
 Show the percentage of CPU utilization that occurred while
-executing at the system level (kernel).
+executing at the system level (kernel). Note that this does not
+include the time spent servicing interrupts or softirqs.
 .RE
 .B %iowait
 .RS
 Show the percentage of time that the CPU or CPUs were idle during which
 the system had an outstanding disk I/O request.
+.RE
+.B %irq
+.RS
+Show the percentage of time spent by the CPU or CPUs to service interrupts.
+.RE
+.B %soft
+.RS
+Show the percentage of time spent by the CPU or CPUs to service softirqs.
 .RE
 .B %idle
 .RS

@@ -130,7 +130,7 @@ void write_stats_core(short prev, short curr, short dis,
 
    /* Print stats */
    if (dis)
-      printf(_("\n%-11s  CPU   %%user   %%nice %%system %%iowait   %%idle    intr/s\n"),
+      printf(_("\n%-11s  CPU   %%user   %%nice %%system %%iowait    %%irq   %%soft   %%idle    intr/s\n"),
 	     prev_string);
 
    /* Check if we want global stats among all proc */
@@ -138,11 +138,13 @@ void write_stats_core(short prev, short curr, short dis,
 
       printf(_("%-11s  all"), curr_string);
 
-      printf("  %6.2f  %6.2f  %6.2f  %6.2f",
-	     SP_VALUE(st_mp_cpu[prev]->cpu_user,   st_mp_cpu[curr]->cpu_user,   itv),
-	     SP_VALUE(st_mp_cpu[prev]->cpu_nice,   st_mp_cpu[curr]->cpu_nice,   itv),
-	     SP_VALUE(st_mp_cpu[prev]->cpu_system, st_mp_cpu[curr]->cpu_system, itv),
-	     SP_VALUE(st_mp_cpu[prev]->cpu_iowait, st_mp_cpu[curr]->cpu_iowait, itv));
+      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f",
+	     SP_VALUE(st_mp_cpu[prev]->cpu_user,    st_mp_cpu[curr]->cpu_user,    itv),
+	     SP_VALUE(st_mp_cpu[prev]->cpu_nice,    st_mp_cpu[curr]->cpu_nice,    itv),
+	     SP_VALUE(st_mp_cpu[prev]->cpu_system,  st_mp_cpu[curr]->cpu_system,  itv),
+	     SP_VALUE(st_mp_cpu[prev]->cpu_iowait,  st_mp_cpu[curr]->cpu_iowait,  itv),
+	     SP_VALUE(st_mp_cpu[prev]->cpu_hardirq, st_mp_cpu[curr]->cpu_hardirq, itv),
+	     SP_VALUE(st_mp_cpu[prev]->cpu_softirq, st_mp_cpu[curr]->cpu_softirq, itv));
 
       if (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[prev]->cpu_idle)
 	 printf("    %.2f", 0.0);	/* Handle buggy kernels */
@@ -177,11 +179,13 @@ void write_stats_core(short prev, short curr, short dis,
       st_mp_cpu_i = st_mp_cpu[curr] + cpu;
       st_mp_cpu_j = st_mp_cpu[prev] + cpu;
 
-      printf("  %6.2f  %6.2f  %6.2f  %6.2f",
-	     SP_VALUE(st_mp_cpu_j->cpu_user,   st_mp_cpu_i->cpu_user,   itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_nice,   st_mp_cpu_i->cpu_nice,   itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_system, st_mp_cpu_i->cpu_system, itv),
-	     SP_VALUE(st_mp_cpu_j->cpu_iowait, st_mp_cpu_i->cpu_iowait, itv));
+      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f",
+	     SP_VALUE(st_mp_cpu_j->cpu_user,    st_mp_cpu_i->cpu_user,    itv),
+	     SP_VALUE(st_mp_cpu_j->cpu_nice,    st_mp_cpu_i->cpu_nice,    itv),
+	     SP_VALUE(st_mp_cpu_j->cpu_system,  st_mp_cpu_i->cpu_system,  itv),
+	     SP_VALUE(st_mp_cpu_j->cpu_iowait,  st_mp_cpu_i->cpu_iowait,  itv),
+	     SP_VALUE(st_mp_cpu_j->cpu_hardirq, st_mp_cpu_i->cpu_hardirq, itv),
+	     SP_VALUE(st_mp_cpu_j->cpu_softirq, st_mp_cpu_i->cpu_softirq, itv));
 
       if (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle)
 	 printf("    %.2f", 0.0);
@@ -251,7 +255,7 @@ void read_proc_stat(short curr)
    FILE *statfp;
    struct mp_stats *st_mp_cpu_i;
    static char line[80];
-   unsigned int cc_user, cc_nice, cc_system;
+   unsigned int cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
    unsigned long cc_idle, cc_iowait;
    int proc_nb;
 
@@ -265,15 +269,20 @@ void read_proc_stat(short curr)
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
-	  * Read the number of jiffies spent in user, nice, system, idle
-	  * and iowait mode among all proc. CPU usage is not reduced to one
+	  * Read the number of jiffies spent in the different modes
+	  * among all proc. CPU usage is not reduced to one
 	  * processor to avoid rounding problems.
 	  */
-	 st_mp_cpu[curr]->cpu_iowait = 0;	/* For non 2.5 machines */
-	 sscanf(line + 5, "%u %u %u %lu %lu",
-		&(st_mp_cpu[curr]->cpu_user),   &(st_mp_cpu[curr]->cpu_nice),
-		&(st_mp_cpu[curr]->cpu_system), &(st_mp_cpu[curr]->cpu_idle),
-		&(st_mp_cpu[curr]->cpu_iowait));
+	 st_mp_cpu[curr]->cpu_iowait = 0;	/* For pre 2.5 kernels */
+	 cc_hardirq = cc_softirq = 0;
+	 sscanf(line + 5, "%u %u %u %lu %lu %u %u",
+		&(st_mp_cpu[curr]->cpu_user),
+		&(st_mp_cpu[curr]->cpu_nice),
+		&(st_mp_cpu[curr]->cpu_system),
+		&(st_mp_cpu[curr]->cpu_idle),
+		&(st_mp_cpu[curr]->cpu_iowait),
+		&(st_mp_cpu[curr]->cpu_hardirq),
+		&(st_mp_cpu[curr]->cpu_softirq));
 
 	 /*
 	  * Compute the uptime of the system in jiffies (1/100ths of a second
@@ -284,7 +293,9 @@ void read_proc_stat(short curr)
 	                             st_mp_cpu[curr]->cpu_nice +
 	                             st_mp_cpu[curr]->cpu_system +
 	                             st_mp_cpu[curr]->cpu_idle +
-	                             st_mp_cpu[curr]->cpu_iowait;
+	                             st_mp_cpu[curr]->cpu_iowait +
+	    			     st_mp_cpu[curr]->cpu_hardirq +
+	    			     st_mp_cpu[curr]->cpu_softirq;
       }
 
       else if (!strncmp(line, "cpu", 3)) {
@@ -293,17 +304,21 @@ void read_proc_stat(short curr)
 	  * and iowait mode for current proc.
 	  * This is done only on SMP machines.
 	  */
-	 cc_iowait = 0;	/* For non 2.5 machines */
-	 sscanf(line + 3, "%d %u %u %u %lu %lu",
+	 cc_iowait = cc_hardirq = cc_softirq = 0;
+	 sscanf(line + 3, "%d %u %u %u %lu %lu %u %u",
 		&proc_nb,
-		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
+		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
+		&cc_hardirq, &cc_softirq);
+
 	 if (proc_nb <= cpu_nr) {
 	    st_mp_cpu_i = st_mp_cpu[curr] + proc_nb + 1;
-	    st_mp_cpu_i->cpu_user   = cc_user;
-	    st_mp_cpu_i->cpu_nice   = cc_nice;
-	    st_mp_cpu_i->cpu_system = cc_system;
-	    st_mp_cpu_i->cpu_idle   = cc_idle;
-	    st_mp_cpu_i->cpu_iowait = cc_iowait;
+	    st_mp_cpu_i->cpu_user    = cc_user;
+	    st_mp_cpu_i->cpu_nice    = cc_nice;
+	    st_mp_cpu_i->cpu_system  = cc_system;
+	    st_mp_cpu_i->cpu_idle    = cc_idle;
+	    st_mp_cpu_i->cpu_iowait  = cc_iowait;
+	    st_mp_cpu_i->cpu_hardirq = cc_hardirq;
+	    st_mp_cpu_i->cpu_softirq = cc_softirq;
 	 }
 	 /* else:
 	  * Additional CPUs have been dynamically registered in /proc/stat.
@@ -316,7 +331,8 @@ void read_proc_stat(short curr)
 	     * using jiffies count for proc#0.
 	     */
 	    st_mp_tstamp[curr].uptime0 = cc_user + cc_nice + cc_system +
-	       				 cc_idle + cc_iowait;
+	       				 cc_idle + cc_iowait + cc_hardirq +
+	    				 cc_softirq;
       }
 
       else if (!strncmp(line, "intr ", 5))
@@ -548,7 +564,6 @@ int main(int argc, char **argv)
 
    /* Save the first stats collected. Will be used to compute the average */
    st_mp_tstamp[2] = st_mp_tstamp[0];
-
    memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (cpu_nr + 2));
 
    pause();

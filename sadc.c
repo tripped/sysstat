@@ -747,7 +747,7 @@ void read_proc_stat(void)
    struct stats_one_cpu *st_cpu_i;
    struct disk_stats *st_disk_i;
    static char line[8192];
-   unsigned int cc_user, cc_nice, cc_system;
+   unsigned int cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
    unsigned long cc_idle, cc_iowait;
    unsigned int v_tmp[5], v_major, v_index;
    int proc_nb, i, pos;
@@ -766,12 +766,19 @@ void read_proc_stat(void)
 	  * iowait mode among all proc. CPU usage is not reduced to one
 	  * processor to avoid rounding problems.
 	  */
-	 file_stats.cpu_iowait = 0;	/* in case it isn't 2.5 */
-	 sscanf(line + 5, "%u %u %u %lu %lu",
+	 file_stats.cpu_iowait = 0;	/* For pre 2.5 kernels */
+	 cc_hardirq = cc_softirq = 0;
+	 sscanf(line + 5, "%u %u %u %lu %lu %u %u",
 		&(file_stats.cpu_user),   &(file_stats.cpu_nice),
 		&(file_stats.cpu_system), &(file_stats.cpu_idle),
-		&(file_stats.cpu_iowait));
+		&(file_stats.cpu_iowait), &cc_hardirq, &cc_softirq);
 
+	 /*
+	  * Time spent in system mode also includes time spent
+	  * servicing interrrupts and softirqs
+	  */
+	 file_stats.cpu_system += cc_hardirq + cc_softirq;
+	
 	 /*
 	  * Compute the uptime of the system in jiffies (1/100ths of a second
 	  * if HZ=100).
@@ -796,10 +803,14 @@ void read_proc_stat(void)
 	     * Warning: st_cpu_i struct is _not_ allocated even if the kernel
 	     * has SMP support enabled.
 	     */
-	    cc_iowait = 0;	/* in case it isn't 2.5 */
-	    sscanf(line + 3, "%d %u %u %u %lu %lu",
+	    cc_iowait = 0;	/* For pre 2.5 kernels */
+	    cc_hardirq = cc_softirq = 0;
+	    sscanf(line + 3, "%d %u %u %u %lu %lu %u %u",
 		   &proc_nb,
-		   &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
+		   &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
+		   &cc_hardirq, &cc_softirq);
+	    cc_system += cc_hardirq + cc_softirq;
+	
 	    if (proc_nb <= cpu_nr) {
 	       st_cpu_i = st_cpu + proc_nb;
 	       st_cpu_i->per_cpu_user   = cc_user;

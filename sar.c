@@ -66,7 +66,7 @@ unsigned int interrupts[DIM][NR_IRQS];
 struct pid_stats *pid_stats[DIM][MAX_PID_NR];
 
 struct tm loc_time;
-struct tstamp tm_start, tm_end;	/* Used for -s and -e options */
+struct tstamp tm_start, tm_end;	/* Contain the date specified by -s and -e options */
 short dis_hdr = -1;
 int pid_nr = 0;
 char *args[MAX_ARGV_NR];
@@ -442,7 +442,7 @@ void print_report_hdr(void)
       loc_time.tm_mon  = file_hdr.sa_month;
       loc_time.tm_year = file_hdr.sa_year;
       /*
-       * Call mktime() to set DST flag.
+       * Call mktime() to set DST (Daylight Saving Time) flag.
        * Has anyone a better way to do it?
        */
       loc_time.tm_hour = loc_time.tm_min = loc_time.tm_sec = 0;
@@ -484,29 +484,48 @@ void init_timestamp(short curr, char *cur_time, int len)
 {
    struct tm *ltm;
 
-   /*
-    * Get boot time
-    * NOTE: loc_time structure must have been init'ed before!
-    */
-   if (PRINT_ORG_TIME(flags)) {
-      loc_time.tm_hour = file_stats[curr].hour;
-      loc_time.tm_min  = file_stats[curr].minute;
-      loc_time.tm_sec  = file_stats[curr].second;
+   /* NOTE: loc_time structure must have been init'ed before! */
+   if (!USE_H_OPTION(flags) && !USE_DB_OPTION(flags)) {
+
+      if (PRINT_ORG_TIME(flags)) {	/* Check if option -t was specified on the command line */
+	 /* -t */
+	 loc_time.tm_hour = file_stats[curr].hour;
+	 loc_time.tm_min  = file_stats[curr].minute;
+	 loc_time.tm_sec  = file_stats[curr].second;
+      }
+      else {
+	 ltm = localtime(&file_stats[curr].ust_time);
+	 loc_time = *ltm;
+      }
    }
    else {
-      if (USE_H_OPTION(flags) || USE_DB_OPTION(flags))
-	 ltm = gmtime(&file_stats[curr].ust_time);
-      else
+      /* Option '-h' or '-H' used */
+      if (PRINT_ORG_TIME(flags) && USE_DB_OPTION(flags))
+	 /* -H -t */
 	 ltm = localtime(&file_stats[curr].ust_time);
-      loc_time = *ltm;
-   }
+      else
+	 /* '-h' or '-h -t' or '-H' */
+	 ltm = gmtime(&file_stats[curr].ust_time);
 
+      loc_time = *ltm;
+      /*
+       * NB: Option -t is ignored when option -h is used, since option -h displays
+       * its timestamp as a long integer. This is type 'time_t', which is the number
+       * of seconds since 1970 _always_ expressed in UTC.
+       */
+   }
+	
    if (!cur_time)
       /* Stop if cur_time is NULL */
       return;
 
-   if (USE_DB_OPTION(flags))
-      strftime(cur_time, len, "%Y-%m-%d %H:%M:%S UTC", &loc_time);
+   /* Set cur_time date value */
+   if (USE_DB_OPTION(flags)) {
+      if (PRINT_ORG_TIME(flags))
+	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S", &loc_time);
+      else
+	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S UTC", &loc_time);
+   }
    else if (!USE_H_OPTION(flags))
       strftime(cur_time, len, "%X  ", &loc_time);
 }
@@ -2351,7 +2370,6 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
 			 int use_tm_start, int use_tm_end)
 {
    unsigned long dt, itv, itv0;
-   struct tm *ltm;
    char cur_time[26];
 
    /* Check time (1) */
@@ -2360,13 +2378,9 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
       return 0;
 
    /* Get current timestamp */
-   ltm = gmtime(&file_stats[curr].ust_time);
-   loc_time = *ltm;
+   init_timestamp(curr, cur_time, 26);
    if (USE_H_OPTION(flags))
       sprintf(cur_time, "%ld", file_stats[curr].ust_time);
-   else
-      /* USE_DB_OPTION */
-      strftime(cur_time, 26, "%Y-%m-%d %H:%M:%S UTC", &loc_time);
 
    /* Check time (2) */
    if (prep_time(use_tm_start, curr, &itv, &itv0))
@@ -2399,11 +2413,16 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
 /*
  * Print a Linux restart message (contents of a DUMMY record)
  */
-void write_dummy(short curr)
+void write_dummy(short curr, int use_tm_start, int use_tm_end)
 {
    char cur_time[26];
 
    init_timestamp(curr, cur_time, 26);
+
+   /* The RESTART message must be in the interval specified by -s/-e options */
+   if ((use_tm_start && (datecmp(&loc_time, &tm_start) < 0)) ||
+       (use_tm_end   && (datecmp(&loc_time, &tm_end  ) > 0)))
+      return;
 
    if (USE_H_OPTION(flags))
       printf("%s\t-1\t%ld\tLINUX-RESTART\n", file_hdr.sa_nodename, file_stats[curr].ust_time);
@@ -2571,7 +2590,7 @@ void read_stats_from_file(char from_file[])
 	    return;
 
 	 if (file_stats[0].record_type == R_DUMMY)
-	    write_dummy(0);
+	    write_dummy(0, tm_start.use, tm_end.use);
 	 else {
 	    /* Ok: previous record was not a DUMMY one. So read now the extra fields. */
 	    read_extra_stats(0, ifd);
@@ -2663,7 +2682,7 @@ void read_stats_from_file(char from_file[])
 
       /* The last record we read was a DUMMY one: print it */
       if (!eosaf && (file_stats[curr].record_type == R_DUMMY))
-	 write_dummy(curr);
+	 write_dummy(curr, tm_start.use, tm_end.use);
    }
    while (!eosaf);
 

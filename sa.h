@@ -203,7 +203,10 @@ struct file_hdr {
    char          sa_release[UTSNAME_LEN]	__attribute__ ((packed));
 };
 
-/* Note that sizeof(file_hdr) may be greater than FILE_HDR_SIZE */
+/*
+ * Note that sizeof(file_hdr) may be greater than FILE_HDR_SIZE,
+ * because we use aligned(8) attributes.
+ */
 #define FILE_HDR_SIZE	(SIZEOF_LONG + \
 			 sizeof(int)   * 4 + \
                          sizeof(short) * 2 + \

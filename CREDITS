@@ -60,12 +60,19 @@ The following people have contributed to 'sysstat' in one way or another:
 	display kB/s transfers to devices in iostat reporting when
 	option -x is used.
 
+	John Caruso <caruso@paradiso.umuc.edu> wrote the sargon script
+	shell as a replacement for sa1/sa2 files.
+
+	Wilhelm Nuesser <wilhelm.nuesser@sap.com> sent me a patch to
+	fix average wait times and service times displayed by iostat -x.
+
 
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
 	Des Atkinson <Des.Atkinson@metron.co.uk>
 	Pascal Bleser <pbleser@atos-group.com>
+	Jason Burnett <jason@jnj.org>
 	Nicolas Denis <denisn@wanadoo.fr>
 	Andrew Donkin <ard@waikato.ac.nz>
 	Chris Evans <chris@scary.beasts.org>

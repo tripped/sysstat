@@ -29,10 +29,6 @@ CLEAN_SA_DIR=`${ASK} 'Clean system activity directory?' "n" "clean-sa-dir"`
 
 NLS=`${ASK} 'Enable National Language Support (NLS)?' "y" "nls"`
 
-# isag command
-
-ISAG=`${ASK} 'Compile and install isag command?' "y" "isag"`
-
 # Linux SMP race workaround
 
 SMPRACE=`${ASK} 'Linux SMP race in serial driver workaround?' "n" "smp-race"`
@@ -140,7 +136,6 @@ sed <build/CONFIG.in >build/CONFIG \
 	-e "s+^\\(MAN_DIR =\\)\$+\\1 ${MANDIR}+" \
 	-e "s+^\\(CLEAN_SA_DIR =\\)\$+\\1 ${CLEAN_SA_DIR}+" \
 	-e "s+^\\(ENABLE_NLS =\\)\$+\\1 ${NLS}+" \
-	-e "s+^\\(WANT_ISAG =\\)\$+\\1 ${ISAG}+" \
 	-e "s+^\\(ENABLE_SMP_WRKARD =\\)\$+\\1 ${SMPRACE}+" \
 	-e "s+^\\(YESTERDAY =\\)\$+\\1 ${YDAY}+" \
 	-e "s+^\\(HISTORY =\\)\$+\\1 ${HISTORY}+" \

@@ -7,7 +7,6 @@ SA_DIR = /var/log/sa
 MAN_DIR = ${PREFIX}/man
 CLEAN_SA_DIR = n
 YESTERDAY =
-WANT_ISAG = y
 HISTORY = 7
 
 DFLAGS =

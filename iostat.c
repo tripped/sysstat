@@ -372,7 +372,8 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	       tput   = nr_ios * HZ / itv;
 	       util   = ((double) current.ticks) / itv;
 	       svctm  = tput ? util / tput : 0.0;
-	       await  = nr_ios ? (current.rd_ticks + current.wr_ticks) / nr_ios * 1000.0 / HZ : 0.0;
+	       /* kernel gives ticks already in milliseconds for all platforms -> no need for further scaling */
+	       await  = nr_ios ? (current.rd_ticks + current.wr_ticks) / nr_ios : 0.0;
 	       arqsz  = nr_ios ? (current.rd_sectors + current.wr_sectors) / nr_ios : 0.0;
 
 	       printf("/dev/%-5s", disk_hdr_stats[disk_index].name);
@@ -387,7 +388,8 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 		      arqsz,
 		      ((double) current.aveq) / itv,
 		      await,
-		      svctm * 1000.0,
+		      /* again: ticks in milliseconds */
+		      svctm * 100.0,
 		      /* NB: the ticks output in current sard patches is biased to output 1000 ticks per second */
 		      util * 10.0);
 	    }

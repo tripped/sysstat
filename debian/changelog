@@ -1,3 +1,9 @@
+sysstat (4.1.2-3) unstable; urgency=low
+
+  * Update German and Russian translations of debconf templates from DDTP.
+
+ -- Robert Luberda <robert@debian.org>  Sat, 22 Mar 2003 21:57:23 +0100
+
 sysstat (4.1.2-2) unstable; urgency=low
 
   * debian/po/pt_BR.po: updated (closes: #179358).

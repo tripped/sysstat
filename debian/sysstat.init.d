@@ -6,6 +6,11 @@ DAEMON=/usr/lib/sysstat/sadc
 NAME=sadc
 DESC="the system activity data collector"
 
+umask 022
+DFILE=/var/log/sysstat/sa`date +%d`
+
+OPTIONS="-F -L"
+
 test -f $DAEMON || exit 0
 
 set -e
@@ -13,7 +18,7 @@ set -e
 case "$1" in
   start|restart|reload|force-reload)
 	echo -n "Starting $DESC: "
-	start-stop-daemon --start --quiet --exec $DAEMON
+	start-stop-daemon --start --quiet --exec $DAEMON -- $OPTIONS $DFILE
 	echo "$NAME."
 	;;
   stop)

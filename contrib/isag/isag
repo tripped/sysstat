@@ -1335,7 +1335,6 @@ proc sag_save_graph {} {
 			$yrange \
 			[strrep "$plotstr($l)" __FNGR__ $fgrname] $sag_opt_grid
 
-
 		exec $gnuplot $fngr.gp
 
 		file delete $fngr.gp
@@ -1421,11 +1420,7 @@ proc exit_program {} {
 	
 	close $fp
 
-#	foreach ndx [array names fngr_files] {
-#				file delete $fngr_files($ndx)
-#	}
 	file delete -force -- "$fngr_tmpdir"
-	
 	destroy .
 	exit
 }

@@ -45,6 +45,8 @@ Also tell me what version your kernel is).
      2.6.x kernels?
 3.4. I don't understand the output of iostat. It doesn't match what I expect
      it to be...
+3.5. Why values displayed by iostat are so different in the first report
+     from those displayed in subsequent ones?
 
 
 1. GENERAL QUESTIONS
@@ -82,6 +84,8 @@ Make sure that you have the Linux kernel sources installed in
 /usr/src/linux/include directory and points to the right architecture, e.g.:
 # ll /usr/src/linux/include/asm
 lrwxrwxrwx   1 root     root            8 May  5 18:31 /usr/src/linux/include/asm -> asm-i386
+In fact, only the Linux kernel headers should be necessary to be able
+to compile sysstat.
 
 
 2. QUESTIONS RELATING TO SAR
@@ -317,6 +321,16 @@ With recent kernels (kernels 2.4 and later), iostat is now able to get disk
 activities from the kernel expressed in a number of sectors. If you take a
 look at the kernel code, the sector size is actually allowed to vary although
 I have never seen anything other than 512 bytes.
+
+~~~
+
+3.5. Why values displayed by iostat are so different in the first report
+     from those displayed in subsequent ones?
+
+Probably because, as written in the manual page, the first report generated
+by iostat concerns the time since system startup, whereas subsequent ones
+cover only the time since the previous report (that is to say, the interval
+of time entered on the command line).
 
 --	
 Sebastien Godard (sysstat <at> wanadoo.fr) is the author and the current

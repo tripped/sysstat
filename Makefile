@@ -2,7 +2,7 @@
 # (C) 1999-2004 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 5.0.3
+VERSION = 5.0.4
 
 include build/CONFIG
 
@@ -104,12 +104,13 @@ sa2: sa2.sh
 sysstat: sysstat.sh
 ifeq ($(INSTALL_CRON),y)
 ifeq ($(CRON_OWNER),root)
-	$(SED) s+PREFIX/+$(PREFIX)/+g $< > sysstat
+	$(SED) -e s+PREFIX/+$(PREFIX)/+g -e 's+ QUOTE++g' $< > sysstat
 else
-	$(SED) 's+PREFIX/+su $(CRON_OWNER) -c $(PREFIX)/+g' $< > sysstat
+	$(SED) -e 's+PREFIX/+su $(CRON_OWNER) -c "$(PREFIX)/+g' \
+		-e 's+ QUOTE+"+g' $< > sysstat
 endif
 else
-	$(SED) s+PREFIX/+$(PREFIX)/+g $< > sysstat
+	$(SED) -e s+PREFIX/+$(PREFIX)/+g -e 's+ QUOTE++g' $< > sysstat
 endif
 	$(CHMOD) 755 sysstat
 	

@@ -1283,10 +1283,15 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    /* Only the first 11 characters are printed */
    cur_time[curr][11] = cur_time[!curr][11] = '\0';
 
-   /* Check time (2) */
+   /* Check time */
    if (prep_time(use_tm_start, curr, &itv, &g_itv))
       /* It's too soon... */
       return 0;
+   if (use_tm_end && (datecmp(&loc_time, &tm_end) > 0)) {
+      /* It's too late... */
+      *cnt = 0;
+      return 0;
+   }
 
    (asum.count)++;	/* Nb of lines printed */
 
@@ -1423,13 +1428,6 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       asum.load_avg_1  += file_stats[curr].load_avg_1;
       asum.load_avg_5  += file_stats[curr].load_avg_5;
       asum.load_avg_15 += file_stats[curr].load_avg_15;
-   }
-
-   /* Check time (3) */
-   if (use_tm_end && (datecmp(&loc_time, &tm_end) >= 0)) {
-      /* It's too late now... */
-      *cnt = 0;
-      return 0;
    }
 
    return 1;
@@ -2271,10 +2269,15 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
    if (USE_H_OPTION(flags))
       sprintf(cur_time, "%ld", file_stats[curr].ust_time);
 
-   /* Check time (2) */
+   /* Check time */
    if (prep_time(use_tm_start, curr, &itv, &g_itv))
       /* It's too soon... */
       return 0;
+   if (use_tm_end && (datecmp(&loc_time, &tm_end) > 0)) {
+      /* It's too late... */
+      *cnt = 0;
+      return 0;
+   }
 
    dt = itv / HZ;
    /* Correct rounding error for dt */
@@ -2287,13 +2290,6 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
    else if (USE_DB_OPTION(flags))
       /* Write stats to be used for loading into a database */
       write_stats_for_db(curr, act, dt, itv, g_itv, cur_time);
-
-   /* Check time (3) */
-   if (use_tm_end && (datecmp(&loc_time, &tm_end) >= 0)) {
-      /* It's too late now... */
-      *cnt = 0;
-      return 0;
-   }
 
    return 1;
 }
@@ -2312,7 +2308,7 @@ void write_dummy(short curr, int use_tm_start, int use_tm_end)
 
    /* The RESTART message must be in the interval specified by -s/-e options */
    if ((use_tm_start && (datecmp(&loc_time, &tm_start) < 0)) ||
-       (use_tm_end   && (datecmp(&loc_time, &tm_end  ) > 0)))
+       (use_tm_end && (datecmp(&loc_time, &tm_end) > 0)))
       return;
 
    if (USE_H_OPTION(flags))
@@ -2617,7 +2613,7 @@ void read_stats_from_file(char from_file[])
 	 exit(2);
       }
 
-      /* Reading stats between two possible Linux restarts */
+      /* Read and write stats located between two possible Linux restarts */
 
       /* For each requested activity... */
       for (act = 1; act <= A_LAST; act <<= 1) {

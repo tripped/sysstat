@@ -500,10 +500,15 @@ int ask_for_flock(int fd, unsigned int *flags, int fatal)
 
    /* Option -L may be used only if an outfile was specified on the command line */
    if (USE_L_OPTION(*flags)) {
-      /* Yes: try to lock file */
+      /*
+       * Yes: try to lock file. To make code portable, check for both EWOULDBLOCK
+       * and EAGAIN return codes, and treat them the same (glibc documentation).
+       * Indeed, some Linux ports (e.g. hppa-linux) do not equate EWOULDBLOCK and
+       * EAGAIN like every other Linux port.
+       */
       if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
-	 if (((errno == EWOULDBLOCK) && (fatal == FATAL)) ||
-	      (errno != EWOULDBLOCK)) {
+	 if ((((errno == EWOULDBLOCK) || (errno == EAGAIN)) && (fatal == FATAL)) ||
+	      ((errno != EWOULDBLOCK) && (errno != EAGAIN))) {
 	    perror("flock");
 	    exit(1);
 	 }
@@ -1658,13 +1663,6 @@ int main(int argc, char **argv)
    /* Init National Language Support */
    init_nls();
 #endif
-
-   if (argc == 1) {
-      /* sadc called with no args */
-      get_localtime(&loc_time);
-      snprintf(ofile, MAX_FILE_LEN, "%s/sa%02d", SA_DIR, loc_time.tm_mday);
-      ofile[MAX_FILE_LEN - 1] = '\0';
-   }
 
    /* Init activity flag */
    sadc_actflag = A_PROC + A_PAGE + A_IRQ + A_IO + A_CPU + A_CTXSW + A_SWAP +

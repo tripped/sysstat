@@ -1,9 +1,10 @@
 sysstat (4.0.1-1) unstable; urgency=low
 
-  * UNRELEASED
-  *  New upstream version.
+  * New upstream version.
+  * isag: set LC_ALL to sane value to prevent breakage if current
+    locale spiecifies a comma decimal separator (closes: #101545).
 
- -- Robert Luberda <robert@debian.org>  Wed,  4 Jul 2001 21:04:38 +0200
+ -- Robert Luberda <robert@debian.org>  Wed,  4 Jul 2001 22:36:18 +0200
 
 sysstat (4.0.0-2) unstable; urgency=high
 

@@ -1,9 +1,12 @@
 sysstat (4.0.3-2) unstable; urgency=low
 
+  * sar.c: fixed a typo (closes: #135540).
+    Thanks to Marcin Owsiany <porridge@debian.org> for a patch.
+   
   * Added Russian translation of debconf templates (closes: #137689).
-    Thanks to Ilgiz Kalmetev <ilgiz@bashtelecom.ru>. 
+    Thanks to Ilgiz Kalmetev <ilgiz@bashtelecom.ru>.
 
- -- Robert Luberda <robert@debian.org>  Thu, 14 Mar 2002 20:07:58 +0100
+ -- Robert Luberda <robert@debian.org>  Thu, 14 Mar 2002 20:16:46 +0100
 
 sysstat (4.0.3-1) unstable; urgency=low
 

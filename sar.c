@@ -1726,7 +1726,7 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
    if (GET_SWAP(act)) {
       printf("%s\t%ld\t%s\t-\tpswpin/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pswpin, file_stats[curr].pswpin, itv));
-      printf("%s\t%ld\t%s\t-\tpgpgout/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
+      printf("%s\t%ld\t%s\t-\tpswpout/s\t%.2f\n", file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pswpout, file_stats[curr].pswpout, itv));
    }
 

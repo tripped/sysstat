@@ -1,6 +1,6 @@
 sysstat (5.0.6-2) unstable; urgency=low
 
-  * Updated German translations of debconf templates (closes: #281244).
+  * Updated German translations of debconf templates (closes: #281224).
     Thanks to Erik Schanze <schanzi_usenet@gmx.de>.
   * Added README.Debian file and the 'Debian note' to sa1 and sa2 man pages
     to explain source of common problems (closes: #279049, #269712).

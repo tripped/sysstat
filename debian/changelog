@@ -1,3 +1,11 @@
+sysstat (4.1.2-2) unstable; urgency=low
+
+  * debian/po/pt_BR.po: updated (closes: #179358).
+    Thanks to André Luís Lopes <andrelop@ig.com.br>.
+  * Recode this changelog to UTF-8.
+
+ -- Robert Luberda <robert@debian.org>  Sun,  2 Feb 2003 16:05:36 +0100
+
 sysstat (4.1.2-1) unstable; urgency=low
 
   * New upstream version (development):

@@ -14,19 +14,19 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: sysstat_4.1.2-1\n"
 "POT-Creation-Date: 2003-01-18 18:31+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2002-O2-01 17:27-0200\n"
+"Last-Translator: André Luís Lopes <andrelop@ig.com.br>\n"
+"Language-Team: Debian-BR Project <debian-l10n-portuguese@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=ISO-8859-15\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Description
 #: ../sysstat.templates:3
 msgid "WARNING: daily data files format has changed!"
-msgstr "AVISO: formato dos arquivo de dados diários mudou!"
+msgstr "AVISO: o formato dos arquivo de dados diários mudou !"
 
 #. Description
 #: ../sysstat.templates:3
@@ -35,7 +35,7 @@ msgid ""
 "sysstat and is *not* compatible with the previous one!"
 msgstr ""
 "O formato dos arquivos de estatísticas de dados diários mudou na versão "
-"${s_version} do sysstat e *não* é compatível com as versões anteriores!"
+"${s_version} do sysstat e *não* é compatível com as versões anteriores !"
 
 #. Description
 #: ../sysstat.templates:3
@@ -45,16 +45,15 @@ msgstr "Arquivos de dados existentes precisam ser apagados."
 #. Description
 #: ../sysstat.templates:12
 msgid "Do you want post-installation script to remove these data files?"
-msgstr "Deseja que o script de pós-instalação remove esses arquivos de dados ?"
+msgstr "Deseja que o script de pós-instalação remova esses arquivos de dados ?"
 
 #. Description
 #: ../sysstat.templates:12
-#, fuzzy
 msgid ""
 "If you activate this option, any existing data files in /var/log/sysstat/ "
 "directory will be deleted."
 msgstr ""
-"Caso você responda 'sim' (o padrão), quaisquer arquivos de dados existentes "
+"Caso você aceite esta opção, quaisquer arquivos de dados existentes "
 "no diretório /var/log/sysstat/ serão apagados."
 
 #. Description
@@ -63,11 +62,6 @@ msgid ""
 "If you don't want to remove them automatically, please remove them by hand "
 "later, in order to the sar command work properly."
 msgstr ""
-
-#~ msgid ""
-#~ "If you say 'no', these files won't be deleted, but this will break the "
-#~ "sar command, so you will have to delete them by hand."
-#~ msgstr ""
-#~ "Se você responder 'não', esses arquivos não serão apagados, mas isso irá "
-#~ "fazer com que o comando sar deixe de funcionar, e portanto você deverá "
-#~ "apagá-los manualmente."
+"Caso você não queira removê-los automaticamente, por favor remova-os "
+"manualmente posteriormente para que o comando `sar' funcione "
+"corretamente."

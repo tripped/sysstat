@@ -22,8 +22,9 @@ Here are the things I would like (or I should) do for the next releases:
 * Check I/O wait type (long int?, int?) read in /proc/stat and in /sys/.../stat.
 
 * Cast cpu stats (user, nice, system) for sar, iostat and mpstat to unsigned
-  long instead of unsigned int (Greg Edwards <edwardsg@sgi.com>).
+  long instead of unsigned int (Greg Edwards <edwardsg [at] sgi.com>).
   Idem for other stats.
 
 * Handle little/big endian architectures for sar daily data files
-  (Ferenci Daniel <Daniel.Ferenci@siemens.com>).
+  (Ferenci Daniel <Daniel.Ferenci [at] siemens.com>).
+

@@ -1,6 +1,6 @@
 /*
  * sysstat: System performance tools for Linux
- * (C) 1999-2004 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2004 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _COMMON_H
@@ -27,6 +27,7 @@
 
 /* Files */
 #define STAT		"/proc/stat"
+#define PPARTITIONS	"/proc/partitions"
 #define DISKSTATS	"/proc/diskstats"
 #define INTERRUPTS	"/proc/interrupts"
 #define SYSFS_BLOCK	"/sys/block"
@@ -39,13 +40,15 @@
 #define NR_DISK_PREALLOC	3
 
 /* Define flags */
-#define F_BOOT_STATS	0x100000
-#define D_PARTITIONS	0x200000
-#define F_HAS_DISKSTATS	0X400000
+#define F_BOOT_STATS		0x100000
+#define D_PARTITIONS		0x200000
+#define F_HAS_DISKSTATS		0x400000
+#define F_HAS_PPARTITIONS	0x800000
 
 #define WANT_BOOT_STATS(m)	(((m) & F_BOOT_STATS) == F_BOOT_STATS)
 #define DISPLAY_PARTITIONS(m)	(((m) & D_PARTITIONS) == D_PARTITIONS)
 #define HAS_DISKSTATS(m)	(((m) & F_HAS_DISKSTATS) == F_HAS_DISKSTATS)
+#define HAS_PPARTITIONS(m)	(((m) & F_HAS_PPARTITIONS) == F_HAS_PPARTITIONS)
 
 
 #define CNT_DEV		0
@@ -82,6 +85,7 @@ extern time_t	    get_localtime(struct tm *);
 extern int	    get_cpu_nr(int *, unsigned int);
 extern int	    get_sysfs_dev_nr(int);
 extern int	    get_diskstats_dev_nr(int);
+extern int	    get_ppartitions_dev_nr(void);
 extern int	    get_win_height(void);
 extern void	    init_nls(void);
 extern void	    print_gal_header(struct tm *, char *, char *, char *);

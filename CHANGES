@@ -1,5 +1,23 @@
 Changes:
 
+2004/03/10: Version 5.0.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* iostat will _again_ look for statistics in /proc/partitions if
+	  available. Too many production servers are still using 2.2.x or
+	  2.4.x kernels and iostat must be able to display extended stats
+	  also for them (/proc/partitions support was removed in sysstat
+	  version 4.1.3). So now, iostat gets its statistics from the
+	  following sources in that order: /proc/diskstats, sysfs,
+	  /proc/partitions and then /proc/stat.
+	* statistics are now read by iostat and mpstat as unsigned long
+	  instead of int to avoid integer overflow.
+	* iostat should now handle properly the case when the 'weighted
+	  number of milliseconds spent doing I/Os' (read in sysfs or
+	  /proc/{partitions,diskstats}) decreases with time.
+	* iostat manual page updated.
+	* Minor temporary file vulnerability fixed in isag command.
+	* README, FAQ and CREDITS files updated.
+	* Author's email changed.
+
 2004/02/02: Version 5.0.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	* -L option added to sadc. Enable sadc to lock its output file
 	  to prevent multiple instances from writing to it at once.
@@ -81,7 +99,7 @@ Changes:
 	  Especially useful when asking for stats since system boot.
 	* -F option added to sadc. Useful to force the creation of the
 	  daily data file: an already existing file with a wrong format
-	  will be truncated by sadc if this is option is used.
+	  will be truncated by sadc if this option is used.
 	* sa1 script now calls sadc with -F option.
 	* The processor number to which the process is attached was no
 	  longer displayed by sar -x. Make it appear again.

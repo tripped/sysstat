@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2004 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 2000-2004 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _MPSTAT_H
@@ -9,13 +9,13 @@
 
 struct mp_stats {
    unsigned long cpu_idle			__attribute__ ((aligned (8)));
-   unsigned long cpu_iowait			__attribute__ ((aligned (8)));
-   unsigned int  cpu_user			__attribute__ ((aligned (8)));
-   unsigned int  cpu_nice			__attribute__ ((packed));
-   unsigned int  cpu_system			__attribute__ ((packed));
-   unsigned int  cpu_hardirq			__attribute__ ((packed));
-   unsigned int  cpu_softirq			__attribute__ ((packed));
-   unsigned int  irq				__attribute__ ((packed));
+   unsigned long cpu_iowait			__attribute__ ((packed));
+   unsigned long cpu_user			__attribute__ ((packed));
+   unsigned long cpu_nice			__attribute__ ((packed));
+   unsigned long cpu_system			__attribute__ ((packed));
+   unsigned long cpu_hardirq			__attribute__ ((packed));
+   unsigned long cpu_softirq			__attribute__ ((packed));
+   unsigned long irq				__attribute__ ((packed));
    /* Structure must be a multiple of 8 bytes, since we use an array of structures.
     * Each structure is *aligned*, and we want the structures to be packed together. */
 };

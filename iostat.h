@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1999-2004 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2004 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _IOSTAT_H
@@ -40,9 +40,9 @@ struct comm_stats {
    unsigned long uptime0;
    unsigned long cpu_iowait;
    unsigned long cpu_idle;
-   unsigned int  cpu_user;
-   unsigned int  cpu_nice;
-   unsigned int  cpu_system;
+   unsigned long cpu_user;
+   unsigned long cpu_nice;
+   unsigned long cpu_system;
 };
 
 #define COMM_STATS_SIZE	(sizeof(struct comm_stats))
@@ -63,33 +63,33 @@ struct comm_stats {
  */
 struct io_stats {
    /* # of read operations issued to the device */
-   unsigned int  rd_ios				__attribute__ ((aligned (8)));
+   unsigned long rd_ios				__attribute__ ((aligned (8)));
    /* # of read requests merged */
-   unsigned int  rd_merges			__attribute__ ((packed));
+   unsigned long rd_merges			__attribute__ ((packed));
    /* # of sectors read */
-   unsigned int  rd_sectors			__attribute__ ((packed));
+   unsigned long rd_sectors			__attribute__ ((packed));
    /* Time of read requests in queue */
-   unsigned int  rd_ticks			__attribute__ ((packed));
+   unsigned long rd_ticks			__attribute__ ((packed));
    /* # of write operations issued to the device */
-   unsigned int  wr_ios				__attribute__ ((packed));
+   unsigned long wr_ios				__attribute__ ((packed));
    /* # of write requests merged */
-   unsigned int  wr_merges			__attribute__ ((packed));
+   unsigned long wr_merges			__attribute__ ((packed));
    /* # of sectors written */
-   unsigned int  wr_sectors			__attribute__ ((packed));
+   unsigned long wr_sectors			__attribute__ ((packed));
    /* Time of write requests in queue */
-   unsigned int  wr_ticks			__attribute__ ((packed));
+   unsigned long wr_ticks			__attribute__ ((packed));
    /* # of I/Os in progress */
-   unsigned int  ios_pgr			__attribute__ ((packed));
+   unsigned long ios_pgr			__attribute__ ((packed));
    /* # of ticks total (for this device) for I/O */
-   unsigned int  tot_ticks			__attribute__ ((packed));
+   unsigned long tot_ticks			__attribute__ ((packed));
    /* # of ticks requests spent in queue */
-   unsigned int  rq_ticks			__attribute__ ((packed));
+   unsigned long rq_ticks			__attribute__ ((packed));
    /* # of I/O done since last reboot */
-   unsigned int  dk_drive			__attribute__ ((packed));
+   unsigned long dk_drive			__attribute__ ((packed));
    /* # of blocks read */
-   unsigned int  dk_drive_rblk			__attribute__ ((packed));
+   unsigned long dk_drive_rblk			__attribute__ ((packed));
    /* # of blocks written */
-   unsigned int  dk_drive_wblk			__attribute__ ((packed));
+   unsigned long dk_drive_wblk			__attribute__ ((packed));
 };
 
 #define IO_STATS_SIZE	(sizeof(struct io_stats))

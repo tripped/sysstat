@@ -41,7 +41,8 @@ Also tell me what the version of your kernel is).
 
 3.1. I cannot see all my disks when I use the iostat command...
 3.2. iostat -x doesn't report disk I/O statistics...
-3.3. Why can't iostat display extended statistics for partitions?
+3.3. Why can't iostat display extended statistics for partitions with
+     2.6.x kernels?
 3.4. I don't understand the output of iostat. It doesn't match what I expect
      it to be...
 
@@ -258,8 +259,7 @@ file. Stop all sadc instances and try again.
 
 3.1. I cannot see all my disks when I use the iostat command...
 
-Yes. This is a kernel limit. At the present time Linux doesn't maintain
-statistics for every device. Old kernels (2.2.x for instance) used to
+Yes. This is a kernel limit. Old kernels (2.2.x for instance) used to
 maintain stats for the first four devices.
 The accounting code has changed in 2.4 kernels, and the result may (or
 may not) be better for your system. Indeed, Linux 2.4 maintains the stats
@@ -280,19 +280,20 @@ by the system.
 
 3.2. iostat -x doesn't report disk I/O statistics...
 
-Until sysstat version 4.1.2, iostat was able to take advantage of
-Stephen Tweedie's kernel patch to display extended I/O statistics
-(option '-x' for iostat).
-Beginning with sysstat 4.1.3 and later, the iostat command no longer
-looks for statistics in the /proc/partitions file, but rather tries
-to read data from the /proc/diskstats file or from the sysfs filesystem
-which is included in recent 2.5/2.6 Linux kernels.
-So you should upgrade your kernel for iostat to be able to display
-extended statistics (option -x).
+For 'iostat -x' to be able to report extended disk I/O statistics,
+it is better to use a recent version of the Linux kernel (2.6.x).
+Indeed, iostat tries to read data from the /proc/diskstats file or
+from the sysfs filesystem for that.
+But iostat may also be able to display extended statistics with
+older kernels (e.g. 2.4.x) providing that all the necessary
+statistics information is available in the /proc/partitions file,
+which requires that a patch be applied to the kernel (this is
+often done on kernels included in various distros).
 
 ~~~
 
-3.3. Why can't iostat display extended statistics for partitions?
+3.3. Why can't iostat display extended statistics for partitions with
+     2.6.x kernels?
 
 Because the kernel maintains these stats only for devices, and not for
 partitions! Excerpt from the document iostats.txt written by Rick Lindsley
@@ -319,5 +320,5 @@ look at the kernel code, the sector size is actually allowed to vary although
 I have never seen anything other than 512 bytes.
 
 --	
-Sebastien Godard <sebastien.godard@wanadoo.fr> is the author and the current
+Sebastien Godard (sysstat <at> wanadoo.fr) is the author and the current
 maintainer of this package.

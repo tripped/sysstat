@@ -1,118 +1,124 @@
 The following people have contributed to 'sysstat' in one way or another:
 
-	First I would like to thank Michael <michael@roka.net>: He is the
+	First I would like to thank Michael <michael [at] roka.net>: He is the
 	very first person to have given me feedback about sysstat, and to
 	point out to me that certain fields in /proc/stat didn't have the
 	meaning I thought they had. This was in 1999!
 
 	Many thanks to the translators involved in sysstat:
 
-	  * Birko Bergt <birko.bergt@gmx.de> for his translation into German,
-	  * Fernando Félix Redondo <fernando.felix@rediris.es> for his
+	  * Birko Bergt <birko.bergt [at] gmx.de> for his translation into
+	    German,
+	  * Fernando Félix Redondo <fernando.felix [at] rediris.es> for his
 	    translation into Spanish (now maintained by Muralito
-	    <muralito@montevideo.com.uy>),
-	  * Frederic L. W. Meunier <0@pervalidus.net> for the
+	    <muralito [at] montevideo.com.uy>),
+	  * Frederic L. W. Meunier <0 [at] pervalidus.net> for the
 	    Portuguese translation.
-	  * Gert Brits <gbrits@techconcepts.co.za> for the translation
+	  * Gert Brits <gbrits [at] techconcepts.co.za> for the translation
 	    into Afrikaans.
-	  * Roy Sigurd Karlsbakk <roy@karlsbakk.net> for the Norwegian
+	  * Roy Sigurd Karlsbakk <roy [at] karlsbakk.net> for the Norwegian
 	    translation.
-	  * Stefano Barni <barninga@interfree.it> for the translation
+	  * Stefano Barni <barninga [at] interfree.it> for the translation
 	    into Italian.
-	  * Dennis Selsky <selsky@siberia.net> for the Russian translation.
-	  * Eugen Hoanca <eugenh@urban-grafx.ro> for the Romanian translation.
-	  * Robert Luberda <robert@debian.org> for the translation into Polish.
+	  * Dennis Selsky <selsky [at] siberia.net> for the Russian translation.
+	  * Eugen Hoanca <eugenh [at] urban-grafx.ro> for the Romanian
+	    translation.
+	  * Robert Luberda <robert [at] debian.org> for the translation into
+	    Polish.
 
-	Carl-Christian Weber <ccweber@itz-koeln.de> helped me to make sar
+	Carl-Christian Weber <ccweber [at] itz-koeln.de> helped me to make sar
 	work on SMP machines.
 
-	Stefan Majer <smajer@advance-bank.de> provided me with a patch to
+	Stefan Majer <smajer [at] advance-bank.de> provided me with a patch to
 	rotate daily system activity files.
 
-	Klaus Franken <klaus.franken@fth2.siemens.de> created the RPM
+	Klaus Franken <klaus.franken [at] fth2.siemens.de> created the RPM
 	packages. He also included a short initialization script for sar
 	to start it as a daemon on boot.
 
-	Jason (Jay) R. Fink <jay_rf@exis.net> set up and maintained the
+	Jason (Jay) R. Fink <jay_rf [at] exis.net> set up and maintained the
 	first web site for sysstat.
 
-	Preston Brown <pbrown@redhat.com> sent me the RedHat patch to
+	Preston Brown <pbrown [at] redhat.com> sent me the RedHat patch to
 	enable good packaging.
 
-	David Doubrava <linux_monitor@volny.cz> created the isag
+	David Doubrava <linux_monitor [at] volny.cz> created the isag
 	command (Interactive System Activity Graph).
 
-	Rik van Riel <riel@conectiva.com.br> explained me the meaning
+	Rik van Riel <riel [at] conectiva.com.br> explained me the meaning
 	of several fields that were added in Linux kernel 2.4
 	/proc/meminfo file.
 
-	Hubert Nueckel <hubert.nueckel@oracle.com> sent me a patch to
+	Hubert Nueckel <hubert.nueckel [at] oracle.com> sent me a patch to
 	fix CPU utilization displayed by sar, iostat and mpstat commands
 	on IA64 machines.
 
-	Victor Hazlewood <victor@sdsc.edu> sent me a patch to implement
+	Victor Hazlewood <victor [at] sdsc.edu> sent me a patch to implement
 	a database friendly option for sar (option -H).
 
-	Christopher Blizzard <blizzard@redhat.com> added the ability to
+	Christopher Blizzard <blizzard [at] redhat.com> added the ability to
 	display kB/s transfers to devices in iostat reporting when
 	option -x is used.
 
-	John Caruso <caruso@paradiso.umuc.edu> wrote the sargon script
+	John Caruso <caruso [at] paradiso.umuc.edu> wrote the sargon script
 	shell as a replacement for sa1/sa2 files.
 
-	Wilhelm Nuesser <wilhelm.nuesser@sap.com> sent me a patch to
+	Wilhelm Nuesser <wilhelm.nuesser [at] sap.com> sent me a patch to
 	fix average wait times and service times displayed by iostat -x.
 
-	Rick Lindsley <ricklind@us.ibm.com> has played a great part in
+	Rick Lindsley <ricklind [at] us.ibm.com> has played a great part in
 	making sysstat work on kernels 2.5 and above.
 
-	John Salmon <John.Salmon@cw.com> wrote a patch to enable file
+	John Salmon <John.Salmon [at] cw.com> wrote a patch to enable file
 	locking for sadc (option -L).
 
 
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
-	Des Atkinson <Des.Atkinson@metron.co.uk>
-	Pascal Bleser <pbleser@atos-group.com>
-	Jason Burnett <jason@jnj.org>
-	Nicolas Denis <denisn@wanadoo.fr>
-	Andrew Donkin <ard@waikato.ac.nz>
-	Greg Edwards <edwardsg@sgi.com>
-	Chris Evans <chris@scary.beasts.org>
-	Damien (JN) FAURE <damien-jn.faure@bull.net>	
-	David Gesswein <djg@drs-esg.com>
-	Tatsuo Ito <tito@miraclelinux.com>
-	David S. Jackson <dsj@sylvester.dsj.net>
-	Erik Jacobson <erikj@subway.americas.sgi.com>	
-	Jordan <ledzep37@home.com>	
-	Jurriaan <thunder7@xs4all.nl>
-	Byeong-taek Lee <btlee@psych.snu.ac.kr>
-	Ivo Letzas <letzas@format.mine.nu>	
-	Robert Luberda <robert@debian.org>
-	Robert Macaulay <Robert_Macaulay@Dell.com>
-	Alan Matsuoka <alanm@redhat.com>
-	Rodney J. Mertz <rjm@elvis.arh.ms.cdc.com>
-	Roy Millar <100044.14@compuserve.com>
-	David J. Morse <David_J_Morse@Dell.com>
-	Hariprasad Nellitheertha <hari@in.ibm.com>
-	Edouard G. Parmelan <edouard.parmelan@quadratec.fr>
-	Oliver Paukstadt <oliver.paukstadt@millenux.com>	
-	Plattner(?) <Plattner.external@infineon.com>
-	ReDragon <redragon@vnsecurity.net>
-	Joseph E. Sacco <jsacco@earthlink.net>
-	Danilo Sartori <d.sartori@resi.it>
-	Michel Simoni <m_simoni@club-internet.fr>
-	Rod Skinner <rod.skinner@intel.com>	
-	Graham Swallow <gps@trix.dircon.co.uk>
-	Mike Sweger <mikesw@whiterose.net>
-	Don Totten <dontotten@ibm.net>
-	Stephen Tweedie <sct@redhat.com>
-	Holger Wolf <Holger.Wolf@de.ibm.com>
-        Urban Widmark <urban@svenskatest.se>
-	Peter Zaitsev <pz@spylog.ru>
+	Des Atkinson <Des.Atkinson [at] metron.co.uk>
+	Pascal Bleser <pbleser [at] atos-group.com>
+	Jason Burnett <jason [at] jnj.org>
+	Mark J. Cox <mjc [at] redhat.com>
+	Nicolas Denis <denisn [at] wanadoo.fr>
+	Andrew Donkin <ard [at] waikato.ac.nz>
+	Greg Edwards <edwardsg [at] sgi.com>
+	Chris Evans <chris [at] scary.beasts.org>
+	Damien (JN) FAURE <damien-jn.faure [at] bull.net>	
+	David Gesswein <djg [at] drs-esg.com>
+	Tatsuo Ito <tito [at] miraclelinux.com>
+	David S. Jackson <dsj [at] sylvester.dsj.net>
+	Erik Jacobson <erikj [at] subway.americas.sgi.com>	
+	Jordan <ledzep37 [at] home.com>	
+	Jurriaan <thunder7 [at] xs4all.nl>
+	Byeong-taek Lee <btlee [at] psych.snu.ac.kr>
+	Ivo Letzas <letzas [at] format.mine.nu>	
+	Robert Luberda <robert [at] debian.org>
+	Robert Macaulay <Robert_Macaulay [at] Dell.com>
+	Alan Matsuoka <alanm [at] redhat.com>
+	Rodney J. Mertz <rjm [at] elvis.arh.ms.cdc.com>
+	Roy Millar <100044.14 [at] compuserve.com>
+	David J. Morse <David_J_Morse [at] Dell.com>
+	Hariprasad Nellitheertha <hari [at] in.ibm.com>
+	Edouard G. Parmelan <edouard.parmelan [at] quadratec.fr>
+	Oliver Paukstadt <oliver.paukstadt [at] millenux.com>	
+	Plattner(?) <Plattner.external [at] infineon.com>
+	ReDragon <redragon [at] vnsecurity.net>
+	Paul Rivoli <paul [at] kbs.net.au>
+	Joseph E. Sacco <jsacco [at] earthlink.net>
+	Danilo Sartori <d.sartori [at] resi.it>
+	Tan Shao Yi <tansy [at] tansy.org>
+	Michel Simoni <m_simoni [at] club-internet.fr>
+	Rod Skinner <rod.skinner [at] intel.com>	
+	Graham Swallow <gps [at] trix.dircon.co.uk>
+	Mike Sweger <mikesw [at] whiterose.net>
+	Don Totten <dontotten [at] ibm.net>
+	Stephen Tweedie <sct [at] redhat.com>
+	Holger Wolf <Holger.Wolf [at] de.ibm.com>
+        Urban Widmark <urban [at] svenskatest.se>
+	Peter Zaitsev <pz [at] spylog.ru>
 
 --	
-Sebastien Godard <sebastien.godard@wanadoo.fr> is the author and the current
+Sebastien Godard (sysstat <at> wanadoo.fr) is the author and the current
 maintainer of this package.
 

@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2004 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 2000-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -264,7 +264,7 @@ void read_proc_stat(short curr)
    FILE *statfp;
    struct mp_stats *st_mp_cpu_i;
    static char line[80];
-   unsigned int cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
+   unsigned long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
    unsigned long cc_idle, cc_iowait;
    int proc_nb;
 
@@ -284,7 +284,7 @@ void read_proc_stat(short curr)
 	  */
 	 st_mp_cpu[curr]->cpu_iowait = 0;	/* For pre 2.5 kernels */
 	 cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 5, "%u %u %u %lu %lu %u %u",
+	 sscanf(line + 5, "%lu %lu %lu %lu %lu %lu %lu",
 		&(st_mp_cpu[curr]->cpu_user),
 		&(st_mp_cpu[curr]->cpu_nice),
 		&(st_mp_cpu[curr]->cpu_system),
@@ -314,7 +314,7 @@ void read_proc_stat(short curr)
 	  * This is done only on SMP machines.
 	  */
 	 cc_iowait = cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 3, "%d %u %u %u %lu %lu %u %u",
+	 sscanf(line + 3, "%d %lu %lu %lu %lu %lu %lu %lu",
 		&proc_nb,
 		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
 		&cc_hardirq, &cc_softirq);
@@ -346,7 +346,7 @@ void read_proc_stat(short curr)
 
       else if (!strncmp(line, "intr ", 5))
 	 /* Read total number of interrupts received since system boot */
-	 sscanf(line + 5, "%u", &(st_mp_cpu[curr]->irq));
+	 sscanf(line + 5, "%lu", &(st_mp_cpu[curr]->irq));
    }
 
    /* Close stat file */
@@ -364,7 +364,8 @@ void read_interrupts_stat(short curr)
    FILE *irqfp;
    struct mp_stats *st_mp_cpu_i;
    static char line[INTERRUPTS_LINE];
-   unsigned int irq = 0, cpu;
+   unsigned long irq = 0;
+   unsigned int cpu;
 
    for (cpu = 0; cpu <= cpu_nr; cpu++) {
       st_mp_cpu_i = st_mp_cpu[curr] + cpu +1;
@@ -380,7 +381,7 @@ void read_interrupts_stat(short curr)
 	
 	    for (cpu = 0; cpu <= cpu_nr; cpu++) {
 	       st_mp_cpu_i = st_mp_cpu[curr] + cpu + 1;
-	       sscanf(line + 4 + 11 * cpu, " %10u", &irq);
+	       sscanf(line + 4 + 11 * cpu, " %10lu", &irq);
 	       st_mp_cpu_i->irq += irq;
 	    }
 	 }

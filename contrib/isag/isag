@@ -5,7 +5,7 @@ exec wish "$0" -- "$@"
 
 ###############################################################################
 #
-# Copyright (c) 2000, 2001 David Doubrava (linux_monitor@volny.cz)
+# Copyright (c) 2000, 2001 David Doubrava (linux_monitor<at>volny<dot>cz)
 #
 # Primary-site:	http://www.volny.cz:/linux_monitor/isag
 #
@@ -21,10 +21,13 @@ exec wish "$0" -- "$@"
 #
 ###############################################################################
 #
-# $Id: isag.m4,v 1.22 2003/02/26 18:19:09 david Exp $
+# $Id: isag.m4,v 1.23 2004/02/24 07:40:14 david Exp $
 # $State: Exp $
 #
 # $Log: isag.m4,v $
+# Revision 1.23  2004/02/24 07:40:14  david
+# replaced <at> and <dot> in most e-mail addresses
+#
 # Revision 1.22  2003/02/26 18:19:09  david
 # realized new layout of files
 #
@@ -110,8 +113,8 @@ exec wish "$0" -- "$@"
 
 #
 ###############################################################################
-# $Id: version.m4,v 1.4 2002/03/04 20:20:27 david Exp $
-# $State: Exp $
+# $Id: version.m4,v 1.4 2002/03/04 20:20:27 david Rel $
+# $State: Rel $
 # $Log: version.m4,v $
 # Revision 1.4  2002/03/04 20:20:27  david
 # make new end line
@@ -144,7 +147,7 @@ if {[catch {set fp [open "| $ident $argv0" "r"]}] == 0} {
 if {"" != $patchlevel} {
 	set version "$version\nPatch level: $patchlevel"
 }
-# $Source: /mnt/CVSROOT/cvs/i-sag/common/version.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/common/version.m4,v $
 ##############################################################################
 # Tcl/Tk: version check
 #
@@ -172,12 +175,12 @@ if {$tcl_version < $needed_version} {
 #	exit
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/common/ver_check.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/common/ver_check.m4,v $
 ###############################################################################
 # default paths, programs and other variables
 #
-# $Id: variables.m4,v 1.5 2003/01/26 20:41:49 david Exp $
-# $State: Exp $
+# $Id: variables.m4,v 1.5 2003/01/26 20:41:49 david Rel $
+# $State: Rel $
 # $Log: variables.m4,v $
 # Revision 1.5  2003/01/26 20:41:49  david
 # partially renamed variables, 1st implementation of "Save Graph"
@@ -203,7 +206,7 @@ set isag_cfg_file	"$env(HOME)/.isag.cfg"
 set sag_graph_wd	720
 set sag_graph_ht	400
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/common/variables.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/common/variables.m4,v $
 
 ###############################################################################
 # Message box functionality
@@ -251,7 +254,7 @@ proc out_msg {title text} {
 	tkwait window .msg_box
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/isag/msg_box.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/isag/msg_box.m4,v $
 
 # specific paths and programs
 set sar_data_path "/var/log/sa"
@@ -264,8 +267,8 @@ set env(LC_ALL) "C"
 
 
 ###############################################################################
-# $Id: isag_common_options.m4,v 1.6 2003/01/26 20:41:48 david Exp $
-# $State: Exp $
+# $Id: isag_common_options.m4,v 1.6 2003/01/26 20:41:48 david Rel $
+# $State: Rel $
 # $Log: isag_common_options.m4,v $
 # Revision 1.6  2003/01/26 20:41:48  david
 # partially renamed variables, 1st implementation of "Save Graph"
@@ -346,7 +349,7 @@ if {[set t [getopt $argv gwd]] != ""} {
 }
 
 unset t
-# $Source: /mnt/CVSROOT/cvs/i-sag/isag/isag_common_options.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/isag/isag_common_options.m4,v $
 
 ###############################################################################
 #
@@ -510,9 +513,12 @@ proc set_file {name} {
 ###############################################################################
 # GUI
 #
-# $Id: isag.GUI.m4,v 1.12 2003/01/26 20:41:48 david Exp $
+# $Id: isag.GUI.m4,v 1.13 2004/02/24 07:40:14 david Exp $
 # $State: Exp $
 # $Log: isag.GUI.m4,v $
+# Revision 1.13  2004/02/24 07:40:14  david
+# replaced <at> and <dot> in most e-mail addresses
+#
 # Revision 1.12  2003/01/26 20:41:48  david
 # partially renamed variables, 1st implementation of "Save Graph"
 #
@@ -668,10 +674,10 @@ proc new_chart {l} {
 proc About {} {
 	global version
 
-	out_msg About "Sar Grapher\n\nBuild info:$version\n\nhttp://www.volny.cz/linux_monitor/isag/index.html\ne-mail: linux_monitor@volny.cz"
+	out_msg About "Sar Grapher\n\nBuild info:$version\n\nhttp://www.volny.cz/linux_monitor/isag/index.html\ne-mail: linux_monitor<at>volny<dot>cz"
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/isag/isag.GUI.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/isag/isag.GUI.m4,v $
 ###############################################################################
 # Resizing graph window
 #
@@ -723,7 +729,7 @@ proc ResizeAll {} {
 	#set isag_enResizing 1
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/isag/isag.ResizeAll.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/isag/isag.ResizeAll.m4,v $
 ###############################################################################
 # Other functions
 #
@@ -875,11 +881,20 @@ proc create_gnuplot_file {gp_term ext fn title xlabel ylabel y2label yrange plot
 	close $fp
 }
 
+# this variable should be renamed (this is a fix)
+array set fngr_files []
+
 proc fngr {l} {
-	return "/tmp/gp_$l[pid]"
+#	return "/tmp/gp_$l[pid]"
+	global fngr_files
+	if {0 == [info exists fngr_files($l)]} {
+		set fngr_files($l) [exec mktemp ".gp_$l.XXXXXX"]
+#		file delete fngr_files($l)
+	}
+	return $fngr_files($l)
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/isag/isag.Other.Funcs.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/isag/isag.Other.Funcs.m4,v $
 
 ###############################################################################
 #
@@ -970,13 +985,13 @@ proc sag_if__output_zero_metrics_u {time} {
 	return 	"$time 0 0 0"
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/isag/isag.perf_data_procs.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/isag/isag.perf_data_procs.m4,v $
 ###############################################################################
 # Performance Data Processing and Drawing functions
 #	proces line functions
 #
-# $Id: proc_line_generic.m4,v 1.10 2003/01/26 20:41:49 david Exp $
-# $State: Exp $
+# $Id: proc_line_generic.m4,v 1.10 2003/01/26 20:41:49 david Rel $
+# $State: Rel $
 # $Log: proc_line_generic.m4,v $
 # Revision 1.10  2003/01/26 20:41:49  david
 # partially renamed variables, 1st implementation of "Save Graph"
@@ -1078,14 +1093,14 @@ proc sag_if_proc_line_generic {l fp line} {
 	return 1
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/common/proc_line_generic.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/common/proc_line_generic.m4,v $
 ###############################################################################
 # Performance Data Processing and Drawing functions
 #	generic draw function
 #	parametrical draw func for each kind of graph
 #
-# $Id: draw.m4,v 1.13 2003/02/23 19:48:16 david Exp $
-# $State: Exp $
+# $Id: draw.m4,v 1.13 2003/02/23 19:48:16 david Rel $
+# $State: Rel $
 # $Log: draw.m4,v $
 # Revision 1.13  2003/02/23 19:48:16  david
 # unified redundant code which generates data file
@@ -1122,7 +1137,8 @@ proc sag_prepare_datafile {l} {
 		
 	set sag_if_last_time ""
 
-	set fn "/tmp/sag_$l[pid]"
+#	set fn "/tmp/sag_$l[pid]"
+	set fn [exec mktemp "./sag_$l.XXXXXXXX"]
 	set fp [open $fn w]
 	puts $fp "#!$sh"
 	puts $fp " "
@@ -1226,7 +1242,7 @@ proc sag_draw {l} {
 	unset nlines 
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/isag/draw.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/isag/draw.m4,v $
 ###############################################################################
 # Performance Data Processing and Drawing functions
 #	proces line functions
@@ -1313,10 +1329,10 @@ proc sag_save_graph {} {
 	unset nlines 
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/common/sag.save_graph.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/common/sag.save_graph.m4,v $
 ###############################################################################
-# $Id: isag_cfg_file.m4,v 1.6 2003/01/26 20:41:48 david Exp $
-# $State: Exp $
+# $Id: isag_cfg_file.m4,v 1.6 2003/01/26 20:41:48 david Rel $
+# $State: Rel $
 # $Log: isag_cfg_file.m4,v $
 # Revision 1.6  2003/01/26 20:41:48  david
 # partially renamed variables, 1st implementation of "Save Graph"
@@ -1350,7 +1366,8 @@ if {[file isfile $isag_cfg_file] == 1} {
 #
 proc exit_program {} {
 	global isag_cfg_file prog_swtch val_max val_cur last_graph \
-		sag_opt_whole_day sag_opt_grid
+		sag_opt_whole_day sag_opt_grid \
+		fngr_files
 
 	set fp [open $isag_cfg_file w]
 	foreach l $prog_swtch {
@@ -1367,11 +1384,15 @@ proc exit_program {} {
 	puts $fp "set sag_opt_grid $sag_opt_grid"
 	
 	close $fp
+	
+	foreach ndx [array names fngr_files] {
+		file delete $fngr_files($ndx)
+	}
 
 	destroy .
 	exit
 }
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/isag/isag_cfg_file.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/isag/isag_cfg_file.m4,v $
 
-# $Source: /mnt/CVSROOT/cvs/i-sag/isag/isag.m4,v $
+# $Source: /var/CVSROOT/cvs/i-sag/isag/isag.m4,v $

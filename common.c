@@ -1,6 +1,6 @@
 /*
  * sar, sadc, mpstat and iostat common routines.
- * (C) 1999-2004 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -233,6 +233,40 @@ int get_diskstats_dev_nr(int count_part)
 
    /* Close file */
    fclose(dstatsfp);
+
+   return dev;
+}
+
+
+/*
+ ***************************************************************************
+ * Find number of devices and partitions that have statistics in
+ * /proc/partitions
+ ***************************************************************************
+ */
+int get_ppartitions_dev_nr(void)
+{
+   FILE *ppartfp;
+   char line[256];
+   int dev = 0, tmp;
+
+   /* Open /proc/partitions file */
+   if ((ppartfp = fopen(PPARTITIONS, "r")) == NULL)
+      /* /proc/partitions non-existent */
+      return 0;
+
+   while (fgets(line, 256, ppartfp) != NULL) {
+      if (sscanf(line, "%*d %*d %*d %*s %d", &tmp) == 1)
+	 /*
+	  * We have just read a line from /proc/partitions containing stats
+	  * for a device or a partition
+	  * (i.e. this is not a fake line: title, etc.)
+	  */
+	 dev++;
+   }
+
+   /* Close file */
+   fclose(ppartfp);
 
    return dev;
 }

@@ -1,0 +1,6 @@
+
+Answer y if you have applied my kernel patch to get improved disk accounting.
+If you don't know what all this means, then answer n.
+Check out http://perso.wanadoo.fr/sebastien.godard/ to get my disk accounting
+patch for iostat.
+

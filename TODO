@@ -1,0 +1,26 @@
+Here are the things I would like (or I should) do for the next releases:
+
+* Implement the classic "-d" option for sar (report statistics for each block
+  device). It still depends on the data supplied by the kernel anyway.
+
+* Update sysstat to make it work with kernels 2.4.x.
+
+* Add a vmstat command (not sure about this, since it already exists in common
+  Linux distributions).
+
+* Get rid of the limit on the number of processors (NR_CPUS).
+
+* Add more statistics to sar and mpstat (and iostat) when available in Linux
+  kernels.
+  Numerous network activities are already available (see /proc/snmp for
+  example), but I am rather reluctant to display them: there are too many of
+  them and sar becomes bigger and bigger...
+
+* Implement a "-P" option for sar to display all statistics on a per-processor
+  basis.
+
+* Add a plotting program, something like "sagd". But I really lack experience
+  in gtk, tcl/tk etc. programming. A volunteer out there ?
+
+* Should clean the code (smaller functions, etc.), perhaps with more modules.
+

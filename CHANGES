@@ -1,0 +1,197 @@
+Changes:
+
+1999/03/06: Version 1.0 - Sebastien Godard <sebastien.godard@gazdefrance.com>
+	* Initial Revision. Tested on kernel 2.0.36.
+
+1999/05/28: Version 1.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* NLS support added. French translation started but needs to be
+	  completed.
+	* Sar updated to support more than 16 interrupts (potential APIC
+	  interrupt sources).
+	* A few typos removed (man pages, etc.).
+	* Author email address updated :-)
+	* Tested on kernel 2.2.5.
+
+1999/06/25: Version 1.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Better NLS support (date, time and numerical values, NLS enabled
+	  for sar, etc.).
+	* System activity daily file structure changed: is now independent of
+	  the locale and is more compact.
+	* Sar updated to support SMP machines (per CPU accounting).
+	* Code cleaned, man pages updated...
+
+1999/09/19: Version 2.0 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* iostat now displays logical block I/O stats for each IDE device, or
+	  global Kb/s rate for all the block devices. Stats in Kb/s for each
+	  block device are not available for standard kernels due to Linux
+	  poor disk accounting... Anyway a patch is provided in this version
+	  of 'sysstat' in the 'patch' directory to fix that.
+	* System uptime is no longer read in /proc/uptime but computed from
+	  the cpu line in /proc/stat.
+	* When stats are read from a file (option -f of iostat and sar),
+	  values are now computed in accordance with the interval given by
+	  the user on the command line.
+	* Old '-o' option for iostat removed. Now iostat can save data
+	  into a file in a binary format and re-read them later (options
+	  '-o' and '-f') in the same way sar does.
+	* Number of available processors now taken into account when
+	  retrieving CPU usage from /proc/stat.
+	* Removed a bug that prevented 'sar -U' to work on SMP machines.
+	* Fixed a bug that made per-CPU average usage wrong on SMP machines.
+	* Use of option -U is now possible for sar when reading from a file
+	  even if the machine is not an SMP one.
+	* Fixed a bug that prevented sar from re-reading stats saved in a file
+	  when -I or -U option had been used.
+	* iostat modified to work on SMP machines.
+	* Changed the formula used to display stats in order not to get
+	  numbers greater than UINT_MAX.
+	* System name, release number and hostname are now saved in 
+	  system activity files.
+	* iostat now displays system name, release number and hostname
+	  when invoked.
+	* Daily system activity file rotation added for sar.
+	* Improved 64-bit system support.
+	* CREDITS file added.
+	* NLS updated: german translation added.
+	* Manual pages updated.
+	* Makefile updated: do not call msgfmt if NLS is not enabled.
+
+1999/10/24: Version 2.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* The sar and iostat commands can now work on non SMP-machines even
+	  if the kernel is compiled with SMP support enabled.
+	* Fixed a bug that made the time displayed by iostat wrong when
+	  reading stats back from a file.
+	* Added memory statistics: free/shared/buffer/cached pages (sar -m).
+	* Option -h added to sar to print its header periodically.
+	* Set unavailable fields to zero when writing iostat file.
+	* sar now displays 'proc/s' instead of 'fork/s' since exec'ed
+	  processes are also taken into account.
+	* Manual pages updated.
+	* sysstat is now available in RPM format.
+	* Code cleaned up and made safer.
+
+1999/11/28: Version 2.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Option -d added to sar to enable it to be started as a daemon.
+	* sar initialization script updated to use -d option.
+	* Option -V added to sar and iostat (print version number and usage).
+	* Fixed a bug that made CPU utilization displayed by iostat wrong on
+	  SMP machines.
+	* Manual pages updated and moved to chapter 1 instead of 8.
+	* sar '-m' option renamed to '-r'.
+	* Display improved for iostat.
+	* NLS updated: spanish translation added.
+	* Patch against kernel 2.2.13 added for iostat.
+
+2000/01/30: Version 3.0 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* sadc - system activity data collector added.
+	* sa1, sa2 and sysstat.sh shell scripts added.
+	* Manual pages added for sadc, sa1, sa2.
+	* sar heavily modified to use stats sent by sadc.
+	* System activity data file now records system restarts.
+	* Every records in the iostat and system activity data files have
+	  their own timestamp now.
+	* sar and iostat largely modified to use structures when reading or
+	  writing data files.
+	* Per-process statistics added.
+	* System minor and major fault statistics added.
+	* TTY device statistics added.
+	* Memory and swap space utilization statistics added.
+	* Per-processor interrupt statistics added.
+	* Statistics for kernel parameters (dcache, inodes, superblocks, etc.) 
+	  added.
+	* Network device statistics added.
+	* S_TIME_FORMAT environment variable added.
+	* Meaning of -i option has changed for sar.
+	* -d option removed for sar since it is no longer needed (we have
+	  sadc now).
+	* sar now uses keywords such as ALL, SUM, etc. instead of numerical
+	  parameters.
+	* iostat disk accounting patch improved.
+	* 'page' field in /proc/stat is no longer used by iostat (was
+	  unreliable).
+	* Workaround for buggy RTC (or kernels?) added. Used when the number
+	  of jiffies spent by the system in the idle task is decreasing in
+	  /proc/stat.
+	* Manual pages updated.
+	* NLS updated: portuguese translation added.
+	* Makefile updated.
+
+2000/02/20: Version 3.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Fixed a bug that made average numbers wrong for some statistics
+	  when reading them from a system activity file.
+	* Fixed a bug that prevented the user from retrieving some
+	  statistics when reading them from a system activity file.
+	* sadc no longer core-dumps on UP machines with SMP support enabled
+	  in the kernel.
+	* System activity files are now readable by everybody.
+	* Average statistics since boot time are now printed when interval
+	  parameter is set to 0. If interval and count parameters are not
+	  set on the command line, sar selects requested activities from
+	  the current system activity daily data file.
+	* sadc, sa1 and sa2 manual pages moved to chapter 8 instead of 1m.
+	* iostat disk accounting patch modified to work with md drivers.
+
+2000/04/02: Version 3.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* sadc no longer complains when daily data files have a null length.
+	* Configuration script added (make config).
+	* Statistics on sockets in use added.
+	* Got rid of various limits (maximum number of serial lines,
+	  maximum number of network interfaces).
+	* Better management of dynamic files contents.
+	* Cosmetic change for timestamp display.
+	* Manual pages updated.
+	* Documentation added in ${PREFIX}/doc/sysstat-x.y.
+
+2000/06/11: Version 3.2.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Now handle interrupts per processor better. Output improved.
+	* Makefile modified to comply with redhat good packaging.
+	* sysstat initialization script updated (don't su to root when
+	  we are already root).
+	* sar now looks for sadc data collector in more places.
+	* NLS is now enabled by default.
+	* Silly bug in iostat disk accounting patch fixed.
+	* Added iostat disk accounting patch against 2.2.15 linux kernel.
+
+2000/06/25: Version 3.2.3 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Configuration scripts updated. Can now print a help message.
+	* Workaround for SMP race in Linux serial driver added.
+	  This workaround is enabled by default in RPM binary packages.
+	* sar manual page updated.
+	* Added iostat disk accounting patch against 2.2.16 linux kernel.
+	* Removed a few typos in the comments of the source code.
+
+2000/08/06: Version 3.2.4 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Fixed a bug that prevented sar from reading its daily data files
+	  when they had been created using -I option.
+	* Network statistics averages were sometimes wrong when reading
+	  data from a file. This is now fixed.
+	* README-patch file updated.
+	* Configuration script updated to deal with Debian directories.
+
+2000/09/17: Version 3.3.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* mpstat command added.
+	* Manual page added for mpstat.
+	* Option -h added, enabling sar to display data from a daily data
+	  file in a format that can easily be handled with pattern
+	  processing commands like awk.
+	* Manual page updated for sar.
+	* iostat now writes KB (for kilobytes) instead of Kb, which could
+	  have been interpreted as kilobits...
+	* Disk accounting patch for iostat removed.
+	* NLS updated.
+
+2000/11/19: Version 3.3.2 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* sar now saves timestamps in its daily data files both in UST
+	  and in the user's timezone formats.
+	  WARNING: daily data files format has changed, and in *not*
+	  compatible with the previous one!
+	* sar now displays timestamps in locale time when reading data
+	  from its daily data files. -t option has been added to sar,
+	  to enable it to display timestamps in the original locale
+	  time of the data file creator.
+	* Size of various buffers made larger.
+	* Number of interrupts per second for 'all' CPU displayed by the
+	  mpstat command was wrong. This is now fixed.
+	* Makefile updated.
+	* Usage message updated.
+

@@ -1,0 +1,476 @@
+# NLS support for the sysstat package.
+# Copyright (C) 1999 Free Software Foundation, Inc.
+# Sébastien GODARD <sebastien.godard@wanadoo.fr>, 1999.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: sysstat 3.0\n"
+"PO-Revision-Date: 2000-01-12 20:17\n"
+"Last-Translator: Sébastien Godard <sebastien.godard@wanadoo.fr>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: ENCODING\n"
+
+
+#: mpstat.c:62
+msgid "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Usage: %s [ -P { <cpu> | ALL } ] [ -V ] [ <interval> [ <count> ] ]\n"
+msgstr "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Utilisation: %s [ -P { <cpu> | ALL } ] [ -V ] [ <intervalle> [ <nombre_de_fois> ] ]\n"
+
+#: mpstat.c:123
+msgid "\nAverage:     CPU   %%user   %%nice %%system   %%idle    intr/s\n"
+msgstr "\nMoyenne:     CPU   %%user   %%nice %%system   %%idle    intr/s\n"
+
+#: mpstat.c:132
+msgid "Average:     all"
+msgstr "Moyenne:     all"
+
+#: mpstat.c:134
+msgid "Average:    %4d"
+msgstr "Moyenne:    %4d"
+
+#: mpstat.c:207
+msgid "\n%-11s  CPU   %%user   %%nice %%system   %%idle    intr/s\n"
+msgstr "\n%-11s  CPU   %%user   %%nice %%system   %%idle    intr/s\n"
+
+#: mpstat.c:216
+msgid "%-11s  all"
+msgstr "%-11s  all"
+
+#: iostat.c:65
+msgid "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Usage: %s [ options... ]\n"
+"Options are:\n"
+"[ -c | -d ] [ -p | -l ] [ -t ] [ -V ] [ -o <filename> | -f <filename> ]\n"
+"[ <interval> [ <count> ] ]\n"
+msgstr "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Utilisation: %s [ options... ]\n"
+"Options possibles:\n"
+"[ -c | -d ] [ -p | -l ] [ -t ] [ -V ] [ -o <fichier> | -f <fichier> ]\n"
+"[ <intervalle> [ <nombre_de_fois> ] ]\n"
+
+#: iostat.c:73
+msgid "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Usage: %s [ options... ]\n"
+"Options are:\n"
+"[ -c | -d ] [ -t ] [ -V ] [ -o <filename> | -f <filename> ]\n"
+"[ <interval> [ <count> ] ]\n"
+msgstr "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Utilisation: %s [ options... ]\n"
+"Options possibles:\n"
+"[ -c | -d ] [ -t ] [ -V ] [ -o <fichier> | -f <fichier> ]\n"
+"[ <intervalle> [ <nombre_de_fois> ] ]\n"
+
+#: iostat.c:127
+msgid "Invalid iostat file\n"
+msgstr "Fichier iostat invalide\n"
+
+#: iostat.c:165
+msgid "Cannot write iostat file header: %s\n"
+msgstr "Impossible d'écrire l'en-tête du fichier iostat: %s\n"
+
+#: iostat.c:185
+msgid "Error while reading iostat file: %s\n"
+msgstr "Erreur lors de la lecture du fichier iostat: %s\n"
+
+#: iostat.c:189
+msgid "End of iostat file unexpected\n"
+msgstr "Fin du fichier iostat inattendue\n"
+
+#: iostat.c:333
+msgid "Cannot write data to iostat file: %s\n"
+msgstr "Ecriture impossible dans le fichier iostat: %s\n"
+
+# msgid "Cannot read %s file\n"
+# msgstr "Impossible de lire le fichier %s\n"
+
+#: iostat.c:531
+msgid "tty:     tin       tout   "
+msgstr "tty:     tin       tout   "
+
+#: iostat.c:534
+msgid "avg-cpu:  %%user   %%nice    %%sys   %%idle"
+msgstr "cpu-moy:  %%user   %%nice    %%sys   %%idle"
+
+#: iostat.c:537
+msgid "  %%iowait"
+msgstr "  %%iowait"
+
+#: iostat.c:555
+msgid "Time: %s\n"
+msgstr "Heure: %s\n"
+
+#: iostat.c:580
+msgid "Disks:         tps    KB_read/s    KB_wrtn/s    KB_read    KB_wrtn\n"
+msgstr "Disques:       tps     Ko_lus/s  Ko_écrits/s     Ko_lus  Ko_écrits\n"
+
+#: iostat.c:584
+msgid "hdisk%d %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n"
+msgstr "disque%d %7lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n"
+
+#: iostat.c:617
+msgid "Disks:         tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"
+msgstr "Disques:       tps    Blk_lus/s Blk_écrits/s    Blk_lus Blk_écrits\n"
+
+#: iostat.c:759; sar.c:1433
+msgid "Please give an interval value\n"
+msgstr "Veuillez donner un intervalle\n"
+
+#: sar.c:91
+msgid "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Usage: %s [ options... ]\n"
+"Options are:\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -h ] [ -i <interval> ]\n"
+"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+"[ -I { <irq> | SUM | PROC | ALL | XALL } ] [ -U { <cpu> | ALL } ]\n"
+"[ -n { DEV | EDEV | SOCK | FULL } ]\n"
+"[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
+"[ -o [ <filename> ] | -f [ <filename> ] ]\n"
+"[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ <interval> [ <count> ] ]\n"
+msgstr "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Utilisation: %s [ options... ]\n"
+"Options possibles:\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -h ] [ -i <intervalle> ]\n"
+"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n" 
+"[ -I { <irq> | SUM | PROC | ALL | XALL } ] [ -U { <cpu> | ALL } ]\n" 
+"[ -n { DEV | EDEV | SOCK | FULL } ]\n" 
+"[ -x { <pid> | SELF | SUM | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
+"[ -o [ <fichier> ] | -f [ <fichier> ] ]\n"
+"[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ <intervalle> [ <nombre_de_fois> ] ]\n"
+
+#: sar.c:184
+msgid "Not an SMP machine...\n"
+msgstr "Pas une machine multiprocesseur...\n"
+
+#: sar.c:194
+msgid "Not that many processors!\n"
+msgstr "Pas tant de processeurs !\n"
+
+#: sar.c:284
+msgid "Error while reading system activity file: %s\n"
+msgstr "Erreur lors de la lecture du fichier d'activité système: %s\n"
+
+#: sar.c:288
+msgid "End of system activity file unexpected\n"
+msgstr "Fin du fichier d'activité système inattendue\n"
+
+#: sar.c:402
+msgid "Cannot open %s: %s\n"
+msgstr "Impossible d'ouvrir %s: %s\n"
+
+#: sar.c:521
+msgid "Invalid system activity file\n"
+msgstr "Fichier d'activité système invalide\n"
+
+#: sar.c:536
+msgid "\nAverage:       proc/s\n"
+msgstr "\nMoyenne:       proc/s\n"
+
+#: sar.c:538
+msgid "Average:    %6lu%c%02lu\n"
+msgstr "Moyenne:    %6lu%c%02lu\n"
+
+#: sar.c:545
+msgid "\nAverage:      cswch/s\n"
+msgstr "\nMoyenne:      cswch/s\n"
+
+#: sar.c:554
+msgid "\nAverage:          CPU     %%user     %%nice   %%system     %%idle\n"
+msgstr "\nMoyenne:          CPU     %%user     %%nice   %%system     %%idle\n"
+
+#: sar.c:557
+msgid "Average:          all"
+msgstr "Moyenne:          all"
+
+# or:
+# msgid "Average:          all"
+# msgstr "Moyenne:         tous"
+
+#: sar.c:568
+msgid "Requested activities not available in file\n"
+msgstr "Activitées demandées non enregistrées dans le fichier\n"
+
+#: sar.c:582
+msgid "Average:          %3d"
+msgstr "Moyenne:          %3d"
+
+#: sar.c:612
+msgid "\nAverage:         INTR    intr/s\n"
+msgstr "\nMoyenne:         INTR    intr/s\n"
+
+#: sar.c:614
+msgid "Average:    %6lu%c%02lu %6lu%c%02lu\n"
+msgstr "Moyenne:    %6lu%c%02lu %6lu%c%02lu\n"
+
+#: sar.c:615
+msgid "Average:          sum"
+msgstr "Moyenne:          sum"
+
+# or:
+# msgid "Average:          sum"
+# msgstr "Moyenne:        somme"
+
+#: sar.c:636
+msgid "Average:    %6lu%c%02lu %6lu%c%02lu %6lu%c%02lu %6lu%c%02lu %6lu%c%02lu\n"
+msgstr "Moyenne:    %6lu%c%02lu %6lu%c%02lu %6lu%c%02lu %6lu%c%02lu %6lu%c%02lu\n"
+
+#: sar.c:638
+msgid "\nAverage:     pgpgin/s pgpgout/s\n"
+msgstr "\nMoyenne:     pgpgin/s pgpgout/s\n"
+
+#: sar.c:651
+msgid "\nAverage:     pswpin/s pswpout/s\n"
+msgstr "\nMoyenne:     pswpin/s pswpout/s\n"
+
+#: sar.c:664
+msgid "\nAverage:          tps      rtps      wtps   bread/s   bwrtn/s\n"
+msgstr "\nMoyenne:          tps      rtps      wtps   bread/s   bwrtn/s\n"
+
+#: sar.c:692
+msgid "\nAverage:      frmpg/s   shmpg/s   bufpg/s   campg/s\n"
+msgstr "\nMoyenne:      frmpg/s   shmpg/s   bufpg/s   campg/s\n"
+
+#: sar.c:697
+msgid "Average:    %s%c%02lu"
+msgstr "Moyenne:    %s%c%02lu"
+
+#: sar.c:718
+msgid "\nAverage:          PID  minflt/s  majflt/s     %%user   %%system   nswap/s\n"
+msgstr "\nMoyenne:          PID  minflt/s  majflt/s     %%user   %%system   nswap/s\n"
+
+#: sar.c:723
+msgid "Average:    %9ld"
+msgstr "Moyenne:    %9ld"
+
+#: sar.c:749
+msgid "\nAverage:         PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
+msgstr "\nMoyenne:         PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
+
+#: sar.c:786
+msgid "\nAverage:     minflt/s  majflt/s\n"
+msgstr "\nMoyenne:     minflt/s  majflt/s\n"
+
+#: sar.c:789
+msgid "Average:          N/A       N/A\n"
+msgstr "Moyenne:          N/A       N/A\n"
+
+#: sar.c:797
+msgid "Cannot write system activity file header: %s\n"
+msgstr "Impossible d'écrire l'en-tête du fichier d'activité système: %s\n"
+
+#: sar.c:804
+msgid "\nAverage:          TTY   rcvin/s   xmtin/s\n"
+msgstr "\nMoyenne:          TTY   rcvin/s   xmtin/s\n"
+
+#: sar.c:807
+msgid "Average:          "
+msgstr "Moyenne:          "
+
+#: sar.c:823
+msgid "\nAverage:    kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
+msgstr "\nMoyenne:    kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
+
+#: sar.c:825
+msgid "Average:    %9lu %9lu"
+msgstr "Moyenne:    %9lu %9lu"
+
+#: sar.c:847
+msgid "\nAverage:     CPU"
+msgstr "\nMoyenne:     CPU"
+
+#: sar.c:850
+msgid "  i%03d/s"
+msgstr "  i%03d/s"
+
+#: sar.c:864
+msgid "Average:     %3d"
+msgstr "Moyenne:     %3d"
+
+#: sar.c:954
+msgid "\nAverage:       totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"
+msgstr "\nMoyenne:       totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"
+
+#: sar.c:956
+msgid "Average:    %9lu %9lu %9lu %9lu %9lu %9lu %9lu\n"
+msgstr "Moyenne:    %9lu %9lu %9lu %9lu %9lu %9lu %9lu\n"
+
+#: sar.c:970
+msgid "Cannot write data to system activity file: %s\n"
+msgstr "Impossible d'écrire les données dans le fichier d'activité système: %s\n"
+
+#: sar.c:871
+msgid "\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+msgstr "\nMoyenne:    dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+
+#: sar.c:873
+msgid "Average:    %9lu"
+msgstr "Moyenne:    %9lu"
+
+#: sar.c:903
+msgid "\nAverage:        IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
+msgstr "\nMoyenne:        IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
+
+#: sar.c:941
+msgid "\nAverage:        IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
+msgstr "\nMoyenne:        IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
+
+#: sar.c:1043
+msgid "\n%-11s    proc/s\n"
+msgstr "\n%-11s    proc/s\n"
+
+#: sar.c:1053
+msgid "\n%-11s   cswch/s\n"
+msgstr "\n%-11s   cswch/s\n"
+
+#: sar.c:1063
+msgid "\n%-11s       CPU     %%user     %%nice   %%system     %%idle\n"
+msgstr "\n%-11s       CPU     %%user     %%nice   %%system     %%idle\n"
+
+#: sar.c:1066
+msgid "%-11s       all"
+msgstr "%-11s       all"
+
+# or:
+# msgid "%-11s       all"
+# msgstr "%-11s      tous"
+
+#: sar.c:1074
+msgid "Please give a smaller interval value\n"
+msgstr "Veuillez donner un intervalle plus petit\n"
+
+#: sar.c:1121
+msgid "\n%-11s      INTR    intr/s\n"
+msgstr "\n%-11s      INTR    intr/s\n"
+
+#: sar.c:1125
+msgid "%-11s       sum"
+msgstr "%-11s       sum"
+
+# or:
+# msgid "%-11s       sum"
+# msgstr "%-11s     somme"
+
+#: sar.c:1149
+msgid "\n%-11s  pgpgin/s pgpgout/s\n"
+msgstr "\n%-11s  pgpgin/s pgpgout/s\n"
+
+#: sar.c:1163
+msgid "\n%-11s  pswpin/s pswpout/s\n"
+msgstr "\n%-11s  pswpin/s pswpout/s\n"
+
+#: sar.c:1177
+msgid "\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n"
+msgstr "\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n"
+
+#: sar.c:1206
+msgid "\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"
+msgstr "\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"
+
+#: sar.c:1234
+msgid "\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s   CPU\n"
+msgstr "\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s   CPU\n"
+
+#: sar.c:1269
+msgid "\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
+msgstr "\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n"
+
+#: sar.c:1302
+msgid "\n%-11s  minflt/s  majflt/s\n"
+msgstr "\n%-11s  minflt/s  majflt/s\n"
+
+#: sar.c:1331
+msgid "\n%-11s       TTY   rcvin/s   xmtin/s\n"
+msgstr "\n%-11s       TTY   rcvin/s   xmtin/s\n"
+
+#: sar.c:1351
+msgid "\n%-11s kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
+msgstr "\n%-11s kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
+
+#: sar.c:1389
+msgid "\n%-11s  CPU"
+msgstr "\n%-11s  CPU"
+
+#: sar.c:1419
+msgid "Not reading from a system activity file (use -f option)\n"
+msgstr ""
+"Pas de fichier d'activité système en lecture "
+"(utilisez l'option -f)\n"
+
+#: sar.c:1447
+msgid "\n%-11s dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+msgstr "\n%-11s dentunusd   file-sz  %%file-sz  inode-sz %%inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+
+#: sar.c:1493
+msgid "\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
+msgstr "\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
+
+#: sar.c:1524
+msgid "\n%-11s    totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"
+msgstr "\n%-11s    totsck    tcpsck hi-tcpsck    udpsck hi-udpsck    rawsck hi-rawsck\n"
+
+#: sar.c:1533
+msgid "\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
+msgstr "\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
+
+#: sar.c:1606
+msgid "\n%-11s       LINUX RESTART\n"
+msgstr "\n%-11s       LINUX RESTART\n"
+
+# msgid "Not using a system activity file (use -f or -o option)\n"
+# msgstr ""
+# "Pas de fichier d'activité système utilisé "
+# "(utilisez l'option -f ou -o)\n"
+
+# msgid "Not writing to a system activity file (use -o option)\n"
+# msgstr ""
+# "Pas de fichier d'activité système en écriture "
+# "(utilisez l'option -o)\n"
+
+# msgid "Must be root to start sar as a daemon...\n"
+# msgstr "Seul root peut lancer le démon sar...\n"
+
+#: sar.c:1610
+msgid "-f and -o options are mutually exclusive\n"
+msgstr "Les options -f et -o ne peuvent être utilisées ensemble\n"
+
+#: sar.c:1846
+msgid "Requested activities not available\n"
+msgstr "Statistiques demandées non disponibles\n"
+
+# msgid "No entry found in system activity file!\n"
+# msgstr "Aucune entrée présente dans le fichier d'activité système !\n"
+
+#: sadc.c:74
+msgid "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Usage: %s [ options... ]\n"
+"Options are:\n"
+"[ -x <pid> ] [ -X <pid> ] [ -I ] [ -V ]\n"
+"[ <interval> [ <count> ] ] [ <outfile> ]\n"
+msgstr "sysstat version %s\n"
+"(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
+"Utilisation: %s [ options... ]\n"
+"Options possibles:\n"
+"[ -x <pid> ] [ -X <pid> ] [ -I ] [ -V ]\n"
+"[ <intervalle> [ <nombre_de_fois> ] ] [ <fichier> ]\n"
+
+#: sadc.c:614
+msgid "Cannot append data to that file\n"
+msgstr "Impossible d'ajouter des données à la fin de ce fichier\n"
+
+#: common.c:91
+msgid "Cannot handle so many processors!\n"
+msgstr "Trop de processeurs !\n"

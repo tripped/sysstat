@@ -1,0 +1,789 @@
+.TH SAR 1 "NOVEMBER 2000" Linux "Linux User's Manual" -*- nroff -*-
+.SH NAME
+sar \- Collect, report, or save system activity information.
+.SH SYNOPSIS
+.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -h ] [ -i
+.I interval
+.B ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
+.B [ -n { DEV | EDEV | SOCK | FULL } ]
+.B [ -x {
+.I pid
+.B | SELF | SUM | ALL } ] [ -X {
+.I pid
+.B | SELF | ALL } ] [ -I {
+.I irq
+.B | SUM | PROC | ALL | XALL } ] [ -U {
+.I cpu
+.B | ALL } ] [ -o [
+.I filename
+.B ] | -f [
+.I filename
+.B ] ] [ -s [
+.I hh:mm:ss
+.B ] ] [ -e [
+.I hh:mm:ss
+.B ] ] [
+.I interval
+.B [
+.I count
+.B ] ]
+.SH DESCRIPTION
+The
+.B sar
+command writes to standard output the contents of selected
+cumulative activity counters in the operating system. The accounting
+system, based on the values in the
+.I count
+and
+.I interval
+parameters, writes information the specified number of times spaced
+at the specified intervals in seconds.
+If the interval parameter is set to zero, the
+.B sar
+command displays the average statistics for the time
+since the system was booted.
+The collected data can also
+be saved in the file specified by the
+.B -o
+.I filename
+flag, in addition to being displayed onto the screen. If
+.I filename
+is omitted, sar uses the standard system activity daily data file,
+the
+.IR /var/log/sa/sa dd
+file, where the dd parameter indicates the current day.
+
+The
+.B sar
+command extracts and writes to standard output records previously
+saved in a file. This file can be either the one specified by the
+.B -f
+flag or, by default, the standard system activity daily data file.
+
+You can select information about specific system activities using
+flags. Not specifying any flags selects only CPU activity.
+Specifying the
+.B -A
+flag is equivalent to specifying
+.BR "-bBcrRuvwWy -I SUM -I PROC -n FULL -U ALL".
+
+The default version of the
+.B sar
+command (CPU utilization report) might be one of the first facilities
+the user runs to begin system activity investigation, because it
+monitors major system resources. If CPU utilization is near 100 percent
+(user + nice + system), the workload sampled is CPU-bound.
+
+If multiple samples and multiple reports are desired, it is convenient
+to specify an output file for the
+.B sar
+command. 
+Run the
+.B sar
+command as a background process. The syntax for this is:
+
+.B sar -o data.file interval count >/dev/null 2>&1 &
+
+All data is captured in binary form and saved to a file (data.file).
+The data can then be selectively displayed with the
+.B sar
+command using the
+.B -f
+option. Set the
+.I count
+parameter to select records at
+.I count
+second intervals. If this parameter is not set, all the records saved in the
+file will be selected.
+Collection of data in this manner is useful to characterize
+system usage over a period of time and determine peak usage hours.
+
+Note:	The
+.B sar
+command only reports on local activities.
+
+.SH OPTIONS
+.IP -A
+This is equivalent to specifying
+.BR "-bBcrRuvwWy -I SUM -I PROC -n FULL -U ALL".
+.IP -b
+Report I/O and transfer rate statistics. The following values are
+displayed:
+
+.B tps
+.RS
+.RS
+Total number of transfers per second that were issued to the physical disk.
+A transfer is an I/O request to the physical disk. Multiple logical
+requests can be combined into a single I/O request to the disk.
+A transfer is of indeterminate size.
+.RE
+
+.B rtps
+.RS
+Total number of read requests per second issued to the physical disk.
+.RE
+
+.B wtps
+.RS
+Total number of write requests per second issued to the physical disk.
+.RE
+
+.B bread/s
+.RS
+Total amount of data read from the drive in blocks per second.
+A block is of indeterminate size.
+.RE
+
+.B bwrtn/s
+.RS
+Total amount of data written to the drive in blocks per second.
+.RE
+.RE
+.IP -B
+Report paging statistics. The following values are displayed:
+
+.B pgpgin/s
+.RS
+.RS
+Total number of pages the system paged in from disk per second.
+.RE
+
+.B pgpgout/s
+.RS
+Total number of pages the system paged out to disk per second.
+.RE
+.RE
+.IP -c
+Report process creation activity.
+
+.B proc/s
+.RS
+.RS
+Total number of processes created per second.
+.RE
+.RE
+.IP "-e hh:mm:ss"
+Set the ending time of the report. The default ending time is
+18:00:00. Hours must be given in 24-hour format.
+This option can be used only when data are read from
+or written to a file (options
+.B -f
+or
+.B -o
+).
+.IP "-f filename"
+Extract records from
+.I filename
+(created by the
+.B -o filename
+flag). The default value of the
+.B filename
+parameter is the current daily data file, the
+.IR /var/log/sa/sa dd
+file. The -f option is exclusive of the -o option.
+.IP -h
+When  reading data from a file, print its contents in a format that can
+easily be handled by pattern processing commands like awk.
+The output consists of columns separated by a tab. The columns are: the machine
+hostname, the interval value (or -1 if not applicable), the timestamp (UST time)
+in seconds from the epoch,
+the device name (or - if not applicable), the field name and its value.
+.IP "-i interval"
+Select data records at seconds as close as possible to the number specified
+by the
+.I interval
+parameter.
+.IP "-I irq | SUM | PROC | ALL | XALL"
+Report statistics for a given interrupt.
+.B irq
+is the interrupt number. The
+.B SUM
+keyword indicates that the total number of interrupts received per second
+is to be displayed. The
+.B ALL
+keyword indicates that statistics from
+the first 16 interrupts are to be reported, whereas the
+.B XALL
+keyword indicates that statistics from all interrupts, including potential
+APIC interrupt sources, are to be reported.
+Last, if you use the
+.B PROC
+keyword, the number of interrupts per second received by each processor
+is displayed.
+.IP "-n DEV | EDEV | SOCK | FULL"
+Report network statistics.
+
+With the
+.B DEV
+keyword, statistics from the network devices are reported.
+The following values are displayed:
+
+.B IFACE
+.RS
+.RS
+Name of the network interface from which statistics are reported.
+.RE
+
+.B rxpck/s
+.RS
+Total number of packets received per second.
+.RE
+
+.B txpck/s
+.RS
+Total number of packets transmitted per second.
+.RE
+
+.B rxbyt/s
+.RS
+Total number of bytes received per second.
+.RE
+
+.B txbyt/s
+.RS
+Total number of bytes transmitted per second.
+.RE
+
+.B rxcmp/s
+.RS
+Number of compressed packets received per second (for cslip etc.).
+.RE
+
+.B txcmp/s
+.RS
+Number of compressed packets transmitted per second.
+.RE
+
+.B rxmcst/s
+.RS
+Number of multicast packets received per second.
+.RE
+
+With the
+.B EDEV
+keyword, statistics on failures (errors) from the network devices are reported.
+The following values are displayed:
+
+.B IFACE
+.RS
+Name of the network interface from which statistics are reported.
+.RE
+
+.B rxerr/s
+.RS
+Total number of bad packets received per second.
+.RE
+
+.B txerr/s
+.RS
+Total number of errors that happened per second while transmitting packets.
+.RE
+
+.B coll/s
+.RS
+Number of collisions that happened per second while transmitting packets.
+.RE
+
+.B rxdrop/s
+.RS
+Number of received packets dropped per second because of a lack of space in linux buffers.
+.RE
+
+.B txdrop/s
+.RS
+Number of transmitted packets dropped per second because of a lack of space in linux buffers.
+.RE
+
+.B txcarr/s
+.RS
+Number of carrier-errors that happened per second while transmitting packets.
+.RE
+
+.B rxfram/s
+.RS
+Number of frame alignment errors that happened per second on received packets.
+.RE
+
+.B rxfifo/s
+.RS
+Number of FIFO overrun errors that happened per second on received packets.
+.RE
+
+.B txfifo/s
+.RS
+Number of FIFO overrun errors that happened per second on transmitted packets.
+.RE
+
+With the
+.B SOCK
+keyword, statistics on sockets in use are reported.
+The following values are displayed:
+
+.B totsck
+.RS
+Total number of used sockets.
+.RE
+
+.B tcpsck
+.RS
+Number of TCP sockets currently in use.
+.RE
+
+.B hi-tcpsck
+.RS
+Maximum number of TCP sockets that were simultaneously opened.
+.RE
+
+.B udpsck
+.RS
+Number of UDP sockets currently in use.
+.RE
+
+.B hi-udpsck
+.RS
+Maximum number of UDP sockets that were simultaneously opened.
+.RE
+
+.B rawsck
+.RS
+Number of RAW sockets currently in use.
+.RE
+
+.B hi-rawsck
+.RS
+Maximum number of RAW sockets that were simultaneously opened.
+.RE
+
+The
+.B FULL
+keyword is equivalent to specifying all the keywords above and therefore all the network
+activities are reported.
+.RE
+.RE
+.IP -r
+Report memory and swap space utilization statistics.
+The following values are displayed:
+
+.B kbmemfree
+.RS
+.RS
+Amount of free memory available in kilobytes.
+.RE
+
+.B kbmemused
+.RS
+Amount of used memory in kilobytes. This does not take into account memory
+used by the kernel itself.
+.RE
+
+.B %memused
+.RS
+Percentage of used memory.
+.RE
+
+.B kbmemshrd
+.RS
+Amount of memory shared by the system in kilobytes.
+.RE
+
+.B kbbuffers
+.RS
+Amount of memory used as buffers by the kernel in kilobytes.
+.RE
+
+.B kbcached
+.RS
+Amount of memory used to cache data by the kernel in kilobytes.
+.RE
+
+.B kbswpfree
+.RS
+Amount of free swap space in kilobytes.
+.RE
+
+.B kbswpused
+.RS
+Amount of used swap space in kilobytes.
+.RE
+
+.B %swpused
+.RS
+Percentage of used swap space.
+.RE
+.RE
+.IP -R
+Report memory statistics. The following values are displayed:
+
+.B frmpg/s
+.RS
+.RS
+Number of memory pages freed by the system per second.
+A negative value represents a number of pages allocated by the system.
+Note that a page has a size of 4 KB or 8 KB according to the machine architecture.
+.RE
+
+.B shmpg/s
+.RS
+Number of additionnal memory pages shared by the system per second.
+A negative value means fewer pages shared by the system.
+.RE
+
+.B bufpg/s
+.RS
+Number of additionnal memory pages used as buffers by the system per second.
+A negative value means fewer pages used as buffers by the system.
+.RE
+
+.B campg/s
+.RS
+Number of additionnal memory pages cached by the system per second.
+A negative value means fewer pages in the cache.
+.RE
+.RE
+.IP -t
+When reading data from a daily data file, indicate that
+.B sar
+should display the timestamps in the original locale time of
+the data file creator. Without this option, the
+.B sar
+command displays the timestamps in the user locale time.
+.IP "-o filename"
+Save the readings in the file in binary form. Each reading
+is in a separate record. The default value of the
+.B filename
+parameter is the current daily data file, the
+.IR /var/log/sa/sa dd
+file. The -o option is exclusive of the -f option.
+.IP "-s hh:mm:ss"
+Set the starting time of the data, causing the
+.B sar
+command to extract records time-tagged at, or following, the time
+specified. The default starting time is 08:00.
+Hours must be given in 24-hour format. This option can be
+used only when data are read from a file (option
+.B -f
+).
+.IP -u
+Report CPU utilization. The following values are displayed:
+
+.B %user
+.RS
+.RS
+Percentage of CPU utilization that occurred while executing at the user
+level (application).
+.RE
+
+.B %nice
+.RS
+Percentage of CPU utilization that occurred while executing at the user
+level with nice priority.
+.RE
+
+.B %system
+.RS
+Percentage of CPU utilization that occurred while executing at the system
+level (kernel).
+.RE
+
+.B %idle
+.RS
+Percentage of time that the CPU or CPUs were idle.
+.RE
+.RE
+.IP "-U cpu | ALL"
+Report CPU utilization for a given processor.
+.B cpu
+is the processor number. The
+.B ALL
+keyword indicates that statistics
+are to be reported for all processors. Note that processor 0 is
+the first processor.
+.IP -v
+Report status of inode, file and other kernel tables.
+The following values are displayed:
+
+.B dentunusd
+.RS
+.RS
+Number of unused cache entries in the directory cache.
+.RE
+
+.B file-sz
+.RS
+Number of used file handles.
+.RE
+
+.B %file-sz
+.RS
+Percentage of used file handles with regard to the maximum number 
+of file handles that the Linux kernel can allocate.
+.RE
+
+.B inode-sz
+.RS
+Number of used inode handlers.
+.RE
+
+.B %inode-sz
+.RS
+Percentage of used inode handlers with regard to the maximum number
+of inode handlers that the Linux kernel can allocate.
+This can be slightly more than 100% because Linux allocates inodes
+one pageful at a time.
+.RE
+
+.B super-sz
+.RS
+Number of super block handlers allocated by the kernel.
+.RE
+
+.B %super-sz
+.RS
+Percentage of allocated super block handlers with regard to the maximum number
+of super block handlers that Linux can allocate.
+.RE
+
+.B dquot-sz
+.RS
+Number of used disk quota entries.
+.RE
+
+.B %dquot-sz
+.RS
+Percentage of used disk quota entries with regard to the maximum number
+of cached disk quota entries that can be allocated.
+.RE
+
+.B rtsig-sz
+.RS
+Number of queued RT signals.
+.RE
+
+.B %rtsig-sz
+.RS
+Percentage of queued RT signals with regard to the maximum number
+of RT signals that can be queued.
+.RE
+.RE
+.IP -V
+Print version number and usage then exit.
+.IP -w
+Report system switching activity.
+
+.B cswch/s
+.RS
+.RS
+Total number of context switches per second.
+.RE
+.RE
+.IP -W
+Report swapping statistics. The following values are displayed:
+
+.B pswpin/s
+.RS
+.RS
+Total number of swap pages the system brought in per second.
+.RE
+
+.B pswpout/s
+.RS
+Total number of swap pages the system brought out per second.
+.RE
+.RE
+.IP "-x pid | SELF | SUM | ALL"
+Report statistics for a given process.
+.B pid
+is the process identification number. The
+.B SELF
+keyword indicates that statistics are to be reported for the
+.B sar
+process itself, whereas the
+.B ALL
+keyword indicates that statistics are to be reported for all the system processes.
+When the
+.B SUM
+keyword is used, the total number of minor and major faults made by the system
+is reported. All these statistics cannot be saved to a file.
+So this option will be ignored whenever -o option is used.
+At the present time, no more than 256 processes can be monitored
+simultaneously.
+
+When the
+.B SUM
+keyword is not used, the following values are displayed:
+
+.B minflt/s
+.RS
+.RS
+Total number of minor faults the process has made per second, those
+which have not required loading a memory page from disk.
+.RE
+
+.B majflt/s
+.RS
+Total number of major faults the process has made per second, those
+which have required loading a memory page from disk.
+.RE
+
+.B %user
+.RS
+Percentage of CPU used by the process while executing at the user level
+(application).
+.RE
+
+.B %system
+.RS
+Percentage of CPU used by the process while executing at the system level
+(kernel).
+.RE
+
+.B nswap/s
+.RS
+Number of pages from the process address space the system has swapped out per second.
+.RE
+
+.B CPU
+.RS
+Processor number to which the process is attached.
+.RE
+
+When the
+.B SUM
+keyword is used on the command line, the following values are displayed:
+
+.B minflt/s
+.RS
+Total number of minor faults the system has made per second, those
+which have not required loading a memory page from disk.
+.RE
+
+.B majflt/s
+.RS
+Total number of major faults the system has made per second, those
+which have required loading a memory page from disk.
+.RE
+
+These last two statistics are consistent only when no processes have terminated.
+If a process is killed during the interval, the statistics are
+not available (marked as ?.??) and the average number will not be computed.
+.RE
+.IP "-X pid | SELF | ALL"
+Report statistics for the child processes of the process whose PID is
+.B pid .
+The
+.B SELF
+keyword indicates that statistics are to be reported for the child processes of the
+.B sar
+process itself, whereas the
+.B ALL
+keyword indicates that statistics are to be reported for all the child processes 
+of all the system processes.
+All these statistics cannot be saved to a file.
+So this option will be ignored whenever -o option is used.
+At the present time, no more than 256 processes can be monitored
+simultaneously.
+The following values are displayed:
+
+.B cminflt/s
+.RS
+.RS
+Total number of minor faults the child processes have made per second, those
+which have not required loading a memory page from disk.
+.RE
+
+.B cmajflt/s
+.RS
+Total number of major faults the child processes have made per second, those
+which have required loading a memory page from disk.
+.RE
+
+.B %cuser
+.RS
+Percentage of CPU used by the child processes while executing at the user level
+(application).
+.RE
+
+.B %csystem
+.RS
+Percentage of CPU used by the child processes while executing at the system level
+(kernel).
+.RE
+
+.B cnswap/s
+.RS
+Number of pages from the child process address spaces the system has swapped out per second.
+.RE
+.RE
+.IP -y
+Report TTY device activity. The following values are displayed:
+
+.B rcvin/s
+.RS
+.RS
+Number of receive interrupts per second for current serial line. Serial line number
+is given in the TTY column.
+.RE
+
+.B xmtin/s
+.RS
+Number of transmit interrupts per second for current serial line.
+.RE
+.RE
+
+.SH ENVIRONMENT
+The
+.B sar
+command takes into account the following environment variable:
+
+.IP S_TIME_FORMAT
+If this variable exists and its value is
+.BR ISO
+then the current locale will be ignored when printing the date in the report header.
+The
+.B sar
+command will use the ISO format (YYYY-MM-DD) instead.
+
+.SH EXAMPLES
+.B sar -u 2 5
+.RS
+Report CPU utilization for each 2 seconds. 5 lines are displayed.
+.RE
+
+.B sar -I 14 -o int14.file 2 10
+.RS
+Report statistics on IRQ 14 for each 2 seconds. 10 lines are displayed.
+Data are stored in a file called
+.IR int14.file .
+.SH BUGS
+.I /proc
+filesystem must be mounted for the
+.B sar
+command to work.
+
+All the statistics are not necessarily available, depending on the kernel version used.
+In particular, TTY statistics (option -y) are not available in 2.2.x SMP kernels (with
+x <= 15), because of an SMP race that
+.B sar
+may trigger when reading the
+.I /proc/tty/driver/serial
+file.
+.SH FILES
+.IR /var/log/sa/sa dd
+.RS
+Indicate the daily data file, where the
+.B dd
+parameter is a number representing the day of the month.
+
+.RE
+.IR /proc
+contains various files with system statistics.
+.SH AUTHOR
+Sebastien Godard <sebastien.godard@wanadoo.fr>
+.SH SEE ALSO
+.BR sadc (8),
+.BR sa1 (8),
+.BR sa2 (8),
+.BR mpstat (1),
+.BR iostat (1),
+.BR vmstat (8)

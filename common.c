@@ -1,0 +1,164 @@
+/*
+ * sar, sadc and iostat common routines.
+ * (C) 1999,2000 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ *
+ ***************************************************************************
+ * This program is free software; you can redistribute it and/or modify it *
+ * under the terms of the GNU General Public License as published  by  the *
+ * Free Software Foundation; either version 2 of the License, or (at  your *
+ * option) any later version.                                              *
+ *                                                                         *
+ * This program is distributed in the hope that it  will  be  useful,  but *
+ * WITHOUT ANY WARRANTY; without the implied warranty  of  MERCHANTABILITY *
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License *
+ * for more details.                                                       *
+ *                                                                         *
+ * You should have received a copy of the GNU General Public License along *
+ * with this program; if not, write to the Free Software Foundation, Inc., *
+ * 675 Mass Ave, Cambridge, MA 02139, USA.                                 *
+ ***************************************************************************
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+#include <errno.h>
+#include <unistd.h>	/* For STDOUT_FILENO */
+#include <sys/ioctl.h>
+#include "common.h"
+
+
+#ifdef USE_NLS
+#include <locale.h>
+#include <libintl.h>
+#define _(string) gettext(string)
+#else
+#define _(string) (string)
+#endif
+
+
+/*
+ * Get current date or time
+ */
+time_t get_localtime(struct tm *loc_time)
+{
+   time_t timer;
+   struct tm *ltm;
+
+
+   time(&timer);
+   ltm = localtime(&timer);
+
+   *loc_time = *ltm;
+   return timer;
+}
+
+
+/*
+ * Find number of processors used on the machine
+ * (0 means one proc, 1 means two proc, etc.)
+ * As far as I know, there are two possibilities for this:
+ * 1) Use /proc/stat or 2) Use /proc/cpuinfo
+ * (I haven't heard of a better method to guess it...)
+ */
+int get_nb_proc_used(int *proc_used, unsigned int max_nr_cpus)
+{
+   FILE *statfp;
+   char line[16];
+   int proc_nb, smp_kernel;
+
+
+   *proc_used = -1;
+
+   /* Open stat file */
+   if ((statfp = fopen(STAT, "r")) == NULL) {
+      fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
+      exit(1);
+   }
+
+   while (fgets(line, 16, statfp) != NULL) {
+
+      if (strncmp(line, "cpu ", 4) && !strncmp(line, "cpu", 3)) {
+	 sscanf(line + 3, "%d", &proc_nb);
+	 if (proc_nb > *proc_used)
+	   *proc_used = proc_nb;
+      }
+   }
+
+   /*
+    * proc_used initial value: -1
+    * If proc_used < 0 then there is only one proc.
+    * If proc_used = 0 then there is only one proc but this is an SMP kernel
+    */
+   smp_kernel = (*proc_used >= 0);
+   if (*proc_used < 0)
+      *proc_used = 0;
+
+   if (*proc_used >= max_nr_cpus) {
+      fprintf(stderr, _("Cannot handle so many processors!\n"));
+      exit(1);
+   }
+
+   /* Close file */
+   fclose(statfp);
+
+   return smp_kernel;
+}
+
+
+/*
+ * Print banner
+ */
+inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, char *nodename)
+{
+   char cur_date[11];
+   char *e;
+
+
+   if (((e = getenv(TM_FMT_VAR)) != NULL) && !strcmp(e, K_ISO))
+      strftime(cur_date, 11, "%Y-%m-%d", loc_time);
+   else
+      strftime(cur_date, 11, "%x", loc_time);
+
+   printf("%s %s (%s) \t%s\n", sysname, release, nodename, cur_date);
+}
+
+
+#ifdef USE_NLS
+/*
+ * Init National Language Support
+ */
+void init_nls(char *dp)
+{
+   struct lconv *lc;
+
+
+   setlocale(LC_MESSAGES, "");
+   setlocale(LC_TIME, "");
+   setlocale(LC_NUMERIC, "");
+
+   bindtextdomain(PACKAGE, LOCALEDIR);
+   textdomain(PACKAGE);
+
+   /* Get decimal point */
+   lc = localeconv();
+   *dp = *(lc->decimal_point);
+}
+#endif
+
+
+/*
+ * Get window height (number of lines)
+ */
+int get_win_height(void)
+{
+   struct winsize win;
+   int rows = 23;
+
+
+   if ((ioctl(STDOUT_FILENO, TIOCGWINSZ, &win) != -1) && (win.ws_row > 2))
+      rows = win.ws_row - 2;
+
+   return rows;
+}

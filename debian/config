@@ -1,0 +1,29 @@
+#!/bin/sh
+
+set -e
+
+S_VERSION="3.3.3"   
+	
+
+if [ "$1" = "configure" ] ; then
+  if dpkg --compare-versions "$2" lt-nl "$S_VERSION"; then
+
+	. /usr/share/debconf/confmodule
+
+        db_beginblock || true
+
+	db_subst sysstat/notice s_version "$S_VERSION"  || true
+	db_fset sysstat/notice isdefault true	|| true
+	db_input high sysstat/notice || true 
+	
+ 	db_fset sysstat/remove_files isdefault true  || true
+	db_input high sysstat/remove_files || true
+
+	db_endblock || true
+	
+	db_go || true
+
+   	db_stop || true
+   fi
+fi
+

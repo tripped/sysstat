@@ -2,7 +2,26 @@
 
 PATH=/usr/sbin:"$PATH"
 
+S_VERSION="3.3.3"
 set -e
+
+if [ "$1" = "configure" ] ; then
+  if dpkg --compare-versions "$2" lt-nl "$S_VERSION"; then
+	
+	. /usr/share/debconf/confmodule
+
+	RET=""
+	db_get sysstat/remove_files || true
+	RETVAL="$RET"
+	db_stop || true
+	if [ "$RETVAL" = "true" ]; then
+		echo "Removing old statistics from /var/log/sysstat" 1>&2 
+	 	rm -f "/var/log/sysstat/sa[0-9]*"
+	fi
+	
+  fi
+fi
+
 
 if [ "$1" = "configure" ] ; then
 

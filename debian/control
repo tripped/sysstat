@@ -4,12 +4,10 @@ Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
 Build-Depends: debhelper (>= 2.1.0), gettext
 Standards-Version: 3.2.1
-Origin: debian
-Bugs: debbugs://bugs.debian.org
 
 Package: sysstat
 Architecture: any
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, debconf (>= 0.2.80.17)
 Recommends: cron
 Conflicts: atsar (<< 1.5-3)
 Description: sar, iostat and mpstat - system performance tools for Linux

@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999,2000 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2001 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -781,7 +781,7 @@ void read_proc_stat(void)
 	 pos = 9;
 	
 	 /* Read disks I/O statistics (for 2.4 kernels) */
-	 while (pos < strlen(line)) {
+	 while (pos < strlen(line) - 1) {	/* Beware: a CR is already included in the line */
 	    sscanf(line + pos, "(%*u,%*u):(%u,%u,%u,%u,%u) ",
 		   &v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3], &v_tmp[4]);
 	    file_stats.dk_drive += v_tmp[0];
@@ -1080,10 +1080,9 @@ void read_ktables_stat(void)
       if ((ktfp = fopen(FDQUOT_NR, "r")) == NULL)
 	 file_stats.dquot_used = 0;
       else {
-	 fscanf(ktfp, "%u %u\n",
-		&(file_stats.dquot_used), &parm);
+	 fscanf(ktfp, "%u %*u\n",
+		&(file_stats.dquot_used));
 	 fclose(ktfp);
-	 file_stats.dquot_used -= parm;
       }
    }
 

@@ -1,14 +1,14 @@
 Begin3
 Title:		sysstat - the sar and iostat commands for Linux
-Version:	3.3.3
-Entered-date:	31-Dec-2000
+Version:	3.3.4
+Entered-date:	26-Jan-2001
 Description:	The sysstat package contains the sar, mpstat and iostat
 		commands for Linux.
 		The sar command collects and reports system activity
 		information. The iostat command reports CPU utilization
 		and I/O statistics for disks. The mpstat command reports
 		global and per-processor statistics.
-		The information collected by sar and iostat can be
+		The information collected by sar can be
 		saved in a file in a binary format for future inspection.
 		The statistics reported by sar concern I/O transfer rates,
 		paging activity, process-related activities, interrupts,
@@ -20,9 +20,9 @@ Keywords:	system administration, sar, iostat, mpstat, system accounting
 Author:		sebastien.godard@wanadoo.fr (Sebastien Godard)
 Maintained-by:	sebastien.godard@wanadoo.fr (Sebastien Godard)
 Primary-site:	metalab.unc.edu /pub/Linux/system/status
-		71kB  sysstat-3.3.3.tar.gz
-		73kB  sysstat-3.3.3-1.src.rpm
-		57kB  sysstat-3.3.3-1.i386.rpm
+		70kB  sysstat-3.3.4.tar.gz
+		73kB  sysstat-3.3.4-1.src.rpm
+		55kB  sysstat-3.3.4-1.i386.rpm
 Alternate-site:	http://perso.wanadoo.fr/sebastien.godard/
 Copying-policy:	GPL
 End

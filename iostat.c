@@ -1,6 +1,6 @@
 /*
  * iostat: report I/O statistics
- * (C) 1998-2000 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1998-2001 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -44,18 +44,17 @@
 #endif
 
 
-struct file_hdr file_hdr;
-struct file_stats file_stats[2];
+struct disk_stats disk_stats[2][MAX_PART];
+struct disk_hdr_stats disk_hdr_stats[MAX_PART];
+struct comm_stats  comm_stats[2];
 struct tm loc_time;
-
+int part_nr = 0;	/* Nb of partitions */
 long int interval = 0;
-unsigned long uptime0 = 0;
-unsigned long last_uptime = 0;
 
 int proc_used = -1;	/* Nb of proc on the machine. A value of 1 means two procs... */
 unsigned char timestamp[14];
 
-char dp = '.';    /* Decimal point */
+char dp = '.';    	/* Decimal point */
 
 
 /*
@@ -67,7 +66,7 @@ void usage(char *progname)
 		   "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 	           "Usage: %s [ options... ]\n"
 		   "Options are:\n"
-		   "[ -c | -d ] [ -t ] [ -V ] [ -o <filename> | -f <filename> ]\n"
+		   "[ -c | -d ] [ -t ] [ -V ]\n"
 		   "[ <interval> [ <count> ] ]\n"),
 	   VERSION, progname);
    exit(1);
@@ -89,155 +88,17 @@ void alarm_handler(int sig)
  */
 void init_stats(void)
 {
-
-   memset(&file_stats[0], 0, FILE_STATS_SIZE);
-   memset(&file_stats[1], 0, FILE_STATS_SIZE);
-}
+   int i;
 
 
-int next_slice(int curr)
-{
-   unsigned long file_interval;
-   int min, max, pt1, pt2;
-
-
-   file_interval = (file_stats[curr].uptime - last_uptime) / 100;
-
-   /*
-    * A few notes about the "algorithm" used here to display selected entries
-    * from the system activity file (option -f with a given interval number):
-    * Let 'Iu' be the interval value given by the user on the command line,
-    *     'If' the interval between current and previous line in the system activity file,
-    * and 'En' the nth entry (identified by its time stamp) of the file.
-    * We choose In = [ En - If/2, En + If/2 [ if If is even,
-    *        or In = [ En - If/2, En + If/2 ] if not.
-    * En will be displayed if
-    *       (Pn * Iu) or (P'n * Iu) belongs to In
-    * with  Pn = En / Iu and P'n = En / Iu + 1
-    */
-   min = (file_stats[curr].uptime / 100) - (file_interval / 2);
-   max = (file_stats[curr].uptime / 100) + (file_interval / 2) +
-         (file_interval & 0x1);
-
-   pt1 = (( file_stats[curr].uptime / 100) / interval)      * interval;
-   pt2 = (((file_stats[curr].uptime / 100) / interval) + 1) * interval;
-
-   return (((pt1 >= min) && (pt1 < max)) || ((pt2 >= min) && (pt2 < max)) || (min == max));
-}
-
-
-/*
- * Open file for reading or writing
- */
-void open_files(char from_file[], char to_file[], int *from_fd, int *to_fd)
-{
-
-   if (from_file[0]) {
-      if ((*from_fd = open(from_file, O_RDONLY)) < 0) {
-	 fprintf(stderr, _("Cannot open %s: %s\n"), from_file, strerror(errno));
-	 exit(3);
-      }
-   }
-   else if (to_file[0]) {
-      if ((*to_fd = open(to_file, O_WRONLY | O_CREAT | O_TRUNC,
-			 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
-	 fprintf(stderr, _("Cannot open %s: %s\n"), to_file, strerror(errno));
-	 exit(3);
-      }
-   }
-}
-
-
-/*
- * Close files
- */
-void close_files(int read_file, int write_file, int from_fd, int to_fd)
-{
-   if (read_file)
-      close(from_fd);
-   if (write_file)
-      close(to_fd);
-}
-
-
-/*
- * Open iostat file for reading or writing
- */
-void rw_io_header(int read_from_file, int write_to_file, int from_fd, int to_fd)
-{
-   int nb;
-
-
-   if (read_from_file) {
-      /* Read file header */
-      nb = read(from_fd, &file_hdr, FILE_HDR_SIZE);
-      if ((nb != FILE_HDR_SIZE) || (file_hdr.io_magic != IO_MAGIC)) {
-      fprintf(stderr, _("Invalid iostat file\n"));
-      exit(3);
-      }
-
-      /* Get date and time stored in file */
-      loc_time.tm_mday = (int) file_hdr.io_day;
-      loc_time.tm_mon  = (int) file_hdr.io_month;
-      loc_time.tm_year = (int) file_hdr.io_year;
-   }
-   /* 'else' because you read OR you write... */
-   else if (write_to_file){
-
-      file_hdr.io_magic = IO_MAGIC;
-
-      file_hdr.io_day   = (char) loc_time.tm_mday;	/* Store date in file */
-      file_hdr.io_month = (char) loc_time.tm_mon;
-      file_hdr.io_year  = (char) loc_time.tm_year;
-
-      /* Write iostat file header */
-      if ((nb = write(to_fd, &file_hdr, FILE_HDR_SIZE)) != FILE_HDR_SIZE) {
-	 fprintf(stderr, _("Cannot write iostat file header: %s\n"), strerror(errno));
-	 exit(2);
-      }
-   }
-}
-
-
-/*
- * Read stats from iostat file
- */
-int read_stat_from_file(int curr, int from_fd)
-{
-   int nb;
-
-
-   nb = read(from_fd, &file_stats[curr], FILE_STATS_SIZE);
-   if (!nb)
-      return 1;		/* End of iostat file */
-   if (nb < 0) {
-      fprintf(stderr, _("Error while reading iostat file: %s\n"), strerror(errno));
-      exit(2);
-   }
-   else if (nb < FILE_STATS_SIZE) {
-      fprintf(stderr, _("End of iostat file unexpected\n"));
-      exit(1);
+   for (i = 0; i < MAX_PART; i++) {
+      memset(&disk_stats[0][i], 0, DISK_STATS_SIZE);
+      memset(&disk_stats[1][i], 0, DISK_STATS_SIZE);
+      sprintf(disk_hdr_stats[i].name, "hdisk%d", i);
    }
 
-   if (!uptime0)
-      uptime0 = file_stats[curr].uptime;
-
-   return 0;
-}
-
-
-/*
- * Write stats to iostat file
- */
-void write_stat_to_file(int curr, int to_fd)
-{
-   int nb;
-
-
-   if ((nb = write(to_fd, &file_stats[curr], FILE_STATS_SIZE)) != FILE_STATS_SIZE) {
-      fprintf(stderr, _("Cannot write data to iostat file: %s\n"), strerror(errno));
-      exit(2);
-   }
+   memset(&comm_stats[0], 0, COMM_STATS_SIZE);
+   memset(&comm_stats[1], 0, COMM_STATS_SIZE);
 }
 
 
@@ -252,6 +113,8 @@ void read_stat(int curr)
    char line[128];
    unsigned int cc_user, cc_nice, cc_system;
    unsigned long cc_idle;
+   int pos, i;
+   unsigned int v_tmp[3], v_major, v_index;
 
 
    /* Open stat file */
@@ -271,19 +134,19 @@ void read_stat(int curr)
 	        resource_name, &cc_user, &cc_nice, &cc_system, &cc_idle);
 
 	 /* Note that CPU usage is *not* reduced to one processor */
-	 file_stats[curr].cpu_user   = cc_user;
-	 file_stats[curr].cpu_nice   = cc_nice;
-	 file_stats[curr].cpu_system = cc_system;
-	 file_stats[curr].cpu_idle   = cc_idle;
+	 comm_stats[curr].cpu_user   = cc_user;
+	 comm_stats[curr].cpu_nice   = cc_nice;
+	 comm_stats[curr].cpu_system = cc_system;
+	 comm_stats[curr].cpu_idle   = cc_idle;
 
 	 /*
 	  * Compute system uptime in jiffies (1/100ths of a second).
 	  * Uptime is multiplied by the number of processors.
 	  */
-	 file_stats[curr].uptime = cc_user + cc_nice + cc_system + cc_idle;
+	 comm_stats[curr].uptime = cc_user + cc_nice + cc_system + cc_idle;
       }
 
-      else if (!strncmp(line, "disk_rblk ", 10))
+      else if (!strncmp(line, "disk_rblk ", 10)) {
 	 /*
 	  * Read the number of blocks read from disk (one block is 1024 bytes).
 	  * A quick glance at the linux kernel source file linux/drivers/block/ll_rw_blk.c
@@ -291,28 +154,62 @@ void read_stat(int curr)
 	  * a number of kilobytes... Please tell me if I'm wrong.
 	  */
 	 sscanf(line, "%s %u %u %u %u",
-		resource_name, &(file_stats[curr].dk_drive_rblk[0]), &(file_stats[curr].dk_drive_rblk[1]),
-		&(file_stats[curr].dk_drive_rblk[2]), &(file_stats[curr].dk_drive_rblk[3]));
+		resource_name, &(disk_stats[curr][0].dk_drive_rblk), &(disk_stats[curr][1].dk_drive_rblk),
+		&(disk_stats[curr][2].dk_drive_rblk), &(disk_stats[curr][3].dk_drive_rblk));
+
+	 /* Statistics handled for the first four disks with pre 2.4 kernels */
+	 part_nr = 4;
+      }
 
       else if (!strncmp(line, "disk_wblk ", 10))
 	 /* Read the number of blocks written to disk */
 	 sscanf(line, "%s %u %u %u %u",
-		resource_name, &(file_stats[curr].dk_drive_wblk[0]), &(file_stats[curr].dk_drive_wblk[1]),
-		&(file_stats[curr].dk_drive_wblk[2]), &(file_stats[curr].dk_drive_wblk[3]));
+		resource_name, &(disk_stats[curr][0].dk_drive_wblk), &(disk_stats[curr][1].dk_drive_wblk),
+		&(disk_stats[curr][2].dk_drive_wblk), &(disk_stats[curr][3].dk_drive_wblk));
 
       else if (!strncmp(line, "disk ", 5))
 	 /* Read the number of I/O done since the last reboot */
 	 sscanf(line, "%s %u %u %u %u",
-		resource_name, &(file_stats[curr].dk_drive[0]), &(file_stats[curr].dk_drive[1]),
-		&(file_stats[curr].dk_drive[2]), &(file_stats[curr].dk_drive[3]));
+		resource_name, &(disk_stats[curr][0].dk_drive), &(disk_stats[curr][1].dk_drive),
+		&(disk_stats[curr][2].dk_drive), &(disk_stats[curr][3].dk_drive));
+
+      else if (!strncmp(line, "disk_io: ", 9)) {
+	 pos = 9;
+	
+	 /* Read disks I/O statistics (for 2.4 kernels) */
+	 while (pos < strlen(line) - 1) {	/* Beware: a CR is already included in the line */
+	    sscanf(line + pos, "(%u,%u):(%u,%*u,%u,%*u,%u) ",
+		   &v_major, &v_index, &v_tmp[0], &v_tmp[1], &v_tmp[2]);
+	    i = 0;
+	    while ((i < part_nr) && ((v_major != disk_hdr_stats[i].major) ||
+				     (v_index != disk_hdr_stats[i].minor)))
+	       i++;
+	    if (i == part_nr) {
+	       /*
+		* New device registered.
+		* Assume that devices may be registered, but not unregistered...
+		*/
+	       disk_hdr_stats[i].major = v_major;
+	       disk_hdr_stats[i].minor = v_index;
+	       sprintf(disk_hdr_stats[i].name, "dev%d-%d", v_major, v_index);
+	       part_nr++;
+	    }
+	    disk_stats[curr][i].dk_drive      = v_tmp[0];
+	    disk_stats[curr][i].dk_drive_rblk = v_tmp[1];
+	    disk_stats[curr][i].dk_drive_wblk = v_tmp[2];
+
+	    pos += strcspn(line + pos, " ") + 1;
+	 }
+      }
    }
 
    /* Close stat file */
    fclose(statfp);
 
    /* Compute total number of I/O done */
-   file_stats[curr].dk_drive_sum = file_stats[curr].dk_drive[0] + file_stats[curr].dk_drive[1] +
-                                   file_stats[curr].dk_drive[2] + file_stats[curr].dk_drive[3];
+   comm_stats[curr].dk_drive_sum = 0;
+   for (i = 0; i < part_nr; i++)
+      comm_stats[curr].dk_drive_sum += disk_stats[curr][i].dk_drive;
 }
 
 
@@ -327,35 +224,17 @@ void read_stat(int curr)
  * The integer part XX is: a / b
  * The decimal part YY is: ((a % b) * 100) / b  (multiplied by 100 since we want YY and not 0.YY)
  */
-int write_stat(int curr, int disp, int write_to_file, int to_fd, int read_from_file)
+int write_stat(int curr, int disp, struct tm *loc_time)
 {
    int disk_index;
    unsigned long udec_part, ndec_part, sdec_part;
    unsigned long wdec_part = 0;
    unsigned long itv;
-   short close_enough;
 
-
-   /* Check time */
-   if (read_from_file) {
-      file_stats[curr].uptime -= uptime0;
-      file_stats[!curr].uptime -= uptime0;
-      close_enough = next_slice(curr);
-      file_stats[curr].uptime += uptime0;
-      file_stats[!curr].uptime += uptime0;
-      if (!close_enough)
-	 /* Not close enough to desired interval */
-	 return 0;
-   }
 
    /* Print time stamp */
-   if (DISPLAY_TIMESTAMP(disp) || read_from_file) {
-
-      loc_time.tm_hour = file_stats[curr].hour;
-      loc_time.tm_min  = file_stats[curr].minute;
-      loc_time.tm_sec  = file_stats[curr].second;
-      strftime(timestamp, 14, "%X  ", &loc_time);
-
+   if (DISPLAY_TIMESTAMP(disp)) {
+      strftime(timestamp, 14, "%X  ", loc_time);
       printf(_("Time: %s\n"), timestamp);
    }
 
@@ -365,26 +244,26 @@ int write_stat(int curr, int disp, int write_to_file, int to_fd, int read_from_f
     * modes (user, nice, etc.) is the sum for all the processors.
     * But itv should be reduced to one processor before displaying disk utilization.
     */
-   itv = file_stats[curr].uptime - file_stats[!curr].uptime;	/* uptime in jiffies */
+   itv = comm_stats[curr].uptime - comm_stats[!curr].uptime;	/* uptime in jiffies */
 
    if (!DISPLAY_DISK_ONLY(disp)) {
 
       printf(_("avg-cpu:  %%user   %%nice    %%sys   %%idle\n"));
 
-      udec_part = DEC_PART(file_stats[curr].cpu_user,   file_stats[!curr].cpu_user,   itv);
-      ndec_part = DEC_PART(file_stats[curr].cpu_nice,   file_stats[!curr].cpu_nice,   itv);
-      sdec_part = DEC_PART(file_stats[curr].cpu_system, file_stats[!curr].cpu_system, itv);
+      udec_part = DEC_PART(comm_stats[curr].cpu_user,   comm_stats[!curr].cpu_user,   itv);
+      ndec_part = DEC_PART(comm_stats[curr].cpu_nice,   comm_stats[!curr].cpu_nice,   itv);
+      sdec_part = DEC_PART(comm_stats[curr].cpu_system, comm_stats[!curr].cpu_system, itv);
 
       printf("         %3lu%c%02lu  %3lu%c%02lu  %3lu%c%02lu",
-	     INT_PART(file_stats[curr].cpu_user,   file_stats[!curr].cpu_user,   itv), dp, udec_part,
-	     INT_PART(file_stats[curr].cpu_nice,   file_stats[!curr].cpu_nice,   itv), dp, ndec_part,
-	     INT_PART(file_stats[curr].cpu_system, file_stats[!curr].cpu_system, itv), dp, sdec_part);
+	     INT_PART(comm_stats[curr].cpu_user,   comm_stats[!curr].cpu_user,   itv), dp, udec_part,
+	     INT_PART(comm_stats[curr].cpu_nice,   comm_stats[!curr].cpu_nice,   itv), dp, ndec_part,
+	     INT_PART(comm_stats[curr].cpu_system, comm_stats[!curr].cpu_system, itv), dp, sdec_part);
 
-      if (file_stats[curr].cpu_idle < file_stats[!curr].cpu_idle)
+      if (comm_stats[curr].cpu_idle < comm_stats[!curr].cpu_idle)
 	 printf("    0%c%02lu", dp, (400 - (udec_part + ndec_part + sdec_part + wdec_part)) % 100);
       else
 	 printf("  %3lu%c%02lu",
-		INT_PART(file_stats[curr].cpu_idle, file_stats[!curr].cpu_idle, itv), dp,
+		INT_PART(comm_stats[curr].cpu_idle, comm_stats[!curr].cpu_idle, itv), dp,
 		/* Correct rounding error */
 		(400 - (udec_part + ndec_part + sdec_part + wdec_part)) % 100);
 
@@ -397,34 +276,30 @@ int write_stat(int curr, int disp, int write_to_file, int to_fd, int read_from_f
 
       printf(_("Disks:         tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"));
 
-      for (disk_index = 0; disk_index < NR_DISKS; disk_index++) {
+      for (disk_index = 0; disk_index < part_nr; disk_index++) {
 
-	 printf(_("hdisk%d %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n"),
-		disk_index,
-		INT_PART(file_stats[curr].dk_drive[disk_index],
-			 file_stats[!curr].dk_drive[disk_index], itv),
+	 printf("%s %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n",
+		disk_hdr_stats[disk_index].name,
+		INT_PART(disk_stats[curr][disk_index].dk_drive,
+			 disk_stats[!curr][disk_index].dk_drive, itv),
 		dp,
-		DEC_PART(file_stats[curr].dk_drive[disk_index],
-			 file_stats[!curr].dk_drive[disk_index], itv),
-		INT_PART(file_stats[curr].dk_drive_rblk[disk_index],
-			 file_stats[!curr].dk_drive_rblk[disk_index], itv),
+		DEC_PART(disk_stats[curr][disk_index].dk_drive,
+			 disk_stats[!curr][disk_index].dk_drive, itv),
+		INT_PART(disk_stats[curr][disk_index].dk_drive_rblk,
+			 disk_stats[!curr][disk_index].dk_drive_rblk, itv),
 		dp,
-		DEC_PART(file_stats[curr].dk_drive_rblk[disk_index],
-			 file_stats[!curr].dk_drive_rblk[disk_index], itv),
-		INT_PART(file_stats[curr].dk_drive_wblk[disk_index],
-			 file_stats[!curr].dk_drive_wblk[disk_index], itv),
+		DEC_PART(disk_stats[curr][disk_index].dk_drive_rblk,
+			 disk_stats[!curr][disk_index].dk_drive_rblk, itv),
+		INT_PART(disk_stats[curr][disk_index].dk_drive_wblk,
+			 disk_stats[!curr][disk_index].dk_drive_wblk, itv),
 		dp,
-		DEC_PART(file_stats[curr].dk_drive_wblk[disk_index],
-			 file_stats[!curr].dk_drive_wblk[disk_index], itv),
-		(file_stats[curr].dk_drive_rblk[disk_index] - file_stats[!curr].dk_drive_rblk[disk_index]),
-		(file_stats[curr].dk_drive_wblk[disk_index] - file_stats[!curr].dk_drive_wblk[disk_index]));
+		DEC_PART(disk_stats[curr][disk_index].dk_drive_wblk,
+			 disk_stats[!curr][disk_index].dk_drive_wblk, itv),
+		(disk_stats[curr][disk_index].dk_drive_rblk - disk_stats[!curr][disk_index].dk_drive_rblk),
+		(disk_stats[curr][disk_index].dk_drive_wblk - disk_stats[!curr][disk_index].dk_drive_wblk));
       }
       printf("\n");
    }
-
-   /* Write data to file if necessary */
-   if (write_to_file)
-      write_stat_to_file(curr, to_fd);
 
    return 1;
 }
@@ -437,13 +312,10 @@ int main(int argc, char **argv)
 {
    int it = 0, disp = 0;
    int opt = 1, curr = 1;
-   int from_fd, to_fd, i, next;
+   int i, next;
    long int count = 1;
-   char from_file[MAX_FILE_LEN], to_file[MAX_FILE_LEN];
    struct utsname header;
 
-
-   from_file[0] = to_file[0] = '\0';
 
 #ifdef USE_NLS
    /* Init National Language Support */
@@ -459,23 +331,7 @@ int main(int argc, char **argv)
    /* Process args... */
    while (opt < argc) {
 
-      if (!strcmp(argv[opt], "-o")) {		/* Output to specified file	*/
-	 if (argv[++opt] && strncmp(argv[opt], "-", 1) &&
-	     (strspn(argv[opt], DIGITS) != strlen(argv[opt])))
-	   strcpy(to_file, argv[opt++]);
-	 else
-	   usage(argv[0]);
-      }
-
-      else if (!strcmp(argv[opt], "-f")) { 	/* Read from specified file	*/
-	 if (argv[++opt] && strncmp(argv[opt], "-", 1) &&
-	     (strspn(argv[opt], DIGITS) != strlen(argv[opt])))
-	   strcpy(from_file, argv[opt++]);
-	 else
-	   usage(argv[0]);
-      }
-
-      else if (!strncmp(argv[opt], "-", 1)) {
+      if (!strncmp(argv[opt], "-", 1)) {
 	 for (i = 1; *(argv[opt] + i); i++) {
 
 	    switch (*(argv[opt] + i)) {
@@ -515,88 +371,38 @@ int main(int argc, char **argv)
       }
    }
 
-   /* You read from a file OR you write to it... */
-   if (from_file[0] && to_file[0])
-      usage(argv[0]);
-
-   /* Interval must be set if stats are written to file */
-   if (!interval && to_file[0]) {
-      fprintf(stderr, _("Please give an interval value\n"));
-      exit(1);
-   }
-
-   if (!interval && from_file[0]) {
-      interval = 1;
-      count = -1;
-   }
-
-   /* Open iostat files then read or write header */
-   open_files(from_file, to_file, &from_fd, &to_fd);
-
    get_localtime(&loc_time);
 
-   /*
-    * Get system name, release number and hostname.
-    * This definition will be overriden if read from io file.
-    */
+   /* Get system name, release number and hostname */
    uname(&header);
-   strncpy(file_hdr.io_sysname, header.sysname, UTSNAME_LEN);
-   file_hdr.io_sysname[UTSNAME_LEN - 1] = '\0';
-   strncpy(file_hdr.io_release, header.release, UTSNAME_LEN);
-   file_hdr.io_release[UTSNAME_LEN - 1] = '\0';
-   strncpy(file_hdr.io_nodename, header.nodename, UTSNAME_LEN);
-   file_hdr.io_nodename[UTSNAME_LEN - 1] = '\0';
-
-   /* Read or write io file header */
-   rw_io_header(from_file[0], to_file[0], from_fd, to_fd);
-
-   print_gal_header(&loc_time, file_hdr.io_sysname, file_hdr.io_release, file_hdr.io_nodename);
+   print_gal_header(&loc_time, header.sysname, header.release, header.nodename);
    printf("\n");
 
    /* Set a handler for SIGALRM */
-   if (!from_file[0])
-	 alarm_handler(0);
+   alarm_handler(0);
 
    /* Main loop */
    do {
-      if (from_file[0]) {
-	 /* Read stats from file */
-	 if (read_stat_from_file(curr, from_fd))
-	    /* End of iostat file: exit */
-	    break;
-      }
-      else {
-	 /* Read kernel statistics */
-	 read_stat(curr);
+      /* Read kernel statistics */
+      read_stat(curr);
 
-	 /* Save time */
-	 get_localtime(&loc_time);
-
-	 file_stats[curr].hour   = loc_time.tm_hour;
-	 file_stats[curr].minute = loc_time.tm_min;
-	 file_stats[curr].second = loc_time.tm_sec;
-      }
+      /* Save time */
+      get_localtime(&loc_time);
 
       /* Print results */
-      if ((next = write_stat(curr, disp, to_file[0], to_fd, from_file[0]))
+      if ((next = write_stat(curr, disp, &loc_time))
 	  && (count > 0))
 	 count--;
       fflush(stdout);
 
       if (count) {
-	 if (!from_file[0])
-	    pause();
-	 else
-	    last_uptime = file_stats[curr].uptime - uptime0;
+	 pause();
 
 	 if (next)
 	    curr ^= 1;
       }
    }
    while (count);
-
-   /* Close system activity files */
-   close_files(from_file[0], to_file[0], from_fd, to_fd);
 
    return 0;
 }

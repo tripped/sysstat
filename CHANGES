@@ -216,3 +216,16 @@ Changes:
 	* Added statistics on IP datagram fragments (sar -n SOCK).
 	  Only available for 2.4 kernels.
 
+2001/01/26: Version 3.3.4 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Disk I/O statistics for the last device were counted twice when
+	  reading /proc/stat file with 2.4 kernels (sar -b). This is now
+	  fixed.
+	* iostat command is no longer able to save its data to a file.
+	  In fact, iostat has never been supposed to work that way, and I
+	  have never really maintained this function.
+	* iostat now also works with 2.4 kernels. It can handle the format
+	  of the /proc/stat file for both 2.2 and 2.4 kernels.
+	* sar now reports statistics on allocated disk quotas entries
+	  instead of on used ones (sar -v).
+	* Manual pages updated for sar and iostat.
+

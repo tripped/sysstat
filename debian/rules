@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules,v 1.6 2002-11-17 20:33:51 robert Exp $
+# $Id: rules,v 1.8 2004-11-14 11:17:34 robert Exp $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -48,8 +48,6 @@ install: build
 	mkdir -p -m 755 $(TMPDIR)/usr/lib/sysstat
 	mv $(TMPDIR)/usr/bin/sar $(TMPDIR)/usr/bin/sar.sysstat
 	mv $(TMPDIR)/usr/share/man/man1/sar.1 $(TMPDIR)/usr/share/man/man1/sar.sysstat.1
-	mv $(TMPDIR)/usr/lib/sa/* $(TMPDIR)/usr/lib/sysstat
-	rmdir $(TMPDIR)/usr/lib/sa
 	rm -rf $(TMPDIR)/usr/doc
 
 	dh_install

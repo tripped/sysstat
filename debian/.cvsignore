@@ -1,0 +1,6 @@
+isag
+sysstat
+tmp
+files
+*.debhelper
+*.substvars

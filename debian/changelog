@@ -1,3 +1,10 @@
+sysstat (5.0.6-4) unstable; urgency=low
+
+  * Initial Czech translation of sysstat debconf templates (closes: #293006).
+    Thanks to Miroslav Kure <kurem@upcase.inf.upol.cz>.
+
+ -- Robert Luberda <robert@debian.org>  Mon, 31 Jan 2005 19:07:14 +0100
+
 sysstat (5.0.6-3) unstable; urgency=low
 
   * Updated Spanish translation of debconf templates.

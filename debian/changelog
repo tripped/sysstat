@@ -1,0 +1,7 @@
+sysstat (3.3.2-1) unstable; urgency=low
+
+  * Initial release. (closes: #78140)
+  * Rename (/usr/lib|/var/log)/sa to $1/sysstat.
+
+ -- Robert Luberda <robert@debian.org>  Sun,  3 Dec 2000 23:33:02 +0100
+

@@ -1,0 +1,11 @@
+This package was debianized by Robert Luberda <robert@debian.org> on
+Wed, 29 Nov 2000 21:48:44 +0100.
+
+It was downloaded from http://perso.wanadoo.fr/sebastien.godard/
+
+Upstream Author: Sebastien Godard <sebastien.godard@wanadoo.fr>
+
+Copyright:
+ Sysstat is distributed under the GNU General Public License, Version 2.
+ On Debian GNU/Linux systems you can find a copy of the GNU General
+ Public License in the file /usr/share/common-license/GPL

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e 
+# remove logfiles when package is purged
+[ "$1" =  "purge" ] && rm -rf /var/log/sysstat
+
+#DEBHELPER#
+
+exit 0 

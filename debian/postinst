@@ -1,0 +1,20 @@
+#! /bin/sh
+
+PATH=/usr/sbin:"$PATH"
+
+set -e
+
+if [ "$1" = "configure" ] ; then
+
+  if ! update-alternatives --display sar | grep -q '^/usr/bin/sar\.sysstat' 
+  then
+       update-alternatives --install /usr/bin/sar sar /usr/bin/sar.sysstat 0 \
+		--slave /usr/share/man/man1/sar.1.gz sar.1.gz \
+					/usr/share/man/man1/sar.sysstat.1.gz
+  fi
+fi
+
+#DEBHELPER#
+
+exit 0
+

@@ -2,7 +2,7 @@
 # (C) 2000 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Directories
-PREFIX = /usr/local
+PREFIX = /usr
 
 DFLAGS =
 IOS_DFLAGS =
@@ -18,7 +18,7 @@ endif
 #IOS_DFLAGS += -DHAS_DISK_ACCT
 
 # Uncomment this to enable workaround for Linux kernel SMP race condition
-#SAS_DFLAGS += -DSMP_RACE
+SAS_DFLAGS += -DSMP_RACE
 
 # Man page group
 MAN_GROUP = root

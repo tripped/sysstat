@@ -1,0 +1,27 @@
+Source: sysstat
+Section: admin
+Priority: optional
+Maintainer: Robert Luberda <robert@debian.org>
+Build-Depends: debhelper (>= 2.1.0)
+Standards-Version: 3.2.1
+Origin: debian
+Bugs: debbugs://bugs.debian.org
+
+Package: sysstat
+Architecture: any
+Depends: ${shlibs:Depends}
+Recommends: cron
+Conflicts: atsar (<< 1.5-3)
+Description: sar, iostat and mpstat - system performance tools for Linux
+ The sysstat package contains the sar, mpstat and iostat
+ commands for Linux.
+ The sar command collects and reports system activity
+ information. The iostat command reports CPU utilization
+ and I/O statistics for disks. The mpstat command reports
+ global and per-processor statistics.
+ The statistics reported by sar concern I/O transfer rates,
+ paging activity, process-related activities, interrupts,
+ network activity, memory and swap space utilization, CPU
+ utilization, kernel activities and TTY statistics, among
+ others. Both UP and SMP machines are fully supported.
+

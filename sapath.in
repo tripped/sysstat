@@ -7,6 +7,6 @@
 #define _SAPATH_H
 
 /* A possible alternate location for sadc data collector */
-#define SADC_ALT_PATH	"ALTLOC/lib/sa/sadc"
+#define SADC_ALT_PATH	"ALTLOC/lib/sysstat/sadc"
 
 #endif  /* _SAPATH_H */

@@ -24,17 +24,25 @@ endif
 DESTDIR = $(RPM_BUILD_ROOT)
 BIN_DIR = $(PREFIX)/bin
 LIB_DIR = $(PREFIX)/lib
-MAN_DIR = $(PREFIX)/man
+MAN_DIR = $(PREFIX)/share/man
 MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
-SA_DIR = /var/log/sa
+SA_DIR = /var/log/sysstat
 DOC_DIR = $(PREFIX)/doc/sysstat-$(VERSION)
 NLS_DIR = $(PREFIX)/share/locale
 
 # Compiler flags
 CFLAGS = -Wall -Wstrict-prototypes -pipe -O2 -fno-strength-reduce
-LFLAGS = -L. -lsysstat -s
+LFLAGS = -L. -lsysstat 
 SAS_DFLAGS += -DSA_DIR=\"$(SA_DIR)\"
+
+ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
+  CFLAGS += -g
+endif
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+  LFLAGS += -s
+endif
+
 
 # NLS (National Language Support)
 # Package name
@@ -174,23 +182,23 @@ install_base: all man/sadc.8 man/sar.1 man/sa1.8 man/sa2.8 man/iostat.1
 	mkdir -p $(DESTDIR)$(SA_DIR)
 	mkdir -p $(DESTDIR)$(BIN_DIR)
 	mkdir -p $(DESTDIR)$(DOC_DIR)
-	install -s -m 755 sadc $(DESTDIR)$(LIB_DIR)/sa
+	install -m 755 sadc $(DESTDIR)$(LIB_DIR)/sa
 	install -m 644 $(MANGRPARG) man/sadc.8 $(DESTDIR)$(MAN8_DIR)
 	install -m 755 sa1 $(DESTDIR)$(LIB_DIR)/sa
 	install -m 644 $(MANGRPARG) man/sa1.8 $(DESTDIR)$(MAN8_DIR)
 	install -m 755 sa2 $(DESTDIR)$(LIB_DIR)/sa
 	install -m 644 $(MANGRPARG) man/sa2.8 $(DESTDIR)$(MAN8_DIR)
-	install -s -m 755 sar $(DESTDIR)$(BIN_DIR)
+	install -m 755 sar $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/sar.1 $(DESTDIR)$(MAN1_DIR)
-	install -s -m 755 iostat $(DESTDIR)$(BIN_DIR)
+	install -m 755 iostat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
-	install -s -m 755 mpstat $(DESTDIR)$(BIN_DIR)
+	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
-	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
-	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)
-	install -m 644 README  $(DESTDIR)$(DOC_DIR)
-	install -m 644 *.lsm   $(DESTDIR)$(DOC_DIR)
+#	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
+#	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
+#	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)
+#	install -m 644 README  $(DESTDIR)$(DOC_DIR)
+#	install -m 644 *.lsm   $(DESTDIR)$(DOC_DIR)
 ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES

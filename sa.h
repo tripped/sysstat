@@ -104,8 +104,8 @@
 #define NET_DEV		"/proc/net/dev"
 #define NET_SOCKSTAT	"/proc/net/sockstat"
 #define SADC		"sadc"
-#define SADC_PATH	"/usr/lib/sa/sadc"
-#define SADC_LOCAL_PATH	"/usr/local/lib/sa/sadc"
+#define SADC_PATH	"/usr/lib/sysstat/sadc"
+#define SADC_LOCAL_PATH	"/usr/local/lib/sysstat/sadc"
 
 #define NR_CPUS		64
 #define NR_IRQS		224

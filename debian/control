@@ -2,13 +2,13 @@ Source: sysstat
 Section: admin
 Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
-Build-Depends: debhelper (>= 3), gettext, debconf-utils (>= 0.5)
-Build-Depends-Indep: debhelper (>= 3)
+Build-Depends: debhelper (>= 4.0.2), gettext, debconf-utils (>= 0.5)
+Build-Depends-Indep: debhelper (>= 4.0.2)
 Standards-Version: 3.5.6
 
 Package: sysstat
 Architecture: any
-Depends: ${shlibs:Depends}, debconf (>= 0.2.80.17)
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: cron
 Suggests: isag
 Conflicts: atsar (<< 1.5-3)
@@ -28,7 +28,7 @@ Description: sar, iostat and mpstat - system performance tools for Linux
 
 Package: isag
 Architecture: all
-Depends: sysstat (>= ${Source-Version}), tk8.3|wish, gnuplot
+Depends: sysstat (>= ${Source-Version}), tk8.3|wish, gnuplot, ${misc:Depends}
 Description: Interactive System Activity Grapher for sysstat.
  This package includes the isag command, which graphically displays the 
  system activity data stored in a binary data produced by a sar command

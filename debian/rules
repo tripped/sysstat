@@ -6,10 +6,7 @@
 # of the binary packages independantly, via binary-<package> targets.
 
 # Uncomment this to turn on verbose mode. 
-# export DH_VERBOSE=1
-
-# This is the debhelper compatibility version to use.
-export DH_COMPAT=3
+#export DH_VERBOSE=1
 
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
@@ -46,8 +43,7 @@ install: build
 
 	sh debian/fix.sh $(CURDIR)/debian/tmp
 
-	dh_movefiles -p isag    usr/bin/isag usr/share/man/man1/isag.1
-	dh_movefiles -p sysstat usr/ var/
+	dh_install
 
 # This single target is used to build all the packages, all at once, or
 # one at a time. So keep in mind: any options passed to commands here will
@@ -56,10 +52,11 @@ install: build
 binary-common:
 	dh_testdir
 	dh_testroot
-	dh_installdebconf
+#	dh_installchangelogs 
 	dh_installdocs
 	dh_installexamples
 	dh_installmenu
+	dh_installdebconf
 #	dh_installlogrotate
 #	dh_installemacsen
 #	dh_installpam
@@ -69,9 +66,8 @@ binary-common:
 	dh_installcron
 #	dh_installinfo
 #	dh_undocumented
-	dh_installchangelogs
-	dh_link
 	dh_strip
+	dh_link
 	dh_compress
 	dh_fixperms
 #	dh_makeshlibs
@@ -84,11 +80,12 @@ binary-common:
 
 # Build architecture independant packages using the common target.
 binary-indep: build install
-# (Uncomment this next line if you have such packages.)
+	dh_installchangelogs -i
 	 $(MAKE) -f debian/rules DH_OPTIONS=-i binary-common
 
 # Build architecture dependant packages using the common target.
 binary-arch: build install
+	dh_installchangelogs -a CHANGES
 	$(MAKE) -f debian/rules DH_OPTIONS=-a binary-common
 
 # Any other binary targets build just one binary package at a time.

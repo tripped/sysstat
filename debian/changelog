@@ -1,3 +1,14 @@
+sysstat (4.0.5-1) unstable; urgency=low
+
+  * New upstream version.
+  * Add new sargon script to examples directory.
+  * Update debian/rules to debhelper v4 (esp. use dh_install instead of
+    dh_movefiles).
+  * Oops, upstream changelog hasn't been included into binary package since 
+    version 3.3.5-1. Fixed now.
+
+ -- Robert Luberda <robert@debian.org>  Thu, 16 May 2002 00:28:57 +0200
+
 sysstat (4.0.4-1) unstable; urgency=low
 
   * New upstream version.

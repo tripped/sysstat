@@ -214,10 +214,6 @@ endif
 	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
 	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
-ifeq ($(WANT_ISAG),y)
-	install -m 755 isag/isag $(DESTDIR)$(BIN_DIR)
-	install -m 644 $(MANGRPARG) isag/isag.1 $(DESTDIR)$(MAN1_DIR)
-endif
 #	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
 #	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
 #	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)

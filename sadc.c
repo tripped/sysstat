@@ -83,7 +83,7 @@ void usage(char *progname)
 		   "(C) Sebastien Godard\n"
 	           "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
 		   "Options are:\n"
-		   "[ -x <pid> ] [ -X <pid> ] [ -I ] [ -V ]\n"),
+		   "[ -x <pid> ] [ -X <pid> ] [ -F ] [ -I ] [ -V ]\n"),
 	   VERSION, progname);
    exit(1);
 }
@@ -217,6 +217,11 @@ void salloc_pid(int pid_nr)
 }
 
 
+/*
+ ***************************************************************************
+ * Display an error message
+ ***************************************************************************
+ */
 void p_write_error(void)
 {
     fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
@@ -560,7 +565,8 @@ void write_dummy_record(int ofd, size_t file_stats_size)
  * NB: sadc provides all the stats, including:
  * -> CPU utilization per processor (on SMP machines only)
  * -> IRQ per processor (on SMP machines only)
- * -> number of each IRQ (if -I option passed to sadc)
+ * -> number of each IRQ (if -I option passed to sadc), including APIC
+ *    interrupts sources.
  ***************************************************************************
  */
 void write_stats(int ofd, size_t file_stats_size)
@@ -609,7 +615,8 @@ void write_stats(int ofd, size_t file_stats_size)
  */
 void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size)
 {
-   if ((*ofd = open(ofile, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+   if ((*ofd = open(ofile, O_CREAT | O_WRONLY | O_TRUNC,
+		    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
       fprintf(stderr, _("Cannot open %s: %s\n"), ofile, strerror(errno));
       exit(2);
    }
@@ -624,7 +631,7 @@ void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size)
  * Get file descriptor for output
  ***************************************************************************
  */
-void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
+void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int flags)
 {
    ssize_t size;
 
@@ -642,11 +649,18 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 	 /* Read file header */
 	 size = read(*ofd, &file_hdr, FILE_HDR_SIZE);
 	 if (!size) {
+	    close(*ofd);
 	    /* This is an empty file: create it again */
 	    create_sa_file(ofd, ofile, file_stats_size);
 	    return;
 	 }
 	 if ((size != FILE_HDR_SIZE) || (file_hdr.sa_magic != SA_MAGIC)) {
+	    close(*ofd);
+	    if (USE_F_OPTION(flags)) {
+	       /* -F option used: Truncate file */
+	       create_sa_file(ofd, ofile, file_stats_size);
+	       return;
+	    }
 	    fprintf(stderr, _("Invalid system activity file\n"));
 	    exit(3);
 	 }
@@ -660,6 +674,11 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 	 *file_stats_size = file_hdr.sa_st_size;
 
 	 if (file_hdr.sa_proc != cpu_nr) {
+	    close(*ofd);
+	    if (USE_F_OPTION(flags)) {
+	       create_sa_file(ofd, ofile, file_stats_size);
+	       return;
+	    }
 	    fprintf(stderr, _("Cannot append data to that file\n"));
 	    exit(1);
 	 }
@@ -696,7 +715,7 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
    }
    /* Duplicate stdout file descriptor */
    else {
-      if ((*ofd = dup(1)) < 0) {
+      if ((*ofd = dup(STDOUT_FILENO)) < 0) {
 	 perror("dup");
 	 exit(4);
       }
@@ -783,6 +802,11 @@ void read_proc_stat(void)
 	     * Additional CPUs have been dynamically registered in /proc/stat.
 	     * sar won't crash, but the CPU stats might be false...
 	     */
+	
+	    if (!proc_nb)
+	       /* Compute uptime reduced to one proc using proc#0 */
+	       file_stats.uptime0 = cc_user + cc_nice + cc_system +
+	       			    cc_idle + cc_iowait;
 	 }
       }
 
@@ -1387,8 +1411,10 @@ void rw_sa_stat_loop(unsigned int flags, long count, struct tm *loc_time,
 	 }
 	 close(ofd);
 	 strcpy(ofile, new_ofile);
-	 open_ofile(&ofd, ofile, &file_stats_size);	/* Open and init new file */
-	 write_stats(ofd, file_stats_size);		/* Write stats again */
+	 /* Open and init new file */
+	 open_ofile(&ofd, ofile, &file_stats_size, flags);
+	 /* Write stats again */
+	 write_stats(ofd, file_stats_size);
       }
 
       /* Flush data */
@@ -1477,6 +1503,9 @@ int main(int argc, char **argv)
       if (!strcmp(argv[opt], "-I"))
 	 sadc_actflag |= A_ONE_IRQ;
 
+      else if (!strcmp(argv[opt], "-F"))
+	 flags |= F_F_OPTION;
+
       else if (!strcmp(argv[opt], "-V"))
 	 usage(argv[0]);
 
@@ -1554,7 +1583,7 @@ int main(int argc, char **argv)
       pid_nr = count_pids();
 
    /* Open output file and write header */
-   open_ofile(&ofd, ofile, &file_stats_size);
+   open_ofile(&ofd, ofile, &file_stats_size, flags);
 
    if (!interval) {
       /* Interval (and count) not set: write a dummy record and exit */

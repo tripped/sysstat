@@ -151,10 +151,15 @@ void write_stats_core(short prev, short curr, short dis,
 		SP_VALUE(st_mp_cpu[prev]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
    }
 
-   /* Here, we reduce the interval value to one processor! */
-   itv /= (cpu_nr + 1);
-   if (!itv)
-      itv = 1;
+   /*
+    * Here, we reduce the interval value to one processor,
+    * using the uptime computed for proc#0.
+    */
+   if (cpu_nr) {
+      itv = st_mp_tstamp[curr].uptime0 - st_mp_tstamp[prev].uptime0;
+      if (!itv)
+	 itv = 1;
+   }
 
    if (*cpu_bitmap & 1) {
       printf(" %9.2f\n",
@@ -304,6 +309,14 @@ void read_proc_stat(short curr)
 	  * Additional CPUs have been dynamically registered in /proc/stat.
 	  * mpstat won't crash, but the CPU stats might be false...
 	  */
+	
+	 if (!proc_nb)
+	    /*
+	     * Compute uptime reduced for one proc,
+	     * using jiffies count for proc#0.
+	     */
+	    st_mp_tstamp[curr].uptime0 = cc_user + cc_nice + cc_system +
+	       				 cc_idle + cc_iowait;
       }
 
       else if (!strncmp(line, "intr ", 5))
@@ -521,11 +534,8 @@ int main(int argc, char **argv)
 
    if (!interval || WANT_BOOT_STATS(flags)) {
       /* Display since boot time */
-      st_mp_tstamp[1].hour   = st_mp_tstamp[0].hour;
-      st_mp_tstamp[1].minute = st_mp_tstamp[0].minute;
-      st_mp_tstamp[1].second = st_mp_tstamp[0].second;
-
-      st_mp_tstamp[1].uptime = 0;
+      st_mp_tstamp[1] = st_mp_tstamp[0];
+      st_mp_tstamp[1].uptime = st_mp_tstamp[1].uptime0 = 0;
 
       memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 2));
 
@@ -537,11 +547,7 @@ int main(int argc, char **argv)
    alarm_handler(0);
 
    /* Save the first stats collected. Will be used to compute the average */
-   st_mp_tstamp[2].hour   = st_mp_tstamp[0].hour;
-   st_mp_tstamp[2].minute = st_mp_tstamp[0].minute;
-   st_mp_tstamp[2].second = st_mp_tstamp[0].second;
-
-   st_mp_tstamp[2].uptime = st_mp_tstamp[0].uptime;
+   st_mp_tstamp[2] = st_mp_tstamp[0];
 
    memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (cpu_nr + 2));
 

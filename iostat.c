@@ -276,6 +276,8 @@ void read_stat(int curr, int flags)
    unsigned int v_tmp[3], v_major, v_index;
    struct io_stats *st_iodev_tmp[4], *st_iodev_i;
    struct io_hdr_stats *st_hdr_iodev_i;
+   unsigned long cc_idle, cc_iowait;
+   unsigned int cc_user, cc_nice, cc_system;
 
 
    /*
@@ -296,8 +298,8 @@ void read_stat(int curr, int flags)
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
 	  * Read the number of jiffies spent in user, nice, system, idle
-	  * and iowait mode and compute system uptime in jiffies (1/100ths
-	  * of a second if HZ=100).
+	  * and iowait mode and compute system uptime in jiffies (1/100ths of
+	  * a second if HZ=100).
 	  * Only in 2.5 is the iowait field present (representing # of jiffies
 	  * spent waiting for I/O to complete). This was previously counted as
 	  * idle time.
@@ -317,6 +319,19 @@ void read_stat(int curr, int flags)
 	                           comm_stats[curr].cpu_system +
 	                           comm_stats[curr].cpu_idle +
 	                           comm_stats[curr].cpu_iowait;
+      }
+
+      else if ((!strncmp(line, "cpu0", 4)) && cpu_nr) {
+	 /*
+	  * Read CPU line for proc#0 (if available).
+	  * Useful to compute uptime reduced to one processor on SMP machines,
+	  * with fewer risks to get an overflow...
+	  */
+	 cc_iowait = 0;
+	 sscanf(line + 5, "%u %u %u %lu %lu",
+		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait);
+	 comm_stats[curr].uptime0 = cc_user + cc_nice + cc_system +
+	    			    cc_idle + cc_iowait;
       }
 
       else if (DISPLAY_EXTENDED(flags) || HAS_SYSFS(flags))
@@ -667,7 +682,7 @@ void write_ext_stat(int curr, unsigned long itv)
 	
 	 nr_ios = sdev.rd_ios + sdev.wr_ios;
 	 tput   = nr_ios * HZ / itv;
-	 util   = ((double) sdev.tot_ticks) / itv;
+	 util   = ((double) sdev.tot_ticks) / itv * HZ;
 	 svctm  = tput ? util / tput : 0.0;
 	 /*
 	  * kernel gives ticks already in milliseconds for all platforms
@@ -692,15 +707,12 @@ void write_ext_stat(int curr, unsigned long itv)
 		((double) sdev.rd_sectors) / itv * HZ / 2,
 		((double) sdev.wr_sectors) / itv * HZ / 2,
 		arqsz,
-		((double) sdev.rq_ticks) / itv,
+		((double) sdev.rq_ticks) / itv * HZ / 1000.0,
 		await,
-		/* again: ticks in milliseconds */
-		svctm * 100.0,
-		/*
-		 * NB: the ticks output in current sard patches is biased
-		 * to output 1000 ticks per second.
-		 */
-		util * 10.0);
+		/* The ticks output is biased to output 1000 ticks per second */
+		svctm,
+		/* Again: ticks in milliseconds */
+		util / 10.0);
       }
    }
 }
@@ -818,12 +830,19 @@ int write_stat(int curr, int flags, struct tm *loc_time)
     * utilization.
     */
    itv = comm_stats[curr].uptime - comm_stats[!curr].uptime; /* uptime in jiffies */
+   if (!itv)
+      itv = 1;
 
    if (!DISPLAY_DISK_ONLY(flags))
       /* Display CPU utilization */
       write_cpu_stat(curr, itv);
 
-   itv /= (cpu_nr + 1); /* See note above */
+   if (cpu_nr) {
+      /* On SMP machines, reduce itv to one processor (see note above) */
+      itv = comm_stats[curr].uptime0 - comm_stats[!curr].uptime0;
+      if (!itv)
+	 itv = 1;
+   }
 
    if (!DISPLAY_CPU_ONLY(flags)) {
 

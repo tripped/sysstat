@@ -2,14 +2,14 @@ sysstat: System performance tools for the Linux operating system...
 --
 (C) 1999-2003 Sebastien Godard <sebastien.godard@wanadoo.fr>
 
-The latest version of sysstat can always be found at ibiblio's Linux archive
+The latest version of sysstat can always be found on my web site at:
+
+http://perso.wanadoo.fr/sebastien.godard/
+
+sysstat package is also available at ibiblio's Linux archive
 in the following directory:
 
 ftp://ibiblio.org/pub/Linux/system/status/
-
-sysstat home page is now at:
-
-http://perso.wanadoo.fr/sebastien.godard/
 
 See the CHANGES file to know the new features/improvements/bug fixes added
 in this release of sysstat.

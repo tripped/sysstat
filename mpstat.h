@@ -23,6 +23,7 @@ struct mp_stats {
 
 struct mp_timestamp {
    unsigned long uptime;
+   unsigned long uptime0;
    unsigned char hour;		/* (0-23) */
    unsigned char minute;	/* (0-59) */
    unsigned char second;	/* (0-59) */

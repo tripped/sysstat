@@ -121,7 +121,7 @@ if {$tcl_version < $needed_version} {
 set gnuplot	"/usr/bin/gnuplot"
 set grep	"/bin/grep"
 set sh		"/bin/sh"
-set gunzip	"/usr/bin/gunzip"
+set gunzip	"/bin/gunzip"
 set sed		"/bin/sed"
 
 # default placement of config file
@@ -133,7 +133,7 @@ set graph_ht	400
 
 # specific paths and programs
 set sar_data_path "SA_DIR"
-set sar "PREFIX/bin/sar"
+set sar "PREFIX/bin/sar.sysstat"
 
 ###############################################################################
 #

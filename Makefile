@@ -2,7 +2,7 @@
 # (C) 1999-2001 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 4.0.0
+VERSION = 4.0.1
 
 include build/CONFIG
 
@@ -113,12 +113,13 @@ isag/isag: isag/isag.in
 	$(SED) -e s+SA_DIR+$(SA_DIR)+g -e s+PREFIX+$(PREFIX)+g $< > $@
 	$(CHMOD) 755 $@
 
-locales: nls/fr/$(PACKAGE).po nls/de/$(PACKAGE).po nls/es/$(PACKAGE).po nls/pt/$(PACKAGE).po
+locales: nls/fr/$(PACKAGE).po nls/de/$(PACKAGE).po nls/es/$(PACKAGE).po nls/pt/$(PACKAGE).po nls/af/$(PACKAGE).po
 ifdef REQUIRE_NLS
 	$(MSGFMT) -o nls/fr/$(PACKAGE).mo nls/fr/$(PACKAGE).po
 	$(MSGFMT) -o nls/de/$(PACKAGE).mo nls/de/$(PACKAGE).po
 	$(MSGFMT) -o nls/es/$(PACKAGE).mo nls/es/$(PACKAGE).po
 	$(MSGFMT) -o nls/pt/$(PACKAGE).mo nls/pt/$(PACKAGE).po
+	$(MSGFMT) -o nls/af/$(PACKAGE).mo nls/af/$(PACKAGE).po
 endif
 
 # Phony targets
@@ -145,14 +146,17 @@ uninstall_base:
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/pt/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES/$(PACKAGE).mo
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/pt/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/pt
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af
 	rm -f $(DESTDIR)$(PREFIX)/doc/sysstat-$(VERSION)/*
 	-rmdir $(DESTDIR)$(PREFIX)/doc/sysstat-$(VERSION)
 	@echo "Please ignore the errors above, if any."
@@ -201,10 +205,12 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES
 	install -m 644 nls/fr/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES
 	install -m 644 nls/de/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES
 	install -m 644 nls/es/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
 	install -m 644 nls/pt/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES
+	install -m 644 nls/af/$(PACKAGE).mo $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES
 endif
 
 install_all: install_base

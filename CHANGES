@@ -282,3 +282,12 @@ Changes:
 	* Manual pages updated.
 	* isag command updated.
 
+2001/06/24: Version 4.0.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	* Files created by sa2 shell script were world writable. This is
+	  now fixed.
+	* sa2.sh shell script updated: only remove sa?? and sar?? files.
+	* Don't use PAGE_SHIFT since it no longer necessarily exists in
+	  <asm/page.h>. Compute it using page size instead.
+	* Cosmetic changes for iostat.
+	* NLS updated: Afrikaans translation added.
+

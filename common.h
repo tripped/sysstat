@@ -49,6 +49,7 @@
 
 /* Functions */
 extern char  *device_name(char *);
+extern int    get_kb_shift(void);
 extern time_t get_localtime(struct tm *);
 extern int    get_nb_proc_used(int *, unsigned int);
 extern int    get_win_height(void);

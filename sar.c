@@ -49,6 +49,7 @@ unsigned int sar_actflag = 0;
 unsigned int flags = 0;
 unsigned int irq_bitmap[(NR_IRQS / 32) + 1];
 unsigned int cpu_bitmap[(NR_CPUS / 32) + 1];
+int kb_shift = 0;
 
 struct stats_sum asum;
 struct file_hdr file_hdr;
@@ -2413,6 +2414,9 @@ int main(int argc, char **argv)
    char from_file[MAX_FILE_LEN], to_file[MAX_FILE_LEN];
    char ltemp[20];
    char time_stamp[9];
+
+   /* Compute page shift in kB */
+   kb_shift = get_kb_shift();
 
    from_file[0] = to_file[0] = '\0';
 

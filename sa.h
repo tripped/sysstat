@@ -6,7 +6,6 @@
 #ifndef _SA_H
 #define _SA_H
 
-#include <asm/page.h>	/* for PAGE_SHIFT */
 #include "common.h"
 
 /* Define activities */
@@ -63,9 +62,9 @@
 
 /*
  * KB -> number of pages.
- * A page is 4 Kb or 8 Kb according to the machine architecture.
+ * Page size depends on machine architecture (4 kB, 8 kB, 16 kB, 64 kB...)
  */
-#define PG(k)	((k) >> (PAGE_SHIFT - 10))
+#define PG(k)	((k) >> kb_shift)
 
 /* Keywords */
 #define K_XALL	"XALL"

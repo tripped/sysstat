@@ -22,6 +22,8 @@ The current release of the sysstat package no longer contains a patch for the
 Linux kernel. I do not want to maintain it any more. The last patch (version 4)
 is still available on my web site (http://perso.wanadoo.fr/sebastien.godard/)
 for download.
+Anyway it is absolutely *not* compulsory to patch the kernel to use the
+sysstat tools.
 Yet the iostat command has been updated to take advantage of Stephen Tweedie's
 kernel patch to display extended I/O statistics (option '-x' for iostat).
 You can find Stephen's patch here:
@@ -100,10 +102,10 @@ ${PREFIX}/doc/sysstat-x.y/*
 /sbin/init.d/rc2.d/S03sysstat	[SUSE <= 7.0]
 /sbin/init.d/rc3.d/S03sysstat	[SUSE <= 7.0]
 /sbin/init.d/rc5.d/S03sysstat	[SUSE <= 7.0]
-/etc/init.d/sysstat		[SUSE <= 7.0]
-/etc/init.d/rc2.d/S03sysstat	[SUSE >= 7.1]
-/etc/init.d/rc3.d/S03sysstat	[SUSE >= 7.1]
-/etc/init.d/rc5.d/S03sysstat	[SUSE >= 7.1]
+/etc/init.d/sysstat		[SUSE >= 7.1] [DEBIAN]
+/etc/init.d/rc2.d/S03sysstat	[SUSE >= 7.1] [DEBIAN]
+/etc/init.d/rc3.d/S03sysstat	[SUSE >= 7.1] [DEBIAN]
+/etc/init.d/rc5.d/S03sysstat	[SUSE >= 7.1] [DEBIAN]
 
 
 MISCELLANEOUS
@@ -118,9 +120,9 @@ present in old 2.0.x kernels.
 
 It has been designed with National Language Support (NLS) in mind, using
 the GNU gettext package (available at http://www.gnu.org).
-At the present time, english, french, german, spanish and portuguese
-translations are available. You are welcome if you want to make other
-languages available ;-)
+At the present time, english, french, german, spanish, portuguese and
+afrikaans translations are available. You are welcome if you want to make
+other languages available ;-)
 
 --
 Sebastien Godard <sebastien.godard@wanadoo.fr>

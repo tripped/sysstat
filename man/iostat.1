@@ -1,4 +1,4 @@
-.TH IOSTAT 1 "NOVEMBER 2003" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "FEBRUARY 2004" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices and partitions.
@@ -289,9 +289,11 @@ Print the time for each report displayed.
 Print version number and usage then exit.
 .IP -x
 Display extended statistics.
-This option is exclusive of the -p one, and works only with
+This option is exclusive of the -p one, and works with
 post 2.5 kernels since it needs /proc/diskstats file or a mounted sysfs to
-get the statistics.
+get the statistics. This option may also work with older kernels (e.g. 2.4)
+only if extended statistics are available in /proc/partitions (the kernel
+needs to be patched for that).
 
 .SH ENVIRONMENT
 The
@@ -342,15 +344,18 @@ Extended statistics are available only with
 post 2.5 kernels.
 .SH FILE
 .I /proc/stat
-contains system statisitics.
+contains system statistics.
+
+.I /proc/partitions
+contains disk statistics (for pre 2.5 kernels that have been patched).
 
 .I /proc/diskstats
-contains disks statistics (post 2.5 kernels).
+contains disks statistics (for post 2.5 kernels).
 
 .I /sys
 contains statistics for block devices (post 2.5 kernels).
 .SH AUTHOR
-Sebastien Godard <sebastien.godard@wanadoo.fr>
+Sebastien Godard (sysstat <at> wanadoo.fr)
 .SH SEE ALSO
 .BR sar (1),
 .BR mpstat (1),

@@ -1,6 +1,6 @@
 sysstat: System performance tools for the Linux operating system...
 --
-(C) 1999-2004 Sebastien Godard <sebastien.godard@wanadoo.fr>
+(C) 1999-2004 Sebastien Godard (sysstat <at> wanadoo.fr)
 
 The latest version of sysstat can always be found on my web site at:
 
@@ -47,14 +47,8 @@ That's all!
 Of course tell me if there are any problems. This is the only way I can improve
 'sysstat'. Please also remember to read the FAQ included in this package.
 
-NB: The iostat command no longer looks for statistics in the /proc/partitions
-file, but rather tries to read data from the /proc/diskstats file or from the
-sysfs filesystem which are included in recent 2.5.x Linux kernels. As a
-consequence, you may need to upgrade to a recent kernel for iostat to be able
-to display extended statistics (option -x).
-
 With regard to sysstat, patches and suggestions for improvements are always
-welcome! Send them to <sebastien.godard@wanadoo.fr>.
+welcome! Send them to (sysstat <at> wanadoo.fr).
 
 
 FILES THAT ARE INSTALLED
@@ -99,10 +93,12 @@ ${RC_DIR}/rc5.d/S03sysstat
 
 with:
 
-${INIT_DIR}=/etc/rc.d/init.d/	for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX] [KONDARA]
+${INIT_DIR}=/etc/rc.d/init.d/	for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX]
+				    [KONDARA]
 ${INIT_DIR}=/sbin/init.d/	for [SUSE <= 7.0]
 ${INIT_DIR}=/etc/init.d/	for [SUSE >= 7.1] [DEBIAN]
-${RC_DIR}=/etc/rc.d/		for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX] [KONDARA]
+${RC_DIR}=/etc/rc.d/		for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX]
+				    [KONDARA]
 ${RC_DIR}=/sbin/init.d/		for [SUSE <= 7.0]
 ${RC_DIR}=/etc/init.d/		for [SUSE >= 7.1]
 ${RC_DIR}=/etc/			for [DEBIAN]
@@ -126,5 +122,5 @@ available. You are welcome if you want to make other languages available ;-)
 Please read the README-nls file in the nls directory before.
 
 --
-Sebastien Godard <sebastien.godard@wanadoo.fr>
+Sebastien Godard (sysstat <at> wanadoo.fr)
 

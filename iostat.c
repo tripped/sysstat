@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1998-2004 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1998-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -261,6 +261,14 @@ void io_sys_init(int *flags)
 	 *flags |= F_HAS_SYSFS;
 	 iodev_nr += NR_DEV_PREALLOC;
       }
+      /*
+       * Get number of block devices and partitions in /proc/partitions,
+       * those with statistics...
+       */
+      else if ((iodev_nr = get_ppartitions_dev_nr()) > 0) {
+	 *flags |= F_HAS_PPARTITIONS;
+	 iodev_nr += NR_DEV_PREALLOC;
+      }
       /* Get number of "disk_io:" entries in /proc/stat */
       else if ((iodev_nr = get_disk_io_nr()) > 0)
 	 iodev_nr += NR_DISK_PREALLOC;
@@ -333,11 +341,12 @@ void read_stat(int curr, int flags)
    FILE *statfp;
    char line[8192];
    int pos, i;
-   unsigned int v_tmp[3], v_major, v_index;
+   unsigned long v_tmp[3];
+   unsigned int v_major, v_index;
    struct io_stats *st_iodev_tmp[4], *st_iodev_i;
    struct io_hdr_stats *st_hdr_iodev_i;
    unsigned long cc_idle, cc_iowait;
-   unsigned int cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
+   unsigned long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
 
 
    /*
@@ -364,7 +373,7 @@ void read_stat(int curr, int flags)
 	  */
 	 comm_stats[curr].cpu_iowait = 0;	/* For pre 2.6 kernels */
 	 cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 5, "%u %u %u %lu %lu %u %u",
+	 sscanf(line + 5, "%lu %lu %lu %lu %lu %lu %lu",
 	        &(comm_stats[curr].cpu_user), &(comm_stats[curr].cpu_nice),
 		&(comm_stats[curr].cpu_system), &(comm_stats[curr].cpu_idle),
 		&(comm_stats[curr].cpu_iowait), &cc_hardirq, &cc_softirq);
@@ -393,7 +402,7 @@ void read_stat(int curr, int flags)
 	  * with fewer risks to get an overflow...
 	  */
 	 cc_iowait = cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 5, "%u %u %u %lu %lu %u %u",
+	 sscanf(line + 5, "%lu %lu %lu %lu %lu %lu %lu",
 		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
 		&cc_hardirq, &cc_softirq);
 	 comm_stats[curr].uptime0 = cc_user + cc_nice + cc_system +
@@ -401,9 +410,11 @@ void read_stat(int curr, int flags)
 	    			    cc_hardirq + cc_softirq;
       }
 
-      else if (DISPLAY_EXTENDED(flags) || HAS_DISKSTATS(flags) || HAS_SYSFS(flags))
+      else if (DISPLAY_EXTENDED(flags) || HAS_DISKSTATS(flags) ||
+	       HAS_PPARTITIONS(flags) || HAS_SYSFS(flags))
 	 /*
-	  * When displaying extended statistics, or if /proc/diskstats exists or /sys is mounted,
+	  * When displaying extended statistics, or if /proc/diskstats or
+	  * /proc/partitions exists, or /sys is mounted,
 	  * we just need to get CPU info from /proc/stat.
 	  */
 	 continue;
@@ -414,7 +425,7 @@ void read_stat(int curr, int flags)
 	  * A block is of indeterminate size.
 	  * The size may vary depending on the device type.
 	  */
-	 sscanf(line + 10, "%u %u %u %u",
+	 sscanf(line + 10, "%lu %lu %lu %lu",
 		&v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3]);
 
 	 st_iodev_tmp[0]->dk_drive_rblk = v_tmp[0];
@@ -425,7 +436,7 @@ void read_stat(int curr, int flags)
 
       else if (!strncmp(line, "disk_wblk ", 10)) {
 	 /* Read the number of blocks written to disk */
-	 sscanf(line + 10, "%u %u %u %u",
+	 sscanf(line + 10, "%lu %lu %lu %lu",
 		&v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3]);
 	
 	 st_iodev_tmp[0]->dk_drive_wblk = v_tmp[0];
@@ -436,7 +447,7 @@ void read_stat(int curr, int flags)
 
       else if (!strncmp(line, "disk ", 5)) {
 	 /* Read the number of I/O done since the last reboot */
-	 sscanf(line + 5, "%u %u %u %u",
+	 sscanf(line + 5, "%lu %lu %lu %lu",
 		&v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3]);
 	
 	 st_iodev_tmp[0]->dk_drive = v_tmp[0];
@@ -454,7 +465,7 @@ void read_stat(int curr, int flags)
 	 /* Read disks I/O statistics (for 2.4 kernels) */
 	 while (pos < strlen(line) - 1) {
 	    /* Beware: a CR is already included in the line */
-	    sscanf(line + pos, "(%u,%u):(%u,%*u,%u,%*u,%u) ",
+	    sscanf(line + pos, "(%u,%u):(%lu,%*u,%lu,%*u,%lu) ",
 		   &v_major, &v_index, &v_tmp[0], &v_tmp[1], &v_tmp[2]);
 
 	    /* Look for disk entry */
@@ -526,14 +537,14 @@ int read_sysfs_file_stat(int curr, char *filename, char *dev_name,
       return 0;
 	
    if (dev_type == DT_DEVICE)
-      i = (fscanf(sysfp, "%d %d %d %d %d %d %d %d %d %d %d",
+      i = (fscanf(sysfp, "%lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
 		  &sdev.rd_ios, &sdev.rd_merges,
 		  &sdev.rd_sectors, &sdev.rd_ticks,
 		  &sdev.wr_ios, &sdev.wr_merges,
 		  &sdev.wr_sectors, &sdev.wr_ticks,
 		  &sdev.ios_pgr, &sdev.tot_ticks, &sdev.rq_ticks) == 11);
    else
-      i = (fscanf(sysfp, "%d %d %d %d",
+      i = (fscanf(sysfp, "%lu %lu %lu %lu",
 		  &sdev.rd_ios, &sdev.rd_sectors,
 		  &sdev.wr_ios, &sdev.wr_sectors) == 4);
 
@@ -667,7 +678,7 @@ void read_diskstats_stat(int curr, int flags)
    char line[256], dev_name[MAX_NAME_LEN];
    struct io_stats sdev;
    int i;
-   int tmp[11];
+   unsigned long tmp[11];
 
    /* Every I/O device entry is potentially unregistered */
    set_entries_inactive(iodev_nr);
@@ -678,7 +689,8 @@ void read_diskstats_stat(int curr, int flags)
 
    while (fgets(line, 256, dstatsfp) != NULL) {
 
-      i = sscanf(line, "%*d %*d %s %d %d %d %d %d %d %d %d %d %d %d",
+      /* major minor name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
+      i = sscanf(line, "%*d %*d %s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
 		 dev_name,
 		 &tmp[0], &tmp[1], &tmp[2], &tmp[3], &tmp[4], &tmp[5],
 		 &tmp[6], &tmp[7], &tmp[8], &tmp[9], &tmp[10]);
@@ -715,6 +727,53 @@ void read_diskstats_stat(int curr, int flags)
 
 /*
  ***************************************************************************
+ * Read stats from /proc/partitions
+ ***************************************************************************
+ */
+void read_ppartitions_stat(int curr, int flags)
+{
+   FILE *ppartfp;
+   char line[256], dev_name[MAX_NAME_LEN];
+   struct io_stats sdev;
+   unsigned long tmp[11];
+
+   /* Every I/O device entry is potentially unregistered */
+   set_entries_inactive(iodev_nr);
+
+   /* Open /proc/partitions file */
+   if ((ppartfp = fopen(PPARTITIONS, "r")) == NULL)
+      return;
+
+   while (fgets(line, 256, ppartfp) != NULL) {
+      /* major minor #blocks name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
+      if (sscanf(line, "%*d %*d %*d %s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+		 dev_name,
+		 &tmp[0], &tmp[1], &tmp[2], &tmp[3], &tmp[4], &tmp[5],
+		 &tmp[6], &tmp[7], &tmp[8], &tmp[9], &tmp[10]) == 12) {
+	 /* Device or partition */
+	 sdev.rd_ios     = tmp[0]; sdev.rd_merges = tmp[1];
+	 sdev.rd_sectors = tmp[2]; sdev.rd_ticks  = tmp[3];
+	 sdev.wr_ios     = tmp[4]; sdev.wr_merges = tmp[5];
+	 sdev.wr_sectors = tmp[6]; sdev.wr_ticks  = tmp[7];
+	 sdev.ios_pgr    = tmp[8]; sdev.tot_ticks = tmp[9];
+	 sdev.rq_ticks   = tmp[10];
+      }
+      else
+	 /* Unknown entry: ignore it */
+	 continue;
+
+      save_dev_stats(dev_name, curr, &sdev);
+   }
+
+   fclose(ppartfp);
+
+   /* Free structures corresponding to unregistered devices */
+   free_inactive_entries(iodev_nr);
+}
+
+
+/*
+ ***************************************************************************
  * Display CPU utilization
  ***************************************************************************
  */
@@ -740,7 +799,8 @@ void write_cpu_stat(int curr, unsigned long itv)
 
 /*
  ***************************************************************************
- * Display extended stats (those read from /proc/diskstats or /sys)
+ * Display extended stats (those read from /proc/{diskstats,partitions} or
+ * /sys)
  ***************************************************************************
  */
 void write_ext_stat(int curr, unsigned long itv, int flags)
@@ -759,12 +819,12 @@ void write_ext_stat(int curr, unsigned long itv, int flags)
       st_hdr_iodev_i = st_hdr_iodev + i;
       if (st_hdr_iodev_i->major) {
 	
-	 if (HAS_DISKSTATS(flags) && dlist_idx) {
+	 if ((HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) && dlist_idx) {
 	    /*
 	     * With sysfs, only stats for the requested devices are read.
-	     * With /proc/diskstats, stats for every devices are read.
-	     * Thus we need to check if stats for current device are to
-	     * be displayed.
+	     * With /proc/{diskstats,partitions}, stats for every devices
+	     * are read. Thus we need to check if stats for current device
+	     * are to be displayed.
 	     */
 	    for (dev = 0; dev < dlist_idx; dev++) {
 	       st_dev_list_i = st_dev_list + dev;
@@ -784,6 +844,15 @@ void write_ext_stat(int curr, unsigned long itv, int flags)
 	       continue;
 	 }
 
+	 /*
+	  * Counters overflows are possible, but don't need to be handled in
+	  * a special way: the difference is still properly calculated if the
+	  * result is of the same type as the two values.
+	  * Exception is field rq_ticks which is incremented by the number of
+	  * I/O in progress times the number of milliseconds spent doing I/O.
+	  * But the number of I/O in progress (field ios_pgr) happens to be
+	  * sometimes negative...
+	  */
 	 sdev.rd_ios     = st_iodev_i->rd_ios - st_iodev_j->rd_ios;
 	 sdev.wr_ios     = st_iodev_i->wr_ios - st_iodev_j->wr_ios;
 	 sdev.rd_ticks   = st_iodev_i->rd_ticks - st_iodev_j->rd_ticks;
@@ -793,10 +862,17 @@ void write_ext_stat(int curr, unsigned long itv, int flags)
 	 sdev.rd_sectors = st_iodev_i->rd_sectors - st_iodev_j->rd_sectors;
 	 sdev.wr_sectors = st_iodev_i->wr_sectors - st_iodev_j->wr_sectors;
 	 sdev.tot_ticks  = st_iodev_i->tot_ticks - st_iodev_j->tot_ticks;
-	 sdev.rq_ticks   = st_iodev_i->rq_ticks - st_iodev_j->rq_ticks;
+	 /*
+	  * Compare the two values before calculating the difference.
+	  * Hope this is the right way to handle this...
+	  */
+	 if (st_iodev_i->rq_ticks >= st_iodev_j->rq_ticks)
+	    sdev.rq_ticks   = st_iodev_i->rq_ticks - st_iodev_j->rq_ticks;
+	 else
+	    sdev.rq_ticks   = st_iodev_j->rq_ticks - st_iodev_i->rq_ticks;
 	
 	 nr_ios = sdev.rd_ios + sdev.wr_ios;
-	 tput   = nr_ios * HZ / itv;
+	 tput   = ((double) nr_ios) * HZ / itv;
 	 util   = ((double) sdev.tot_ticks) / itv * HZ;
 	 svctm  = tput ? util / tput : 0.0;
 	 /*
@@ -878,7 +954,8 @@ void write_basic_stat(int curr, unsigned long itv, int flags)
 	 st_iodev_j = st_iodev[!curr] + i;
 
 	 if (!DISPLAY_UNFILTERED(flags)) {
-	    if (HAS_SYSFS(flags) || HAS_DISKSTATS(flags)) {
+	    if (HAS_SYSFS(flags) ||
+		HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) {
 	       if (!st_iodev_i->rd_ios && !st_iodev_i->wr_ios)
 		  continue;
 	    }
@@ -890,9 +967,10 @@ void write_basic_stat(int curr, unsigned long itv, int flags)
 	 if (strlen(st_hdr_iodev_i->name) > 13)
 	    printf("\n             ");
 
-	 if (HAS_SYSFS(flags) || HAS_DISKSTATS(flags)) {
-	    /* Print stats coming from /sys or /proc/diskstats */
-	    printf(" %8.2f %12.2f %12.2f %10u %10u\n",
+	 if (HAS_SYSFS(flags) ||
+	     HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) {
+	    /* Print stats coming from /sys or /proc/{diskstats,partitions} */
+	    printf(" %8.2f %12.2f %12.2f %10lu %10lu\n",
 		   S_VALUE(st_iodev_j->rd_ios + st_iodev_j->wr_ios,
 			   st_iodev_i->rd_ios + st_iodev_i->wr_ios, itv),
 		   S_VALUE(st_iodev_j->rd_sectors,
@@ -906,7 +984,7 @@ void write_basic_stat(int curr, unsigned long itv, int flags)
 	 }
 	 else {
 	    /* Print stats coming from /proc/stat */
-	    printf(" %8.2f %12.2f %12.2f %10u %10u\n",
+	    printf(" %8.2f %12.2f %12.2f %10lu %10lu\n",
 		   S_VALUE(st_iodev_j->dk_drive,
 			   st_iodev_i->dk_drive, itv),
 		   S_VALUE(st_iodev_j->dk_drive_rblk,
@@ -972,10 +1050,16 @@ int write_stat(int curr, int flags, struct tm *loc_time)
    if (!DISPLAY_CPU_ONLY(flags)) {
 
       if (DISPLAY_EXTENDED(flags))
-	 /* Write extended stats, read from /proc/diskstats or /sys */
+	 /*
+	  * Write extended stats, read from
+	  * /proc/{diskstats,partitions} or /sys.
+	  */
 	 write_ext_stat(curr, itv, flags);
       else
-	 /* Write basic stats, read from /proc/stat, /proc/diskstats or /sys */
+	 /*
+	  * Write basic stats, read from
+	  * /proc/stat, /proc/{diskstats,partitions} or /sys.
+	  */
 	 write_basic_stat(curr, itv, flags);
 
       printf("\n");
@@ -1008,6 +1092,8 @@ void rw_io_stat_loop(int flags, long int count, struct tm *loc_time)
 	    read_diskstats_stat(curr, flags);
 	 else if (HAS_SYSFS(flags))
 	    read_sysfs_dlist_stat(curr, flags);
+	 else if (HAS_PPARTITIONS(flags) && !DISPLAY_PARTITIONS(flags))
+	    read_ppartitions_stat(curr, flags);
       }
       else {
 	 /*
@@ -1018,6 +1104,8 @@ void rw_io_stat_loop(int flags, long int count, struct tm *loc_time)
 	    read_diskstats_stat(curr, flags);
 	 else if (HAS_SYSFS(flags))
 	    read_sysfs_stat(curr,flags);
+	 else if (HAS_PPARTITIONS(flags))
+	    read_ppartitions_stat(curr, flags);
       }
 
       /* Save time */

@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2004 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2004 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *

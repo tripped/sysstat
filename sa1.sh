@@ -1,6 +1,6 @@
 #!/bin/sh
 # PREFIX/lib/sa/sa1.sh
-# (C) 1999-2004 Sebastien Godard <sebastien.godard@wanadoo.fr>
+# (C) 1999-2004 Sebastien Godard (sysstat <at> wanadoo.fr)
 #
 umask 0022
 DATE=`date +%d`

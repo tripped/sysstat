@@ -57,5 +57,5 @@ sa1/sa2 scripts. To fix this, you will have to update
 the sysstat.sh script, which should be pretty easy.
 
 --
-Sébastien Godard <sebastien.godard@wanadoo.fr>
+Sébastien Godard (sysstat <at> wanadoo.fr)
 

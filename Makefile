@@ -1,8 +1,8 @@
 # Makefile to build sysstat commands
-# (C) 1999-2004 Sebastien GODARD <sebastien.godard@wanadoo.fr>
+# (C) 1999-2004 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 5.0.1
+VERSION = 5.0.2
 
 include build/CONFIG
 

@@ -202,6 +202,44 @@ int get_sysfs_dev_nr(int flags)
 
 /*
  ***************************************************************************
+ * Find number of devices and partitions available in /proc/diskstats
+ ***************************************************************************
+ */
+int get_diskstats_dev_nr(int count_part)
+{
+   FILE *dstatsfp;
+   char line[256];
+   int dev = 0, i, tmp[2];
+
+   /* Open /proc/diskstats file */
+   if ((dstatsfp = fopen(DISKSTATS, "r")) == NULL)
+      /* /proc/diskstats non-existent */
+      return 0;
+
+   /*
+    * Counting devices and partitions is simply a matter of counting
+    * the number of lines...
+    */
+   while (fgets(line, 256, dstatsfp) != NULL) {
+      if (!count_part) {
+	 i = sscanf(line, "%*d %*d %*s %*d %*d %*d %d %d",
+		    &tmp[0], &tmp[1]);
+	 if (i == 1)
+	    /* It was a partition and not a device */
+	    continue;
+      }
+      dev++;
+   }
+
+   /* Close file */
+   fclose(dstatsfp);
+
+   return dev;
+}
+
+
+/*
+ ***************************************************************************
  * Find number of disk entries that are registered on the
  * "disk_io:" line in /proc/stat.
  ***************************************************************************

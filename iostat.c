@@ -242,21 +242,81 @@ void io_sys_init(int *flags)
    /* How many processors on this machine ? */
    get_cpu_nr(&cpu_nr, ~0);
 
-   /* Get number of block devices (and partitions) in sysfs */
-   if ((iodev_nr = get_sysfs_dev_nr(*flags)) > 0) {
-      *flags |= F_HAS_SYSFS;
+   /* Get number of block devices and partitions in /proc/diskstats */
+   if ((iodev_nr = get_diskstats_dev_nr(CNT_PART)) > 0) {
+      *flags |= F_HAS_DISKSTATS;
       iodev_nr += NR_DEV_PREALLOC;
    }
-   /* Get number of "disk_io:" entries in /proc/stat */
-   else if ((iodev_nr = get_disk_io_nr()) > 0)
-      iodev_nr += NR_DISK_PREALLOC;
-   else {
-      /* Assume we have an old kernel: stats for 4 disks are in /proc/stat */
-      iodev_nr = 4;
-      *flags |= F_OLD_KERNEL;
+
+   if (!HAS_DISKSTATS(*flags) ||
+       (DISPLAY_PARTITIONS(*flags) && !DISPLAY_PART_ALL(*flags))) {
+      /*
+       * If /proc/diskstats exists but we also want stats for the partitions
+       * of a particular device, stats will have to be found in /sys. So we
+       * need to know if /sys is mounted or not, and set *flags accordingly.
+       */
+
+      /* Get number of block devices (and partitions) in sysfs */
+      if ((iodev_nr = get_sysfs_dev_nr(*flags)) > 0) {
+	 *flags |= F_HAS_SYSFS;
+	 iodev_nr += NR_DEV_PREALLOC;
+      }
+      /* Get number of "disk_io:" entries in /proc/stat */
+      else if ((iodev_nr = get_disk_io_nr()) > 0)
+	 iodev_nr += NR_DISK_PREALLOC;
+      else {
+	 /* Assume we have an old kernel: stats for 4 disks are in /proc/stat */
+	 iodev_nr = 4;
+	 *flags |= F_OLD_KERNEL;
+      }
    }
    /* Allocate structures for number of disks found */
    salloc_device(iodev_nr);
+}
+
+
+/*
+ ***************************************************************************
+ * Save stats for current device or partition
+ ***************************************************************************
+ */
+void save_dev_stats(char *dev_name, int curr, struct io_stats *sdev)
+{
+   int i;
+   struct io_hdr_stats *st_hdr_iodev_i;
+   struct io_stats *st_iodev_i;
+
+   /* Look for device in data table */
+   for (i = 0; i < iodev_nr; i++) {
+      st_hdr_iodev_i = st_hdr_iodev + i;
+      if (!strcmp(st_hdr_iodev_i->name, dev_name)) {
+	 break;
+      }
+   }
+	
+   if (i == iodev_nr) {
+      /*
+       * This is a new device: look for an unused entry to store it.
+       * Thus we are able to handle dynamically registered devices.
+       */
+      for (i = 0; i < iodev_nr; i++) {
+	 st_hdr_iodev_i = st_hdr_iodev + i;
+	 if (!st_hdr_iodev_i->major) {
+	    /* Unused entry found... */
+	    st_hdr_iodev_i->major = 1;	/* Just to indicate it is now used! */
+	    strcpy(st_hdr_iodev_i->name, dev_name);
+	    st_iodev_i = st_iodev[!curr] + i;
+	    memset(st_iodev_i, 0, IO_STATS_SIZE);
+	    break;
+	 }
+      }
+   }
+   if (i < iodev_nr) {
+      st_hdr_iodev_i = st_hdr_iodev + i;
+      st_hdr_iodev_i->active = TRUE;
+      st_iodev_i = st_iodev[curr] + i;
+      *st_iodev_i = *sdev;
+   }
 }
 
 
@@ -334,9 +394,9 @@ void read_stat(int curr, int flags)
 	    			    cc_idle + cc_iowait;
       }
 
-      else if (DISPLAY_EXTENDED(flags) || HAS_SYSFS(flags))
+      else if (DISPLAY_EXTENDED(flags) || HAS_DISKSTATS(flags) || HAS_SYSFS(flags))
 	 /*
-	  * When displaying extended statistics, or if /sys is mounted,
+	  * When displaying extended statistics, or if /proc/diskstats exists or /sys is mounted,
 	  * we just need to get CPU info from /proc/stat.
 	  */
 	 continue;
@@ -452,8 +512,6 @@ int read_sysfs_file_stat(int curr, char *filename, char *dev_name,
 {
    FILE *sysfp;
    struct io_stats sdev;
-   struct io_stats *st_iodev_i;
-   struct io_hdr_stats *st_hdr_iodev_i;
    int i;
 
    /* Try to read given stat file */
@@ -472,39 +530,8 @@ int read_sysfs_file_stat(int curr, char *filename, char *dev_name,
 		  &sdev.rd_ios, &sdev.rd_sectors,
 		  &sdev.wr_ios, &sdev.wr_sectors) == 4);
 
-   if (i) {
-      /* Look for device in data table */
-      for (i = 0; i < iodev_nr; i++) {
-	 st_hdr_iodev_i = st_hdr_iodev + i;
-	 if (!strcmp(st_hdr_iodev_i->name, dev_name)) {
-	    break;
-	 }
-      }
-	
-      if (i == iodev_nr) {
-	 /*
-	  * This is a new device: look for an unused entry to store it.
-	  * Thus we are able to handle dynamically registered devices.
-	  */
-	 for (i = 0; i < iodev_nr; i++) {
-	    st_hdr_iodev_i = st_hdr_iodev + i;
-	    if (!st_hdr_iodev_i->major) {
-	       /* Unused entry found... */
-	       st_hdr_iodev_i->major = 1;	/* Just to indicate it is now used! */
-	       strcpy(st_hdr_iodev_i->name, dev_name);
-	       st_iodev_i = st_iodev[!curr] + i;
-	       memset(st_iodev_i, 0, IO_STATS_SIZE);
-	       break;
-	    }
-	 }
-      }
-      if (i < iodev_nr) {
-	 st_hdr_iodev_i = st_hdr_iodev + i;
-	 st_hdr_iodev_i->active = TRUE;
-	 st_iodev_i = st_iodev[curr] + i;
-	 *st_iodev_i = sdev;
-      }
-   }
+   if (i)
+      save_dev_stats(dev_name, curr, &sdev);
 
    fclose(sysfp);
 
@@ -624,6 +651,63 @@ void read_sysfs_stat(int curr, int flags)
 
 /*
  ***************************************************************************
+ * Read stats from /proc/diskstats
+ ***************************************************************************
+ */
+void read_diskstats_stat(int curr, int flags)
+{
+   FILE *dstatsfp;
+   char line[256], dev_name[MAX_NAME_LEN];
+   struct io_stats sdev;
+   int i;
+   int tmp[11];
+
+   /* Every I/O device entry is potentially unregistered */
+   set_entries_inactive(iodev_nr);
+
+   /* Open /proc/diskstats file */
+   if ((dstatsfp = fopen(DISKSTATS, "r")) == NULL)
+      return;
+
+   while (fgets(line, 256, dstatsfp) != NULL) {
+
+      i = sscanf(line, "%*d %*d %s %d %d %d %d %d %d %d %d %d %d %d",
+		 dev_name,
+		 &tmp[0], &tmp[1], &tmp[2], &tmp[3], &tmp[4], &tmp[5],
+		 &tmp[6], &tmp[7], &tmp[8], &tmp[9], &tmp[10]);
+
+      if (i == 12) {
+	 /* Device */
+	 sdev.rd_ios     = tmp[0]; sdev.rd_merges = tmp[1];
+	 sdev.rd_sectors = tmp[2]; sdev.rd_ticks  = tmp[3];
+	 sdev.wr_ios     = tmp[4]; sdev.wr_merges = tmp[5];
+	 sdev.wr_sectors = tmp[6]; sdev.wr_ticks  = tmp[7];
+	 sdev.ios_pgr    = tmp[8]; sdev.tot_ticks = tmp[9];
+	 sdev.rq_ticks   = tmp[10];
+      }
+      else if (i == 5) {
+	 /* Partition */
+	 if (DISPLAY_EXTENDED(flags) || (!dlist_idx && !DISPLAY_PARTITIONS(flags)))
+	    continue;
+	 sdev.rd_ios = tmp[0]; sdev.rd_sectors = tmp[1];
+	 sdev.wr_ios = tmp[2]; sdev.wr_sectors = tmp[3];
+      }
+      else
+	 /* Unknown entry: ignore it */
+	 continue;
+
+      save_dev_stats(dev_name, curr, &sdev);
+   }
+
+   fclose(dstatsfp);
+
+   /* Free structures corresponding to unregistered devices */
+   free_inactive_entries(iodev_nr);
+}
+
+
+/*
+ ***************************************************************************
  * Display CPU utilization
  ***************************************************************************
  */
@@ -649,23 +733,42 @@ void write_cpu_stat(int curr, unsigned long itv)
 
 /*
  ***************************************************************************
- * Display extended stats (those read from sysfs)
+ * Display extended stats (those read from /proc/diskstats or /sys)
  ***************************************************************************
  */
-void write_ext_stat(int curr, unsigned long itv)
+void write_ext_stat(int curr, unsigned long itv, int flags)
 {
-   int i;
+   int dev, i;
    struct io_stats sdev;
    struct io_hdr_stats *st_hdr_iodev_i;
    struct io_stats *st_iodev_i, *st_iodev_j;
+   struct io_dlist *st_dev_list_i;
    double tput, util, await, svctm, arqsz, nr_ios;
 	
    printf(_("Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n"));
-   /*       "/dev/xxxxx 999.99 999.99 99.99 99.99 9999.99 9999.99 99999.99 99999.99 99999.99 99999.99 9999.99 999.99 %999.99\n" */
+   /*       "xxxxxxxxxx 999.99 999.99 99.99 99.99 9999.99 9999.99 99999.99 99999.99 99999.99 99999.99 9999.99 999.99 %999.99\n" */
 	
    for (i = 0; i < iodev_nr; i++) {
       st_hdr_iodev_i = st_hdr_iodev + i;
       if (st_hdr_iodev_i->major) {
+	
+	 if (HAS_DISKSTATS(flags) && dlist_idx) {
+	    /*
+	     * With sysfs, only stats for the requested devices are read.
+	     * With /proc/diskstats, stats for every devices are read.
+	     * Thus we need to check if stats for current device are to
+	     * be displayed.
+	     */
+	    for (dev = 0; dev < dlist_idx; dev++) {
+	       st_dev_list_i = st_dev_list + dev;
+	       if (!strcmp(st_hdr_iodev_i->name, st_dev_list_i->dev_name))
+		  break;
+	    }
+	    if (dev == dlist_idx)
+	       /* Device not found in list: don't display it */
+	       continue;
+	 }
+	
 	 st_iodev_i = st_iodev[curr] + i;
 	 st_iodev_j = st_iodev[!curr] + i;
 
@@ -693,8 +796,8 @@ void write_ext_stat(int curr, unsigned long itv)
 	 arqsz  = nr_ios ?
 	    (sdev.rd_sectors + sdev.wr_sectors) / nr_ios : 0.0;
 
-	 printf("/dev/%-5s", st_hdr_iodev_i->name);
-	 if (strlen(st_hdr_iodev_i->name) > 5)
+	 printf("%-10s", st_hdr_iodev_i->name);
+	 if (strlen(st_hdr_iodev_i->name) > 10)
 	    printf("\n          ");
 	 /*       rrq/s wrq/s   r/s   w/s  rsec  wsec   rkB   wkB  rqsz  qusz await svctm %util */
 	 printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
@@ -765,8 +868,8 @@ void write_basic_stat(int curr, unsigned long itv, int flags)
 	 st_iodev_i = st_iodev[curr] + i;
 	 st_iodev_j = st_iodev[!curr] + i;
 
-	 if (HAS_SYSFS(flags)) {
-	    /* Print stats coming from /sys */
+	 if (HAS_SYSFS(flags) || HAS_DISKSTATS(flags)) {
+	    /* Print stats coming from /sys or /proc/diskstats */
 	    printf(" %8.2f %12.2f %12.2f %10u %10u\n",
 		   S_VALUE(st_iodev_j->rd_ios + st_iodev_j->wr_ios,
 			   st_iodev_i->rd_ios + st_iodev_i->wr_ios, itv),
@@ -847,10 +950,10 @@ int write_stat(int curr, int flags, struct tm *loc_time)
    if (!DISPLAY_CPU_ONLY(flags)) {
 
       if (DISPLAY_EXTENDED(flags))
-	 /* Write extended stats, read from /sys */
-	 write_ext_stat(curr, itv);
+	 /* Write extended stats, read from /proc/diskstats or /sys */
+	 write_ext_stat(curr, itv, flags);
       else
-	 /* Write basic stats, read from /proc/stat or from /sys */
+	 /* Write basic stats, read from /proc/stat, /proc/diskstats or /sys */
 	 write_basic_stat(curr, itv, flags);
 
       printf("\n");
@@ -871,22 +974,28 @@ void rw_io_stat_loop(int flags, long int count, struct tm *loc_time)
    int next;
 
    do {
-      /* Read kernel statistics */
+      /* Read kernel statistics (CPU, and possibly disks for old kernels) */
       read_stat(curr, flags);
-      if (HAS_SYSFS(flags)) {
-	 if (dlist_idx)
-	    /*
-	     * Read the sysfs stats
-	     * for the devices entered on the command line only
-	     */
+
+      if (dlist_idx) {
+	 /*
+	  * A device or partition name was entered on the command line,
+	  * with or without -p option (but not -p ALL).
+	  */
+	 if (HAS_DISKSTATS(flags) && !DISPLAY_PARTITIONS(flags))
+	    read_diskstats_stat(curr, flags);
+	 else if (HAS_SYSFS(flags))
 	    read_sysfs_dlist_stat(curr, flags);
-	 else
-	    /*
-	     * Read stats (extended or not) from sysfs filesystem
-	     * for every block devices found, and also for every
-	     * partitions if '-p ALL' was entered on the command line
-	     */
-	    read_sysfs_stat(curr, flags);
+      }
+      else {
+	 /*
+	  * No devices nor partitions entered on the command line
+	  * (for example if -p ALL was used).
+	  */
+	 if (HAS_DISKSTATS(flags))
+	    read_diskstats_stat(curr, flags);
+	 else if (HAS_SYSFS(flags))
+	    read_sysfs_stat(curr,flags);
       }
 
       /* Save time */

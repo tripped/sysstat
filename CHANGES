@@ -1,5 +1,43 @@
 Changes:
 
+2003/09/28: Version 4.1.7 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x2163]
+	* /proc/diskstats is now the preferred source for iostat to get its
+	  statistics. If non-existent, iostat falls back on sysfs then
+	  on /proc/stat.
+	* In addition to devices, partitions can also be entered on the
+	  command line for iostat providing that option -x is not used.
+	* /dev prefix has been removed from device name displayed by iostat -x.
+	* sar -d now looks for disks statistics in /proc/diskstats with
+	  post 2.5 kernels.
+	* sar uses /proc/vmstat file with post 2.5 kernels to find paging
+	  and swapping statistics.
+	* activepg, inadtypg, inaclnpg and inatarpg stats removed from
+	  sar -B report (they were not really useful).
+	* sar -B now displays the number of page faults made by the system
+	  (pgfault/s and pgmajflt/s).
+	* Stat on shared memory removed from sar -r and sar -R (this stat
+	  was no longer maintained by the kernel since 2.4 because of
+	  performance problems).
+	* Cached swap statistic information added to sar -r.
+	* sar -d now displays separate statistics for sectors that are
+	  read from or written to devices.
+	* %file-sz (percentage of used file handles) is no longer displayed
+	  by sar -v, since the upper limit for the number of open files
+	  will self-scale with kernels 2.6.
+	* sar now looks more aggressively for network devices in /proc/net/dev.
+	* Heading spaces in network interface names removed (sar -n).
+	* Fixed a problem reading /proc/interrupts when there are a lot
+	  of CPUs (mpstat, sadc).
+	* NR_IRQS value increased to 256, since IA64 supports 256 irqs
+	  per CPU.
+	* Some stats counters are now read as unsigned long instead of
+	  unsigned int (pgpgin, pgpgout, pswpin, pswpout, irq_sum).
+	* sar and iostat manual pages updated.
+	* FAQ, README and CREDITS files updated.
+	* NLS updated.
+
 2003/08/20: Version 4.1.6 - Sebastien Godard <sebastien.godard@wanadoo.fr>
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x2162]

@@ -144,8 +144,8 @@ msgid "Cannot write data to system activity file: %s\n"
 msgstr "Impossibile scrivere dati nel file delle statistiche di sistema: %s\n"
 
 #: sar.c
-msgid "\n%-11s       DEV       tps    sect/s\n"
-msgstr "\n%-11s       DEV       tps    sect/s\n"
+msgid "\n%-11s       DEV       tps  rd_sec/s  wr_sec/s\n"
+msgstr "\n%-11s       DEV       tps  rd_sec/s  wr_sec/s\n"
 
 #: sar.c
 msgid "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n"
@@ -180,8 +180,8 @@ msgid "%-11s       sum"
 msgstr "%-11s     somma"
 
 #: sar.c:1149
-msgid "\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
-msgstr "\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
+msgid "\n%-11s  pgpgin/s pgpgout/s   fault/s  majflt/s\n"
+msgstr "\n%-11s  pgpgin/s pgpgout/s   fault/s  majflt/s\n"
 
 #: sar.c:1163
 msgid "\n%-11s  pswpin/s pswpout/s\n"
@@ -192,8 +192,8 @@ msgid "\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n"
 msgstr "\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n"
 
 #: sar.c:1206
-msgid "\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"
-msgstr "\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"
+msgid "\n%-11s   frmpg/s   bufpg/s   campg/s\n"
+msgstr "\n%-11s   frmpg/s   bufpg/s   campg/s\n"
 
 #: sar.c:1234
 msgid "\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s"
@@ -212,8 +212,8 @@ msgid "\n%-11s       TTY   rcvin/s   xmtin/s\n"
 msgstr "\n%-11s       TTY   rcvin/s   xmtin/s\n"
 
 #: sar.c:1351
-msgid "\n%-11s kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
-msgstr "\n%-11s kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
+msgid "\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached kbswpfree kbswpused  %%swpused  kbswpcad\n"
+msgstr "\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached kbswpfree kbswpused  %%swpused  kbswpcad\n"
 
 #: sar.c:1389
 msgid "\n%-11s  CPU"
@@ -224,8 +224,8 @@ msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "La lettura non avviene da un file delle statistiche di sistema (usare l'opzione -f)\n"
 
 #: sar.c:1447
-msgid "\n%-11s dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
-msgstr "\n%-11s dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+msgid "\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
+msgstr "\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
 
 #: sar.c:1493
 msgid "\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"

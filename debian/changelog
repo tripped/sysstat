@@ -1,3 +1,9 @@
+sysstat (3.3.4-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Robert Luberda <robert@debian.org>  Wed, 31 Jan 2001 18:35:26 +0100
+
 sysstat (3.3.3-3) unstable; urgency=low
 
   * Modified init script - `restart' now acts like `start' (closes: #84058).

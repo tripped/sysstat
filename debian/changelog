@@ -1,3 +1,11 @@
+sysstat (4.0.4-1) unstable; urgency=low
+
+  * New upstream version.
+  * Added Brazilian Portuguese templates translation (closes: #141541).
+    Thanks to Andre Luis Lopes <andrelop@ig.com.br>.
+
+ -- Robert Luberda <robert@debian.org>  Mon,  8 Apr 2002 18:28:32 +0200
+
 sysstat (4.0.3-2) unstable; urgency=low
 
   * sar.c: fixed a typo (closes: #135540).
@@ -121,3 +129,4 @@ sysstat (3.3.2-1) unstable; urgency=low
 
  -- Robert Luberda <robert@debian.org>  Sun,  3 Dec 2000 23:33:02 +0100
 
+vim: et ts=2

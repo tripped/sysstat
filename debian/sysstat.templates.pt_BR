@@ -1,0 +1,29 @@
+Template: sysstat/notice
+Type: note
+Description: WARNING: daily data files format has changed!
+ Format of daily data statistics files has changed in version ${s_version}
+ of sysstat and is *not* compatible with the previous one!
+ .
+ Existing data files need to be deleted.
+Description-pt_BR: AVISO: formato dos arquivo de dados diários mudou!
+ O formato dos arquivos de estatísticas de dados diários mudou na versão
+ ${s_version} do sysstat e *não* é compatível com as versões anteriores!
+ .
+ Arquivos de dados existentes precisam ser apagados.
+
+Template: sysstat/remove_files
+Type: boolean
+Default: true
+Description: Do you want post-installation script to remove these data files?
+ If you say 'yes' (default), any existing data files in /var/log/sysstat/
+ directory will be deleted.
+ .
+ If you say 'no', these files won't be deleted, but this will break the sar
+ command, so you will have to delete them by hand.
+Description-pt_BR: Deseja que o script de pós-instalação remove esses arquivos de dados ?
+ Caso você responda 'sim' (o padrão), quaisquer arquivos de dados
+ existentes no diretório /var/log/sysstat/ serão apagados.
+ .
+ Se você responder 'não', esses arquivos não serão apagados, mas isso irá
+ fazer com que o comando sar deixe de funcionar, e portanto você deverá
+ apagá-los manualmente.

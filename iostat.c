@@ -105,12 +105,10 @@ void init_stats(void)
  * Read stats from /proc/stat file...
  * (see linux source file linux/fs/proc/array.c)
  */
-void read_stat(int curr, int disp)
+void read_stat(int curr, int flags)
 {
    FILE *statfp;
-   char line[128];
-   unsigned int cc_user, cc_nice, cc_system;
-   unsigned long cc_idle;
+   char line[1024];
    int pos, i;
    unsigned int v_tmp[3], v_major, v_index;
 
@@ -121,30 +119,26 @@ void read_stat(int curr, int disp)
       exit(2);
    }
 
-   while (fgets(line, 128, statfp) != NULL) {
+   while (fgets(line, 1024, statfp) != NULL) {
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
 	  * Read the number of jiffies spent in user, nice, system and idle mode
 	  * and compute system uptime in jiffies (1/100ths of a second if HZ=100)
 	  */
-	 sscanf(line, "%*s  %u %u %u %lu",
-	        &cc_user, &cc_nice, &cc_system, &cc_idle);
-
-	 /* Note that CPU usage is *not* reduced to one processor */
-	 comm_stats[curr].cpu_user   = cc_user;
-	 comm_stats[curr].cpu_nice   = cc_nice;
-	 comm_stats[curr].cpu_system = cc_system;
-	 comm_stats[curr].cpu_idle   = cc_idle;
+	 sscanf(line + 5, "%u %u %u %lu",
+	        &(comm_stats[curr].cpu_user), &(comm_stats[curr].cpu_nice),
+		&(comm_stats[curr].cpu_system), &(comm_stats[curr].cpu_idle));
 
 	 /*
 	  * Compute system uptime in jiffies.
 	  * Uptime is multiplied by the number of processors.
 	  */
-	 comm_stats[curr].uptime = cc_user + cc_nice + cc_system + cc_idle;
+	 comm_stats[curr].uptime = comm_stats[curr].cpu_user   + comm_stats[curr].cpu_nice +
+	                           comm_stats[curr].cpu_system + comm_stats[curr].cpu_idle;
       }
 
-      else if (DISPLAY_EXTENDED(disp))
+      else if (DISPLAY_EXTENDED(flags))
 	 /*
 	  * When displaying extended statistics, we just need to get
 	  * CPU info from /proc/stat.
@@ -153,12 +147,10 @@ void read_stat(int curr, int disp)
 
       else if (!strncmp(line, "disk_rblk ", 10)) {
 	 /*
-	  * Read the number of blocks read from disk (one block is 1024 bytes).
-	  * A quick glance at the linux kernel source file linux/drivers/block/ll_rw_blk.c
-	  * once made me think this was a number of sectors. Yet, it seems to be
-	  * a number of kilobytes... Please tell me if I'm wrong.
+	  * Read the number of blocks read from disk.
+	  * A block is of indeterminate size. The size may vary depending on the device type.
 	  */
-	 sscanf(line, "%*s %u %u %u %u",
+	 sscanf(line + 10, "%u %u %u %u",
 		&(disk_stats[curr][0].dk_drive_rblk), &(disk_stats[curr][1].dk_drive_rblk),
 		&(disk_stats[curr][2].dk_drive_rblk), &(disk_stats[curr][3].dk_drive_rblk));
 
@@ -168,13 +160,13 @@ void read_stat(int curr, int disp)
 
       else if (!strncmp(line, "disk_wblk ", 10))
 	 /* Read the number of blocks written to disk */
-	 sscanf(line, "%*s %u %u %u %u",
+	 sscanf(line + 10, "%u %u %u %u",
 		&(disk_stats[curr][0].dk_drive_wblk), &(disk_stats[curr][1].dk_drive_wblk),
 		&(disk_stats[curr][2].dk_drive_wblk), &(disk_stats[curr][3].dk_drive_wblk));
 
       else if (!strncmp(line, "disk ", 5))
 	 /* Read the number of I/O done since the last reboot */
-	 sscanf(line, "%*s %u %u %u %u",
+	 sscanf(line + 5, "%u %u %u %u",
 		&(disk_stats[curr][0].dk_drive), &(disk_stats[curr][1].dk_drive),
 		&(disk_stats[curr][2].dk_drive), &(disk_stats[curr][3].dk_drive));
 
@@ -221,7 +213,7 @@ void read_stat(int curr, int disp)
 /*
  * Read extended stats from /proc/partitions file
  */
-void read_ext_stat(int curr, int disp)
+void read_ext_stat(int curr, int flags)
 {
    FILE *partfp;
    int i;
@@ -260,7 +252,7 @@ void read_ext_stat(int curr, int disp)
 	    }
 	 }
 
-	 if ((i == part_nr) && DISPLAY_EXTENDED_ALL(disp) && (part_nr < MAX_PART) && part.ticks) {
+	 if ((i == part_nr) && DISPLAY_EXTENDED_ALL(flags) && (part_nr < MAX_PART) && part.ticks) {
 	    /* Allocate new partition */
 	    disk_stats[curr][part_nr] = part;
 	    disk_hdr_stats[part_nr].active = 1;
@@ -285,14 +277,14 @@ void read_ext_stat(int curr, int disp)
  * The integer part XX is: a / b
  * The decimal part YY is: ((a % b) * HZ) / b  (multiplied by HZ since we want YY and not 0.YY)
  */
-int write_stat(int curr, int disp, struct tm *loc_time)
+int write_stat(int curr, int flags, struct tm *loc_time)
 {
    int disk_index;
    unsigned long itv;
 
 
    /* Print time stamp */
-   if (DISPLAY_TIMESTAMP(disp)) {
+   if (DISPLAY_TIMESTAMP(flags)) {
       strftime(timestamp, 14, "%X  ", loc_time);
       printf(_("Time: %s\n"), timestamp);
    }
@@ -305,7 +297,7 @@ int write_stat(int curr, int disp, struct tm *loc_time)
     */
    itv = comm_stats[curr].uptime - comm_stats[!curr].uptime;	/* uptime in jiffies */
 
-   if (!DISPLAY_DISK_ONLY(disp)) {
+   if (!DISPLAY_DISK_ONLY(flags)) {
 
       printf(_("avg-cpu:  %%user   %%nice    %%sys   %%idle\n"));
 
@@ -325,9 +317,9 @@ int write_stat(int curr, int disp, struct tm *loc_time)
 
    itv /= (proc_used + 1); /* See note above */
 
-   if (!DISPLAY_CPU_ONLY(disp)) {
+   if (!DISPLAY_CPU_ONLY(flags)) {
 
-      if (DISPLAY_EXTENDED(disp)) {
+      if (DISPLAY_EXTENDED(flags)) {
 	
 	 struct disk_stats current;
 	 double tput, util, await, svctm, arqsz, nr_ios;
@@ -400,7 +392,7 @@ int write_stat(int curr, int disp, struct tm *loc_time)
  */
 int main(int argc, char **argv)
 {
-   int it = 0, disp = 0;
+   int it = 0, flags = 0;
    int opt = 1, curr = 1;
    int i, next;
    long int count = 1;
@@ -422,10 +414,10 @@ int main(int argc, char **argv)
    while (opt < argc) {
 
       if (!strcmp(argv[opt], "-x")) {
-	 disp |= D_EXTENDED + D_EXTENDED_ALL;	/* Extended statistics		*/
+	 flags |= D_EXTENDED + D_EXTENDED_ALL;	/* Extended statistics		*/
 	 /* Get device names */
 	 while (argv[++opt] && strncmp(argv[opt], "-", 1) && !isdigit(argv[opt][0])) {
-	    disp &= ~D_EXTENDED_ALL;
+	    flags &= ~D_EXTENDED_ALL;
 	    if (part_nr < MAX_PART)
 	       strncpy(disk_hdr_stats[part_nr++].name, base_name(argv[opt]), MAX_NAME_LEN - 1);
 	 }
@@ -437,15 +429,17 @@ int main(int argc, char **argv)
 	    switch (*(argv[opt] + i)) {
 
 	     case 'c':
-	       disp |= D_CPU_ONLY;	/* Display cpu usage only		*/
+	       flags |= D_CPU_ONLY;	/* Display cpu usage only		*/
+	       flags &= ~D_DISK_ONLY;
 	       break;
 
 	     case 'd':
-	       disp |= D_DISK_ONLY;	/* Display disk utilization only	*/
+	       flags |= D_DISK_ONLY;	/* Display disk utilization only	*/
+	       flags &= ~D_CPU_ONLY;
 	       break;
 	
 	     case 't':
-	       disp |= D_TIMESTAMP;	/* Display timestamp	       		*/
+	       flags |= D_TIMESTAMP;	/* Display timestamp	       		*/
 	       break;
 
 	     case 'V':			/* Print usage and exit			*/
@@ -484,15 +478,15 @@ int main(int argc, char **argv)
    /* Main loop */
    do {
       /* Read kernel statistics */
-      read_stat(curr, disp);
-      if (DISPLAY_EXTENDED(disp))
-	  read_ext_stat(curr, disp);
+      read_stat(curr, flags);
+      if (DISPLAY_EXTENDED(flags))
+	  read_ext_stat(curr, flags);
 
       /* Save time */
       get_localtime(&loc_time);
 
       /* Print results */
-      if ((next = write_stat(curr, disp, &loc_time))
+      if ((next = write_stat(curr, flags, &loc_time))
 	  && (count > 0))
 	 count--;
       fflush(stdout);

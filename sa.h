@@ -6,31 +6,34 @@
 #ifndef _SA_H
 #define _SA_H
 
+#include <asm/page.h>	/* for PAGE_SHIFT */
 #include "common.h"
 
 /* Define activities */
-#define A_PROC		0x00001
-#define A_CTXSW		0x00002
-#define A_CPU		0x00004
-#define A_IRQ		0x00008
-#define A_PAGE		0x00010
-#define A_SWAP		0x00020
-#define A_IO		0x00040
-#define A_ONE_CPU	0x00080
-#define A_ONE_IRQ	0x00100
-#define A_MEMORY	0x00200
-#define A_PID		0x00400
-#define A_CPID		0x00800
-#define A_SUM_PID	0x01000
-#define A_SERIAL	0x02000
-#define A_MEM_AMT	0x04000
-#define A_IRQ_CPU	0x08000
-#define A_KTABLES	0x10000
-#define A_NET_DEV	0x20000
-#define A_NET_EDEV	0x40000
-#define A_NET_SOCK	0x80000
+#define A_PROC		0x000001
+#define A_CTXSW		0x000002
+#define A_CPU		0x000004
+#define A_IRQ		0x000008
+#define A_PAGE		0x000010
+#define A_SWAP		0x000020
+#define A_IO		0x000040
+#define A_ONE_CPU	0x000080
+#define A_ONE_IRQ	0x000100
+#define A_MEMORY	0x000200
+#define A_PID		0x000400
+#define A_CPID		0x000800
+#define A_SUM_PID	0x001000
+#define A_SERIAL	0x002000
+#define A_MEM_AMT	0x004000
+#define A_IRQ_CPU	0x008000
+#define A_KTABLES	0x010000
+#define A_NET_DEV	0x020000
+#define A_NET_EDEV	0x040000
+#define A_NET_SOCK	0x080000
+#define A_QUEUE		0x100000
+#define A_DISK		0x200000
 
-#define A_LAST		0x80000
+#define A_LAST		0x200000
 
 #define GET_PROC(m)	(((m) & A_PROC) == A_PROC)
 #define GET_CTXSW(m)	(((m) & A_CTXSW) == A_CTXSW)
@@ -54,7 +57,15 @@
 #define GET_NET_DEV(m)	(((m) & A_NET_DEV) == A_NET_DEV)
 #define GET_NET_EDEV(m)	(((m) & A_NET_EDEV) == A_NET_EDEV)
 #define GET_NET_SOCK(m)	(((m) & A_NET_SOCK) == A_NET_SOCK)
+#define GET_QUEUE(m)	(((m) & A_QUEUE) == A_QUEUE)
+#define GET_DISK(m)	(((m) & A_DISK) == A_DISK)
 
+
+/*
+ * KB -> number of pages.
+ * A page is 4 Kb or 8 Kb according to the machine architecture.
+ */
+#define PG(k)	((k) >> (PAGE_SHIFT - 10))
 
 /* Keywords */
 #define K_XALL	"XALL"
@@ -68,13 +79,15 @@
 #define K_FULL	"FULL"
 
 /* Define flags */
-#define F_ALL_PROC      0x01
-#define F_SA_ROTAT      0x02
-#define F_FLT_INC	0x04
-#define F_A_OPTION	0x08
+#define F_ALL_PROC      0x001
+#define F_SA_ROTAT      0x002
+#define F_FLT_INC	0x004
+#define F_A_OPTION	0x008
 /* 0x10 flag used */
-#define F_H_OPTION	0x20
-#define F_ORG_TIME	0x40
+#define F_H_OPTION	0x020
+#define F_ORG_TIME	0x040
+#define F_DEFAULT_COUNT	0x080
+#define F_I_OPTION	0x100
 
 #define WANT_ALL_PROC(m)	(((m) & F_ALL_PROC) == F_ALL_PROC)
 #define WANT_SA_ROTAT(m)	(((m) & F_SA_ROTAT) == F_SA_ROTAT)
@@ -82,6 +95,8 @@
 #define USE_A_OPTION(m)		(((m) & F_A_OPTION) == F_A_OPTION)
 #define USE_H_OPTION(m)		(((m) & F_H_OPTION) == F_H_OPTION)
 #define PRINT_ORG_TIME(m)	(((m) & F_ORG_TIME) == F_ORG_TIME)
+#define USE_DEFAULT_COUNT(m)	(((m) & F_DEFAULT_COUNT) == F_DEFAULT_COUNT)
+#define USE_I_OPTION(m)		(((m) & F_I_OPTION) == F_I_OPTION)
 
 /* Files */
 #define PROC		"/proc"
@@ -104,6 +119,7 @@
 #define SADC		"sadc"
 #define SADC_PATH	"/usr/lib/sa/sadc"
 #define SADC_LOCAL_PATH	"/usr/local/lib/sa/sadc"
+#define LOADAVG		"/proc/loadavg"
 
 #define NR_CPUS		64
 #define NR_IRQS		224
@@ -112,6 +128,7 @@
 #define NR_IFACE_PREALLOC	2
 #define NR_SERIAL_PREALLOC	2
 #define NR_IRQPROC_PREALLOC	3
+#define NR_DISK_PREALLOC	3
 
 /* Maximum number of processes that can be monitored simultaneously */
 #define MAX_PID_NR		256
@@ -140,7 +157,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x215b
+#define SA_MAGIC	0x215d
 
 /*
  * Attributes such as 'aligned' and 'packed' have been defined for every
@@ -162,12 +179,14 @@ struct file_hdr {
    unsigned int  sa_irqcpu			__attribute__ ((packed));
    /* Time stamp in seconds since the epoch */
    unsigned long sa_ust_time			__attribute__ ((aligned (8)));
+   /* Number of disks */
+   unsigned int  sa_nr_disk			__attribute__ ((aligned (8)));
    /*
     * Current day, month and year.
     * No need to save DST (daylight saving time) flag, since it is not taken
     * into account by the strftime() function used to print the timestamp.
     */
-   unsigned char sa_day				__attribute__ ((aligned (8)));
+   unsigned char sa_day				__attribute__ ((packed));
    unsigned char sa_month			__attribute__ ((packed));
    unsigned char sa_year			__attribute__ ((packed));
    /* Number of processors: 1 means two proc */
@@ -186,7 +205,7 @@ struct file_hdr {
 
 /* Note that sizeof(file_hdr) may be greater than FILE_HDR_SIZE */
 #define FILE_HDR_SIZE	(SIZEOF_LONG + \
-			 sizeof(int)   * 3 + \
+			 sizeof(int)   * 4 + \
                          sizeof(short) * 2 + \
                          sizeof(char)  * (6 + 3 * UTSNAME_LEN))
 
@@ -245,11 +264,21 @@ struct file_stats {
    unsigned int  udp_inuse			__attribute__ ((packed));
    unsigned int  raw_inuse			__attribute__ ((packed));
    unsigned int  frag_inuse			__attribute__ ((packed));
+   unsigned int  nr_active_pages		__attribute__ ((packed));
+   unsigned int  nr_inactive_dirty_pages	__attribute__ ((packed));
+   unsigned int  nr_inactive_clean_pages	__attribute__ ((packed));
+   /* This field of type 'long' _must_ be aligned(8) even if the attribute
+    * here wasn't used. Else, FILE_STATS_SIZE below would be wrong! */
+   unsigned long inactive_target		__attribute__ ((aligned (8)));
+   unsigned int  load_avg_1			__attribute__ ((aligned (8)));
+   unsigned int  load_avg_5			__attribute__ ((packed));
+   unsigned int  nr_running			__attribute__ ((packed));
+   unsigned int  nr_threads			__attribute__ ((packed));
 };
 
-#define FILE_STATS_SIZE	(sizeof(int)  * 30 + \
+#define FILE_STATS_SIZE	(sizeof(int)  * 37 + \
 			 sizeof(char) *  4 + \
-			 SIZEOF_LONG  * 13)
+			 SIZEOF_LONG  * 14)
 
 struct stats_one_cpu {
    unsigned long per_cpu_idle			__attribute__ ((aligned (8)));
@@ -257,8 +286,10 @@ struct stats_one_cpu {
    unsigned int  per_cpu_nice			__attribute__ ((packed));
    unsigned int  per_cpu_system			__attribute__ ((packed));
    unsigned char pad[4]				__attribute__ ((packed));
-   /* Structure must be a multiple of 8 bytes, since we use an array of structures.
-    * Each structure is *aligned*, and we want the structures to be packed together. */
+/* IMPORTANT NOTE:
+ * Structure must be a multiple of 8 bytes, since we use an array of structures.
+ * Each structure is *aligned*, and we want the structures to be packed together.
+ */
 };
 
 #define STATS_ONE_CPU_SIZE	(sizeof(int)  * 3 + \
@@ -281,8 +312,7 @@ struct pid_stats {
    unsigned int  processor			__attribute__ ((aligned (8)));
    unsigned char flag				__attribute__ ((packed));
    unsigned char pad[3]				__attribute__ ((packed));
-   /* Structure must be a multiple of 8 bytes, since we use an array of structures.
-    * Each structure is *aligned*, and we want the structures to be packed together. */
+   /* See IMPORTANT NOTE above */
 };
 
 #define PID_STATS_SIZE	(sizeof(int) + \
@@ -294,8 +324,7 @@ struct stats_serial {
    unsigned int  tx				__attribute__ ((packed));
    unsigned char line				__attribute__ ((packed));
    unsigned char pad[7]				__attribute__ ((packed));
-   /* Structure must be a multiple of 8 bytes, since we use an array of structures.
-    * Each structure is *aligned*, and we want the structures to be packed together. */
+   /* See IMPORTANT NOTE above */
 };
 
 #define STATS_SERIAL_SIZE	(sizeof(int)  * 2 + \
@@ -321,8 +350,7 @@ struct stats_net_dev {
    unsigned long tx_carrier_errors		__attribute__ ((aligned (8)));
    unsigned char interface[7]			__attribute__ ((aligned (8)));
    unsigned char pad				__attribute__ ((packed));
-   /* Structure must be a multiple of 8 bytes, since we use an array of structures.
-    * Each structure is *aligned*, and we want the structures to be packed together. */
+   /* See IMPORTANT NOTE above */
 };
 
 #define STATS_NET_DEV_SIZE	(SIZEOF_LONG  * 16 + \
@@ -331,12 +359,23 @@ struct stats_net_dev {
 struct stats_irq_cpu {
    unsigned int interrupt			__attribute__ ((aligned (8)));
    unsigned int irq				__attribute__ ((packed));
-   /* Structure must be a multiple of 8 bytes, since we use an array of structures.
-    * Each structure is *aligned*, and we want the structures to be packed together. */
+   /* See IMPORTANT NOTE above */
 };
 
 #define STATS_IRQ_CPU_SIZE	(sizeof(int) * 2)
 #define STATS_ONE_IRQ_SIZE	(sizeof(int) * NR_IRQS)
+
+
+struct disk_stats {
+   unsigned int major				__attribute__ ((aligned (8)));
+   unsigned int index				__attribute__ ((packed));
+   unsigned int dk_drive			__attribute__ ((packed));
+   unsigned int dk_drive_rwblk			__attribute__ ((packed));
+   /* See IMPORTANT NOTE above */
+};
+
+#define DISK_STATS_SIZE		(sizeof(int) * 4)
+
 
 struct stats_sum {
    unsigned long count				__attribute__ ((aligned (8)));
@@ -357,9 +396,17 @@ struct stats_sum {
    unsigned long udp_inuse			__attribute__ ((packed));
    unsigned long raw_inuse			__attribute__ ((packed));
    unsigned long frag_inuse			__attribute__ ((packed));
+   unsigned long nr_active_pages		__attribute__ ((packed));
+   unsigned long nr_inactive_dirty_pages	__attribute__ ((packed));
+   unsigned long nr_inactive_clean_pages	__attribute__ ((packed));
+   unsigned long inactive_target		__attribute__ ((packed));
+   unsigned long nr_running			__attribute__ ((packed));
+   unsigned long nr_threads			__attribute__ ((packed));
+   unsigned long load_avg_1			__attribute__ ((packed));
+   unsigned long load_avg_5			__attribute__ ((packed));
 };
 
-#define STATS_SUM_SIZE	(sizeof(long) * 18)
+#define STATS_SUM_SIZE	(sizeof(long) * 26)
 
 struct tstamp {
    int tm_sec;

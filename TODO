@@ -1,10 +1,5 @@
 Here are the things I would like (or I should) do for the next releases:
 
-* Implement the classic "-d" option for sar (report statistics for each block
-  device). It still depends on the data supplied by the kernel anyway.
-
-* Implement option "-q" for sar, to monitor run-queue length.
-
 * Add a vmstat command (not sure about this, since it already exists in common
   Linux distributions).
 

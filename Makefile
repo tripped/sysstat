@@ -1,8 +1,8 @@
 # Makefile to build sysstat commands
-# (C) 1999-2000 Sebastien GODARD <sebastien.godard@wanadoo.fr>
+# (C) 1999-2001 Sebastien GODARD <sebastien.godard@wanadoo.fr>
 
 # Version
-VERSION = 3.3.5
+VERSION = 3.3.6
 
 include build/CONFIG
 
@@ -175,17 +175,17 @@ install_base: all man/sadc.8 man/sar.1 man/sa1.8 man/sa2.8 man/iostat.1 isag/isa
 	mkdir -p $(DESTDIR)$(SA_DIR)
 	mkdir -p $(DESTDIR)$(BIN_DIR)
 	mkdir -p $(DESTDIR)$(DOC_DIR)
-	install -s -m 755 sadc $(DESTDIR)$(LIB_DIR)/sa
+	install -m 755 sadc $(DESTDIR)$(LIB_DIR)/sa
 	install -m 644 $(MANGRPARG) man/sadc.8 $(DESTDIR)$(MAN8_DIR)
 	install -m 755 sa1 $(DESTDIR)$(LIB_DIR)/sa
 	install -m 644 $(MANGRPARG) man/sa1.8 $(DESTDIR)$(MAN8_DIR)
 	install -m 755 sa2 $(DESTDIR)$(LIB_DIR)/sa
 	install -m 644 $(MANGRPARG) man/sa2.8 $(DESTDIR)$(MAN8_DIR)
-	install -s -m 755 sar $(DESTDIR)$(BIN_DIR)
+	install -m 755 sar $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/sar.1 $(DESTDIR)$(MAN1_DIR)
-	install -s -m 755 iostat $(DESTDIR)$(BIN_DIR)
+	install -m 755 iostat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
-	install -s -m 755 mpstat $(DESTDIR)$(BIN_DIR)
+	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
 	install -m 755 isag/isag $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) isag/isag.1 $(DESTDIR)$(MAN1_DIR)

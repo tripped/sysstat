@@ -22,9 +22,14 @@ The current release of the sysstat package no longer contains a patch for the
 Linux kernel. I do not want to maintain it any more. The last patch (version 4)
 is still available on my web site (http://perso.wanadoo.fr/sebastien.godard/)
 for download.
+Yet the iostat command has been updated to take advantage of Stephen Tweedie's
+kernel patch to display extended I/O statistics (option '-x' for iostat).
+You can find Stephen's patch here:
+ftp://ftp.uk.linux.org/pub/linux/sct/fs/profiling
 
 See the CHANGES file to know the new features/improvements/bug fixes added
 in this release of sysstat.
+
 
 The first stage is to configure sysstat for your system:
 
@@ -108,8 +113,8 @@ but since new statistics are added in sysstat, they are not necessarily
 present in old 2.0.x kernels.
 
 It has been designed with NLS support in mind, using the GNU gettext
-package. At the present time, english, french, german, spanish and
-portuguese translations are available.
+package (available at http://www.gnu.org). At the present time,
+english, french, german, spanish and portuguese translations are available.
 You are welcome if you want to make other languages available ;-)
 
 --

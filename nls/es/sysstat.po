@@ -62,24 +62,6 @@ msgstr "sysstat versión %s\n"
 "[ -c | -d ] [ -t ] [ -V ] [ -x [ <device> ] ]\n"
 "[ <intervalo> [ <número_de_muestras> ] ]\n"
 
-# msgid "Invalid iostat file\n"
-# msgstr "Fichero iostat inválido\n"
-
-# msgid "Cannot write iostat file header: %s\n"
-# msgstr "Imposible escribir la cabecera del fichero iostat: %s\n"
-
-# msgid "Error while reading iostat file: %s\n"
-# msgstr "Error en la lectura del fichero iostat: %s\n"
-
-# msgid "End of iostat file unexpected\n"
-# msgstr "Final inesperado del fichero iostat\n"
-
-# msgid "Cannot write data to iostat file: %s\n"
-# msgstr "Imposible escribir datos en el fichero iostat: %s\n"
-
-# msgid "Cannot read %s file\n"
-# msgstr "Imposible leer del fichero %s\n"
-
 #: iostat.c:534
 msgid "avg-cpu:  %%user   %%nice    %%sys   %%idle\n"
 msgstr "cpu-med:  %%user   %%nice    %%sys   %%idle\n"
@@ -87,15 +69,6 @@ msgstr "cpu-med:  %%user   %%nice    %%sys   %%idle\n"
 #: iostat.c:555
 msgid "Time: %s\n"
 msgstr "Tiempo: %s\n"
-
-# msgid "Disks:         tps    KB_read/s    KB_wrtn/s    KB_read    KB_wrtn\n"
-# msgstr "Discos:        tps    KB_leid/s    KB_escr/s    KB_leid    KB_escr\n"
-
-# msgid "hdisk%d %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n"
-# msgstr "disco%d %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n"
-
-# msgid "Total: %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n\n"
-# msgstr "Total: %8lu%c%02lu %9lu%c%02lu %9lu%c%02lu %10u %10u\n\n"
 
 #: iostat.c:617
 msgid "Device:        tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n"
@@ -105,15 +78,12 @@ msgstr "Device:        tps   Blq_leid/s   Blq_escr/s   Blq_leid   Blq_escr\n"
 msgid "Device:  rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
 msgstr "Device:  rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s avgrq-sz avgqu-sz   await  svctm  %%util\n"
 
-# msgid "Please give an interval value\n"
-# msgstr "Por favor, proporcione un intervalo\n"
-
 #: sar.c:91
 msgid "sysstat version %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 "Usage: %s [ options... ]\n"
 "Options are:\n"
-"[ -A ] [ -b ] [ -B ] [ -c ] [ -h ] [ -i <interval> ]\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -h ] [ -i <interval> ] [ -q ]\n"
 "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 "[ -I { <irq> | SUM | PROC | ALL | XALL } ] [ -U { <cpu> | ALL } ]\n"
 "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
@@ -125,7 +95,7 @@ msgstr "sysstat versión %s\n"
 "(C) S. Godard <sebastien.godard@wanadoo.fr>\n"
 "Uso: %s [ opciones... ]\n"
 "Opciones posibles:\n"
-"[ -A ] [ -b ] [ -B ] [ -c ] [ -h ] [ -i <intervalo> ]\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -h ] [ -i <intervalo> ] [ -q ]\n"
 "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 "[ -I { <irq> | SUM | PROC | ALL | XALL } ] [ -U { <cpu> | ALL } ]\n"
 "[ -n { DEV | EDEV | SOCK | FULL } ]\n"
@@ -167,8 +137,32 @@ msgid "Average:    %9.2f\n"
 msgstr "Media:      %9.2f\n"
 
 #: sar.c:624
-msgid "Average:    %9.2f"
-msgstr "Media:      %9.2f"
+msgid "Average:    %9.0f"
+msgstr "Media:      %9.0f"
+
+#: sar.c
+msgid "Average:    %9.0f %9.0f"
+msgstr "Media:      %9.0f %9.0f"
+
+#: sar.c
+msgid "Average:    %9.9s %9.2f %9.2f\n"
+msgstr "Media:      %9.9s %9.2f %9.2f\n"
+
+#: sar.c
+msgid "Average:    %9.0f %9.0f %9.0f %9.0f %9.0f\n"
+msgstr "Media:      %9.0f %9.0f %9.0f %9.0f %9.0f\n"
+
+#: sar.c
+msgid "Average:    %9.0f %9.0f %9.2f %9.2f\n"
+msgstr "Media:      %9.0f %9.0f %9.2f %9.2f\n"
+
+#: sar.c
+msgid "Average:    %9.2f %9.2f %9.2f %9.2f\n"
+msgstr "Media:      %9.2f %9.2f %9.2f %9.2f\n"
+
+#: sar.c
+msgid "Average:    %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n"
+msgstr "Media:      %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n"
 
 #: sar.c:545
 msgid "\nAverage:      cswch/s\n"
@@ -181,10 +175,6 @@ msgstr "\nMedia:            CPU     %%user     %%nice   %%system     %%idle\n"
 #: sar.c:557
 msgid "Average:          all"
 msgstr "Media:            all"
-
-# or:
-# msgid "Average:          all"
-# msgstr "Media:          Todos"
 
 #: sar.c:568
 msgid "Requested activities not available in file\n"
@@ -206,10 +196,6 @@ msgstr "Media:      %9.2f %9.2f\n"
 msgid "Average:          sum"
 msgstr "Media:            sum"
 
-# or:
-# msgid "Average:          sum"
-# msgstr "Media:           suma"
-
 #: sar.c:636
 msgid "Average:    %9.2f %9.2f %9.2f %9.2f %9.2f\n"
 msgstr "Media:      %9.2f %9.2f %9.2f %9.2f %9.2f\n"
@@ -219,8 +205,8 @@ msgid "Average:       %6s"
 msgstr "Media:         %6s"
 
 #: sar.c:638
-msgid "\nAverage:     pgpgin/s pgpgout/s\n"
-msgstr "\nMedia:       pgpgin/s pgpgout/s\n"
+msgid "\nAverage:     pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
+msgstr "\nMedia:       pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
 
 #: sar.c:651
 msgid "\nAverage:     pswpin/s pswpout/s\n"
@@ -270,10 +256,6 @@ msgstr "Media:            "
 msgid "\nAverage:    kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
 msgstr "\nMedia:      kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"
 
-#: sar.c:825
-msgid "Average:    %9lu %9lu"
-msgstr "Media:      %9lu %9lu"
-
 #: sar.c:847
 msgid "\nAverage:     CPU"
 msgstr "\nMedia:       CPU"
@@ -290,10 +272,6 @@ msgstr "Media:       %3d"
 msgid "\nAverage:       totsck    tcpsck    udpsck    rawsck   ip-frag\n"
 msgstr "\nMedia:         totsck    tcpsck    udpsck    rawsck   ip-frag\n"
 
-#: sar.c:956
-msgid "Average:    %9lu %9lu %9lu %9lu %9lu\n"
-msgstr "Media:      %9lu %9lu %9lu %9lu %9lu\n"
-
 #: sar.c:853
 msgid "Cannot write data to system activity file: %s\n"
 msgstr "Imposible escribir los datos en el fichero de actividad del sistema: %s\n"
@@ -302,10 +280,6 @@ msgstr "Imposible escribir los datos en el fichero de actividad del sistema: %s\
 msgid "\nAverage:    dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
 msgstr "\nMedia:      dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"
 
-#: sar.c:873
-msgid "Average:    %9lu"
-msgstr "Media:      %9lu"
-
 #: sar.c:903
 msgid "\nAverage:        IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
 msgstr "\nMedia:          IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n"
@@ -313,6 +287,22 @@ msgstr "\nMedia:          IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/
 #: sar.c:941
 msgid "\nAverage:        IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
 msgstr "\nMedia:          IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n"
+
+#: sar.c
+msgid "\n%-11s       DEV       tps    blks/s\n"
+msgstr "\n%-11s       DEV       tps    blks/s\n"
+
+#: sar.c
+msgid "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5\n"
+msgstr "\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5\n"
+
+#: sar.c
+msgid "\nAverage:          DEV       tps    blks/s\n"
+msgstr "\nMedia:            DEV       tps    blks/s\n"
+
+#: sar.c
+msgid "\nAverage:      runq-sz  plist-sz   ldavg-1   ldavg-5\n"
+msgstr "\nMedia:        runq-sz  plist-sz   ldavg-1   ldavg-5\n"
 
 #: sar.c:1043
 msgid "\n%-11s    proc/s\n"
@@ -330,10 +320,6 @@ msgstr "\n%-11s       CPU     %%user     %%nice   %%system     %%idle\n"
 msgid "%-11s       all"
 msgstr "%-11s       all"
 
-# or:
-# msgid "%-11s       all"
-# msgstr "%-11s     Todos"
-
 #: sar.c:1074
 msgid "Please give a smaller interval value\n"
 msgstr "Por favor, proporcione un intervalo más pequeño\n"
@@ -346,13 +332,9 @@ msgstr "\n%-11s      INTR    intr/s\n"
 msgid "%-11s       sum"
 msgstr "%-11s       sum"
 
-# or:
-# msgid "%-11s       sum"
-# msgstr "%-11s      suma"
-
 #: sar.c:1149
-msgid "\n%-11s  pgpgin/s pgpgout/s\n"
-msgstr "\n%-11s  pgpgin/s pgpgout/s\n"
+msgid "\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
+msgstr "\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"
 
 #: sar.c:1163
 msgid "\n%-11s  pswpin/s pswpout/s\n"
@@ -416,19 +398,6 @@ msgstr "\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txc
 msgid "\n%-11s       LINUX RESTART\n"
 msgstr "\n%-11s       LINUX RESTART\n"
 
-# msgid "Not using a system activity file (use -f or -o option)\n"
-# msgstr ""
-# "No se esta usando un fichero de actividad del sistema "
-# "(utilice la opción -f o -o)\n"
-
-# msgid "Not writing to a system activity file (use -o option)\n"
-# msgstr ""
-# "No se está escribiendo sobre un fichero de actividad del sistema (use la "
-# "opcion -o)\n"
-
-# msgid "Must be root to start sar as a daemon...\n"
-# msgstr "Debe ser root para iniciar sar como demonio...\n"
-
 #: sar.c:1610
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "-f y -o son opciones mutuamente excluyentes\n"
@@ -436,9 +405,6 @@ msgstr "-f y -o son opciones mutuamente excluyentes\n"
 #: sar.c:1846
 msgid "Requested activities not available\n"
 msgstr "Las actividades solicitadas no están disponibles\n"
-
-# msgid "No entry found in system activity file!\n"
-# msgstr "No se ha encontrado la entrada en el fichero de actividad del sistema!\n"
 
 #: sadc.c:74
 msgid "sysstat version %s\n"

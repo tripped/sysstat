@@ -47,7 +47,7 @@
 
 
 int proc_used = -1;  /* Nb of processors on the machine. A value of 1 means two processors */
-int serial_used = 0, irqcpu_used = 0, iface_used = 0;
+int serial_used = 0, irqcpu_used = 0, iface_used = 0, disk_used = 0;
 unsigned int sadc_actflag;
 long interval = 0, count = 0;
 struct file_hdr file_hdr;
@@ -56,6 +56,7 @@ struct stats_one_cpu *st_cpu;
 struct stats_serial *st_serial;
 struct stats_net_dev *st_net_dev;
 struct stats_irq_cpu *st_irq_cpu;
+struct disk_stats *st_disk;
 struct pid_stats *pid_stats[MAX_PID_NR];
 unsigned long all_pids[MAX_PID_NR];
 unsigned char f_pids[MAX_PID_NR];
@@ -164,6 +165,21 @@ void salloc_net_dev(int nr_iface)
    }
 
    memset(st_net_dev, 0, STATS_NET_DEV_SIZE * nr_iface);
+}
+
+
+/*
+ * Allocate disk_stats structures
+ */
+void salloc_disk(int nr_disks)
+{
+
+   if ((st_disk = (struct disk_stats *) malloc(DISK_STATS_SIZE * nr_disks)) == NULL) {
+      perror("malloc");
+      exit(4);
+   }
+
+   memset(st_disk, 0, DISK_STATS_SIZE * nr_disks);
 }
 
 
@@ -357,6 +373,42 @@ void get_net_dev(int *iface_used)
 }
 
 
+
+/*
+ * Find number of disks that are in /proc/stat file
+ */
+void get_disks(int *nr_disks)
+{
+   FILE *statfp;
+   char line[1024];
+   int dsk = 0;
+   int pos;
+
+
+   /* Open /proc/stat file */
+   if ((statfp = fopen(STAT, "r")) == NULL) {
+      fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
+      exit(2);
+   }
+
+   while (fgets(line, 1024, statfp) != NULL) {
+
+      if (!strncmp(line, "disk_io: ", 9)) {
+	 for (pos = 9; pos < strlen(line) - 1; pos +=strcspn(line + pos, " ") + 1)
+	    dsk++;
+      }
+   }
+
+   /* Close /proc/stat file */
+   fclose(statfp);
+
+   if (dsk)
+      *nr_disks = dsk + NR_DISK_PREALLOC;
+   else
+      *nr_disks = 0;
+}
+
+
 /*
  * Find number of interrupts available per processor
  */
@@ -458,6 +510,7 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
    file_hdr.sa_serial  = serial_used;
    file_hdr.sa_irqcpu  = irqcpu_used;
    file_hdr.sa_iface   = iface_used;
+   file_hdr.sa_nr_disk = disk_used;
 
    *file_stats_size = FILE_STATS_SIZE;
 
@@ -566,6 +619,13 @@ void write_stats(int ofd, size_t file_stats_size)
 	 exit(2);
       }
    }
+
+   if (disk_used) {
+      if ((nb = write(ofd, st_disk, DISK_STATS_SIZE * disk_used)) != (DISK_STATS_SIZE * disk_used)) {
+	 fprintf(stderr, _("Cannot write data to system activity file: %s\n"), strerror(errno));
+	 exit(2);
+      }
+   }
 }
 
 
@@ -648,6 +708,12 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size)
 	    irqcpu_used = file_hdr.sa_irqcpu;
 	    salloc_irqcpu(proc_used + 1, irqcpu_used);
 	 }
+	 if (file_hdr.sa_nr_disk != disk_used) {
+	    if (disk_used)
+	       free(st_disk);
+	    disk_used = file_hdr.sa_nr_disk;
+	    salloc_disk(disk_used);
+	 }
       }
    }
    /* Duplicate stdout file descriptor */
@@ -670,10 +736,11 @@ void read_proc_stat(void)
 {
    FILE *statfp;
    struct stats_one_cpu *st_cpu_i;
+   struct disk_stats *st_disk_i;
    static char line[2560];
    unsigned int cc_user, cc_nice, cc_system;
    unsigned long cc_idle;
-   unsigned int v_tmp[5];
+   unsigned int v_tmp[5], v_major, v_index;
    int proc_nb, i, pos;
 
 
@@ -774,6 +841,8 @@ void read_proc_stat(void)
       }
 
       else if (!strncmp(line, "disk_io: ", 9)) {
+	 int dsk = 0;
+	
 	 file_stats.dk_drive = 0;
 	 file_stats.dk_drive_rio  = file_stats.dk_drive_wio  = 0;
 	 file_stats.dk_drive_rblk = file_stats.dk_drive_wblk = 0;
@@ -781,14 +850,32 @@ void read_proc_stat(void)
 	
 	 /* Read disks I/O statistics (for 2.4 kernels) */
 	 while (pos < strlen(line) - 1) {	/* Beware: a CR is already included in the line */
-	    sscanf(line + pos, "(%*u,%*u):(%u,%u,%u,%u,%u) ",
+	    sscanf(line + pos, "(%u,%u):(%u,%u,%u,%u,%u) ",
+		   &v_major, &v_index,
 		   &v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3], &v_tmp[4]);
 	    file_stats.dk_drive += v_tmp[0];
 	    file_stats.dk_drive_rio  += v_tmp[1];
 	    file_stats.dk_drive_rblk += v_tmp[2];
 	    file_stats.dk_drive_wio  += v_tmp[3];
 	    file_stats.dk_drive_wblk += v_tmp[4];
+	    if (dsk < disk_used) {
+	       st_disk_i = st_disk + dsk;
+	       st_disk_i->major = v_major;
+	       st_disk_i->index = v_index;
+	       st_disk_i->dk_drive = v_tmp[0];
+	       st_disk_i->dk_drive_rwblk = v_tmp[2] + v_tmp[4];
+	       dsk++;
+	    }
 	    pos += strcspn(line + pos, " ") + 1;
+	 }
+
+	 while (dsk < disk_used) {
+	    /*
+	     * Nb of disks has changed, or appending data to an old file
+	     * with more disks than are actually available now.
+	     */
+	    st_disk_i = st_disk + dsk++;
+	    st_disk_i->major = st_disk_i->index = 0;
 	 }
       }
 
@@ -807,13 +894,49 @@ void read_proc_stat(void)
 
 
 /*
- * Read stats from /proc/meminfo
- * (see linux source file linux/fs/proc/array.c)
+ * Read stats from /proc/loadavg
+ * (see linux source file linux/fs/proc/proc_misc.c)
  */
-void read_meminfo_stat(void)
+void read_proc_loadavg(void)
+{
+   FILE *loadfp;
+   int load_tmp[2];
+
+
+   /* Open loadavg file */
+   if ((loadfp = fopen(LOADAVG, "r")) == NULL) {
+      file_stats.nr_running = 0;
+      file_stats.nr_threads = 0;
+      file_stats.load_avg_1 = file_stats.load_avg_5 = 0;
+   }
+   else {
+      /* Read load averages and queue length */
+      fscanf(loadfp, "%d.%d %d.%d %*d.%*d %d/%d %*d\n",
+	     &(load_tmp[0]), &(file_stats.load_avg_1),
+	     &(load_tmp[1]), &(file_stats.load_avg_5),
+	     &(file_stats.nr_running),
+	     &(file_stats.nr_threads));
+      fclose(loadfp);
+
+      file_stats.load_avg_1 += load_tmp[0] * 100;
+      file_stats.load_avg_5 += load_tmp[1] * 100;
+      if (file_stats.nr_running)
+	 /* Do not take current process into account */
+	 file_stats.nr_running--;
+   }
+}
+
+
+/*
+ * Read stats from /proc/meminfo
+ * (see linux source file linux/fs/proc/array.c and linux/fs/proc/proc_misc.c)
+ */
+void read_proc_meminfo(void)
 {
    FILE *memfp;
    static char line[64];
+   unsigned int mtemp;
+   unsigned long lmtemp;
 
 
    /* Open meminfo file */
@@ -825,37 +948,65 @@ void read_meminfo_stat(void)
       file_stats.camkb = 0;
       file_stats.tlskb = 0;
       file_stats.frskb = 0;
+      file_stats.nr_active_pages         = 0;
+      file_stats.nr_inactive_dirty_pages = 0;
+      file_stats.nr_inactive_clean_pages = 0;
+      file_stats.inactive_target         = 0;
       return;
    }
 
    while (fgets(line, 64, memfp) != NULL) {
 
       if (!strncmp(line, "MemTotal:", 9))
-	 /* Read the total amount of memory in Kb */
+	 /* Read the total amount of memory in KB */
 	 sscanf(line + 10, "%8lu", &(file_stats.tlmkb));
 
       if (!strncmp(line, "MemFree:", 8))
-	 /* Read the amount of free memory in Kb */
+	 /* Read the amount of free memory in KB */
 	 sscanf(line + 10, "%8lu", &(file_stats.frmkb));
 
       else if (!strncmp(line, "MemShared:", 10))
-	 /* Read the amount of shared memory in Kb */
+	 /* Read the amount of shared memory in KB */
 	 sscanf(line + 10, "%8lu", &(file_stats.shmkb));
 
       else if (!strncmp(line, "Buffers:", 8))
-	 /* Read the amount of buffered memory in Kb */
+	 /* Read the amount of buffered memory in KB */
 	 sscanf(line + 10, "%8lu", &(file_stats.bufkb));
 
       else if (!strncmp(line, "Cached:", 7))
-	 /* Read the amount of cached memory in Kb */
+	 /* Read the amount of cached memory in KB */
 	 sscanf(line + 10, "%8lu", &(file_stats.camkb));
 
+      else if (!strncmp(line, "Active:", 7)) {
+	 /* Read the amount of active memory in KB */
+	 sscanf(line + 10, "%8u", &mtemp);
+	 file_stats.nr_active_pages = PG(mtemp);
+      }
+
+      else if (!strncmp(line, "Inact_dirty:", 12)) {
+	 /* Read the amount of inactive dirty memory in KB */
+	 sscanf(line + 13, "%8u", &mtemp);
+	 file_stats.nr_inactive_dirty_pages = PG(mtemp);
+      }
+
+      else if (!strncmp(line, "Inact_clean:", 12)) {
+	 /* Read the amount of inactive clean memory in KB */
+	 sscanf(line + 13, "%8u", &mtemp);
+	 file_stats.nr_inactive_clean_pages = PG(mtemp);
+      }
+
+      else if (!strncmp(line, "Inact_target:", 13)) {
+	 /* Read the amount of inactive target memory in KB */
+	 sscanf(line + 13, "%8lu", &lmtemp);
+	 file_stats.inactive_target = PG(lmtemp);
+      }
+
       else if (!strncmp(line, "SwapTotal:", 10))
-	 /* Read the total amount of swap memory in Kb */
+	 /* Read the total amount of swap memory in KB */
 	 sscanf(line + 10, "%8lu", &(file_stats.tlskb));
 
       else if (!strncmp(line, "SwapFree:", 9))
-	 /* Read the amount of free swap memory in Kb */
+	 /* Read the amount of free swap memory in KB */
 	 sscanf(line + 10, "%8lu", &(file_stats.frskb));
    }
 
@@ -1240,7 +1391,10 @@ int main(int argc, char **argv)
 
    /* Init activity flag */
    sadc_actflag = A_PROC + A_PAGE + A_IRQ + A_IO + A_CPU + A_CTXSW + A_SWAP +
-                  A_MEMORY + A_MEM_AMT + A_KTABLES + A_NET_SOCK;
+                  A_MEMORY + A_MEM_AMT + A_KTABLES + A_NET_SOCK + A_QUEUE;
+
+   /* Init stat structure */
+   memset(&file_stats, 0, FILE_STATS_SIZE);
 
    /* How many processors on this machine ? */
    smp_kernel = get_nb_proc_used(&proc_used, NR_CPUS);
@@ -1255,21 +1409,24 @@ int main(int argc, char **argv)
       sadc_actflag |= A_SERIAL;
       salloc_serial(serial_used);
    }
-
    /* Get number of interrupts available per processor */
    get_irqcpu_nb(&irqcpu_used, NR_IRQS);
    if (irqcpu_used) {
       sadc_actflag |= A_IRQ_CPU;
       salloc_irqcpu(proc_used + 1, irqcpu_used);
    }
-
    /* Get number of network devices (interfaces) */
    get_net_dev(&iface_used);
    if (iface_used) {
       sadc_actflag |= A_NET_DEV + A_NET_EDEV;
       salloc_net_dev(iface_used);
    }
-
+   /* Get number of disks */
+   get_disks(&disk_used);
+   if (disk_used) {
+      sadc_actflag |= A_DISK;
+      salloc_disk(disk_used);
+   }
 
    while (++opt < argc) {
 
@@ -1374,7 +1531,10 @@ int main(int argc, char **argv)
 
       /*
        * Resetting the structure is not needed since all the fields
-       * (that will be written) will be filled.
+       * (that will be written) will be filled. In one of them is not
+       * filled, this is because its value cannot be read from /proc
+       * with current kernel, which doesn't matter since the structure
+       * has been set to zero at the beginning (see above).
        */
 
       /* Save time */
@@ -1386,7 +1546,8 @@ int main(int argc, char **argv)
 
       /* Read stats */
       read_proc_stat();
-      read_meminfo_stat();
+      read_proc_meminfo();
+      read_proc_loadavg();
       read_ktables_stat();
       read_net_sock_stat();
       if (pid_nr)

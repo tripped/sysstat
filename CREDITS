@@ -7,10 +7,10 @@ The following people have contributed to 'sysstat' in one way or another:
 
 	Many thanks to the translators involved in sysstat:
 
-	  * Birko Bergt <birko.bergt@cdc.com> for his translation in german,
+	  * Birko Bergt <birko.bergt@gmx.de> for his translation in german,
 	  * Fernando Félix Redondo <fernando.felix@rediris.es> for his
 	    translation in spanish,
-	  * Frederic L. W. Meunier <linux@olympiquedemarseille.org> for the
+	  * Frederic L. W. Meunier <0@pervalidus.net> for the
 	    portuguese translation.
 
 	Carl-Christian Weber <ccweber@itz-koeln.de> helped me to make sar
@@ -37,6 +37,10 @@ The following people have contributed to 'sysstat' in one way or another:
 	David Doubrava <linux_monitor@volny.cz> created the isag
 	command (Interactive System Activity Graph).
 
+	Rik van Riel <riel@conectiva.com.br> explained me the meaning
+	of several fields that were added in Linux kernel 2.4
+	/proc/meminfo file.
+
 
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
@@ -49,8 +53,10 @@ I would also thank the following people for their hints or bug reports
 	Tatsuo Ito <tito@miraclelinux.com>
 	David S. Jackson <dsj@sylvester.dsj.net>
 	Jurriaan <thunder7@xs4all.nl>
+	Robert Luberda <robert@debian.org>
 	Rodney J. Mertz <rjm@elvis.arh.ms.cdc.com>
 	Roy Millar <100044.14@compuserve.com>
+	David J. Morse <David_J_Morse@Dell.com>
 	Edouard G. Parmelan <edouard.parmelan@quadratec.fr>
 	Michel Simoni <m_simoni@club-internet.fr>
 	Graham Swallow <gps@trix.dircon.co.uk>

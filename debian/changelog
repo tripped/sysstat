@@ -1,3 +1,10 @@
+sysstat (4.0.0-2) unstable; urgency=high
+
+  * Set umask in sa[12] scripts (closes: #95561).
+  * Also in postinst: `chmod go-w' files from /var/log/systat.
+
+ -- Robert Luberda <robert@debian.org>  Mon, 30 Apr 2001 13:00:18 +0200
+
 sysstat (4.0.0-1) unstable; urgency=low
 
   * New upstream version.

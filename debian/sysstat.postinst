@@ -24,6 +24,12 @@ if [ "$1" = "configure" ] ; then
   db_reset sysstat/remove_files || true
   db_stop || true
 
+  if dpkg --compare-versions "$2" lt-nl "4.0.0-2"; then
+  	# in older versions of sysstat some generated files
+  	# might be world writeable... (#95561)
+	chmod go-w /var/log/sysstat/sa* >/dev/null 2>&1 || true
+  fi
+
 fi
 
 

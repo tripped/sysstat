@@ -2,6 +2,7 @@
 # PREFIX/lib/sa/sa2.sh
 # (C) 1999-2001 Sebastien Godard <sebastien.godard@wanadoo.fr>
 #
+umask 022
 S_TIME_FORMAT=ISO ; export S_TIME_FORMAT
 DATE=`date +%d`
 RPT=SA_DIR/sar${DATE}

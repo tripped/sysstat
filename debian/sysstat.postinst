@@ -2,7 +2,7 @@
 # vim:ts=4:et
 set -e
 
-S_VERSION="4.1.7-1"
+S_VERSION="5.1.1-1"
 DEFAULT="/etc/default/sysstat"
 ENABLED="false"
 

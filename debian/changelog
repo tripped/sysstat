@@ -1,3 +1,12 @@
+sysstat (5.1.1-1) experimental; urgency=low
+
+  * New upstream version (development):
+    + daily data files format has changed again.
+    + new tool: sadf
+  * Updated systat package description.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 24 Oct 2004 12:53:38 +0200
+
 sysstat (5.0.6-1) unstable; urgency=low
 
   * New upstream (stable) version.

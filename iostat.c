@@ -37,6 +37,7 @@
 #include "version.h"
 #include "iostat.h"
 #include "common.h"
+#include "ioconf.h"
 
 
 #ifdef USE_NLS
@@ -475,7 +476,7 @@ void read_stat(int curr, int flags)
 	    for (i = 0; i < iodev_nr; i++) {
 	       st_hdr_iodev_i = st_hdr_iodev + i;
 	       if ((st_hdr_iodev_i->major == v_major) &&
-		   (st_hdr_iodev_i->index == v_index))
+		   (st_hdr_iodev_i->minor == v_index))
 		  break;
 	    }
 
@@ -490,7 +491,7 @@ void read_stat(int curr, int flags)
 		  if (!st_hdr_iodev_i->major) {
 		     /* Free structure found! */
 		     st_hdr_iodev_i->major = v_major;
-		     st_hdr_iodev_i->index = v_index;
+		     st_hdr_iodev_i->minor = v_index;
 		     sprintf(st_hdr_iodev_i->name, "dev%d-%d", v_major, v_index);
 		     st_iodev_i = st_iodev[!curr] + i;
 		     memset(st_iodev_i, 0, IO_STATS_SIZE);
@@ -685,8 +686,11 @@ void read_diskstats_stat(int curr, int flags)
    char line[256], dev_name[MAX_NAME_LEN];
    struct io_stats sdev;
    int i;
-   unsigned long tmp[9];
-   unsigned long long l_tmp[2];
+   unsigned long rd_ios, rd_merges, rd_ticks, wr_ios, wr_merges, wr_ticks;
+   unsigned long ios_pgr, tot_ticks, rq_ticks;
+   unsigned long long rd_sec, wr_sec;
+   char *ioc_dname;
+   unsigned int major, minor;
 
    /* Every I/O device entry is potentially unregistered */
    set_entries_inactive(iodev_nr);
@@ -698,30 +702,40 @@ void read_diskstats_stat(int curr, int flags)
    while (fgets(line, 256, dstatsfp) != NULL) {
 
       /* major minor name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
-      i = sscanf(line, "%*u %*u %s %lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
-		 dev_name,
-		 &tmp[0], &tmp[1], &l_tmp[0], &tmp[2], &tmp[3], &tmp[4],
-		 &l_tmp[1], &tmp[5], &tmp[6], &tmp[7], &tmp[8]);
+      i = sscanf(line, "%u %u %s %lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
+		 &major, &minor, dev_name,
+		 &rd_ios, &rd_merges, &rd_sec, &rd_ticks, &wr_ios, &wr_merges,
+		 &wr_sec, &wr_ticks, &ios_pgr, &tot_ticks, &rq_ticks);
 
-      if (i == 12) {
+      if (i == 14) {
 	 /* Device */
-	 sdev.rd_ios     = tmp[0];   sdev.rd_merges = tmp[1];
-	 sdev.rd_sectors = l_tmp[0]; sdev.rd_ticks  = tmp[2];
-	 sdev.wr_ios     = tmp[3];   sdev.wr_merges = tmp[4];
-	 sdev.wr_sectors = l_tmp[1]; sdev.wr_ticks  = tmp[5];
-	 sdev.ios_pgr    = tmp[6];   sdev.tot_ticks = tmp[7];
-	 sdev.rq_ticks   = tmp[8];
+	 sdev.rd_ios     = rd_ios;  sdev.rd_merges = rd_merges;
+	 sdev.rd_sectors = rd_sec;  sdev.rd_ticks  = rd_ticks;
+	 sdev.wr_ios     = wr_ios;  sdev.wr_merges = wr_merges;
+	 sdev.wr_sectors = wr_sec;  sdev.wr_ticks  = wr_ticks;
+	 sdev.ios_pgr    = ios_pgr; sdev.tot_ticks = tot_ticks;
+	 sdev.rq_ticks   = rq_ticks;
       }
-      else if (i == 5) {
+      else if (i == 7) {
 	 /* Partition */
 	 if (DISPLAY_EXTENDED(flags) || (!dlist_idx && !DISPLAY_PARTITIONS(flags)))
 	    continue;
-	 sdev.rd_ios = tmp[0];   sdev.rd_sectors = tmp[1];
-	 sdev.wr_ios = l_tmp[0]; sdev.wr_sectors = tmp[2];
+	 /* !!! Note that fields are different for partitions !!! */
+	 sdev.rd_ios = rd_ios; sdev.rd_sectors = rd_merges;
+	 sdev.wr_ios = rd_sec; sdev.wr_sectors = rd_ticks;
       }
       else
 	 /* Unknown entry: ignore it */
 	 continue;
+
+      if ((ioc_dname = ioc_name(major, minor)) != NULL) {
+	 if (strcmp(dev_name, ioc_dname))
+	    /*
+	     * No match: Use name generated from sysstat.ioconf data
+	     * works around known issues with EMC PowerPath.
+	     */
+	    strcpy(dev_name, ioc_dname);
+      }
 
       save_dev_stats(dev_name, curr, &sdev);
    }
@@ -745,8 +759,11 @@ void read_ppartitions_stat(int curr, int flags)
    FILE *ppartfp;
    char line[256], dev_name[MAX_NAME_LEN];
    struct io_stats sdev;
-   unsigned long tmp[9];
-   unsigned long long l_tmp[2];
+   unsigned long rd_ios, rd_merges, rd_ticks, wr_ios, wr_merges, wr_ticks;
+   unsigned long ios_pgr, tot_ticks, rq_ticks;
+   unsigned long long rd_sec, wr_sec;
+   char *ioc_dname;
+   unsigned int major, minor;
 
    /* Every I/O device entry is potentially unregistered */
    set_entries_inactive(iodev_nr);
@@ -757,21 +774,28 @@ void read_ppartitions_stat(int curr, int flags)
 
    while (fgets(line, 256, ppartfp) != NULL) {
       /* major minor #blocks name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
-      if (sscanf(line, "%*u %*u %*u %s %lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
-		 dev_name,
-		 &tmp[0], &tmp[1], &l_tmp[0], &tmp[2], &tmp[3], &tmp[4],
-		 &l_tmp[1], &tmp[5], &tmp[6], &tmp[7], &tmp[8]) == 12) {
+      if (sscanf(line, "%u %u %*u %s %lu %lu %llu %lu %lu %lu %llu"
+		       " %lu %lu %lu %lu",
+		 &major, &minor, dev_name,
+		 &rd_ios, &rd_merges, &rd_sec, &rd_ticks, &wr_ios, &wr_merges,
+		 &wr_sec, &wr_ticks, &ios_pgr, &tot_ticks, &rq_ticks) == 14) {
 	 /* Device or partition */
-	 sdev.rd_ios     = tmp[0];   sdev.rd_merges = tmp[1];
-	 sdev.rd_sectors = l_tmp[0]; sdev.rd_ticks  = tmp[2];
-	 sdev.wr_ios     = tmp[3];   sdev.wr_merges = tmp[4];
-	 sdev.wr_sectors = l_tmp[1]; sdev.wr_ticks  = tmp[5];
-	 sdev.ios_pgr    = tmp[6];   sdev.tot_ticks = tmp[7];
-	 sdev.rq_ticks   = tmp[8];
+	 sdev.rd_ios     = rd_ios;  sdev.rd_merges = rd_merges;
+	 sdev.rd_sectors = rd_sec;  sdev.rd_ticks  = rd_ticks;
+	 sdev.wr_ios     = wr_ios;  sdev.wr_merges = wr_merges;
+	 sdev.wr_sectors = wr_sec;  sdev.wr_ticks  = wr_ticks;
+	 sdev.ios_pgr    = ios_pgr; sdev.tot_ticks = tot_ticks;
+	 sdev.rq_ticks   = rq_ticks;
       }
       else
 	 /* Unknown entry: ignore it */
 	 continue;
+
+      if ((ioc_dname = ioc_name(major, minor)) != NULL) {
+	 if (strcmp(dev_name, ioc_dname))
+	    /* Compensate for EMC PowerPath driver bug */
+	    strcpy(dev_name, ioc_dname);
+      }
 
       save_dev_stats(dev_name, curr, &sdev);
    }

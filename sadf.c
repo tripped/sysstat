@@ -536,27 +536,51 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 
    /* Print disk statistics */
    if (GET_DISK(act)) {
+      char *name;
+      double tput, util, await, svctm, arqsz;
 
       for (i = 0; i < file_hdr.sa_nr_disk; i++) {
 
 	 st_disk_i = st_disk[curr]  + i;
-	 if (!(st_disk_i->major + st_disk_i->index))
+	 if (!(st_disk_i->major + st_disk_i->minor))
 	    continue;
+
+	 tput = ((double) st_disk_i->nr_ios) * HZ / itv;
+	 util = ((double) st_disk_i->tot_ticks) / itv * HZ;
+	 svctm = tput ? util / tput : 0.0;
+	 await = st_disk_i->nr_ios ?
+	    (st_disk_i->rd_ticks + st_disk_i->wr_ticks) / ((double) st_disk_i->nr_ios) : 0.0;
+	 arqsz  = st_disk_i->nr_ios ?
+	    (st_disk_i->rd_sect + st_disk_i->wr_sect) / ((double) st_disk_i->nr_ios) : 0.0;
+	
 	 j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
 	 st_disk_j = st_disk[!curr] + j;
+	 name = get_devname(st_disk_i->major, st_disk_i->minor, flags);
 	
-	 printf("%s\t%ld\t%s\tdev%d-%d\ttps\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time,
-		st_disk_i->major, st_disk_i->index,
+	 printf("%s\t%ld\t%s\t%s\ttps\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, name,
 		S_VALUE(st_disk_j->nr_ios, st_disk_i->nr_ios, itv));
-	 printf("%s\t%ld\t%s\tdev%d-%d\trd_sec/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time,
-		st_disk_i->major, st_disk_i->index,
+	 printf("%s\t%ld\t%s\t%s\trd_sec/s\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, name,
 		ll_s_value(st_disk_j->rd_sect, st_disk_i->rd_sect, itv));
-	 printf("%s\t%ld\t%s\tdev%d-%d\twr_sec/s\t%.2f\n",
-		file_hdr.sa_nodename, dt, cur_time,
-		st_disk_i->major, st_disk_i->index,
+	 printf("%s\t%ld\t%s\t%s\twr_sec/s\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, name,
 		ll_s_value(st_disk_j->wr_sect, st_disk_i->wr_sect, itv));
+	 printf("%s\t%ld\t%s\t%s\tavgrq-sz\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, name,
+		arqsz);
+	 printf("%s\t%ld\t%s\t%s\tavgqu-sz\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, name,
+		((double) st_disk_i->rq_ticks) / itv * HZ / 1000.0);
+	 printf("%s\t%ld\t%s\t%s\tawait\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, name,
+		await);
+	 printf("%s\t%ld\t%s\t%s\tsvctm\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, name,
+		svctm);
+	 printf("%s\t%ld\t%s\t%s\t%%util\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time, name,
+		util / 10.0);
       }
    }
 }
@@ -865,21 +889,36 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    /* Print disk statistics */
    if (GET_DISK(act)) {
+      double tput, util, await, svctm, arqsz;
 
       for (i = 0; i < file_hdr.sa_nr_disk; i++) {
 
 	 st_disk_i = st_disk[curr]  + i;
-	 if (!(st_disk_i->major + st_disk_i->index))
+	 if (!(st_disk_i->major + st_disk_i->minor))
 	    continue;
+
+	 tput = ((double) st_disk_i->nr_ios) * HZ / itv;
+	 util = ((double) st_disk_i->tot_ticks) / itv * HZ;
+	 svctm = tput ? util / tput : 0.0;
+	 await = st_disk_i->nr_ios ?
+	    (st_disk_i->rd_ticks + st_disk_i->wr_ticks) / ((double) st_disk_i->nr_ios) : 0.0;
+	 arqsz  = st_disk_i->nr_ios ?
+	    (st_disk_i->rd_sect + st_disk_i->wr_sect) / ((double) st_disk_i->nr_ios) : 0.0;
+	
 	 j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
 	 st_disk_j = st_disk[!curr] + j;
 	
-	 printf("%s;%ld;%s;dev%d-%d;%.2f;%.2f;%.2f\n",
+	 printf("%s;%ld;%s;%s;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f;%.2f\n",
 		file_hdr.sa_nodename, dt, cur_time,
-		st_disk_i->major, st_disk_i->index,
+		get_devname(st_disk_i->major, st_disk_i->minor, flags),
 		S_VALUE(st_disk_j->nr_ios, st_disk_i->nr_ios, itv),
 		ll_s_value(st_disk_j->rd_sect, st_disk_i->rd_sect, itv),
-		ll_s_value(st_disk_j->wr_sect, st_disk_i->wr_sect, itv));
+		ll_s_value(st_disk_j->wr_sect, st_disk_i->wr_sect, itv),
+		arqsz,
+		((double) st_disk_i->rq_ticks) / itv * HZ / 1000.0,
+		await,
+		svctm,
+		util / 10.0);
       }
    }
 }

@@ -99,7 +99,7 @@ struct io_stats {
 struct io_hdr_stats {
    unsigned int  active				__attribute__ ((aligned (8)));
    unsigned int  major				__attribute__ ((packed));
-   unsigned int  index				__attribute__ ((packed));
+   unsigned int  minor				__attribute__ ((packed));
             char name[MAX_NAME_LEN]		__attribute__ ((packed));
 };
 

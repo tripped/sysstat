@@ -1,0 +1,66 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+#    Developers do not need to manually edit POT or PO files.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2002-12-13 20:29+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=KOI8-R\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Description
+#: ../sysstat.templates:3
+msgid "WARNING: daily data files format has changed!"
+msgstr "Предупреждение: формат файлов ежедневных данных изменился!"
+
+#. Description
+#: ../sysstat.templates:3
+msgid ""
+"Format of daily data statistics files has changed in version ${s_version} of "
+"sysstat and is *not* compatible with the previous one!"
+msgstr ""
+"Формат файлов ежедневной статистики изменился в версии ${s_version} sysstat "
+"и *не* совместим с предыдущими версиями!"
+
+#. Description
+#: ../sysstat.templates:3
+msgid "Existing data files need to be deleted."
+msgstr "Существующие файлы данных нужно удалить."
+
+#. Description
+#: ../sysstat.templates:12
+msgid "Do you want post-installation script to remove these data files?"
+msgstr "Хотите, чтобы пост-установочный сценарий удалил эти файлы данных?"
+
+#. Description
+#: ../sysstat.templates:12
+msgid ""
+"If you say 'yes' (default), any existing data files in /var/log/sysstat/ "
+"directory will be deleted."
+msgstr ""
+"Если вы скажете 'да' (по умолчанию), то все существующие файлы данных в "
+"каталоге /var/log/sysstat/ будут удалены."
+
+#. Description
+#: ../sysstat.templates:12
+msgid ""
+"If you say 'no', these files won't be deleted, but this will break the sar "
+"command, so you will have to delete them by hand."
+msgstr ""
+"Если вы скажете 'нет', то эти файлы не будут удалены, но будут запорчены "
+"командой sar, так что вам придется удалить их вручную."

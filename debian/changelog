@@ -5,6 +5,12 @@ sysstat (4.0.7-2) unstable; urgency=low
     + sysstat.postinst: call /usr/lib/sysstat/sa1 (closes: #172904).
     Thanks for the patches, Junichi!
 
+  * nls/*/*.po: specify correct charset and encoding.
+  * Remove dot from the first line of isag package description (lintian).
+  * Convert debconf translations to po-debconf.
+  * Standards-Version: 3.5.8 (no changes).
+
+ -- Robert Luberda <robert@debian.org>  Tue, 17 Dec 2002 09:15:48 +0100
 
 sysstat (4.0.7-1) unstable; urgency=low
 

@@ -1301,7 +1301,7 @@ void read_interrupts_stat(void)
 void read_ktables_stat(void)
 {
    FILE *ktfp;
-   int parm;
+   unsigned int parm;
 
    /* Open /proc/sys/fs/dentry-state file */
    if ((ktfp = fopen(FDENTRY_STATE, "r")) != NULL) {
@@ -1312,9 +1312,14 @@ void read_ktables_stat(void)
 
    /* Open /proc/sys/fs/file-nr file */
    if ((ktfp = fopen(FFILE_NR, "r")) != NULL) {
-      fscanf(ktfp, "%*d %u %*u\n",
-	     &(file_stats.file_used));
+      fscanf(ktfp, "%u %u %*u\n",
+	     &(file_stats.file_used), &parm);
       fclose(ktfp);
+      /*
+       * The number of used handles is the number of allocated ones
+       * minus the number of free ones.
+       */
+      file_stats.file_used -= parm;
    }
 
    /* Open /proc/sys/fs/inode-state file */

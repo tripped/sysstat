@@ -1,4 +1,4 @@
-.TH SAR 1 "AUGUST 2003" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "SEPTEMBER 2003" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -128,8 +128,9 @@ command only reports on local activities.
 This is equivalent to specifying
 .BR "-bBcdqrRuvwWy -I SUM -n FULL -P ALL".
 .IP -b
-Report I/O and transfer rate statistics. The following values are
-displayed:
+Report I/O and transfer rate statistics. This option works only with
+kernels older than 2.5.
+The following values are displayed:
 
 .B tps
 .RS
@@ -177,27 +178,19 @@ Total number of blocks the system paged in from disk per second.
 Total number of blocks the system paged out to disk per second.
 .RE
 
-.B activepg
+.B fault/s
 .RS
-Number of active (recently touched) pages in memory.
-Note that a page has a size of 4 kB or 8 kB according to the machine architecture.
+Number of page faults (major + minor) made by the system per second
+(post 2.5 kernels only).
+This is not a count of page faults that generate I/O, because some page
+faults can be resolved without I/O.
 .RE
 
-.B inadtypg
+.B majflt/s
 .RS
-Number of inactive dirty (modified or potentially modified) pages in memory.
-.RE
-
-.B inaclnpg
-.RS
-Number of inactive clean (not modified) pages in memory.
-.RE
-
-.B inatarpg
-.RS
-"Inactive target" number of pages. This field is a 1-minute floating average
-of the number of pages the system needs to "steal" every second
-in order to satisfy memory demand.
+Number of major faults the system has made per second, those which
+have required loading a memory page from disk
+(post 2.5 kernels only).
 .RE
 .RE
 .IP -c
@@ -210,16 +203,18 @@ Total number of processes created per second.
 .RE
 .RE
 .IP -d
-Report activity for each block device (kernels 2.4 and newer only). When data is displayed,
-the device specification
+Report activity for each block device (kernels 2.4 and newer only).
+When data is displayed, the device specification
 .I dev m-n
 is generally used (
 .B DEV
 column).
 .B m
-is the major number of the device, whereas
+is the major number of the device.
+With recent kernels (post 2.5),
 .B n
-is a distinctive number.
+is the minor number of the device, but is only a sequence number with
+pre 2.5 kernels.
 
 .B tps
 .RS
@@ -229,9 +224,14 @@ Multiple logical requests can be combined into a single I/O request to the
 device. A transfer is of indeterminate size.
 .RE
 
-.B sect/s
+.B rd_sec/s
 .RS
-Number of sectors transferred from or to the device. The size of a sector is 512 bytes.
+Number of sectors read from the device. The size of a sector is 512 bytes.
+.RE
+
+.B wr_sec/s
+.RS
+Number of sectors written to the device. The size of a sector is 512 bytes.
 .RE
 .RE
 .IP "-e hh:mm:ss"
@@ -501,12 +501,6 @@ used by the kernel itself.
 Percentage of used memory.
 .RE
 
-.B kbmemshrd
-.RS
-Amount of memory shared by the system in kilobytes.
-Always zero with 2.4 kernels.
-.RE
-
 .B kbbuffers
 .RS
 Amount of memory used as buffers by the kernel in kilobytes.
@@ -531,6 +525,15 @@ Amount of used swap space in kilobytes.
 .RS
 Percentage of used swap space.
 .RE
+
+.B kbswpcad
+.RS
+Amount of cached swap memory in kilobytes.
+This is memory that once was swapped out, is swapped back in
+but still also is in the swap area (if memory is needed it doesn't need
+to be swapped out again because it is already in the swap area. This
+saves I/O).
+.RE
 .RE
 .IP -R
 Report memory statistics. The following values are displayed:
@@ -541,12 +544,6 @@ Report memory statistics. The following values are displayed:
 Number of memory pages freed by the system per second.
 A negative value represents a number of pages allocated by the system.
 Note that a page has a size of 4 kB or 8 kB according to the machine architecture.
-.RE
-
-.B shmpg/s
-.RS
-Number of additionnal memory pages shared by the system per second.
-A negative value means fewer pages shared by the system.
 .RE
 
 .B bufpg/s
@@ -629,12 +626,6 @@ Number of unused cache entries in the directory cache.
 .B file-sz
 .RS
 Number of used file handles.
-.RE
-
-.B %file-sz
-.RS
-Percentage of used file handles with regard to the maximum number 
-of file handles that the Linux kernel can allocate.
 .RE
 
 .B inode-sz
@@ -856,12 +847,6 @@ filesystem must be mounted for the
 command to work.
 
 All the statistics are not necessarily available, depending on the kernel version used.
-In particular, TTY statistics (option -y) are not available in 2.2.x SMP kernels (with
-x <= 15), because of an SMP race that
-.B sar
-may trigger when reading the
-.I /proc/tty/driver/serial
-file.
 .SH FILES
 .IR /var/log/sa/sa dd
 .RS

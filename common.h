@@ -11,12 +11,23 @@
 #define FALSE	0
 #define TRUE	1
 
+#define MINIMUM(a,b)	((a) < (b) ? (a) : (b))
+
+#define NR_CPUS		1024
+
+/*
+ * Size of /proc/interrupts line (at NR_CPUS # of cpus)
+ * 4 spaces for interrupt # field ; 11 spaces for each interrupt field.
+ */
+#define INTERRUPTS_LINE	(4 + 11 * NR_CPUS)
+
 /* Keywords */
 #define K_ISO	"ISO"
 #define K_ALL	"ALL"
 
 /* Files */
 #define STAT		"/proc/stat"
+#define DISKSTATS	"/proc/diskstats"
 #define INTERRUPTS	"/proc/interrupts"
 #define SYSFS_BLOCK	"/sys/block"
 #define S_STAT		"stat"
@@ -30,10 +41,15 @@
 /* Define flags */
 #define F_BOOT_STATS	0x100000
 #define D_PARTITIONS	0x200000
+#define F_HAS_DISKSTATS	0X400000
 
 #define WANT_BOOT_STATS(m)	(((m) & F_BOOT_STATS) == F_BOOT_STATS)
 #define DISPLAY_PARTITIONS(m)	(((m) & D_PARTITIONS) == D_PARTITIONS)
+#define HAS_DISKSTATS(m)	(((m) & F_HAS_DISKSTATS) == F_HAS_DISKSTATS)
 
+
+#define CNT_DEV		0
+#define CNT_PART	1
 
 #define S_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * HZ)
 
@@ -65,6 +81,7 @@ extern int	    get_kb_shift(void);
 extern time_t	    get_localtime(struct tm *);
 extern int	    get_cpu_nr(int *, unsigned int);
 extern int	    get_sysfs_dev_nr(int);
+extern int	    get_diskstats_dev_nr(int);
 extern int	    get_win_height(void);
 extern void	    init_nls(void);
 extern void	    print_gal_header(struct tm *, char *, char *, char *);

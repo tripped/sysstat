@@ -10,14 +10,14 @@
 
 #define MAX_NAME_LEN	72
 
-#define D_CPU_ONLY	0x01
-#define D_DISK_ONLY	0x02
-#define D_TIMESTAMP	0x04
-#define D_EXTENDED	0x08
-#define D_PART_ALL	0x10
-#define D_KILOBYTES	0x20
-#define F_HAS_SYSFS	0x40
-#define F_OLD_KERNEL	0x80
+#define D_CPU_ONLY	0x001
+#define D_DISK_ONLY	0x002
+#define D_TIMESTAMP	0x004
+#define D_EXTENDED	0x008
+#define D_PART_ALL	0x010
+#define D_KILOBYTES	0x020
+#define F_HAS_SYSFS	0x040
+#define F_OLD_KERNEL	0x080
 /* 0x100000:0x800000 -> reserved (cf. common.h) */
 
 #define DISPLAY_CPU_ONLY(m)	(((m) & D_CPU_ONLY) == D_CPU_ONLY)

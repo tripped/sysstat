@@ -45,15 +45,13 @@ Then log in as root and enter:
 That's all!
 
 Of course tell me if there are any problems. This is the only way I can improve
-'sysstat'. But if you wanna raise my morale, you can also send me reports of
-successful use instead of bug reports ;-)
-Please also remember to read the FAQ included in this package.
+'sysstat'. Please also remember to read the FAQ included in this package.
 
 NB: The iostat command no longer looks for statistics in the /proc/partitions
-file, but rather tries to read data from the sysfs filesystem which is
-included in recent 2.5.x Linux kernels. As a consequence, you will now
-need the sysfs filesystem for iostat to be able to display extended
-statistics (option -x).
+file, but rather tries to read data from the /proc/diskstats file or from the
+sysfs filesystem which are included in recent 2.5.x Linux kernels. As a
+consequence, you may need to upgrade to a recent kernel for iostat to be able
+to display extended statistics (option -x).
 
 With regard to sysstat, patches and suggestions for improvements are always
 welcome! Send them to <sebastien.godard@wanadoo.fr>.
@@ -116,8 +114,8 @@ MISCELLANEOUS
 The sar, mpstat and iostat commands are only front-ends to the kernel proc
 filesystem... They cannot display statistics that Linux does not
 provide, nor can they be more accurate than Linux is.
-The sysstat package has been tested on Linux kernels 2.0.x, 2.2.x and 2.4.x,
-but since new statistics are added in sysstat, they are not necessarily
+The sysstat package has been tested on Linux kernels 2.0.x, 2.2.x, 2.4.x and
+2.6.x, but since new statistics are added in sysstat, they are not necessarily
 present in old kernels.
 
 It has been designed with National Language Support (NLS) in mind, using

@@ -338,7 +338,7 @@ void read_interrupts_stat(short curr)
 {
    FILE *irqfp;
    struct mp_stats *st_mp_cpu_i;
-   static char line[512];	/* Should depend on the nb of processors */
+   static char line[INTERRUPTS_LINE];
    unsigned int irq = 0, cpu;
 
    for (cpu = 0; cpu <= cpu_nr; cpu++) {
@@ -349,7 +349,7 @@ void read_interrupts_stat(short curr)
    /* Open interrupts file */
    if ((irqfp = fopen(INTERRUPTS, "r")) != NULL) {
 
-      while (fgets(line, 512, irqfp) != NULL) {
+      while (fgets(line, INTERRUPTS_LINE, irqfp) != NULL) {
 
 	 if (isdigit(line[2])) {
 	

@@ -120,16 +120,18 @@
 #define SADC_PATH	"/usr/lib/sa/sadc"
 #define SADC_LOCAL_PATH	"/usr/local/lib/sa/sadc"
 #define LOADAVG		"/proc/loadavg"
+#define VMSTAT		"/proc/vmstat"
 
-#define NR_CPUS		1024
-#define NR_IRQS		224
+#define NR_IRQS		256
 
 #define NR_IFACE_PREALLOC	2
 #define NR_SERIAL_PREALLOC	2
 #define NR_IRQPROC_PREALLOC	3
 
 /* Maximum number of processes that can be monitored simultaneously */
-#define MAX_PID_NR		256
+#define MAX_PID_NR	256
+/* Maximum length of network interface name */
+#define MAX_IFACE_LEN	16
 /*
  * Maximum number of args that can be passed to sadc:
  * sadc -x <pid> [-x <pid> ...] -X <pid> [-X <pid> ...]
@@ -156,7 +158,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x2162
+#define SA_MAGIC	0x2163
 
 /*
  * IMPORTANT NOTE:
@@ -240,27 +242,25 @@ struct file_stats {
    unsigned int  cpu_system			__attribute__ ((packed));
    unsigned long cpu_idle			__attribute__ ((aligned (8)));
    unsigned long cpu_iowait			__attribute__ ((aligned (8)));
-   unsigned int  irq_sum			__attribute__ ((aligned (8)));
-   unsigned int  pgpgin				__attribute__ ((packed));
-   unsigned int  pgpgout			__attribute__ ((packed));
-   unsigned int  pswpin				__attribute__ ((packed));
-   unsigned int  pswpout			__attribute__ ((packed));
-   unsigned int  dk_drive			__attribute__ ((packed));
+   unsigned long irq_sum			__attribute__ ((aligned (8)));
+   unsigned long pgpgin				__attribute__ ((aligned (8)));
+   unsigned long pgpgout			__attribute__ ((aligned (8)));
+   unsigned long pswpin				__attribute__ ((aligned (8)));
+   unsigned long pswpout			__attribute__ ((aligned (8)));
+   unsigned int  dk_drive			__attribute__ ((aligned (8)));
    unsigned int  dk_drive_rio			__attribute__ ((packed));
    unsigned int  dk_drive_wio			__attribute__ ((packed));
    unsigned int  dk_drive_rblk			__attribute__ ((packed));
    unsigned int  dk_drive_wblk			__attribute__ ((packed));
    /* Memory stats in Kb */
    unsigned long frmkb				__attribute__ ((aligned (8)));
-   unsigned long shmkb				__attribute__ ((aligned (8)));
    unsigned long bufkb				__attribute__ ((aligned (8)));
    unsigned long camkb				__attribute__ ((aligned (8)));
    unsigned long tlmkb				__attribute__ ((aligned (8)));
    unsigned long frskb				__attribute__ ((aligned (8)));
    unsigned long tlskb				__attribute__ ((aligned (8)));
-   unsigned int  dentry_stat			__attribute__ ((aligned (8)));
-   unsigned int  file_used			__attribute__ ((packed));
-   unsigned int  file_max			__attribute__ ((packed));
+   unsigned long caskb				__attribute__ ((aligned (8)));
+   unsigned int  file_used			__attribute__ ((aligned (8)));
    unsigned int  inode_used			__attribute__ ((packed));
    unsigned int  super_used			__attribute__ ((packed));
    unsigned int  super_max			__attribute__ ((packed));
@@ -273,11 +273,10 @@ struct file_stats {
    unsigned int  udp_inuse			__attribute__ ((packed));
    unsigned int  raw_inuse			__attribute__ ((packed));
    unsigned int  frag_inuse			__attribute__ ((packed));
-   unsigned int  nr_active_pages		__attribute__ ((packed));
-   unsigned int  nr_inactive_dirty_pages	__attribute__ ((packed));
-   unsigned int  nr_inactive_clean_pages	__attribute__ ((packed));
-   unsigned long inactive_target		__attribute__ ((aligned (8)));
-   unsigned int  load_avg_1			__attribute__ ((aligned (8)));
+   unsigned long pgfault			__attribute__ ((aligned (8)));
+   unsigned long pgmajfault			__attribute__ ((aligned (8)));
+   unsigned int  dentry_stat			__attribute__ ((aligned (8)));
+   unsigned int  load_avg_1			__attribute__ ((packed));
    unsigned int  load_avg_5			__attribute__ ((packed));
    unsigned int  load_avg_15			__attribute__ ((packed));
    unsigned int  nr_running			__attribute__ ((packed));
@@ -351,8 +350,7 @@ struct stats_net_dev {
    unsigned long tx_fifo_errors			__attribute__ ((aligned (8)));
    unsigned long rx_frame_errors		__attribute__ ((aligned (8)));
    unsigned long tx_carrier_errors		__attribute__ ((aligned (8)));
-   unsigned char interface[7]			__attribute__ ((aligned (8)));
-   unsigned char pad				__attribute__ ((packed));
+   unsigned char interface[MAX_IFACE_LEN]	__attribute__ ((aligned (8)));
    /* See IMPORTANT NOTE above */
 };
 
@@ -368,10 +366,12 @@ struct stats_irq_cpu {
 #define STATS_ONE_IRQ_SIZE	(sizeof(int) * NR_IRQS)
 
 struct disk_stats {
-   unsigned int major				__attribute__ ((aligned (8)));
-   unsigned int index				__attribute__ ((packed));
-   unsigned int dk_drive			__attribute__ ((packed));
-   unsigned int dk_drive_rwblk			__attribute__ ((packed));
+   unsigned int  major				__attribute__ ((aligned (8)));
+   unsigned int  index				__attribute__ ((packed));
+   unsigned int  nr_ios				__attribute__ ((packed));
+   unsigned int  rd_sect			__attribute__ ((packed));
+   unsigned int  wr_sect			__attribute__ ((packed));
+   unsigned char pad[4]				__attribute__ ((packed));
    /* See IMPORTANT NOTE above */
 };
 
@@ -380,11 +380,11 @@ struct disk_stats {
 struct stats_sum {
    unsigned long count				__attribute__ ((aligned (8)));
    unsigned long frmkb				__attribute__ ((packed));
-   unsigned long shmkb				__attribute__ ((packed));
    unsigned long bufkb				__attribute__ ((packed));
    unsigned long camkb				__attribute__ ((packed));
    unsigned long frskb				__attribute__ ((packed));
    unsigned long tlskb				__attribute__ ((packed));
+   unsigned long caskb				__attribute__ ((packed));
    unsigned long dentry_stat			__attribute__ ((packed));
    unsigned long file_used			__attribute__ ((packed));
    unsigned long inode_used			__attribute__ ((packed));
@@ -396,10 +396,6 @@ struct stats_sum {
    unsigned long udp_inuse			__attribute__ ((packed));
    unsigned long raw_inuse			__attribute__ ((packed));
    unsigned long frag_inuse			__attribute__ ((packed));
-   unsigned long nr_active_pages		__attribute__ ((packed));
-   unsigned long nr_inactive_dirty_pages	__attribute__ ((packed));
-   unsigned long nr_inactive_clean_pages	__attribute__ ((packed));
-   unsigned long inactive_target		__attribute__ ((packed));
    unsigned long nr_running			__attribute__ ((packed));
    unsigned long nr_threads			__attribute__ ((packed));
    unsigned long load_avg_1			__attribute__ ((packed));

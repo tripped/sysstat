@@ -1,9 +1,5 @@
 Here are the things I would like (or I should) do for the next releases:
 
-* Remove kbmemshrd from sar -r.
-
-* Add more disk activity data to sar.
-
 * Add a vmstat command (not sure about this, since it already exists in common
   Linux distributions).
 
@@ -21,8 +17,4 @@ Here are the things I would like (or I should) do for the next releases:
 
 * Check I/O wait type (long int?, int?) read in /proc/stat and in /sys/.../stat.
   Also check the meaning of /sys/.../stat fields.
-
-* Check the meaning of the different fields in /sys/.../stat, in particular for iostat -x.
-
-* Make the code more rock solid by avoiding assumptions.
 

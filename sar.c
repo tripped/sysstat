@@ -720,8 +720,9 @@ int check_disk_reg(struct disk_stats *st_disk[], short curr, short ref, int pos)
 	  * NB: AFAIK, such a device cannot be unregistered with current
 	  * kernels.
 	  */
-	 if ((st_disk_i->dk_drive < st_disk_j->dk_drive) ||
-	     (st_disk_i->dk_drive_rwblk < st_disk_j->dk_drive_rwblk)) {
+	 if ((st_disk_i->nr_ios < st_disk_j->nr_ios) ||
+	     (st_disk_i->rd_sect < st_disk_j->rd_sect) ||
+	     (st_disk_i->wr_sect < st_disk_j->wr_sect)) {
 
 	    memset(st_disk_j, 0, DISK_STATS_SIZE);
 	    st_disk_j->major = st_disk_i->major;
@@ -896,6 +897,19 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
       }
    }
 
+   /* Print paging statistics */
+   if (GET_PAGE(act)) {
+      if (dis)
+	 printf(_("\n%-11s  pgpgin/s pgpgout/s   fault/s  majflt/s\n"),
+		prev_string);
+
+      printf("%-11s %9.2f %9.2f %9.2f %9.2f\n", curr_string,
+	     S_VALUE(file_stats[prev].pgpgin,     file_stats[curr].pgpgin,  itv),
+	     S_VALUE(file_stats[prev].pgpgout,    file_stats[curr].pgpgout, itv),
+	     S_VALUE(file_stats[prev].pgfault,    file_stats[curr].pgfault, itv),
+	     S_VALUE(file_stats[prev].pgmajfault, file_stats[curr].pgmajfault, itv));
+   }
+
    /* Print number of swap pages brought in and out */
    if (GET_SWAP(act)) {
       if (dis)
@@ -923,12 +937,10 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
    /* Print memory stats */
    if (GET_MEMORY(act)) {
       if (dis)
-	 printf(_("\n%-11s   frmpg/s   shmpg/s   bufpg/s   campg/s\n"), prev_string);
+	 printf(_("\n%-11s   frmpg/s   bufpg/s   campg/s\n"), prev_string);
 
-      printf("%-11s %9.2f %9.2f %9.2f %9.2f\n", curr_string,
+      printf("%-11s %9.2f %9.2f %9.2f\n", curr_string,
 	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[prev].frmkb))
-	     / itv * HZ,
-	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[prev].shmkb))
 	     / itv * HZ,
 	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[prev].bufkb))
 	     / itv * HZ,
@@ -1101,7 +1113,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 j = check_iface_reg(st_net_dev, curr, prev, i);
 	 st_net_dev_j = st_net_dev[prev] + j;
 	
-	 printf("%-11s    %6s", curr_string, st_net_dev_i->interface);
+	 printf("%-11s %9s", curr_string, st_net_dev_i->interface);
 	
 	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
 		S_VALUE(st_net_dev_j->rx_packets,    st_net_dev_i->rx_packets,    itv),
@@ -1128,7 +1140,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 j = check_iface_reg(st_net_dev, curr, prev, i);
 	 st_net_dev_j = st_net_dev[prev] + j;
 	
-	 printf("%-11s    %6s", curr_string, st_net_dev_i->interface);
+	 printf("%-11s %9s", curr_string, st_net_dev_i->interface);
 
 	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
 		S_VALUE(st_net_dev_j->rx_errors,         st_net_dev_i->rx_errors,         itv),
@@ -1146,20 +1158,22 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
    /* Print disk statistics */
    if (GET_DISK(act)) {
       if (dis)
-	 printf(_("\n%-11s       DEV       tps    sect/s\n"), prev_string);
+	 printf(_("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s\n"), prev_string);
 
       for (i = 0; i < file_hdr.sa_nr_disk; i++) {
 	
 	 st_disk_i = st_disk[curr]  + i;
+	
 	 if (!(st_disk_i->major + st_disk_i->index))
 	    continue;
 	 j = check_disk_reg(st_disk, curr, prev, i);
 	 st_disk_j = st_disk[prev] + j;
 
 	 sprintf(stemp, "dev%d-%d", st_disk_i->major, st_disk_i->index);
-	 printf("%-11s %9.9s %9.2f %9.2f\n", curr_string, stemp,
-		S_VALUE(st_disk_j->dk_drive,       st_disk_i->dk_drive,       itv),
-		S_VALUE(st_disk_j->dk_drive_rwblk, st_disk_i->dk_drive_rwblk, itv));
+	 printf("%-11s %9.9s %9.2f %9.2f %9.2f\n", curr_string, stemp,
+		S_VALUE(st_disk_j->nr_ios,  st_disk_i->nr_ios,  itv),
+		S_VALUE(st_disk_j->rd_sect, st_disk_i->rd_sect, itv),
+		S_VALUE(st_disk_j->wr_sect, st_disk_i->wr_sect, itv));
       }
    }
 }
@@ -1194,23 +1208,9 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
    strcpy(string, _("Average:"));
    write_stats_core(2, curr, dis, string, string, act, itv, g_itv, TRUE, FALSE);
 
-   if (GET_PAGE(act)) {
-      if (dis)
-	 printf(_("\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"),
-		string);
-
-      printf("%-11s %9.2f %9.2f %9.0f %9.0f %9.0f %9.0f\n", string,
-	     S_VALUE(file_stats[2].pgpgin,  file_stats[curr].pgpgin,  itv),
-	     S_VALUE(file_stats[2].pgpgout, file_stats[curr].pgpgout, itv),
-	     (double) asum.nr_active_pages         / asum.count,
-	     (double) asum.nr_inactive_dirty_pages / asum.count,
-	     (double) asum.nr_inactive_clean_pages / asum.count,
-	     (double) asum.inactive_target         / asum.count);
-   }
-
    if (GET_MEM_AMT(act)) {
       if (dis)
-	 printf(_("\n%-11s kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"),
+	 printf(_("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached kbswpfree kbswpused  %%swpused  kbswpcad\n"),
 		string);
 
       printf("%-11s %9.0f %9.0f", string,
@@ -1222,34 +1222,27 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
       else
 	 printf("      %.2f", 0.0);
 
-      printf(" %9.0f %9.0f %9.0f %9.0f %9.0f",
-	     (double) asum.shmkb / asum.count,
+      printf(" %9.0f %9.0f %9.0f %9.0f",
 	     (double) asum.bufkb / asum.count,
 	     (double) asum.camkb / asum.count,
 	     (double) asum.frskb / asum.count,
 	     ((double) asum.tlskb / asum.count) - ((double) asum.frskb / asum.count));
       if (asum.tlskb / asum.count)
-	 printf("    %6.2f\n",
+	 printf("    %6.2f",
 		SP_VALUE(asum.frskb / asum.count, asum.tlskb / asum.count, asum.tlskb / asum.count));
       else
-	 printf("      %.2f\n", 0.0);
+	 printf("      %.2f", 0.0);
+
+      printf(" %9.0f\n", (double) asum.caskb / asum.count);
    }
 
    if (GET_KTABLES(act)) {
       if (dis)
-	 printf(_("\n%-11s dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"),
+	 printf(_("\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"),
 		string);
 
       printf("%-11s %9.0f", string, (double) asum.dentry_stat / asum.count);
-
       printf(" %9.0f", (double) asum.file_used / asum.count);
-      if (file_stats[curr].file_max)
-	 printf("    %6.2f",
-		((double) ((asum.file_used / asum.count) * 100))
-		/ file_stats[curr].file_max);
-      else
-	 printf("      %.2f", 0.0);
-
       printf(" %9.0f", (double) asum.inode_used / asum.count);
 
       printf(" %9.0f", (double) asum.super_used / asum.count);
@@ -1344,34 +1337,10 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
    write_stats_core(!curr, curr, dis, cur_time[!curr], cur_time[curr], act,
 		    itv, g_itv, FALSE, want_since_boot);
 
-   /* Print number of pages the system paged in and out */
-   if (GET_PAGE(act)) {
-      if (dis)
-	 printf(_("\n%-11s  pgpgin/s pgpgout/s  activepg  inadtypg  inaclnpg  inatarpg\n"),
-		cur_time[!curr]);
-
-      printf("%-11s %9.2f %9.2f %9u %9u %9u %9lu\n", cur_time[curr],
-	     S_VALUE(file_stats[!curr].pgpgin,  file_stats[curr].pgpgin,  itv),
-	     S_VALUE(file_stats[!curr].pgpgout, file_stats[curr].pgpgout, itv),
-	     file_stats[curr].nr_active_pages,
-	     file_stats[curr].nr_inactive_dirty_pages,
-	     file_stats[curr].nr_inactive_clean_pages,
-	     file_stats[curr].inactive_target);
-
-      /*
-       * Will be used to compute the average.
-       * Note: overflow unlikely to happen but not impossible...
-       */
-      asum.nr_active_pages         += file_stats[curr].nr_active_pages;
-      asum.nr_inactive_dirty_pages += file_stats[curr].nr_inactive_dirty_pages;
-      asum.nr_inactive_clean_pages += file_stats[curr].nr_inactive_clean_pages;
-      asum.inactive_target         += file_stats[curr].inactive_target;
-   }
-
    /* Print amount and usage of memory */
    if (GET_MEM_AMT(act)) {
       if (dis)
-	 printf(_("\n%-11s kbmemfree kbmemused  %%memused kbmemshrd kbbuffers  kbcached kbswpfree kbswpused  %%swpused\n"),
+	 printf(_("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached kbswpfree kbswpused  %%swpused  kbswpcad\n"),
 		cur_time[!curr]);
 
       printf("%-11s %9lu %9lu", cur_time[curr],
@@ -1383,17 +1352,18 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
       else
 	 printf("      %.2f", 0.0);
 
-      printf(" %9lu %9lu %9lu %9lu %9lu",
-	     file_stats[curr].shmkb,
+      printf(" %9lu %9lu %9lu %9lu",
 	     file_stats[curr].bufkb,
 	     file_stats[curr].camkb,
 	     file_stats[curr].frskb,
 	     file_stats[curr].tlskb - file_stats[curr].frskb);
       if (file_stats[curr].tlskb)
-	 printf("    %6.2f\n",
+	 printf("    %6.2f",
 		SP_VALUE(file_stats[curr].frskb, file_stats[curr].tlskb, file_stats[curr].tlskb));
       else
-	 printf("      %.2f\n", 0.0);
+	 printf("      %.2f", 0.0);
+
+      printf(" %9lu\n", file_stats[curr].caskb);
 
       /*
        * Will be used to compute the average.
@@ -1403,29 +1373,21 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file, lon
        * amount of swap space may.
        */
       asum.frmkb += file_stats[curr].frmkb;
-      asum.shmkb += file_stats[curr].shmkb;
       asum.bufkb += file_stats[curr].bufkb;
       asum.camkb += file_stats[curr].camkb;
       asum.frskb += file_stats[curr].frskb;
       asum.tlskb += file_stats[curr].tlskb;
+      asum.caskb += file_stats[curr].caskb;
    }
 
    /* Print values of some kernel tables */
    if (GET_KTABLES(act)) {
       if (dis)
-	 printf(_("\n%-11s dentunusd   file-sz  %%file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"),
+	 printf(_("\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n"),
 		cur_time[!curr]);
 
       printf("%-11s %9u", cur_time[curr], file_stats[curr].dentry_stat);
-
       printf(" %9u", file_stats[curr].file_used);
-      if (file_stats[curr].file_max)
-	 printf("    %6.2f",
-		((double) (file_stats[curr].file_used * 100))
-		/ file_stats[curr].file_max);
-      else
-	 printf("      %.2f", 0.0);
-
       printf(" %9u", file_stats[curr].inode_used);
 
       printf(" %9u", file_stats[curr].super_used);
@@ -1625,7 +1587,7 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
       }
    }
 
-   /* Print number of pages the system paged in and out */
+   /* Print paging statistics */
    if (GET_PAGE(act)) {
       printf("%s\t%ld\t%s\t-\tpgpgin/s\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
@@ -1633,18 +1595,12 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
       printf("%s\t%ld\t%s\t-\tpgpgout/s\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pgpgout, file_stats[curr].pgpgout, itv));
-      printf("%s\t%ld\t%s\t-\tactivepg\t%u\n",
+      printf("%s\t%ld\t%s\t-\tfault/s\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
-	     file_stats[curr].nr_active_pages);
-      printf("%s\t%ld\t%s\t-\tinadtypg\t%u\n",
+	     S_VALUE(file_stats[!curr].pgfault, file_stats[curr].pgfault, itv));
+      printf("%s\t%ld\t%s\t-\tmajflt/s\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
-	    file_stats[curr].nr_inactive_dirty_pages);
-      printf("%s\t%ld\t%s\t-\tinaclnpg\t%u\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	    file_stats[curr].nr_inactive_clean_pages);
-      printf("%s\t%ld\t%s\t-\tinatarpg\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	    file_stats[curr].inactive_target);
+	     S_VALUE(file_stats[!curr].pgmajfault, file_stats[curr].pgmajfault, itv));
    }
 
    /* Print number of swap pages brought in and out */
@@ -1681,10 +1637,6 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
       printf("%s\t%ld\t%s\t-\tfrmpg/s\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
 	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb))
-	     / itv * HZ);
-      printf("%s\t%ld\t%s\t-\tshmpg/s\t%.2f\n",
-	     file_hdr.sa_nodename, dt, cur_time,
-	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb))
 	     / itv * HZ);
       printf("%s\t%ld\t%s\t-\tbufpg/s\t%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
@@ -1732,8 +1684,6 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
       else
 	 printf("%.2f\n", 0.0);
 
-      printf("%s\t%ld\t%s\t-\tkbmemshrd\t%lu\n",
-	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].shmkb);
       printf("%s\t%ld\t%s\t-\tkbbuffers\t%lu\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].bufkb);
       printf("%s\t%ld\t%s\t-\tkbcached\t%lu\n",
@@ -1750,6 +1700,8 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 		SP_VALUE(file_stats[curr].frskb, file_stats[curr].tlskb, file_stats[curr].tlskb));
       else
 	 printf("%.2f\n", 0.0);
+      printf("%s\t%ld\t%s\t-\tkbswpcad\t%lu\n",
+	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].caskb);
    }
 
    if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
@@ -1798,14 +1750,6 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].dentry_stat);
       printf("%s\t%ld\t%s\t-\tfile-sz\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].file_used);
-      printf("%s\t%ld\t%s\t-\t%%file-sz\t",
-	     file_hdr.sa_nodename, dt, cur_time);
-      if (file_stats[curr].file_max)
-	 printf("%.2f\n",
-		((double) (file_stats[curr].file_used * 100)) / file_stats[curr].file_max);
-      else
-	 printf("%.2f\n", 0.0);
-
       printf("%s\t%ld\t%s\t-\tinode-sz\t%u\n",
 	     file_hdr.sa_nodename, dt, cur_time, file_stats[curr].inode_used);
 
@@ -1961,11 +1905,15 @@ void write_stats_for_ppc(short curr, unsigned int act, unsigned long dt,
 	 printf("%s\t%ld\t%s\tdev%d-%d\ttps\t%.2f\n",
 		file_hdr.sa_nodename, dt, cur_time,
 		st_disk_i->major, st_disk_i->index,
-		S_VALUE(st_disk_j->dk_drive, st_disk_i->dk_drive, itv));
-	 printf("%s\t%ld\t%s\tdev%d-%d\tsect/s\t%.2f\n",
+		S_VALUE(st_disk_j->nr_ios, st_disk_i->nr_ios, itv));
+	 printf("%s\t%ld\t%s\tdev%d-%d\trd_sec/s\t%.2f\n",
 		file_hdr.sa_nodename, dt, cur_time,
 		st_disk_i->major, st_disk_i->index,
-		S_VALUE(st_disk_j->dk_drive_rwblk, st_disk_i->dk_drive_rwblk, itv));
+		S_VALUE(st_disk_j->rd_sect, st_disk_i->rd_sect, itv));
+	 printf("%s\t%ld\t%s\tdev%d-%d\twr_sec/s\t%.2f\n",
+		file_hdr.sa_nodename, dt, cur_time,
+		st_disk_i->major, st_disk_i->index,
+		S_VALUE(st_disk_j->wr_sect, st_disk_i->wr_sect, itv));
       }
    }
 }
@@ -2060,16 +2008,14 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
       }
    }
 
-   /* Print number of pages the system paged in and out */
+   /* Print paging statistics */
    if (GET_PAGE(act))
-      printf("%s;%ld;%s;%.2f;%.2f;%u;%u;%u;%lu\n",
+      printf("%s;%ld;%s;%.2f;%.2f;%.2f;%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
 	     S_VALUE(file_stats[!curr].pgpgin, file_stats[curr].pgpgin, itv),
 	     S_VALUE(file_stats[!curr].pgpgout, file_stats[curr].pgpgout, itv),
-	     file_stats[curr].nr_active_pages,
-	     file_stats[curr].nr_inactive_dirty_pages,
-	     file_stats[curr].nr_inactive_clean_pages,
-	     file_stats[curr].inactive_target);
+	     S_VALUE(file_stats[!curr].pgfault, file_stats[curr].pgfault, itv),
+	     S_VALUE(file_stats[!curr].pgmajfault, file_stats[curr].pgmajfault, itv));
 
    /* Print number of swap pages brought in and out */
    if (GET_SWAP(act))
@@ -2089,11 +2035,9 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    /* Print memory stats */
    if (GET_MEMORY(act))
-      printf("%s;%ld;%s;%.2f;%.2f;%.2f;%.2f\n",
+      printf("%s;%ld;%s;%.2f;%.2f;%.2f\n",
 	     file_hdr.sa_nodename, dt, cur_time,
 	     ((double) PG(file_stats[curr].frmkb) - (double) PG(file_stats[!curr].frmkb))
-	     / itv * HZ,
-	     ((double) PG(file_stats[curr].shmkb) - (double) PG(file_stats[!curr].shmkb))
 	     / itv * HZ,
 	     ((double) PG(file_stats[curr].bufkb) - (double) PG(file_stats[!curr].bufkb))
 	     / itv * HZ,
@@ -2129,15 +2073,16 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 		SP_VALUE(file_stats[curr].frmkb, file_stats[curr].tlmkb, file_stats[curr].tlmkb));
       else
 	 printf("%.2f", 0.0);
-      printf(";%lu;%lu;%lu;%lu;%lu;",
-	     file_stats[curr].shmkb, file_stats[curr].bufkb,
-	     file_stats[curr].camkb, file_stats[curr].frskb,
+      printf(";%lu;%lu;%lu;%lu;",
+	     file_stats[curr].bufkb, file_stats[curr].camkb,
+	     file_stats[curr].frskb,
 	     file_stats[curr].tlskb - file_stats[curr].frskb);
       if (file_stats[curr].tlskb)
-	 printf("%.2f\n",
+	 printf("%.2f",
 		SP_VALUE(file_stats[curr].frskb, file_stats[curr].tlskb, file_stats[curr].tlskb));
       else
-	 printf("%.2f\n", 0.0);
+	 printf("%.2f", 0.0);
+      printf(";%lu\n", file_stats[curr].caskb);
    }
 
    if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
@@ -2182,15 +2127,8 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 
    /* Print values of some kernel tables */
    if (GET_KTABLES(act)) {
-      printf("%s;%ld;%s;%u;%u;", file_hdr.sa_nodename, dt, cur_time,
-	     file_stats[curr].dentry_stat, file_stats[curr].file_used);
-      if (file_stats[curr].file_max)
-	 printf("%.2f",
-		((double) (file_stats[curr].file_used * 100))
-		/ file_stats[curr].file_max);
-      else
-	 printf("%.2f", 0.0);
-      printf(";%u;%u;",
+      printf("%s;%ld;%s;%u;%u;%u;%u;", file_hdr.sa_nodename, dt, cur_time,
+	     file_stats[curr].dentry_stat, file_stats[curr].file_used,
 	     file_stats[curr].inode_used, file_stats[curr].super_used);
       if (file_stats[curr].super_max)
 	 printf("%.2f",
@@ -2292,11 +2230,12 @@ void write_stats_for_db(short curr, unsigned int act, unsigned long dt,
 	 j = check_disk_reg(st_disk, curr, !curr, i);
 	 st_disk_j = st_disk[!curr] + j;
 	
-	 printf("%s;%ld;%s;dev%d-%d;%.2f;%.2f\n",
+	 printf("%s;%ld;%s;dev%d-%d;%.2f;%.2f;%.2f\n",
 		file_hdr.sa_nodename, dt, cur_time,
 		st_disk_i->major, st_disk_i->index,
-		S_VALUE(st_disk_j->dk_drive, st_disk_i->dk_drive, itv),
-		S_VALUE(st_disk_j->dk_drive_rwblk, st_disk_i->dk_drive_rwblk, itv));
+		S_VALUE(st_disk_j->nr_ios, st_disk_i->nr_ios, itv),
+		S_VALUE(st_disk_j->rd_sect, st_disk_i->rd_sect, itv),
+		S_VALUE(st_disk_j->wr_sect, st_disk_i->wr_sect, itv));
       }
    }
 }

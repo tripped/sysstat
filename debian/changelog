@@ -1,3 +1,14 @@
+sysstat (4.1.5-1) unstable; urgency=low
+
+  * New upstream version (development):
+    + Warning: daily data files format has changed once again and
+      old data files must be deleted from /var/log/sysstat!
+  * Added Spanish translation of debconf templates (closes: #201565).
+    Thanks to Carlos Alberto Martín Edo <carlos@dat.etsit.upm.es>.
+  * Standards-Version: 3.6.0 (no changes).
+
+ -- Robert Luberda <robert@debian.org>  Fri, 25 Jul 2003 18:22:12 +0200
+
 sysstat (4.1.4-1) unstable; urgency=low
 
   * New upstream version (development):

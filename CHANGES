@@ -366,3 +366,19 @@ Changes:
 	* sargon script updated.
 	* FAQ updated.
 
+2003/01/02: Version 4.1.1 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! Delete existing data files
+	  in /var/log/sa directory!
+	* sar -u/-U, iostat and mpstat can now display time spent in
+	  I/O wait mode (with 2.5 kernels and above).
+	* Values like -1 and -2 are no longer aliases for keywords
+	  ALL and XALL (sar -U, sar -I, mpstat -P).
+	* Buglet fixed in iostat.h.
+	* LC_CTYPE needs to be set, or it will emit messages with ?????? only
+	  on some locales, especially ja_JP.eucJP
+	* sar, mpstat and iostat manual pages updated.
+	* NLS updated.
+	* CREDITS file updated.
+	* Typo removed in FAQ file.
+

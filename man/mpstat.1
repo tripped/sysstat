@@ -68,9 +68,15 @@ executing at the user level with nice priority.
 Show the percentage of CPU utilization that occurred while
 executing at the system level (kernel).
 .RE
+.B %iowait
+.RS
+Show the percentage of time that the CPU or CPUs were idle during which
+the system had an outstanding disk I/O request.
+.RE
 .B %idle
 .RS
-Show the percentage of time that the CPU or CPUs were idle.
+Show the percentage of time that the CPU or CPUs were idle and the system
+did not have an outstanding disk I/O request.
 .RE
 .B intr/s
 .RS

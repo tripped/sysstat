@@ -1,12 +1,12 @@
 /*
  * sysstat: System performance tools for Linux
- * (C) 1999-2002 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2003 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
 #ifndef _VERSION_H
 #define _VERSION_H
 
 /* sysstat version number */
-#define VERSION	"4.0.7"
+#define VERSION	"4.1.1"
 
 #endif  /* _VERSION_H */

@@ -1,6 +1,6 @@
 /*
  * sar/sadc: report system activity
- * (C) 1999-2002 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2003 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
 #ifndef _SA_H
@@ -159,7 +159,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x215d
+#define SA_MAGIC	0x215e
 
 /*
  * Attributes such as 'aligned' and 'packed' have been defined for every
@@ -233,6 +233,7 @@ struct file_stats {
    unsigned int  cpu_nice			__attribute__ ((packed));
    unsigned int  cpu_system			__attribute__ ((packed));
    unsigned long cpu_idle			__attribute__ ((aligned (8)));
+   unsigned long cpu_iowait			__attribute__ ((aligned (8)));
    unsigned int  irq_sum			__attribute__ ((aligned (8)));
    unsigned int  pgpgin				__attribute__ ((packed));
    unsigned int  pgpgout			__attribute__ ((packed));
@@ -283,10 +284,11 @@ struct file_stats {
 
 #define FILE_STATS_SIZE	(sizeof(int)  * 37 + \
 			 sizeof(char) *  4 + \
-			 SIZEOF_LONG  * 14)
+			 SIZEOF_LONG  * 15)
 
 struct stats_one_cpu {
    unsigned long per_cpu_idle			__attribute__ ((aligned (8)));
+   unsigned long per_cpu_iowait			__attribute__ ((aligned (8)));
    unsigned int  per_cpu_user			__attribute__ ((aligned (8)));
    unsigned int  per_cpu_nice			__attribute__ ((packed));
    unsigned int  per_cpu_system			__attribute__ ((packed));
@@ -299,7 +301,7 @@ struct stats_one_cpu {
 
 #define STATS_ONE_CPU_SIZE	(sizeof(int)  * 3 + \
 				 sizeof(char) * 4 + \
-				 SIZEOF_LONG)
+				 SIZEOF_LONG  * 2)
 
 struct pid_stats {
    /* If pid is null, the process has been killed */

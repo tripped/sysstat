@@ -1,6 +1,6 @@
 /*
  * sar, sadc, mpstat and iostat common routines.
- * (C) 1999-2002 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
+ * (C) 1999-2003 by Sebastien GODARD <sebastien.godard@wanadoo.fr>
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -132,6 +132,7 @@ inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, 
 void init_nls(void)
 {
    setlocale(LC_MESSAGES, "");
+   setlocale(LC_CTYPE, "");
    setlocale(LC_TIME, "");
    setlocale(LC_NUMERIC, "");
 

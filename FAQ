@@ -184,7 +184,7 @@ You can find Stephen's patch here:
 ftp://ftp.uk.linux.org/pub/linux/sct/fs/profiling
 Stephen used to maintain his patch for various kernel versions, but it is
 no longer the case. You will have to get one of the relevant patches (if they
-are still there and update it by hand to suit your kernel.
+are still there) and update it by hand to suit your kernel.
 Note that some distros have this patch already applied.
 
 #################

@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2002 by Sebastien Godard <sebastien.godard@wanadoo.fr>
+ * (C) 2000-2003 by Sebastien Godard <sebastien.godard@wanadoo.fr>
  */
 
 #ifndef _MPSTAT_H
@@ -9,6 +9,7 @@
 
 struct mp_stats {
    unsigned long cpu_idle			__attribute__ ((aligned (8)));
+   unsigned long cpu_iowait			__attribute__ ((aligned (8)));
    unsigned int  cpu_user			__attribute__ ((aligned (8)));
    unsigned int  cpu_nice			__attribute__ ((packed));
    unsigned int  cpu_system			__attribute__ ((packed));
@@ -18,7 +19,7 @@ struct mp_stats {
 };
 
 #define MP_STATS_SIZE	(sizeof(int) * 4 + \
-			 SIZEOF_LONG)
+			 SIZEOF_LONG * 2)
 
 
 struct mp_timestamp {

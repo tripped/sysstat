@@ -568,9 +568,16 @@ Percentage of CPU utilization that occurred while executing at the system
 level (kernel).
 .RE
 
+.B %iowait
+.RS
+Percentage of time that the CPU or CPUs were idle during which
+the system had an outstanding disk I/O request.
+.RE
+
 .B %idle
 .RS
-Percentage of time that the CPU or CPUs were idle.
+Percentage of time that the CPU or CPUs were idle and the system
+did not have an outstanding disk I/O request.
 .RE
 .RE
 .IP "-U cpu | ALL"

@@ -50,8 +50,7 @@ unsigned char *cpu_bitmap;	/* Bit 0: Global; Bit 1: 1st proc; etc. */
 struct mp_timestamp st_mp_tstamp[DIM];
 /* Nb of processors on the machine. A value of 1 means two processors */
 int cpu_nr = -1;
-long interval = 0, count = 0;
-unsigned int flags = 0;
+long interval = -1, count = 0;
 
 
 /*
@@ -140,7 +139,7 @@ void write_stats_core(short prev, short curr, short dis,
     * that may happen since uptime values are unsigned long long but are
     * calculated as a sum of values that _may_ be unsigned long only...
     */
-   if (WANT_BOOT_STATS(flags))
+   if (!interval)
       itv = st_mp_tstamp[curr].uptime;
    else
       itv = (st_mp_tstamp[curr].uptime - st_mp_tstamp[prev].uptime) & 0xffffffff;
@@ -150,7 +149,8 @@ void write_stats_core(short prev, short curr, short dis,
 
    /* Print stats */
    if (dis)
-      printf("\n%-11s  CPU   %%user   %%nice    %%sys %%iowait    %%irq   %%soft   %%idle    intr/s\n",
+      printf("\n%-11s  CPU   %%user   %%nice    %%sys %%iowait    %%irq   "
+	     "%%soft   %%idle    intr/s\n",
 	     prev_string);
 
    /* Check if we want global stats among all proc */
@@ -175,7 +175,7 @@ void write_stats_core(short prev, short curr, short dis,
     * using the uptime computed for proc#0.
     */
    if (cpu_nr) {
-      if (WANT_BOOT_STATS(flags))
+      if (!interval)
 	 itv = st_mp_tstamp[curr].uptime0;
       else
 	 itv = (st_mp_tstamp[curr].uptime0 - st_mp_tstamp[prev].uptime0) & 0xffffffff;
@@ -259,27 +259,23 @@ void write_stats(short curr, short dis, struct tm *loc_time)
 /*
  ***************************************************************************
  * Read stats from /proc/stat
- * See kernel sources:
- * 2.4: linux/fs/proc/proc_misc.c: kstat_read_proc()
- * 2.6: linux/fs/proc/proc_misc.c: show_stat()
  ***************************************************************************
  */
 void read_proc_stat(short curr)
 {
-   FILE *statfp;
+   FILE *fp;
    struct mp_stats *st_mp_cpu_i;
    static char line[80];
    unsigned long long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
    unsigned long long cc_idle, cc_iowait;
    int proc_nb;
 
-   /* Open stat file */
-   if ((statfp = fopen(STAT, "r")) == NULL) {
+   if ((fp = fopen(STAT, "r")) == NULL) {
       fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
       exit(2);
    }
 
-   while (fgets(line, 80, statfp) != NULL) {
+   while (fgets(line, 80, fp) != NULL) {
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
@@ -358,22 +354,18 @@ void read_proc_stat(short curr)
 	 sscanf(line + 5, "%llu", &(st_mp_cpu[curr]->irq));
    }
 
-   /* Close stat file */
-   fclose(statfp);
+   fclose(fp);
 }
 
 
 /*
  ***************************************************************************
  * Read stats from /proc/interrupts
- * See kernel sources:
- * 2.4: linux/arch/{i386,...}/kernel/irq.c: get_irq_list()
- * 2.6: linux/arch/{i386,...}/kernel/irq.c: show_interrupts()
  ***************************************************************************
  */
 void read_interrupts_stat(short curr)
 {
-   FILE *irqfp;
+   FILE *fp;
    struct mp_stats *st_mp_cpu_i;
    static char line[INTERRUPTS_LINE];
    unsigned long irq = 0;
@@ -384,10 +376,9 @@ void read_interrupts_stat(short curr)
       st_mp_cpu_i->irq = 0;
    }
 
-   /* Open interrupts file */
-   if ((irqfp = fopen(INTERRUPTS, "r")) != NULL) {
+   if ((fp = fopen(INTERRUPTS, "r")) != NULL) {
 
-      while (fgets(line, INTERRUPTS_LINE, irqfp) != NULL) {
+      while (fgets(line, INTERRUPTS_LINE, fp) != NULL) {
 
 	 if (isdigit(line[2])) {
 	
@@ -399,8 +390,7 @@ void read_interrupts_stat(short curr)
 	 }
       }
 
-      /* Close serial file */
-      fclose(irqfp);
+      fclose(fp);
    }
 }
 
@@ -415,6 +405,31 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
 		     struct tm *loc_time)
 {
    short curr = 1, dis = 1;
+
+   st_mp_tstamp[0].hour   = loc_time->tm_hour;
+   st_mp_tstamp[0].minute = loc_time->tm_min;
+   st_mp_tstamp[0].second = loc_time->tm_sec;
+
+   /* Read stats */
+   read_proc_stat(0);
+   read_interrupts_stat(0);
+
+   if (!interval) {
+      /* Display since boot time */
+      st_mp_tstamp[1] = st_mp_tstamp[0];
+      memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 2));
+      write_stats(0, DISP_HDR, loc_time);
+      exit(0);
+   }
+
+   /* Set a handler for SIGALRM */
+   alarm_handler(0);
+
+   /* Save the first stats collected. Will be used to compute the average */
+   st_mp_tstamp[2] = st_mp_tstamp[0];
+   memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (cpu_nr + 2));
+
+   pause();
 
    do {
 
@@ -477,7 +492,7 @@ int main(int argc, char **argv)
 #endif
 
    /* How many processors on this machine ? */
-   get_cpu_nr(&cpu_nr, ~0);
+   cpu_nr = get_cpu_nr(~0);
 
    /*
     * cpu_nr: a value of 1 means there are 2 processors (0 and 1).
@@ -520,20 +535,18 @@ int main(int argc, char **argv)
 	    usage(argv[0]);
       }
 
-      else if (!interval) {		/* Get interval */
-	 if ((strspn(argv[opt], DIGITS) != strlen(argv[opt])) ||
-	     WANT_BOOT_STATS(flags))
+      else if (interval < 0) {		/* Get interval */
+	 if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
 	    usage(argv[0]);
 	 interval = atol(argv[opt]);
-	 if (!interval)
-	    flags |= M_F_BOOT_STATS;
-	 else if (interval < 0)
-	   usage(argv[0]);
+	 if (interval < 0)
+	    usage(argv[0]);
 	 count = -1;
       }
 
       else if (count <= 0) {		/* Get count value */
-	 if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
+	 if ((strspn(argv[opt], DIGITS) != strlen(argv[opt])) ||
+	     !interval)
 	    usage(argv[0]);
 	 count = atol(argv[opt]);
 	 if (count < 1)
@@ -554,9 +567,9 @@ int main(int argc, char **argv)
       rows = get_win_height();
       lines = rows;
    }
-   if (!interval)
+   if (interval < 0)
       /* Interval not set => display stats since boot time */
-      flags |= M_F_BOOT_STATS;
+      interval = 0;
 
    /* Get time */
    get_localtime(&loc_time);
@@ -564,33 +577,6 @@ int main(int argc, char **argv)
    /* Get system name, release number and hostname */
    uname(&header);
    print_gal_header(&loc_time, header.sysname, header.release, header.nodename);
-
-   st_mp_tstamp[0].hour   = loc_time.tm_hour;
-   st_mp_tstamp[0].minute = loc_time.tm_min;
-   st_mp_tstamp[0].second = loc_time.tm_sec;
-
-   /* Read stats */
-   read_proc_stat(0);
-   read_interrupts_stat(0);
-
-   if (WANT_BOOT_STATS(flags)) {
-      /* Display since boot time */
-      st_mp_tstamp[1] = st_mp_tstamp[0];
-
-      memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 2));
-
-      write_stats(0, DISP_HDR, &loc_time);
-      exit(0);
-   }
-
-   /* Set a handler for SIGALRM */
-   alarm_handler(0);
-
-   /* Save the first stats collected. Will be used to compute the average */
-   st_mp_tstamp[2] = st_mp_tstamp[0];
-   memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (cpu_nr + 2));
-
-   pause();
 
    /* Main loop */
    rw_mp_stat_loop(dis_hdr, lines, rows, &loc_time);

@@ -361,7 +361,8 @@ void get_itv_value(struct file_stats *file_stats_curr,
  * Print report header
  ***************************************************************************
  */
-void print_report_hdr(unsigned int flags, struct tm *loc_time, struct file_hdr *file_hdr)
+void print_report_hdr(unsigned short format, unsigned int flags,
+		      struct tm *loc_time, struct file_hdr *file_hdr)
 {
 
    if (PRINT_TRUE_TIME(flags)) {
@@ -381,7 +382,8 @@ void print_report_hdr(unsigned int flags, struct tm *loc_time, struct file_hdr *
    else
       loc_time = localtime(&(file_hdr->sa_ust_time));
 
-   if (!USE_PPC_OPTION(flags) && !USE_DB_OPTION(flags) && !USE_XML_OPTION(flags))
+   if (!format)
+      /* No output format (we are not using sadf) */
       print_gal_header(loc_time, file_hdr->sa_sysname, file_hdr->sa_release,
 		       file_hdr->sa_nodename);
 }
@@ -495,7 +497,7 @@ unsigned int check_iface_reg(struct file_hdr *file_hdr,
 
 /*
  ***************************************************************************
- * Disks in /proc/stat may be registered dynamically.
+ * Disks may be registered dynamically (true in /proc/stat file).
  * This is what we try to guess here.
  ***************************************************************************
  */
@@ -586,7 +588,8 @@ int sa_fread(int ifd, void *buffer, int size, int mode)
    int n;
 
    if ((n = read(ifd, buffer, size)) < 0) {
-      fprintf(stderr, _("Error while reading system activity file: %s\n"), strerror(errno));
+      fprintf(stderr, _("Error while reading system activity file: %s\n"),
+	      strerror(errno));
       exit(2);
    }
 
@@ -658,7 +661,8 @@ void prep_file_for_reading(int *ifd, char *dfile, struct file_hdr *file_hdr,
  ***************************************************************************
  */
 int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
-		  unsigned int *flags, short *dis_hdr, int caller)
+		  unsigned int *flags, short *dis_hdr, int caller,
+		  unsigned char irq_bitmap[], unsigned char cpu_bitmap[])
 {
    int i;
 
@@ -671,8 +675,11 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 	    A_CTXSW + A_SWAP + A_MEMORY + A_SERIAL +
 	    A_MEM_AMT + A_KTABLES + A_NET_DEV +
 	    A_NET_EDEV + A_NET_SOCK + A_NET_NFS + A_NET_NFSD +
-	    A_QUEUE + A_DISK;
-	 *flags |= S_F_A_OPTION;
+	    A_QUEUE + A_DISK + A_ONE_IRQ;
+	 /* Force '-P ALL -I XALL' */
+	 *flags |= S_F_A_OPTION + S_F_ALL_PROC + S_F_PER_PROC;
+	 init_bitmap(irq_bitmap, ~0, NR_IRQS);
+	 init_bitmap(cpu_bitmap, ~0, NR_CPUS);
 	 break;
        case 'B':
 	 *actflag |= A_PAGE;

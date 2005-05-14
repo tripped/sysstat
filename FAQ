@@ -42,6 +42,9 @@ Also tell me what version your kernel is).
 2.14. The sar command complains with the following message:
       "Requested activities not available in file".
 2.15. Does sar need a lot of resources to run?
+2.16. Are the measurements gathered by sadc cumulative or instantaneous?
+2.17. Some fields are always displayed as 0.00 when I use the sar -d
+      command.
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -283,7 +286,8 @@ Several such tools are lying around on the internet. I haven't tested all of
 them and there must still be some way for improvement...
 You can find among others: isag (a Perl script included in the sysstat
 package), sarvant (a Python script which can be found at
-http://sarvant.sourceforge.net); sar2gp (http://sar2gp.berlios.de)...
+http://sarvant.sourceforge.net), sar2gp (http://sar2gp.berlios.de),
+loadgraph (http://www.technocenter.net/loadgraph)...
 I've also heard of commercial tools which use sysstat: PerfMan comes to mind,
 among others.
 If you find others which you think are of real interest, please let me know
@@ -336,11 +340,16 @@ system and stores them in the data file. However, to prevent data files from
 taking too much space on disk, some activities must be explicitly set on the
 command line to be read by sadc. One example is -I option which must be used
 together with sadc to be able to extract statistics for individual interrupts
-from the data file. Other activities cannot be saved into a file even if you
-specify the relevant options on the command line. Process statistics (-x and
--X options) are such activities.
+from the data file. Another example is -d option for disks statistics.
+Other activities cannot be saved into a file at all even if you specify the
+relevant options on the command line. Process statistics (-x and -X options)
+are such activities.
 Please read sadc manual page to know exactly which activities may be extracted
 from a data file.
+NB: If the sar command complains with the error message:
+"Requested activities not available" (without mentioning "in file"),
+it means that you are trying to display activities that the kernel itself is
+unable to provide.
 
 ~~~
 
@@ -348,13 +357,32 @@ from a data file.
 
 No, sar doesn't need a lot of CPU to run, nor does it make your system slow,
 contrary to what some people think. In the first place, it only runs every ten
-minutes by default. Secondly, when it does run, it is over and done very quickly.
-Try:
+minutes by default. Secondly, when it does run, it is over and done very
+quickly. Try:
 time /usr/lib/sa/sa1
 to verify that for yourself.
 Nor do you have to be concerned about using up all your disk space.
 sar will use about 220 kB for a whole day's worth of data, and it normally only
-stores one week worth, and won't keep more than a month. It is entirely self limiting. 
+stores one week worth, and won't keep more than a month. It is entirely self
+limiting. 
+
+~~~
+
+2.16. Are the measurements gathered by sadc cumulative or instantaneous values?
+
+Each counter maintained by the kernel is cumulative since system boot. As a
+consequence the measurements gathered by sadc are cumulative values.
+Moreover all per-second statistics displayed by sar are average values on the
+given time interval. So the value for counter foo at time T is calculated as:
+foo/s = [foo(T) - foo(T-dt)] / dt
+where dt is the interval given on the command line.
+
+~~~
+
+2.17. Some fields are always displayed as 0.00 when I use the sar -d
+command.
+
+See question 3.2 below.
 
 
 3. QUESTIONS RELATING TO IOSTAT
@@ -391,7 +419,9 @@ But iostat may also be able to display extended statistics with
 older kernels (e.g. 2.4.x) providing that all the necessary
 statistical information is available in the /proc/partitions file,
 which requires that a patch be applied to the kernel (this is
-often done on kernels included in various distros).
+often done on kernels included in various distros). In recent 2.4.x
+kernels, the /proc/partitions file has all the necessary data
+providing that the kernel has been compiled with CONFIG_BLK_STATS=y.
 
 ~~~
 

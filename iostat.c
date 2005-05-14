@@ -54,7 +54,7 @@ struct io_stats *st_iodev[2];
 struct io_hdr_stats *st_hdr_iodev;
 struct io_dlist *st_dev_list;
 
-/* Nb of devices (and possibly partitions if -p option was used) found */
+/* Nb of devices and partitions found */
 int iodev_nr = 0;
 
 /* Nb of devices entered on the command line */
@@ -81,8 +81,8 @@ void usage(char *progname)
 		   "(C) Sebastien Godard\n"
 	           "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 		   "Options are:\n"
-		   "[ -c | -d ] [ -k ] [ -m ] [ -t ] [ -V ] [ -x ]\n"
-		   "[ { <device> [ ... ] | ALL } ] [ -p [ { <device> | ALL } ] ]\n"),
+		   "[ -c | -d ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+		   "[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"),
 	   VERSION, progname);
    exit(1);
 }
@@ -120,12 +120,10 @@ void init_stats(void)
 void set_entries_inactive(int iodev_nr)
 {
    int i;
-   struct io_hdr_stats *st_hdr_iodev_i;
+   struct io_hdr_stats *shi = st_hdr_iodev;
 
-   for (i = 0; i < iodev_nr; i++) {
-      st_hdr_iodev_i = st_hdr_iodev + i;
-      st_hdr_iodev_i->active = FALSE;
-   }
+   for (i = 0; i < iodev_nr; i++, shi++)
+      shi->active = FALSE;
 }
 
 
@@ -137,12 +135,11 @@ void set_entries_inactive(int iodev_nr)
 void free_inactive_entries(int iodev_nr)
 {
    int i;
-   struct io_hdr_stats *st_hdr_iodev_i;
+   struct io_hdr_stats *shi = st_hdr_iodev;
 
-   for (i = 0; i < iodev_nr; i++) {
-      st_hdr_iodev_i = st_hdr_iodev + i;
-      if (!st_hdr_iodev_i->active)
-	 st_hdr_iodev_i->major = 0;
+   for (i = 0; i < iodev_nr; i++, shi++) {
+      if (!shi->active)
+	 shi->used = FALSE;
    }
 }
 
@@ -155,7 +152,6 @@ void free_inactive_entries(int iodev_nr)
 void salloc_device(int iodev_nr)
 {
    int i;
-   struct io_hdr_stats *st_hdr_iodev_i;
 
    for (i = 0; i < 2; i++) {
       if ((st_iodev[i] = (struct io_stats *) malloc(IO_STATS_SIZE * iodev_nr)) == NULL) {
@@ -170,19 +166,6 @@ void salloc_device(int iodev_nr)
       exit(4);
    }
    memset(st_hdr_iodev, 0, IO_HDR_STATS_SIZE * iodev_nr);
-
-   if (iodev_nr == 4) {
-      /*
-       * We may have an old kernel with the stats for the first four disks
-       * in /proc/stat: reset the devices name. Anyway, if we are wrong,
-       * the names will be read from disk_io entry in /proc/stat or from
-       * /sys.
-       */
-      for (i = 0; i < 4; i++) {
-	 st_hdr_iodev_i = st_hdr_iodev + i;
-	 sprintf(st_hdr_iodev_i->name, "hdisk%d", i);
-      }
-   }
 }
 
 
@@ -203,27 +186,24 @@ void salloc_dev_list(int list_len)
 
 /*
  ***************************************************************************
- * Look for the device in the device list
- * and store it if necessary.
+ * Look for the device in the device list and store it if necessary.
+ * Returns the position of the device in the list.
  ***************************************************************************
  */
 int update_dev_list(int *dlist_idx, char *device_name)
 {
    int i;
-   struct io_dlist *st_dev_list_i;
+   struct io_dlist *sdli = st_dev_list;
 
-   st_dev_list_i = st_dev_list;
-
-   for (i = 0; i < *dlist_idx; i++) {
-      st_dev_list_i = st_dev_list + i;
-      if (!strcmp(st_dev_list_i->dev_name, device_name))
+   for (i = 0; i < *dlist_idx; i++, sdli++) {
+      if (!strcmp(sdli->dev_name, device_name))
 	 break;
    }
 
    if (i == *dlist_idx) {
+      /* Device not found: store it */
       (*dlist_idx)++;
-      st_dev_list_i = st_dev_list + i;
-      strncpy(st_dev_list_i->dev_name, device_name, MAX_NAME_LEN - 1);
+      strncpy(sdli->dev_name, device_name, MAX_NAME_LEN - 1);
    }
 
    return i;
@@ -237,14 +217,16 @@ int update_dev_list(int *dlist_idx, char *device_name)
  */
 void io_sys_init(int *flags)
 {
+   int i;
+
    /* Init stat common counters */
    init_stats();
 
    /* How many processors on this machine ? */
-   get_cpu_nr(&cpu_nr, ~0);
+   cpu_nr = get_cpu_nr(~0);
 
    /* Get number of block devices and partitions in /proc/diskstats */
-   if ((iodev_nr = get_diskstats_dev_nr(CNT_PART)) > 0) {
+   if ((iodev_nr = get_diskstats_dev_nr(CNT_PART, CNT_ALL_DEV)) > 0) {
       *flags |= I_F_HAS_DISKSTATS;
       iodev_nr += NR_DEV_PREALLOC;
    }
@@ -271,8 +253,10 @@ void io_sys_init(int *flags)
 	 iodev_nr += NR_DEV_PREALLOC;
       }
       /* Get number of "disk_io:" entries in /proc/stat */
-      else if ((iodev_nr = get_disk_io_nr()) > 0)
+      else if ((iodev_nr = get_disk_io_nr()) > 0) {
+	 *flags |= I_F_PLAIN_KERNEL24;
 	 iodev_nr += NR_DISK_PREALLOC;
+      }
       else {
 	 /* Assume we have an old kernel: stats for 4 disks are in /proc/stat */
 	 iodev_nr = 4;
@@ -281,6 +265,18 @@ void io_sys_init(int *flags)
    }
    /* Allocate structures for number of disks found */
    salloc_device(iodev_nr);
+
+   if (HAS_OLD_KERNEL(*flags)) {
+      struct io_hdr_stats *shi = st_hdr_iodev;
+      /*
+       * If we have an old kernel with the stats for the first four disks
+       * in /proc/stat, then set the devices names to hdisk[0..3].
+       */
+      for (i = 0; i < 4; i++, shi++) {
+	 shi->used = TRUE;
+	 sprintf(shi->name, "%s%d", K_HDISK, i);
+      }
+   }
 }
 
 
@@ -310,9 +306,9 @@ void save_dev_stats(char *dev_name, int curr, struct io_stats *sdev)
        */
       for (i = 0; i < iodev_nr; i++) {
 	 st_hdr_iodev_i = st_hdr_iodev + i;
-	 if (!st_hdr_iodev_i->major) {
+	 if (!st_hdr_iodev_i->used) {
 	    /* Unused entry found... */
-	    st_hdr_iodev_i->major = 1;	/* Just to indicate it is now used! */
+	    st_hdr_iodev_i->used = TRUE;	/* Indicate it is now used */
 	    strcpy(st_hdr_iodev_i->name, dev_name);
 	    st_iodev_i = st_iodev[!curr] + i;
 	    memset(st_iodev_i, 0, IO_STATS_SIZE);
@@ -326,6 +322,7 @@ void save_dev_stats(char *dev_name, int curr, struct io_stats *sdev)
       st_iodev_i = st_iodev[curr] + i;
       *st_iodev_i = *sdev;
    }
+   /* else it was a new device but there was no free structure to store it */
 }
 
 
@@ -334,20 +331,16 @@ void save_dev_stats(char *dev_name, int curr, struct io_stats *sdev)
  * Read stats from /proc/stat file...
  * Useful at least for CPU utilization.
  * May be useful to get disk stats if /sys not available.
- * See kernel sources:
- * 2.4: linux/fs/proc/proc_misc.c: kstat_read_proc()
- * 2.6: linux/fs/proc/proc_misc.c: show_stat()
  ***************************************************************************
  */
-void read_stat(int curr, int flags)
+void read_proc_stat(int curr, int flags)
 {
-   FILE *statfp;
+   FILE *fp;
    char line[8192];
    int pos, i;
    unsigned long v_tmp[4];
    unsigned int v_major, v_index;
-   struct io_stats *st_iodev_tmp[4], *st_iodev_i;
-   struct io_hdr_stats *st_hdr_iodev_i;
+   struct io_stats *st_iodev_tmp[4];
    unsigned long long cc_idle, cc_iowait;
    unsigned long long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
 
@@ -359,13 +352,12 @@ void read_stat(int curr, int flags)
    for (i = 0; i < 4; i++)
       st_iodev_tmp[i] = st_iodev[curr] + i;
 
-   /* Open stat file */
-   if ((statfp = fopen(STAT, "r")) == NULL) {
+   if ((fp = fopen(STAT, "r")) == NULL) {
       perror("fopen");
       exit(2);
    }
 
-   while (fgets(line, 8192, statfp) != NULL) {
+   while (fgets(line, 8192, fp) != NULL) {
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
@@ -461,6 +453,9 @@ void read_stat(int curr, int flags)
       }
 
       else if (!strncmp(line, "disk_io: ", 9)) {
+	 struct io_stats sdev;
+	 char dev_name[MAX_NAME_LEN];
+	
 	 pos = 9;
 
 	 /* Every disk_io entry is potentially unregistered */
@@ -472,44 +467,11 @@ void read_stat(int curr, int flags)
 	    sscanf(line + pos, "(%u,%u):(%lu,%*u,%lu,%*u,%lu) ",
 		   &v_major, &v_index, &v_tmp[0], &v_tmp[1], &v_tmp[2]);
 
-	    /* Look for disk entry */
-	    for (i = 0; i < iodev_nr; i++) {
-	       st_hdr_iodev_i = st_hdr_iodev + i;
-	       if ((st_hdr_iodev_i->major == v_major) &&
-		   (st_hdr_iodev_i->minor == v_index))
-		  break;
-	    }
-
-	    if (i == iodev_nr) {
-	       /*
-		* New disk registered. Assume that disks may be registered,
-		* *and* unregistered dynamically...
-		* Look for a free structure to store it.
-		*/
-	       for (i = 0; i < iodev_nr; i++) {
-		  st_hdr_iodev_i = st_hdr_iodev + i;
-		  if (!st_hdr_iodev_i->major) {
-		     /* Free structure found! */
-		     st_hdr_iodev_i->major = v_major;
-		     st_hdr_iodev_i->minor = v_index;
-		     sprintf(st_hdr_iodev_i->name, "dev%d-%d", v_major, v_index);
-		     st_iodev_i = st_iodev[!curr] + i;
-		     memset(st_iodev_i, 0, IO_STATS_SIZE);
-		     break;
-		  }
-	       }
-	    }
-	
-	    if (i < iodev_nr) {
-	       st_hdr_iodev_i = st_hdr_iodev + i;
-	       st_hdr_iodev_i->active = TRUE;
-	       st_iodev_i = st_iodev[curr] + i;
-	       st_iodev_i->dk_drive      = v_tmp[0];
-	       st_iodev_i->dk_drive_rblk = v_tmp[1];
-	       st_iodev_i->dk_drive_wblk = v_tmp[2];
-	    }
-	    /* else the disk_io entry was not found,
-	     * and there was no free structure to store it */
+	    sprintf(dev_name, "dev%d-%d", v_major, v_index);
+	    sdev.dk_drive      = v_tmp[0];
+	    sdev.dk_drive_rblk = v_tmp[1];
+	    sdev.dk_drive_wblk = v_tmp[2];
+	    save_dev_stats(dev_name, curr, &sdev);
 
 	    pos += strcspn(line + pos, " ") + 1;
 	 }
@@ -519,45 +481,42 @@ void read_stat(int curr, int flags)
       }
    }
 
-   /* Close stat file */
-   fclose(statfp);
+   fclose(fp);
 }
 
 
 /*
  ***************************************************************************
  * Read sysfs stat for current block device or partition
- * See kernel sources:
- * 2.6: linux/drivers/block/genhd.c: disk_stats_read()
  ***************************************************************************
  */
 int read_sysfs_file_stat(int curr, char *filename, char *dev_name,
 			  int dev_type)
 {
-   FILE *sysfp;
+   FILE *fp;
    struct io_stats sdev;
    int i;
 
    /* Try to read given stat file */
-   if ((sysfp = fopen(filename, "r")) == NULL)
+   if ((fp = fopen(filename, "r")) == NULL)
       return 0;
 	
    if (dev_type == DT_DEVICE)
-      i = (fscanf(sysfp, "%lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
+      i = (fscanf(fp, "%lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
 		  &sdev.rd_ios, &sdev.rd_merges,
 		  &sdev.rd_sectors, &sdev.rd_ticks,
 		  &sdev.wr_ios, &sdev.wr_merges,
 		  &sdev.wr_sectors, &sdev.wr_ticks,
 		  &sdev.ios_pgr, &sdev.tot_ticks, &sdev.rq_ticks) == 11);
    else
-      i = (fscanf(sysfp, "%lu %llu %lu %llu",
+      i = (fscanf(fp, "%lu %llu %lu %llu",
 		  &sdev.rd_ios, &sdev.rd_sectors,
 		  &sdev.wr_ios, &sdev.wr_sectors) == 4);
 
    if (i)
       save_dev_stats(dev_name, curr, &sdev);
 
-   fclose(sysfp);
+   fclose(fp);
 
    return 1;
 }
@@ -591,7 +550,7 @@ void read_sysfs_dlist_part_stat(int curr, char *dev_name)
    }
 
    /* Close device directory */
-   (void) closedir(dir);
+   closedir(dir);
 }
 
 
@@ -665,7 +624,7 @@ void read_sysfs_stat(int curr, int flags)
       }
 
       /* Close /sys/block directory */
-      (void) closedir(dir);
+      closedir(dir);
    }
 
    /* Free structures corresponding to unregistered devices */
@@ -676,13 +635,11 @@ void read_sysfs_stat(int curr, int flags)
 /*
  ***************************************************************************
  * Read stats from /proc/diskstats
- * See kernel sources:
- * 2.6: linux/drivers/block/genhd.c: diskstats_show()
  ***************************************************************************
  */
 void read_diskstats_stat(int curr, int flags)
 {
-   FILE *dstatsfp;
+   FILE *fp;
    char line[256], dev_name[MAX_NAME_LEN];
    struct io_stats sdev;
    int i;
@@ -695,11 +652,10 @@ void read_diskstats_stat(int curr, int flags)
    /* Every I/O device entry is potentially unregistered */
    set_entries_inactive(iodev_nr);
 
-   /* Open /proc/diskstats file */
-   if ((dstatsfp = fopen(DISKSTATS, "r")) == NULL)
+   if ((fp = fopen(DISKSTATS, "r")) == NULL)
       return;
 
-   while (fgets(line, 256, dstatsfp) != NULL) {
+   while (fgets(line, 256, fp) != NULL) {
 
       /* major minor name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
       i = sscanf(line, "%u %u %s %lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
@@ -725,6 +681,7 @@ void read_diskstats_stat(int curr, int flags)
 	 /* Partition */
 	 if (DISPLAY_EXTENDED(flags) || (!dlist_idx && !DISPLAY_PARTITIONS(flags)))
 	    continue;
+
 	 sdev.rd_ios     = rd_ios;
 	 sdev.rd_sectors = rd_merges_or_rd_sec;
 	 sdev.wr_ios     = rd_sec_or_wr_ios;
@@ -735,10 +692,10 @@ void read_diskstats_stat(int curr, int flags)
 	 continue;
 
       if ((ioc_dname = ioc_name(major, minor)) != NULL) {
-	 if (strcmp(dev_name, ioc_dname))
+	 if (strcmp(dev_name, ioc_dname) && strcmp(ioc_dname, K_NODEV))
 	    /*
-	     * No match: Use name generated from sysstat.ioconf data
-	     * works around known issues with EMC PowerPath.
+	     * No match: Use name generated from sysstat.ioconf data (if different
+	     * from "nodev") works around known issues with EMC PowerPath.
 	     */
 	    strcpy(dev_name, ioc_dname);
       }
@@ -746,7 +703,7 @@ void read_diskstats_stat(int curr, int flags)
       save_dev_stats(dev_name, curr, &sdev);
    }
 
-   fclose(dstatsfp);
+   fclose(fp);
 
    /* Free structures corresponding to unregistered devices */
    free_inactive_entries(iodev_nr);
@@ -756,13 +713,11 @@ void read_diskstats_stat(int curr, int flags)
 /*
  ***************************************************************************
  * Read stats from /proc/partitions
- * See kernel sources:
- * 2.6: linux/drivers/block/genhd.c (see sysfs instead)
  ***************************************************************************
  */
 void read_ppartitions_stat(int curr, int flags)
 {
-   FILE *ppartfp;
+   FILE *fp;
    char line[256], dev_name[MAX_NAME_LEN];
    struct io_stats sdev;
    unsigned long rd_ios, rd_merges, rd_ticks, wr_ios, wr_merges, wr_ticks;
@@ -774,11 +729,10 @@ void read_ppartitions_stat(int curr, int flags)
    /* Every I/O device entry is potentially unregistered */
    set_entries_inactive(iodev_nr);
 
-   /* Open /proc/partitions file */
-   if ((ppartfp = fopen(PPARTITIONS, "r")) == NULL)
+   if ((fp = fopen(PPARTITIONS, "r")) == NULL)
       return;
 
-   while (fgets(line, 256, ppartfp) != NULL) {
+   while (fgets(line, 256, fp) != NULL) {
       /* major minor #blocks name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
       if (sscanf(line, "%u %u %*u %s %lu %lu %llu %lu %lu %lu %llu"
 		       " %lu %lu %lu %lu",
@@ -798,7 +752,7 @@ void read_ppartitions_stat(int curr, int flags)
 	 continue;
 
       if ((ioc_dname = ioc_name(major, minor)) != NULL) {
-	 if (strcmp(dev_name, ioc_dname))
+	 if (strcmp(dev_name, ioc_dname) && strcmp(ioc_dname, K_NODEV))
 	    /* Compensate for EMC PowerPath driver bug */
 	    strcpy(dev_name, ioc_dname);
       }
@@ -806,7 +760,7 @@ void read_ppartitions_stat(int curr, int flags)
       save_dev_stats(dev_name, curr, &sdev);
    }
 
-   fclose(ppartfp);
+   fclose(fp);
 
    /* Free structures corresponding to unregistered devices */
    free_inactive_entries(iodev_nr);
@@ -835,183 +789,147 @@ void write_cpu_stat(int curr, unsigned long long itv)
 
 /*
  ***************************************************************************
- * Display extended stats (those read from /proc/{diskstats,partitions} or
- * /sys)
+ * Display stats header
  ***************************************************************************
  */
-void write_ext_stat(int curr, unsigned long long itv, int flags)
+void write_stat_header(int flags, int *fctr)
 {
-   int dev, i;
-   struct io_hdr_stats *st_hdr_iodev_i;
-   struct io_stats *ioi, *ioj;
-   struct io_dlist *st_dev_list_i;
-   double tput, util, await, svctm, arqsz, nr_ios;
-	
-   printf("Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await  svctm  %%util\n");
-   /*     "xxxxxxxxxx 999.99 999.99 99.99 99.99 9999.99 9999.99 99999.99 99999.99 99999.99 99999.99 9999.99 999.99 %999.99\n" */
-	
-   for (i = 0; i < iodev_nr; i++) {
-      st_hdr_iodev_i = st_hdr_iodev + i;
-      if (st_hdr_iodev_i->major) {
-	
-	 if ((HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) && dlist_idx) {
-	    /*
-	     * With sysfs, only stats for the requested devices are read.
-	     * With /proc/{diskstats,partitions}, stats for every devices
-	     * are read. Thus we need to check if stats for current device
-	     * are to be displayed.
-	     */
-	    for (dev = 0; dev < dlist_idx; dev++) {
-	       st_dev_list_i = st_dev_list + dev;
-	       if (!strcmp(st_hdr_iodev_i->name, st_dev_list_i->dev_name))
-		  break;
-	    }
-	    if (dev == dlist_idx)
-	       /* Device not found in list: don't display it */
-	       continue;
-	 }
-	
-	 ioi = st_iodev[curr] + i;
-	 ioj = st_iodev[!curr] + i;
-
-	 if (!DISPLAY_UNFILTERED(flags)) {
-	    if (!ioi->rd_ios && !ioi->wr_ios)
-	       continue;
-	 }
-
-	 /*
-	  * Counters overflows are possible, but don't need to be handled in
-	  * a special way: the difference is still properly calculated if the
-	  * result is of the same type as the two values.
-	  * Exception is field rq_ticks which is incremented by the number of
-	  * I/O in progress times the number of milliseconds spent doing I/O.
-	  * But the number of I/O in progress (field ios_pgr) happens to be
-	  * sometimes negative...
-	  */
-	 nr_ios = (ioi->rd_ios - ioj->rd_ios) + (ioi->wr_ios - ioj->wr_ios);
-	 tput   = ((double) nr_ios) * HZ / itv;
-	 util = S_VALUE(ioj->tot_ticks, ioi->tot_ticks, itv);
-	 svctm  = tput ? util / tput : 0.0;
-	 /*
-	  * kernel gives ticks already in milliseconds for all platforms
-	  * => no need for further scaling.
-	  */
-	 await  = nr_ios ?
-	    ((ioi->rd_ticks - ioj->rd_ticks) + (ioi->wr_ticks - ioj->wr_ticks)) /
-	    nr_ios : 0.0;
-	 arqsz  = nr_ios ?
-	    ((ioi->rd_sectors - ioj->rd_sectors) + (ioi->wr_sectors - ioj->wr_sectors)) /
-	    nr_ios : 0.0;
-
-	 printf("%-10s", st_hdr_iodev_i->name);
-	 if (strlen(st_hdr_iodev_i->name) > 10)
-	    printf("\n          ");
-	 /*       rrq/s wrq/s   r/s   w/s  rsec  wsec   rkB   wkB  rqsz  qusz await svctm %util */
-	 printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
-		S_VALUE(ioj->rd_merges, ioi->rd_merges, itv),
-		S_VALUE(ioj->wr_merges, ioi->wr_merges, itv),
-		S_VALUE(ioj->rd_ios, ioi->rd_ios, itv),
-		S_VALUE(ioj->wr_ios, ioi->wr_ios, itv),
-		S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv),
-		S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv),
-		S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv) / 2,
-		S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv) / 2,
-		arqsz,
-		S_VALUE(ioj->rq_ticks, ioi->rq_ticks, itv) / 1000.0,
-		await,
-		/* The ticks output is biased to output 1000 ticks per second */
-		svctm,
-		/* Again: ticks in milliseconds */
-		util / 10.0);
+   if (DISPLAY_EXTENDED(flags)) {
+      /* Extended stats */
+      printf("Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s");
+      if (DISPLAY_MEGABYTES(flags)) {
+	 printf("    rMB/s    wMB/s");
+	 *fctr = 2048;
       }
+      else {
+	 printf("    rkB/s    wkB/s");
+	 *fctr = 2;
+      }
+      printf(" avgrq-sz avgqu-sz   await  svctm  %%util\n");
+   }
+   else {
+      /* Basic stats */
+      printf("Device:            tps");
+      if (DISPLAY_KILOBYTES(flags)) {
+	 printf("    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n");
+	 *fctr = 2;
+      }
+      else if (DISPLAY_MEGABYTES(flags)) {
+	 printf("    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn\n");
+	 *fctr = 2048;
+      }
+      else
+	 printf("   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n");
    }
 }
 
 
 /*
  ***************************************************************************
- * Write basic stats, read from /proc/stat file or from sysfs
+ * Display extended stats, read from /proc/{diskstats,partitions} or /sys
  ***************************************************************************
  */
-void write_basic_stat(int curr, unsigned long long itv, int flags)
+void write_ext_stat(int curr, unsigned long long itv, int flags, int fctr,
+		    struct io_hdr_stats *shi, struct io_stats *ioi,
+		    struct io_stats *ioj)
 {
-   int fctr = 1;
-   int i, j;
-   struct io_hdr_stats *st_hdr_iodev_i;
-   struct io_stats *ioi, *ioj;
-   struct io_dlist *st_dev_list_j;
+   unsigned long long rd_sec, wr_sec;
+   double tput, util, await, svctm, arqsz, nr_ios;
+	
+   /*
+    * Counters overflows are possible, but don't need to be handled in
+    * a special way: the difference is still properly calculated if the
+    * result is of the same type as the two values.
+    * Exception is field rq_ticks which is incremented by the number of
+    * I/O in progress times the number of milliseconds spent doing I/O.
+    * But the number of I/O in progress (field ios_pgr) happens to be
+    * sometimes negative...
+    */
+   nr_ios = (ioi->rd_ios - ioj->rd_ios) + (ioi->wr_ios - ioj->wr_ios);
+   tput   = ((double) nr_ios) * HZ / itv;
+   util = S_VALUE(ioj->tot_ticks, ioi->tot_ticks, itv);
+   svctm  = tput ? util / tput : 0.0;
+   /*
+    * kernel gives ticks already in milliseconds for all platforms
+    * => no need for further scaling.
+    */
+   await  = nr_ios ?
+      ((ioi->rd_ticks - ioj->rd_ticks) + (ioi->wr_ticks - ioj->wr_ticks)) /
+      nr_ios : 0.0;
 
-   if (DISPLAY_KILOBYTES(flags)) {
-      printf("Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n");
-      fctr = 2;
+   rd_sec = ioi->rd_sectors - ioj->rd_sectors;
+   if ((ioi->rd_sectors < ioj->rd_sectors) && (ioj->rd_sectors <= 0xffffffff))
+      rd_sec &= 0xffffffff;
+   wr_sec = ioi->wr_sectors - ioj->wr_sectors;
+   if ((ioi->wr_sectors < ioj->wr_sectors) && (ioj->wr_sectors <= 0xffffffff))
+      wr_sec &= 0xffffffff;
+
+   arqsz  = nr_ios ? (rd_sec + wr_sec) / nr_ios : 0.0;
+
+   printf("%-10s", shi->name);
+   if (strlen(shi->name) > 10)
+      printf("\n          ");
+   /*       rrq/s wrq/s   r/s   w/s  rsec  wsec   r?B   w?B  rqsz  qusz await svctm %util */
+   printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
+	  S_VALUE(ioj->rd_merges, ioi->rd_merges, itv),
+	  S_VALUE(ioj->wr_merges, ioi->wr_merges, itv),
+	  S_VALUE(ioj->rd_ios, ioi->rd_ios, itv),
+	  S_VALUE(ioj->wr_ios, ioi->wr_ios, itv),
+	  ll_s_value(ioj->rd_sectors, ioi->rd_sectors, itv),
+	  ll_s_value(ioj->wr_sectors, ioi->wr_sectors, itv),
+	  ll_s_value(ioj->rd_sectors, ioi->rd_sectors, itv) / fctr,
+	  ll_s_value(ioj->wr_sectors, ioi->wr_sectors, itv) / fctr,
+	  arqsz,
+	  S_VALUE(ioj->rq_ticks, ioi->rq_ticks, itv) / 1000.0,
+	  await,
+	  /* The ticks output is biased to output 1000 ticks per second */
+	  svctm,
+	  /* Again: ticks in milliseconds */
+	  util / 10.0);
+}
+
+
+/*
+ ***************************************************************************
+ * Write basic stats, read from /proc/stat, /proc/{diskstats,partitions}
+ * or from sysfs
+ ***************************************************************************
+ */
+void write_basic_stat(int curr, unsigned long long itv, int flags, int fctr,
+		      struct io_hdr_stats *shi, struct io_stats *ioi,
+		      struct io_stats *ioj)
+{
+   unsigned long long rd_sec, wr_sec;
+
+   printf("%-13s", shi->name);
+   if (strlen(shi->name) > 13)
+      printf("\n             ");
+
+   if (HAS_SYSFS(flags) ||
+       HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) {
+      /* Print stats coming from /sys or /proc/{diskstats,partitions} */
+      rd_sec = ioi->rd_sectors - ioj->rd_sectors;
+      if ((ioi->rd_sectors < ioj->rd_sectors) && (ioj->rd_sectors <= 0xffffffff))
+	 rd_sec &= 0xffffffff;
+      wr_sec = ioi->wr_sectors - ioj->wr_sectors;
+      if ((ioi->wr_sectors < ioj->wr_sectors) && (ioj->wr_sectors <= 0xffffffff))
+	 wr_sec &= 0xffffffff;
+
+      printf(" %8.2f %12.2f %12.2f %10llu %10llu\n",
+	     S_VALUE(ioj->rd_ios + ioj->wr_ios, ioi->rd_ios + ioi->wr_ios, itv),
+	     ll_s_value(ioj->rd_sectors, ioi->rd_sectors, itv) / fctr,
+	     ll_s_value(ioj->wr_sectors, ioi->wr_sectors, itv) / fctr,
+	     (unsigned long long) rd_sec / fctr,
+	     (unsigned long long) wr_sec / fctr);
    }
-   else if (DISPLAY_MEGABYTES(flags)) {
-      printf("Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn\n");
-      fctr = 2048;
-   }
-   else
-      printf("Device:            tps   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n");
-
-   for (i = 0; i < iodev_nr; i++) {
-      st_hdr_iodev_i = st_hdr_iodev + i;
-      if (st_hdr_iodev_i->major || HAS_OLD_KERNEL(flags)) {
-	
-	 if (dlist_idx && !HAS_SYSFS(flags)) {
-	    /*
-	     * If devices have been entered on the command line, display the
-	     * stats only for them.
-	     * No problem if sysfs is mounted, since in this case only the
-	     * requested devices have been read...
-	     */
-	    for (j = 0; j < dlist_idx; j++) {
-	       st_dev_list_j = st_dev_list + j;
-	       if (!strcmp(st_hdr_iodev_i->name, st_dev_list_j->dev_name))
-		  break;
-	    }
-	    if (j == dlist_idx)
-	       /* Device not found in list: skip it */
-	       continue;
-	 }
-	
-	 ioi = st_iodev[curr] + i;
-	 ioj = st_iodev[!curr] + i;
-
-	 if (!DISPLAY_UNFILTERED(flags)) {
-	    if (HAS_SYSFS(flags) ||
-		HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) {
-	       if (!ioi->rd_ios && !ioi->wr_ios)
-		  continue;
-	    }
-	    else if (!ioi->dk_drive)
-	       continue;
-	 }
-	
-	 printf("%-13s", st_hdr_iodev_i->name);
-	 if (strlen(st_hdr_iodev_i->name) > 13)
-	    printf("\n             ");
-
-	 if (HAS_SYSFS(flags) ||
-	     HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) {
-	    /* Print stats coming from /sys or /proc/{diskstats,partitions} */
-	    printf(" %8.2f %12.2f %12.2f %10llu %10llu\n",
-		   S_VALUE(ioj->rd_ios + ioj->wr_ios, ioi->rd_ios + ioi->wr_ios, itv),
-		   S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv) / fctr,
-		   S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv) / fctr,
-		   (unsigned long long) (ioi->rd_sectors -
-					 ioj->rd_sectors) / fctr,
-		   (unsigned long long) (ioi->wr_sectors -
-					 ioj->wr_sectors) / fctr);
-	 }
-	 else {
-	    /* Print stats coming from /proc/stat */
-	    printf(" %8.2f %12.2f %12.2f %10lu %10lu\n",
-		   S_VALUE(ioj->dk_drive, ioi->dk_drive, itv),
-		   S_VALUE(ioj->dk_drive_rblk, ioi->dk_drive_rblk, itv) / fctr,
-		   S_VALUE(ioj->dk_drive_wblk, ioi->dk_drive_wblk, itv) / fctr,
-		   (ioi->dk_drive_rblk - ioj->dk_drive_rblk) / fctr,
-		   (ioi->dk_drive_wblk - ioj->dk_drive_wblk) / fctr);
-	 }
-      }
+   else {
+      /* Print stats coming from /proc/stat */
+      printf(" %8.2f %12.2f %12.2f %10lu %10lu\n",
+	     S_VALUE(ioj->dk_drive, ioi->dk_drive, itv),
+	     S_VALUE(ioj->dk_drive_rblk, ioi->dk_drive_rblk, itv) / fctr,
+	     S_VALUE(ioj->dk_drive_wblk, ioi->dk_drive_wblk, itv) / fctr,
+	     (ioi->dk_drive_rblk - ioj->dk_drive_rblk) / fctr,
+	     (ioi->dk_drive_wblk - ioj->dk_drive_wblk) / fctr);
    }
 }
 
@@ -1023,7 +941,11 @@ void write_basic_stat(int curr, unsigned long long itv, int flags)
  */
 int write_stat(int curr, int flags, struct tm *loc_time)
 {
+   int dev, i, fctr = 1;
    unsigned long long itv;
+   struct io_hdr_stats *shi = st_hdr_iodev;
+   struct io_stats *ioi, *ioj;
+   struct io_dlist *st_dev_list_i;
 
    /*
     * Under very special circumstances, STDOUT may become unavailable,
@@ -1078,19 +1000,57 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
    if (!DISPLAY_CPU_ONLY(flags)) {
 
-      if (DISPLAY_EXTENDED(flags))
-	 /*
-	  * Write extended stats, read from
-	  * /proc/{diskstats,partitions} or /sys.
-	  */
-	 write_ext_stat(curr, itv, flags);
-      else
-	 /*
-	  * Write basic stats, read from
-	  * /proc/stat, /proc/{diskstats,partitions} or /sys.
-	  */
-	 write_basic_stat(curr, itv, flags);
+      /* Display stats header */
+      write_stat_header(flags, &fctr);
 
+      if (DISPLAY_EXTENDED(flags) &&
+	  (HAS_OLD_KERNEL(flags) || HAS_PLAIN_KERNEL24(flags))) {
+	 /* No extended stats with old 2.2-2.4 kernels */
+	 printf("\n");
+	 return 1;
+      }
+
+      for (i = 0; i < iodev_nr; i++, shi++) {
+	 if (shi->used) {
+	
+	    if (dlist_idx && !HAS_SYSFS(flags)) {
+	       /*
+		* With sysfs, only stats for the requested devices are read.
+		* With /proc/{diskstats,partitions}, stats for every devices
+		* are read. Thus we need to check if stats for current device
+		* are to be displayed.
+		*/
+	       for (dev = 0; dev < dlist_idx; dev++) {
+		  st_dev_list_i = st_dev_list + dev;
+		  if (!strcmp(shi->name, st_dev_list_i->dev_name))
+		     break;
+	       }
+	       if (dev == dlist_idx)
+		  /* Device not found in list: don't display it */
+		  continue;
+	    }
+	
+	    ioi = st_iodev[curr] + i;
+	    ioj = st_iodev[!curr] + i;
+
+	    if (!DISPLAY_UNFILTERED(flags)) {
+	       if (HAS_OLD_KERNEL(flags) ||
+		   HAS_PLAIN_KERNEL24(flags)) {
+		  if (!ioi->dk_drive)
+		     continue;
+	       }
+	       else {
+		  if (!ioi->rd_ios && !ioi->wr_ios)
+		     continue;
+	       }
+	    }
+
+	    if (DISPLAY_EXTENDED(flags))
+	       write_ext_stat(curr, itv, flags, fctr, shi, ioi, ioj);
+	    else
+	       write_basic_stat(curr, itv, flags, fctr, shi, ioi, ioj);
+	 }
+      }
       printf("\n");
    }
    return 1;
@@ -1110,7 +1070,7 @@ void rw_io_stat_loop(int flags, long int count, struct tm *loc_time)
 
    do {
       /* Read kernel statistics (CPU, and possibly disks for old kernels) */
-      read_stat(curr, flags);
+      read_proc_stat(curr, flags);
 
       if (dlist_idx) {
 	 /*
@@ -1220,10 +1180,14 @@ int main(int argc, char **argv)
 	       break;
 	
 	     case 'k':
+	       if (DISPLAY_MEGABYTES(flags))
+		  usage(argv[0]);
 	       flags |= I_D_KILOBYTES;	/* Display stats in kB/s */
 	       break;
 
 	     case 'm':
+	       if (DISPLAY_KILOBYTES(flags))
+		  usage(argv[0]);
 	       flags |= I_D_MEGABYTES;	/* Display stats in MB/s */
 	       break;
 

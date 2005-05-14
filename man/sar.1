@@ -1,4 +1,4 @@
-.TH SAR 1 "DECEMBER 2004" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "APRIL 2005" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -38,7 +38,9 @@ and
 .I interval
 parameters, writes information the specified number of times spaced
 at the specified intervals in seconds.
-If the interval parameter is set to zero, the
+If the
+.I interval
+parameter is set to zero, the
 .B sar
 command displays the average statistics for the time
 since the system was started. The default value for the
@@ -49,12 +51,17 @@ The collected data can also
 be saved in the file specified by the
 .B -o
 .I filename
-flag, in addition to being displayed onto the screen. If
+flag, instead of being displayed onto the screen. If
 .I filename
 is omitted, sar uses the standard system activity daily data file,
 the
 .IR /var/log/sa/sa dd
 file, where the dd parameter indicates the current day.
+By default all the data available from the kernel are saved in the
+data file. Exceptions are interrupts and disks data, for which the
+relevant options must be explicitly passed to sar (or to its backend
+.B sadc
+) when the data file is created (see options below).
 
 The
 .B sar
@@ -271,7 +278,7 @@ Percentage of CPU time during which I/O requests were issued to the device
 value is close to 100%.
 .RE
 .RE
-.IP "-e hh:mm:ss"
+.IP "-e [ hh:mm:ss ]"
 Set the ending time of the report. The default ending time is
 18:00:00. Hours must be given in 24-hour format.
 This option can be used only when data are read from
@@ -280,7 +287,7 @@ or written to a file (options
 or
 .B -o
 ).
-.IP "-f filename"
+.IP "-f [ filename ]"
 Extract records from
 .I filename
 (created by the
@@ -295,7 +302,7 @@ Select data records at seconds as close as possible to the number specified
 by the
 .I interval
 parameter.
-.IP "-I irq | SUM | ALL | XALL"
+.IP "-I { irq | SUM | ALL | XALL }"
 Report statistics for a given interrupt.
 .B irq
 is the interrupt number. Specifying multiple
@@ -311,7 +318,7 @@ the first 16 interrupts are to be reported, whereas the
 .B XALL
 keyword indicates that statistics from all interrupts, including potential
 APIC interrupt sources, are to be reported.
-.IP "-n DEV | EDEV | NFS | NFSD | SOCK | FULL"
+.IP "-n { DEV | EDEV | NFS | NFSD | SOCK | FULL }"
 Report network statistics.
 
 With the
@@ -548,14 +555,14 @@ keyword is equivalent to specifying all the keywords above and therefore all the
 activities are reported.
 .RE
 .RE
-.IP "-o filename"
+.IP "-o [ filename ]"
 Save the readings in the file in binary form. Each reading
 is in a separate record. The default value of the
 .B filename
 parameter is the current daily data file, the
 .IR /var/log/sa/sa dd
 file. The -o option is exclusive of the -f option.
-.IP "-P cpu | ALL"
+.IP "-P { cpu | ALL }"
 Report per-processor statistics for the specified processor or processors.
 Specifying the
 .B ALL
@@ -683,7 +690,7 @@ Number of additional memory pages cached by the system per second.
 A negative value means fewer pages in the cache.
 .RE
 .RE
-.IP "-s hh:mm:ss"
+.IP "-s [ hh:mm:ss ]"
 Set the starting time of the data, causing the
 .B sar
 command to extract records time-tagged at, or following, the time
@@ -811,7 +818,7 @@ Total number of swap pages the system brought in per second.
 Total number of swap pages the system brought out per second.
 .RE
 .RE
-.IP "-x pid | SELF | ALL"
+.IP "-x { pid | SELF | ALL }"
 Report statistics for a given process.
 .B pid
 is the process identification number. The
@@ -859,6 +866,7 @@ Percentage of CPU used by the process while executing at the system level
 .B nswap/s
 .RS
 Number of pages from the process address space the system has swapped out per second.
+This value is always zero with post 2.5 kernels.
 .RE
 
 .B CPU
@@ -866,7 +874,7 @@ Number of pages from the process address space the system has swapped out per se
 Processor number to which the process is attached.
 .RE
 .RE
-.IP "-X pid | SELF | ALL"
+.IP "-X { pid | SELF | ALL }"
 Report statistics for the child processes of the process whose PID is
 .B pid .
 The
@@ -913,7 +921,8 @@ Percentage of CPU used by the child processes while executing at the system leve
 
 .B cnswap/s
 .RS
-Number of pages from the child process address spaces the system has swapped out per second.
+Number of pages from the child processes address spaces the system has swapped out per second.
+This value is always zero with post 2.5 kernels.
 .RE
 .RE
 .IP -y
@@ -929,6 +938,26 @@ is given in the TTY column.
 .B xmtin/s
 .RS
 Number of transmit interrupts per second for current serial line.
+.RE
+
+.B framerr/s
+.RS
+Number of frame errors per second for current serial line.
+.RE
+
+.B prtyerr/s
+.RS
+Number of parity errors per second for current serial line.
+.RE
+
+.B brk/s
+.RS
+Number of breaks per second for current serial line.
+.RE
+
+.B ovrun/s
+.RS
+Number of overrun errors per second for current serial line.
 .RE
 
 Note that with recent 2.6 kernels, these statistics can be retrieved only by

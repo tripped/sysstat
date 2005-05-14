@@ -46,7 +46,7 @@
 1:initrd:x:250:d:256:*:1:Initial RAM Disk (initrd)
 
 #2:0:0:Floppy Devices
-2:fd:*:0:d:2:*:1:Floppy Devices fd0,fd1
+2:fd:*:0:d:4:*:1:Floppy Devices fd0,fd1,fd2,fd3
 
 3:hd:*:0:a:2:*:64:IDE - Controller %d
 22:3:1:
@@ -62,7 +62,7 @@
 #4:0:0:NODEV
 #5:0:0:NODEV
 #6:0:0:NODEV
-#7:0:0:Loop Devices, Not Supported
+7:loop:*:0:d:256:*:1:Loop Devices 
 
 8:sd:*:0:a:16:*:16:SCSI - Controller %d
 65:8:1:

@@ -2,7 +2,7 @@
 # (C) 1999-2005 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 5.1.5
+VERSION = 6.0.0
 
 include build/CONFIG
 

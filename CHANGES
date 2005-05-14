@@ -1,5 +1,34 @@
 Changes:
 
+2005/05/14: Version 6.0.0 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x2167]
+	* Additional fields added to sar -y (TTY statistics). sar, sadf
+	  and DTD updated.
+	* sar -d now only reports for used devices (devices with non zero
+	  statistics).
+	* Stricter sadf syntax checking: various output formats are now
+	  mutually exclusive.
+	* Stricter iostat syntax checking: -k and -m options are now
+	  mutually exclusive.
+	* iostat: option -m is now taken into account even when
+	  displaying extended statistics.
+	* Fixed a bug that prevented iostat from displaying stats about
+	  devices that were unknown in sysstat.ioconf file.
+	* iostat might display bogus sectors values when the corresponding
+	  kernel counters had overflown. This is now fixed.
+	* "sadf datafile -- -A" should also display individual interrupts
+	  if available in datafile.
+	* Fixed a bug that prevented sar -x from displaying stats about a
+	  process if it was after the first 256 processes in the process
+	  list.
+	* Manual pages updated.
+	* sa1 script always uses option -d in crontab.
+	* sysstat.ioconf device configuration file updated.
+	* NLS updated.
+	* FAQ and CREDITS files updated.
+	* Code cleaned.
+
 2005/02/25: Version 5.1.5 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* -x option added to sadf: it is now able to display the contents of
 	  a sar datafile in XML. The corresponding DTD (Document Type

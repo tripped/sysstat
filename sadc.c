@@ -49,7 +49,8 @@
 
 /* Nb of processors on the machine. A value of 1 means two processors */
 int cpu_nr = -1;
-unsigned int serial_used = 0, iface_used = 0, irqcpu_used = 0, disk_used = 0;
+unsigned int serial_nr = 0, iface_nr = 0, irqcpu_nr = 0, disk_nr = 0;
+int pid_nr = 0;
 unsigned int sadc_actflag;
 long interval = 0;
 int kb_shift = 0;
@@ -67,7 +68,6 @@ unsigned long all_pids[MAX_PID_NR];
 unsigned char f_pids[MAX_PID_NR];
 unsigned int interrupts[NR_IRQS];
 unsigned int u_tmp[NR_DISKS - 1];
-int pid_nr = 0, apid_nr = 0;
 
 
 /*
@@ -109,14 +109,14 @@ void alarm_handler(int sig)
  * (only on SMP machines)
  ***************************************************************************
  */
-void salloc_cpu(int nr_cpu)
+void salloc_cpu(int nb_cpu)
 {
-   if ((st_cpu = (struct stats_one_cpu *) malloc(STATS_ONE_CPU_SIZE * nr_cpu)) == NULL) {
+   if ((st_cpu = (struct stats_one_cpu *) malloc(STATS_ONE_CPU_SIZE * nb_cpu)) == NULL) {
       perror("malloc");
       exit(4);
    }
 
-   memset(st_cpu, 0, STATS_ONE_CPU_SIZE * nr_cpu);
+   memset(st_cpu, 0, STATS_ONE_CPU_SIZE * nb_cpu);
 }
 
 
@@ -125,14 +125,14 @@ void salloc_cpu(int nr_cpu)
  * Allocate stats_serial structures
  ***************************************************************************
  */
-void salloc_serial(unsigned int nr_serial)
+void salloc_serial(unsigned int nb_serial)
 {
-   if ((st_serial = (struct stats_serial *) malloc(STATS_SERIAL_SIZE * nr_serial)) == NULL) {
+   if ((st_serial = (struct stats_serial *) malloc(STATS_SERIAL_SIZE * nb_serial)) == NULL) {
       perror("malloc");
       exit(4);
    }
 
-   memset(st_serial, 0, STATS_SERIAL_SIZE * nr_serial);
+   memset(st_serial, 0, STATS_SERIAL_SIZE * nb_serial);
 }
 
 
@@ -141,7 +141,7 @@ void salloc_serial(unsigned int nr_serial)
  * Allocate stats_irq_cpu structures
  ***************************************************************************
  */
-void salloc_irqcpu(int nr_cpu, unsigned int nr_irqcpu)
+void salloc_irqcpu(int nb_cpu, unsigned int nb_irqcpu)
 {
    /*
     * st_irq_cpu->irq:       IRQ#-A
@@ -156,12 +156,12 @@ void salloc_irqcpu(int nr_cpu, unsigned int nr_irqcpu)
     * ...
     */
 
-   if ((st_irq_cpu = (struct stats_irq_cpu *) malloc(STATS_IRQ_CPU_SIZE * nr_cpu * nr_irqcpu)) == NULL) {
+   if ((st_irq_cpu = (struct stats_irq_cpu *) malloc(STATS_IRQ_CPU_SIZE * nb_cpu * nb_irqcpu)) == NULL) {
       perror("malloc");
       exit(4);
    }
 
-   memset(st_irq_cpu, 0, STATS_IRQ_CPU_SIZE * nr_cpu * nr_irqcpu);
+   memset(st_irq_cpu, 0, STATS_IRQ_CPU_SIZE * nb_cpu * nb_irqcpu);
 }
 
 
@@ -170,14 +170,14 @@ void salloc_irqcpu(int nr_cpu, unsigned int nr_irqcpu)
  * Allocate stats_net_dev structures
  ***************************************************************************
  */
-void salloc_net_dev(unsigned int nr_iface)
+void salloc_net_dev(unsigned int nb_iface)
 {
-   if ((st_net_dev = (struct stats_net_dev *) malloc(STATS_NET_DEV_SIZE * nr_iface)) == NULL) {
+   if ((st_net_dev = (struct stats_net_dev *) malloc(STATS_NET_DEV_SIZE * nb_iface)) == NULL) {
       perror("malloc");
       exit(4);
    }
 
-   memset(st_net_dev, 0, STATS_NET_DEV_SIZE * nr_iface);
+   memset(st_net_dev, 0, STATS_NET_DEV_SIZE * nb_iface);
 }
 
 
@@ -186,14 +186,14 @@ void salloc_net_dev(unsigned int nr_iface)
  * Allocate disk_stats structures
  ***************************************************************************
  */
-void salloc_disk(unsigned int nr_disks)
+void salloc_disk(unsigned int nb_disks)
 {
-   if ((st_disk = (struct disk_stats *) malloc(DISK_STATS_SIZE * nr_disks)) == NULL) {
+   if ((st_disk = (struct disk_stats *) malloc(DISK_STATS_SIZE * nb_disks)) == NULL) {
       perror("malloc");
       exit(4);
    }
 
-   memset(st_disk, 0, DISK_STATS_SIZE * nr_disks);
+   memset(st_disk, 0, DISK_STATS_SIZE * nb_disks);
 }
 
 
@@ -202,20 +202,20 @@ void salloc_disk(unsigned int nr_disks)
  * Allocate pid_stats structures
  ***************************************************************************
  */
-void salloc_pid(int pid_nr)
+void salloc_pid(int nb_pid)
 {
    int pid;
 
-   if ((pid_stats[0] = (struct pid_stats *) malloc(PID_STATS_SIZE * pid_nr)) == NULL) {
+   if ((pid_stats[0] = (struct pid_stats *) malloc(PID_STATS_SIZE * nb_pid)) == NULL) {
       perror("malloc");
       exit(4);
    }
 
-   memset(pid_stats[0], 0, PID_STATS_SIZE * pid_nr);
+   memset(pid_stats[0], 0, PID_STATS_SIZE * nb_pid);
 
-   for (pid = 1; pid < pid_nr; pid++)
+   for (pid = 1; pid < nb_pid; pid++)
       /* Structures are aligned but also padded. Thus array members are packed */
-      pid_stats[pid] = pid_stats[0] + pid;	/* Assume pid_nr <= MAX_PID_NR */
+      pid_stats[pid] = pid_stats[0] + pid;	/* Assume nb_pid <= MAX_PID_NR */
 }
 
 
@@ -245,6 +245,27 @@ void init_dk_drive_stat(void)
 }
 
 
+
+/*
+ ***************************************************************************
+ * Insert PID number into the list if not already there and if possible.
+ * Return the index in the list, or MAX_PID_NR if PID could not be inserted.
+ ***************************************************************************
+ */
+int save_pid(unsigned long pid)
+{
+   int i = 0;
+
+   while ((i < pid_nr) && (all_pids[i] != pid))
+      i++;
+   /* PID not found: insert it if possible */
+   if ((i == pid_nr) && (pid_nr < MAX_PID_NR))
+      all_pids[pid_nr++] = pid;
+
+   return i;
+}
+
+
 /*
  ***************************************************************************
  * Set PID flag value (bit 0 set: -x, bit 1 set: -X)
@@ -254,63 +275,20 @@ void set_pflag(int child, unsigned long pid)
 {
    int i = 0, flag;
 
-   if (!pid) {
-      if (child)
-	 flag = 0x02;
-      else
-	 flag = 0x01;
+   if (child)
+      flag = X_PPID_SET;
+   else
+      flag = X_PID_SET;
 
+   if (!pid) {
       for (i = 0; i < MAX_PID_NR; i++)
 	 f_pids[i] |= flag;
    }
    else {
-      if (child)
-	 flag = 0x02;
-      else
-	 flag = 0x01;
-
-      while ((i < apid_nr) && (all_pids[i] != pid))
-	 i++;
-
-      /* PID not found: insert it if possible */
-      if ((i == apid_nr) && (apid_nr < MAX_PID_NR))
-	 all_pids[apid_nr++] = pid;
-
-      f_pids[i] |= flag;
+      if ((i = save_pid(pid)) < MAX_PID_NR)
+	 f_pids[i] |= flag;
    }
 }
-
-
-/*
- ***************************************************************************
- * Count number of processes to display
- ***************************************************************************
- */
-int count_pids(void)
-{
-   int i = 0, n = 0;
-
-   while (i < apid_nr) {
-      if (f_pids[i]) {
-	 n++;
-	 i++;
-      }
-      else {
-	 /* It's an unused entry: remove it */
-	 if (i < apid_nr - 1) {
-	    all_pids[i] = all_pids[apid_nr - 1];
-	    f_pids[i]  |= f_pids[apid_nr - 1];
-	 }
-	 apid_nr--;
-      }
-   }
-
-   /* Allocate structures now */
-   salloc_pid(n);
-
-   return n;
-}
-
 
 
 /*
@@ -320,11 +298,8 @@ int count_pids(void)
  */
 void get_pid_list(void)
 {
-   int i;
    DIR *dir;
    struct dirent *drp;
-
-   apid_nr = 0;
 
    /* Open /proc directory */
    if ((dir = opendir(PROC)) == NULL) {
@@ -334,25 +309,25 @@ void get_pid_list(void)
 
    /* Get directory entries */
    while ((drp = readdir(dir)) != NULL) {
-      if (isdigit(drp->d_name[0]) && (apid_nr < MAX_PID_NR))
-	 all_pids[apid_nr++] = atol(drp->d_name);
+      if (isdigit(drp->d_name[0])) {
+	 /* Save PID in th list */
+	 if (save_pid(atol(drp->d_name)) == MAX_PID_NR)
+	    break;
+      }
    }
 
    /* Close /proc directory */
-   (void) closedir(dir);
-
-   /* Init PID flag */
-   for (i = 0; i < MAX_PID_NR; i++)
-      f_pids[i] = 0;
+   closedir(dir);
 }
 
 
 /*
  ***************************************************************************
  * Find number of serial lines that support tx/rx accounting
+ * in /proc/tty/driver/serial file.
  ***************************************************************************
  */
-void get_serial_lines(unsigned int *serial_used)
+void get_serial_lines(unsigned int *serial_nr)
 #ifdef SMP_RACE
 {
    /*
@@ -360,22 +335,21 @@ void get_serial_lines(unsigned int *serial_used)
     * This is because there is an SMP race in some 2.2.x kernels that
     * may be triggered when reading the /proc/tty/driver/serial file.
     */
-   *serial_used = 0;
+   *serial_nr = 0;
    return;
 }
 #else
 {
-   FILE *serfp;
+   FILE *fp;
    char line[256];
    unsigned int sl = 0;
 
-   /* Open serial file */
-   if ((serfp = fopen(SERIAL, "r")) == NULL) {
-      *serial_used = 0;	/* No SERIAL file */
+   if ((fp = fopen(SERIAL, "r")) == NULL) {
+      *serial_nr = 0;	/* No SERIAL file */
       return;
    }
 
-   while (fgets(line, 256, serfp) != NULL) {
+   while (fgets(line, 256, fp) != NULL) {
       /*
        * tx/rx statistics are always present,
        * except when serial line is unknown.
@@ -384,10 +358,9 @@ void get_serial_lines(unsigned int *serial_used)
 	 sl++;
    }
 
-   /* Close serial file */
-   fclose(serfp);
+   fclose(fp);
 
-   *serial_used = sl + NR_SERIAL_PREALLOC;
+   *serial_nr = sl + NR_SERIAL_PREALLOC;
 }
 #endif
 
@@ -398,57 +371,53 @@ void get_serial_lines(unsigned int *serial_used)
  * file
  ***************************************************************************
  */
-void get_net_dev(unsigned int *iface_used)
+void get_net_dev(unsigned int *iface_nr)
 {
-   FILE *devfp;
+   FILE *fp;
    char line[128];
    unsigned int dev = 0;
 
-   /* Open network device file */
-   if ((devfp = fopen(NET_DEV, "r")) == NULL) {
-      *iface_used = 0;	/* No network device file */
+   if ((fp = fopen(NET_DEV, "r")) == NULL) {
+      *iface_nr = 0;	/* No network device file */
       return;
    }
 
-   while (fgets(line, 128, devfp) != NULL) {
+   while (fgets(line, 128, fp) != NULL) {
       if (strchr(line, ':'))
 	 dev++;
    }
 
-   /* Close network device file */
-   fclose(devfp);
+   fclose(fp);
 
-   *iface_used = dev + NR_IFACE_PREALLOC;
+   *iface_nr = dev + NR_IFACE_PREALLOC;
 }
 
 
 /*
  ***************************************************************************
- * Find number of interrupts available per processor.
- * Called on SMP machines only.
+ * Find number of interrupts available per processor (use
+ * /proc/interrupts file). Called on SMP machines only.
  ***************************************************************************
  */
-void get_irqcpu_nb(unsigned int *irqcpu_used, unsigned int max_nr_irqcpu)
+void get_irqcpu_nb(unsigned int *irqcpu_nr, unsigned int max_nr_irqcpu)
 {
-   FILE *irqfp;
+   FILE *fp;
    char line[256];
    unsigned int irq = 0;
 
-   /* Open interrupts file */
-   if ((irqfp = fopen(INTERRUPTS, "r")) == NULL) {
-      *irqcpu_used = 0;	/* No INTERRUPTS file */
+   if ((fp = fopen(INTERRUPTS, "r")) == NULL) {
+      *irqcpu_nr = 0;	/* No interrupts file */
       return;
    }
 
-   while ((fgets(line, 256, irqfp) != NULL) && (irq < max_nr_irqcpu)) {
+   while ((fgets(line, 256, fp) != NULL) && (irq < max_nr_irqcpu)) {
       if (isdigit(line[2]))
 	 irq++;
    }
 
-   /* Close interrupts file */
-   fclose(irqfp);
+   fclose(fp);
 
-   *irqcpu_used = irq + NR_IRQPROC_PREALLOC;
+   *irqcpu_nr = irq + NR_IRQPROC_PREALLOC;
 }
 
 
@@ -460,52 +429,52 @@ void get_irqcpu_nb(unsigned int *irqcpu_used, unsigned int max_nr_irqcpu)
 void sa_sys_init(unsigned int *flags)
 {
    /* How many processors on this machine ? */
-   get_cpu_nr(&cpu_nr, NR_CPUS);
+   cpu_nr = get_cpu_nr(NR_CPUS);
    if (cpu_nr > 0)
       salloc_cpu(cpu_nr + 1);
 
    /* Get serial lines that support accounting */
-   get_serial_lines(&serial_used);
-   if (serial_used) {
+   get_serial_lines(&serial_nr);
+   if (serial_nr) {
       sadc_actflag |= A_SERIAL;
-      salloc_serial(serial_used);
+      salloc_serial(serial_nr);
    }
    /* Get number of interrupts available per processor */
    if (cpu_nr > 0) {
-      get_irqcpu_nb(&irqcpu_used, NR_IRQS);
-      if (irqcpu_used)
-	 salloc_irqcpu(cpu_nr + 1, irqcpu_used);
+      get_irqcpu_nb(&irqcpu_nr, NR_IRQS);
+      if (irqcpu_nr)
+	 salloc_irqcpu(cpu_nr + 1, irqcpu_nr);
    }
    else
       /* IRQ per processor are not provided by sadc on UP machines */
-      irqcpu_used = 0;
+      irqcpu_nr = 0;
 
    /* Get number of network devices (interfaces) */
-   get_net_dev(&iface_used);
-   if (iface_used) {
+   get_net_dev(&iface_nr);
+   if (iface_nr) {
       sadc_actflag |= A_NET_DEV + A_NET_EDEV;
-      salloc_net_dev(iface_used);
+      salloc_net_dev(iface_nr);
    }
    /*
     * Get number of devices in /proc/{diskstats,partitions}
     * or number of disk_io entries in /proc/stat.
     */
-   if ((disk_used = get_diskstats_dev_nr(CNT_DEV)) > 0) {
+   if ((disk_nr = get_diskstats_dev_nr(CNT_DEV, CNT_USED_DEV)) > 0) {
       *flags |= S_F_HAS_DISKSTATS;
       sadc_actflag |= A_DISK;
-      disk_used += NR_DISK_PREALLOC;
-      salloc_disk(disk_used);
+      disk_nr += NR_DISK_PREALLOC;
+      salloc_disk(disk_nr);
    }
-   else if ((disk_used = get_ppartitions_dev_nr(CNT_DEV)) > 0) {
+   else if ((disk_nr = get_ppartitions_dev_nr(CNT_DEV)) > 0) {
       *flags |= S_F_HAS_PPARTITIONS;
       sadc_actflag |= A_DISK;
-      disk_used += NR_DISK_PREALLOC;
-      salloc_disk(disk_used);
+      disk_nr += NR_DISK_PREALLOC;
+      salloc_disk(disk_nr);
    }
-   else if ((disk_used = get_disk_io_nr()) > 0) {
+   else if ((disk_nr = get_disk_io_nr()) > 0) {
       sadc_actflag |= A_DISK;
-      disk_used += NR_DISK_PREALLOC;
-      salloc_disk(disk_used);
+      disk_nr += NR_DISK_PREALLOC;
+      salloc_disk(disk_nr);
    }
 }
 
@@ -563,18 +532,18 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
    file_hdr.sa_ust_time = get_localtime(&loc_time);
 
    /* Ok, now fill the header */
-   file_hdr.sa_actflag     = sadc_actflag;
-   file_hdr.sa_magic       = SA_MAGIC;
-   file_hdr.sa_st_size     = FILE_STATS_SIZE;
-   file_hdr.sa_day         = loc_time.tm_mday;
-   file_hdr.sa_month       = loc_time.tm_mon;
-   file_hdr.sa_year        = loc_time.tm_year;
-   file_hdr.sa_proc        = cpu_nr;
-   file_hdr.sa_nr_pid      = pid_nr;
-   file_hdr.sa_serial      = serial_used;
-   file_hdr.sa_irqcpu      = irqcpu_used;
-   file_hdr.sa_iface       = iface_used;
-   file_hdr.sa_nr_disk     = disk_used;
+   file_hdr.sa_actflag = sadc_actflag;
+   file_hdr.sa_magic   = SA_MAGIC;
+   file_hdr.sa_st_size = FILE_STATS_SIZE;
+   file_hdr.sa_day     = loc_time.tm_mday;
+   file_hdr.sa_month   = loc_time.tm_mon;
+   file_hdr.sa_year    = loc_time.tm_year;
+   file_hdr.sa_proc    = cpu_nr;
+   file_hdr.sa_nr_pid  = pid_nr;
+   file_hdr.sa_serial  = serial_nr;
+   file_hdr.sa_irqcpu  = irqcpu_nr;
+   file_hdr.sa_iface   = iface_nr;
+   file_hdr.sa_nr_disk = disk_nr;
 
    *file_stats_size = FILE_STATS_SIZE;
 
@@ -589,7 +558,8 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
 
    /* Write file header */
    if ((nb = write(ofd, &file_hdr, FILE_HDR_SIZE)) != FILE_HDR_SIZE) {
-      fprintf(stderr, _("Cannot write system activity file header: %s\n"), strerror(errno));
+      fprintf(stderr, _("Cannot write system activity file header: %s\n"),
+	      strerror(errno));
       exit(2);
    }
 }
@@ -668,21 +638,21 @@ void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
       if ((nb = write(ofd, pid_stats[0], PID_STATS_SIZE * pid_nr)) != (PID_STATS_SIZE * pid_nr))
 	 p_write_error();
    }
-   if (serial_used) {
-      if ((nb = write(ofd, st_serial, STATS_SERIAL_SIZE * serial_used)) != (STATS_SERIAL_SIZE * serial_used))
+   if (serial_nr) {
+      if ((nb = write(ofd, st_serial, STATS_SERIAL_SIZE * serial_nr)) != (STATS_SERIAL_SIZE * serial_nr))
 	 p_write_error();
    }
-   if (irqcpu_used) {
-      if ((nb = write(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_used))
-	  != (STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_used))
+   if (irqcpu_nr) {
+      if ((nb = write(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_nr))
+	  != (STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_nr))
 	 p_write_error();
    }
-   if (iface_used) {
-      if ((nb = write(ofd, st_net_dev, STATS_NET_DEV_SIZE * iface_used)) != (STATS_NET_DEV_SIZE * iface_used))
+   if (iface_nr) {
+      if ((nb = write(ofd, st_net_dev, STATS_NET_DEV_SIZE * iface_nr)) != (STATS_NET_DEV_SIZE * iface_nr))
 	 p_write_error();
    }
-   if (disk_used) {
-      if ((nb = write(ofd, st_disk, DISK_STATS_SIZE * disk_used)) != (DISK_STATS_SIZE * disk_used))
+   if (disk_nr) {
+      if ((nb = write(ofd, st_disk, DISK_STATS_SIZE * disk_nr)) != (DISK_STATS_SIZE * disk_nr))
 	 p_write_error();
    }
 }
@@ -779,29 +749,29 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
 	  * Force characteristics (nb of serial lines, network interfaces...)
 	  * to that of the file.
 	  */
-	 if (file_hdr.sa_serial != serial_used) {
-	    if (serial_used)
+	 if (file_hdr.sa_serial != serial_nr) {
+	    if (serial_nr)
 	       free(st_serial);
-	    serial_used = file_hdr.sa_serial;
-	    salloc_serial(serial_used);
+	    serial_nr = file_hdr.sa_serial;
+	    salloc_serial(serial_nr);
 	 }
-	 if (file_hdr.sa_iface != iface_used) {
-	    if (iface_used)
+	 if (file_hdr.sa_iface != iface_nr) {
+	    if (iface_nr)
 	       free(st_net_dev);
-	    iface_used = file_hdr.sa_iface;
-	    salloc_net_dev(iface_used);
+	    iface_nr = file_hdr.sa_iface;
+	    salloc_net_dev(iface_nr);
 	 }
-	 if (file_hdr.sa_irqcpu != irqcpu_used) {
-	    if (irqcpu_used)
+	 if (file_hdr.sa_irqcpu != irqcpu_nr) {
+	    if (irqcpu_nr)
 	       free(st_irq_cpu);
-	    irqcpu_used = file_hdr.sa_irqcpu;
-	    salloc_irqcpu(cpu_nr + 1, irqcpu_used);
+	    irqcpu_nr = file_hdr.sa_irqcpu;
+	    salloc_irqcpu(cpu_nr + 1, irqcpu_nr);
 	 }
-	 if (file_hdr.sa_nr_disk != disk_used) {
-	    if (disk_used)
+	 if (file_hdr.sa_nr_disk != disk_nr) {
+	    if (disk_nr)
 	       free(st_disk);
-	    disk_used = file_hdr.sa_nr_disk;
-	    salloc_disk(disk_used);
+	    disk_nr = file_hdr.sa_nr_disk;
+	    salloc_disk(disk_nr);
 	 }
       }
    }
@@ -820,14 +790,11 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
 /*
  ***************************************************************************
  * Read stats from /proc/stat
- * See kernel sources:
- * 2.4: linux/fs/proc/proc_misc.c: kstat_read_proc()
- * 2.6: linux/fs/proc/proc_misc.c: show_stat()
  ***************************************************************************
  */
 void read_proc_stat(unsigned int flags)
 {
-   FILE *statfp;
+   FILE *fp;
    struct stats_one_cpu *st_cpu_i;
    struct disk_stats *st_disk_i;
    static char line[8192];
@@ -836,13 +803,12 @@ void read_proc_stat(unsigned int flags)
    unsigned int v_tmp[5], v_major, v_index;
    int proc_nb, i, pos;
 
-   /* Open stat file */
-   if ((statfp = fopen(STAT, "r")) == NULL) {
+   if ((fp = fopen(STAT, "r")) == NULL) {
       fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
       exit(2);
    }
 
-   while (fgets(line, 8192, statfp) != NULL) {
+   while (fgets(line, 8192, fp) != NULL) {
 
       if (!strncmp(line, "cpu ", 4)) {
 	 /*
@@ -1008,7 +974,7 @@ void read_proc_stat(unsigned int flags)
 	       file_stats.dk_drive_wio  += v_tmp[3];
 	       file_stats.dk_drive_wblk += v_tmp[4];
 
-	       if (dsk < disk_used) {
+	       if (dsk < disk_nr) {
 		  st_disk_i = st_disk + dsk++;
 		  st_disk_i->major = v_major;
 		  st_disk_i->minor = v_index;
@@ -1019,7 +985,7 @@ void read_proc_stat(unsigned int flags)
 	       pos += strcspn(line + pos, " ") + 1;
 	    }
 
-	    while (dsk < disk_used) {
+	    while (dsk < disk_nr) {
 	       /*
 		* Nb of disks has changed, or appending data to an old file
 		* with more disks than are actually available now.
@@ -1031,34 +997,30 @@ void read_proc_stat(unsigned int flags)
       }
    }
 
-   /* Close stat file */
-   fclose(statfp);
+   fclose(fp);
 }
 
 
 /*
  ***************************************************************************
  * Read stats from /proc/loadavg
- * See kernel sources:
- * 2.4/2.6: linux/fs/proc/proc_misc.c: loadavg_read_proc()
  ***************************************************************************
  */
 void read_proc_loadavg(void)
 {
-   FILE *loadfp;
+   FILE *fp;
    int load_tmp[3];
 
-   /* Open loadavg file */
-   if ((loadfp = fopen(LOADAVG, "r")) != NULL) {
+   if ((fp = fopen(LOADAVG, "r")) != NULL) {
 
       /* Read load averages and queue length */
-      fscanf(loadfp, "%d.%d %d.%d %d.%d %ld/%d %*d\n",
+      fscanf(fp, "%d.%d %d.%d %d.%d %ld/%d %*d\n",
 	     &(load_tmp[0]), &(file_stats.load_avg_1),
 	     &(load_tmp[1]), &(file_stats.load_avg_5),
 	     &(load_tmp[2]), &(file_stats.load_avg_15),
 	     &(file_stats.nr_running),
 	     &(file_stats.nr_threads));
-      fclose(loadfp);
+      fclose(fp);
 
       file_stats.load_avg_1  += load_tmp[0] * 100;
       file_stats.load_avg_5  += load_tmp[1] * 100;
@@ -1073,20 +1035,17 @@ void read_proc_loadavg(void)
 /*
  ***************************************************************************
  * Read stats from /proc/meminfo
- * See kernel sources:
- * 2.4/2.6: linux/fs/proc/proc_misc.c: meminfo_read_proc()
  ***************************************************************************
  */
 void read_proc_meminfo(void)
 {
-   FILE *memfp;
+   FILE *fp;
    static char line[128];
 
-   /* Open meminfo file */
-   if ((memfp = fopen(MEMINFO, "r")) == NULL)
+   if ((fp = fopen(MEMINFO, "r")) == NULL)
       return;
 
-   while (fgets(line, 128, memfp) != NULL) {
+   while (fgets(line, 128, fp) != NULL) {
 
       if (!strncmp(line, "MemTotal:", 9))
 	 /* Read the total amount of memory in kB */
@@ -1116,28 +1075,24 @@ void read_proc_meminfo(void)
 	 sscanf(line + 9, "%lu", &(file_stats.frskb));
    }
 
-   /* Close meminfo file */
-   fclose(memfp);
+   fclose(fp);
 }
 
 
 /*
  ***************************************************************************
  * Read stats from /proc/vmstat (post 2.5 kernels)
- * See kernel sources:
- * 2.6: linux/mm/page_alloc.c: vmstat_show()
  ***************************************************************************
  */
 void read_proc_vmstat(void)
 {
-   FILE *vmfp;
+   FILE *fp;
    static char line[128];
 
-   /* Open vmstat file */
-   if ((vmfp = fopen(VMSTAT, "r")) == NULL)
+   if ((fp = fopen(VMSTAT, "r")) == NULL)
       return;
 
-   while (fgets(line, 128, vmfp) != NULL) {
+   while (fgets(line, 128, fp) != NULL) {
       /*
        * Some of these stats may have already been read
        * in /proc/stat file (pre 2.5 kernels).
@@ -1168,21 +1123,18 @@ void read_proc_vmstat(void)
 	 sscanf(line + 10, "%lu", &(file_stats.pgmajfault));
    }
 
-   /* Close file */
-   fclose(vmfp);
+   fclose(fp);
 }
 
 
 /*
  ***************************************************************************
  * Read stats from /proc/<pid>/stat
- * See kernel sources:
- * 2.4/2.6: linux/fs/proc/array.c: proc_pid_stat()
  ***************************************************************************
  */
 void read_pid_stat(void)
 {
-   FILE *pidfp;
+   FILE *fp;
    int pid;
    static char filename[24];
 
@@ -1191,16 +1143,17 @@ void read_pid_stat(void)
       if (!all_pids[pid])
 	 continue;
 
-      /* Open <pid>/stat file */
       sprintf(filename, PID_STAT, all_pids[pid]);
-      if ((pidfp = fopen(filename, "r")) == NULL) {
+      if ((fp = fopen(filename, "r")) == NULL) {
 	 /* No such process */
 	 all_pids[pid] = 0;
 	 pid_stats[pid]->pid = 0;
 	 continue;
       }
 
-      fscanf(pidfp, "%*d %*s %*s %*d %*d %*d %*d %*d %*u %lu %lu %lu %lu %lu %lu %lu %lu %*d %*d %*u %*u %*d %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %lu %lu %*u %u\n",
+      fscanf(fp, "%*d %*s %*s %*d %*d %*d %*d %*d %*u %lu %lu %lu %lu %lu %lu %lu "
+	         "%lu %*d %*d %*u %*u %*d %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u "
+	         "%*u %*u %*u %lu %lu %*u %u\n",
 	     &(pid_stats[pid]->minflt), &(pid_stats[pid]->cminflt),
 	     &(pid_stats[pid]->majflt), &(pid_stats[pid]->cmajflt),
 	     &(pid_stats[pid]->utime),  &(pid_stats[pid]->stime),
@@ -1211,8 +1164,7 @@ void read_pid_stat(void)
       pid_stats[pid]->pid  = all_pids[pid];
       pid_stats[pid]->flag = f_pids[pid];
 
-      /* Close <pid>/stat file */
-      fclose(pidfp);
+      fclose(fp);
    }
 }
 
@@ -1220,8 +1172,6 @@ void read_pid_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/tty/driver/serial
- * See kernel sources:
- * 2.4: linux/driver/char/serial.c: line_info()
  ***************************************************************************
  */
 void read_serial_stat(void)
@@ -1230,37 +1180,42 @@ void read_serial_stat(void)
    unsigned int sl = 0;
 
 #ifndef SMP_RACE
-   FILE *serfp;
+   FILE *fp;
    static char line[256];
-   unsigned int tty;
    char *p;
 	
-      /* Open serial file */
-      if ((serfp = fopen(SERIAL, "r")) != NULL) {
+      if ((fp = fopen(SERIAL, "r")) != NULL) {
 
-	 while ((fgets(line, 256, serfp) != NULL) && (sl < serial_used)) {
+	 while ((fgets(line, 256, fp) != NULL) && (sl < serial_nr)) {
 
 	    if ((p = strstr(line, "tx:")) != NULL) {
+	       st_serial_i = st_serial + sl;
+	       sscanf(line, "%u", &(st_serial_i->line));
 	       /*
-		* Read the number of chrs transmitted and received by
+		* Read the number of chars transmitted and received by
 		* current serial line.
 		*/
-	       sscanf(line, "%u", &tty);
-	       st_serial_i = st_serial + sl;
 	       sscanf(p + 3, "%u", &(st_serial_i->tx));
-	       sscanf(strstr(line, "rx:") + 3, "%u", &(st_serial_i->rx));
+	       if ((p = strstr(line, "rx:")) != NULL)
+		  sscanf(p + 3, "%u", &(st_serial_i->rx));
+	       if ((p = strstr(line, "fe:")) != NULL)
+		  sscanf(p + 3, "%u", &(st_serial_i->frame));
+	       if ((p = strstr(line, "pe:")) != NULL)
+		  sscanf(p + 3, "%u", &(st_serial_i->parity));
+	       if ((p = strstr(line, "brk:")) != NULL)
+		  sscanf(p + 4, "%u", &(st_serial_i->brk));
+	       if ((p = strstr(line, "oe:")) != NULL)
+		  sscanf(p + 3, "%u", &(st_serial_i->overrun));
 
-	       st_serial_i->line = tty;
 	       sl++;
 	    }
 	 }
 
-	 /* Close serial file */
-	 fclose(serfp);
+	 fclose(fp);
       }
 #endif
 
-   while (sl < serial_used) {
+   while (sl < serial_nr) {
       /*
        * Nb of serial lines has changed, or appending data to an old file
        * with more serial lines than are actually available now.
@@ -1274,22 +1229,18 @@ void read_serial_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/interrupts
- * See kernel sources:
- * 2.4: linux/arch/{i386,...}/kernel/irq.c: get_irq_list()
- * 2.6: linux/arch/{i386,...}/kernel/irq.c: show_interrupts()
  ***************************************************************************
  */
 void read_interrupts_stat(void)
 {
-   FILE *irqfp;
+   FILE *fp;
    static char line[INTERRUPTS_LINE];
    unsigned int irq = 0, cpu;
    struct stats_irq_cpu *p;
 
-   /* Open interrupts file */
-   if ((irqfp = fopen(INTERRUPTS, "r")) != NULL) {
+   if ((fp = fopen(INTERRUPTS, "r")) != NULL) {
 
-      while ((fgets(line, INTERRUPTS_LINE, irqfp) != NULL) && (irq < irqcpu_used)) {
+      while ((fgets(line, INTERRUPTS_LINE, fp) != NULL) && (irq < irqcpu_nr)) {
 
 	 if (isdigit(line[2])) {
 	
@@ -1297,9 +1248,9 @@ void read_interrupts_stat(void)
 	    sscanf(line, "%3u", &(p->irq));
 	
 	    for (cpu = 0; cpu <= cpu_nr; cpu++) {
-	       p = st_irq_cpu + cpu * irqcpu_used + irq;
+	       p = st_irq_cpu + cpu * irqcpu_nr + irq;
 	       /*
-		* No need to set (st_irq_cpu + cpu * irqcpu_used)->irq:
+		* No need to set (st_irq_cpu + cpu * irqcpu_nr)->irq:
 		* same as st_irq_cpu->irq.
 		*/
 	       sscanf(line + 4 + 11 * cpu, " %10u", &(p->interrupt));
@@ -1308,11 +1259,10 @@ void read_interrupts_stat(void)
 	 }
       }
 
-      /* Close serial file */
-      fclose(irqfp);
+      fclose(fp);
    }
 
-   while (irq < irqcpu_used) {
+   while (irq < irqcpu_nr) {
       /*
        * Nb of interrupts per processor has changed, or appending data to an
        * old file with more interrupts than are actually available now.
@@ -1328,27 +1278,25 @@ void read_interrupts_stat(void)
  ***************************************************************************
  * Read stats from /proc/sys/fs/...
  * Some files may not exist, depending on the kernel configuration.
- * See kernel sources:
- * 2.4/2.6: linux/kernel/sysctl.c: fs_table[]
  ***************************************************************************
  */
 void read_ktables_stat(void)
 {
-   FILE *ktfp;
+   FILE *fp;
    unsigned int parm;
 
    /* Open /proc/sys/fs/dentry-state file */
-   if ((ktfp = fopen(FDENTRY_STATE, "r")) != NULL) {
-      fscanf(ktfp, "%*d %u %*d %*d %*d %*d\n",
+   if ((fp = fopen(FDENTRY_STATE, "r")) != NULL) {
+      fscanf(fp, "%*d %u",
 	     &(file_stats.dentry_stat));
-      fclose(ktfp);
+      fclose(fp);
    }
 
    /* Open /proc/sys/fs/file-nr file */
-   if ((ktfp = fopen(FFILE_NR, "r")) != NULL) {
-      fscanf(ktfp, "%u %u %*u\n",
+   if ((fp = fopen(FFILE_NR, "r")) != NULL) {
+      fscanf(fp, "%u %u",
 	     &(file_stats.file_used), &parm);
-      fclose(ktfp);
+      fclose(fp);
       /*
        * The number of used handles is the number of allocated ones
        * minus the number of free ones.
@@ -1357,10 +1305,10 @@ void read_ktables_stat(void)
    }
 
    /* Open /proc/sys/fs/inode-state file */
-   if ((ktfp = fopen(FINODE_STATE, "r")) != NULL) {
-      fscanf(ktfp, "%u %u %*d %*d %*d %*d %*d\n",
+   if ((fp = fopen(FINODE_STATE, "r")) != NULL) {
+      fscanf(fp, "%u %u",
 	     &(file_stats.inode_used), &parm);
-      fclose(ktfp);
+      fclose(fp);
       /*
        * The number of inuse inodes is the number of allocated ones
        * minus the number of free ones.
@@ -1369,44 +1317,44 @@ void read_ktables_stat(void)
    }
 
    /* Open /proc/sys/fs/super-max file */
-   if ((ktfp = fopen(FSUPER_MAX, "r")) != NULL) {
-      fscanf(ktfp, "%u\n",
+   if ((fp = fopen(FSUPER_MAX, "r")) != NULL) {
+      fscanf(fp, "%u\n",
 	     &(file_stats.super_max));
-      fclose(ktfp);
+      fclose(fp);
 
       /* Open /proc/sys/fs/super-nr file */
-      if ((ktfp = fopen(FSUPER_NR, "r")) != NULL) {
-	 fscanf(ktfp, "%u\n",
+      if ((fp = fopen(FSUPER_NR, "r")) != NULL) {
+	 fscanf(fp, "%u\n",
 		&(file_stats.super_used));
-	 fclose(ktfp);
+	 fclose(fp);
       }
    }
 
    /* Open /proc/sys/fs/dquot-max file */
-   if ((ktfp = fopen(FDQUOT_MAX, "r")) != NULL) {
-      fscanf(ktfp, "%u\n",
+   if ((fp = fopen(FDQUOT_MAX, "r")) != NULL) {
+      fscanf(fp, "%u\n",
 	     &(file_stats.dquot_max));
-      fclose(ktfp);
+      fclose(fp);
 
       /* Open /proc/sys/fs/dquot-nr file */
-      if ((ktfp = fopen(FDQUOT_NR, "r")) != NULL) {
-	 fscanf(ktfp, "%u %*u\n",
+      if ((fp = fopen(FDQUOT_NR, "r")) != NULL) {
+	 fscanf(fp, "%u",
 		&(file_stats.dquot_used));
-	 fclose(ktfp);
+	 fclose(fp);
       }
    }
 
    /* Open /proc/sys/kernel/rtsig-max file */
-   if ((ktfp = fopen(FRTSIG_MAX, "r")) != NULL) {
-      fscanf(ktfp, "%u\n",
+   if ((fp = fopen(FRTSIG_MAX, "r")) != NULL) {
+      fscanf(fp, "%u\n",
 	     &(file_stats.rtsig_max));
-      fclose(ktfp);
+      fclose(fp);
 
       /* Open /proc/sys/kernel/rtsig-nr file */
-      if ((ktfp = fopen(FRTSIG_NR, "r")) != NULL) {
-	 fscanf(ktfp, "%u\n",
+      if ((fp = fopen(FRTSIG_NR, "r")) != NULL) {
+	 fscanf(fp, "%u\n",
 		&(file_stats.rtsig_queued));
-	 fclose(ktfp);
+	 fclose(fp);
       }
    }
 }
@@ -1415,24 +1363,20 @@ void read_ktables_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/net/dev
- * See kernel sources:
- * 2.4: linux/net/core/dev.c: sprintf_stats()
- * 2.6: linux/net/core/dev.c: dev_seq_printf_stats()
  ***************************************************************************
  */
 void read_net_dev_stat(void)
 {
-   FILE *devfp;
+   FILE *fp;
    struct stats_net_dev *st_net_dev_i;
    static char line[256];
    char iface[MAX_IFACE_LEN];
    unsigned int dev = 0;
    int pos;
 
-   /* Open network device file */
-   if ((devfp = fopen(NET_DEV, "r")) != NULL) {
+   if ((fp = fopen(NET_DEV, "r")) != NULL) {
 
-      while ((fgets(line, 256, devfp) != NULL) && (dev < iface_used)) {
+      while ((fgets(line, 256, fp) != NULL) && (dev < iface_nr)) {
 	
 	 pos = strcspn(line, ":");
 	 if (pos < strlen(line)) {
@@ -1440,7 +1384,8 @@ void read_net_dev_stat(void)
   	    strncpy(iface, line, MINIMUM(pos, MAX_IFACE_LEN - 1));
 	    iface[MINIMUM(pos, MAX_IFACE_LEN - 1)] = '\0';
 	    sscanf(iface, "%s", st_net_dev_i->interface); /* Skip heading spaces */
-	    sscanf(line + pos + 1, "%lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+	    sscanf(line + pos + 1, "%lu %lu %lu %lu %lu %lu %lu %lu %lu %lu "
+		                   "%lu %lu %lu %lu %lu %lu",
 		   &(st_net_dev_i->rx_bytes),
 		   &(st_net_dev_i->rx_packets),
 		   &(st_net_dev_i->rx_errors),
@@ -1461,15 +1406,14 @@ void read_net_dev_stat(void)
 	 }
       }
 
-      /* Close serial file */
-      fclose(devfp);
+      fclose(fp);
    }
 
-   if (dev < iface_used) {
+   if (dev < iface_nr) {
       /* Reset unused structures */
-      memset(st_net_dev + dev, 0, STATS_NET_DEV_SIZE * (iface_used - dev));
+      memset(st_net_dev + dev, 0, STATS_NET_DEV_SIZE * (iface_nr - dev));
 
-      while (dev < iface_used) {
+      while (dev < iface_nr) {
 	 /*
 	  * Nb of network interfaces has changed, or appending data to an
 	  * old file with more interfaces than are actually available now.
@@ -1484,21 +1428,17 @@ void read_net_dev_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/net/sockstat
- * See kernel sources:
- * 2.4: linux/net/ipv4/proc.c: afinet_get_info()
- * 2.6: linux/net/ipv4/proc.c: sockstat_seq_show()
  ***************************************************************************
  */
 void read_net_sock_stat(void)
 {
-   FILE *sockfp;
+   FILE *fp;
    static char line[96];
 
-   /* Open /proc/net/sockstat file */
-   if ((sockfp = fopen(NET_SOCKSTAT, "r")) == NULL)
+   if ((fp = fopen(NET_SOCKSTAT, "r")) == NULL)
       return;
 
-   while (fgets(line, 96, sockfp) != NULL) {
+   while (fgets(line, 96, fp) != NULL) {
 	
       if (!strncmp(line, "sockets:", 8))
 	 /* Sockets */
@@ -1517,29 +1457,24 @@ void read_net_sock_stat(void)
 	 sscanf(line + 12, "%u", &(file_stats.frag_inuse));
    }
 
-   /* Close socket file */
-   fclose(sockfp);
+   fclose(fp);
 }
 
 
 /*
  ***************************************************************************
  * Read stats from /proc/net/rpc/nfs
- * See kernel sources:
- * 2.4: linux/net/sunrpc/stats.c: rpc_proc_read()
- * 2.6: linux/net/sunrpc/stats.c: rpc_proc_show()
  ***************************************************************************
  */
 void read_net_nfs_stat(void)
 {
-   FILE *nfsfp;
+   FILE *fp;
    static char line[256];
 
-   /* Open /proc/net/rpc/nfs file */
-   if ((nfsfp = fopen(NET_RPC_NFS, "r")) == NULL)
+   if ((fp = fopen(NET_RPC_NFS, "r")) == NULL)
       return;
 
-   while (fgets(line, 256, nfsfp) != NULL) {
+   while (fgets(line, 256, fp) != NULL) {
 	
       if (!strncmp(line, "rpc", 3))
 	 sscanf(line + 3, "%u %u",
@@ -1551,28 +1486,24 @@ void read_net_nfs_stat(void)
 		&(file_stats.nfs_writecnt), &(file_stats.nfs_readcnt));
    }
 
-   fclose(nfsfp);
+   fclose(fp);
 }
 
 
 /*
  ***************************************************************************
  * Read stats from /proc/net/rpc/nfsd
- * See kernel sources:
- * 2.4: linux/fs/nfsd/stats.c: nfsd_proc_read()
- * 2.6: linux/fs/nfsd/stats.c: nfsd_proc_show()
  ***************************************************************************
  */
 void read_net_nfsd_stat(void)
 {
-   FILE *nfsdfp;
+   FILE *fp;
    static char line[256];
 
-   /* Open /proc/net/rpc/nfsd file */
-   if ((nfsdfp = fopen(NET_RPC_NFSD, "r")) == NULL)
+   if ((fp = fopen(NET_RPC_NFSD, "r")) == NULL)
       return;
 
-   while (fgets(line, 256, nfsdfp) != NULL) {
+   while (fgets(line, 256, fp) != NULL) {
 	
       if (!strncmp(line, "rc", 2))
 	 sscanf(line + 2, "%u %u",
@@ -1593,7 +1524,7 @@ void read_net_nfsd_stat(void)
 		&(file_stats.nfsd_writecnt), &(file_stats.nfsd_readcnt));
    }
 
-   fclose(nfsdfp);
+   fclose(fp);
 }
 
 
@@ -1601,13 +1532,11 @@ void read_net_nfsd_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/diskstats
- * See kernel sources:
- * 2.6: linux/drivers/block/genhd.c: diskstats_show()
  ***************************************************************************
  */
 void read_diskstats_stat(void)
 {
-   FILE *dstatsfp;
+   FILE *fp;
    static char line[256];
    int dsk = 0;
    struct disk_stats *st_disk_i;
@@ -1616,12 +1545,11 @@ void read_diskstats_stat(void)
    unsigned long tot_ticks, rq_ticks;
    unsigned long long rd_sec, wr_sec;
 
-   /* Open /proc/diskstats file */
-   if ((dstatsfp = fopen(DISKSTATS, "r")) != NULL) {
+   if ((fp = fopen(DISKSTATS, "r")) != NULL) {
 
       init_dk_drive_stat();
 
-      while ((fgets(line, 256, dstatsfp) != NULL) && (dsk < disk_used)) {
+      while ((fgets(line, 256, fp) != NULL) && (dsk < disk_nr)) {
 	
 	 if (sscanf(line, "%u %u %*s %lu %*u %llu %lu %lu %*u %llu"
 		          " %lu %*u %lu %lu",
@@ -1629,6 +1557,9 @@ void read_diskstats_stat(void)
 		    &rd_ios, &rd_sec, &rd_ticks, &wr_ios, &wr_sec, &wr_ticks,
 		    &tot_ticks, &rq_ticks) == 10) {
 	    /* It's a device and not a partition */
+	    if (!rd_ios && !wr_ios)
+	       /* Unused device: ignore it */
+	       continue;
 	    st_disk_i = st_disk + dsk++;
 	    st_disk_i->major = major;
 	    st_disk_i->minor = minor;
@@ -1648,11 +1579,10 @@ void read_diskstats_stat(void)
 	 }
       }
 
-      /* Close file */
-      fclose(dstatsfp);
+      fclose(fp);
    }
 
-   while (dsk < disk_used) {
+   while (dsk < disk_nr) {
       /*
        * Nb of disks has changed, or appending data to an old file
        * with more disks than are actually available now.
@@ -1666,13 +1596,11 @@ void read_diskstats_stat(void)
 /*
  ***************************************************************************
  * Read stats from /proc/partitions
- * See kernel sources:
- * 2.6: linux/drivers/block/genhd.c (see sysfs instead)
  ***************************************************************************
  */
 void read_ppartitions_stat(void)
 {
-   FILE *ppartfp;
+   FILE *fp;
    static char line[256];
    int dsk = 0;
    struct disk_stats *st_disk_i;
@@ -1680,12 +1608,11 @@ void read_ppartitions_stat(void)
    unsigned long rd_ios, wr_ios, rd_ticks, wr_ticks, tot_ticks, rq_ticks;
    unsigned long long rd_sec, wr_sec;
 
-   /* Open /proc/partitions file */
-   if ((ppartfp = fopen(PPARTITIONS, "r")) != NULL) {
+   if ((fp = fopen(PPARTITIONS, "r")) != NULL) {
 
       init_dk_drive_stat();
 
-      while ((fgets(line, 256, ppartfp) != NULL) && (dsk < disk_used)) {
+      while ((fgets(line, 256, fp) != NULL) && (dsk < disk_nr)) {
 	
 	 if (sscanf(line, "%u %u %*u %*s %lu %*u %llu %lu %lu %*u %llu"
 		          " %lu %*u %lu %lu",
@@ -1714,11 +1641,10 @@ void read_ppartitions_stat(void)
 	 }
       }
 
-      /* Close file */
-      fclose(ppartfp);
+      fclose(fp);
    }
 
-   while (dsk < disk_used) {
+   while (dsk < disk_nr) {
       /*
        * Nb of disks has changed, or appending data to an old file
        * with more disks than are actually available now.
@@ -1731,13 +1657,50 @@ void read_ppartitions_stat(void)
 
 /*
  ***************************************************************************
+ * Read system statistics from various files
+ ***************************************************************************
+ */
+void read_stats(unsigned int *flags)
+{
+   read_proc_stat(*flags);
+   read_proc_meminfo();
+   read_proc_loadavg();
+   read_proc_vmstat();
+   read_ktables_stat();
+   read_net_sock_stat();
+   read_net_nfs_stat();
+   read_net_nfsd_stat();
+
+   if (disk_nr) {
+      if (HAS_DISKSTATS(*flags))
+	 read_diskstats_stat();
+      else if (HAS_PPARTITIONS(*flags))
+	 read_ppartitions_stat();
+      /* else disks are in /proc/stat */
+   }
+
+   if (pid_nr)
+       read_pid_stat();
+    if (serial_nr)
+      read_serial_stat();
+   if (irqcpu_nr)
+      read_interrupts_stat();
+   if (iface_nr)
+      read_net_dev_stat();
+}
+
+
+/*
+ ***************************************************************************
  * Main loop: read stats from the relevant sources,
  * and display them.
  ***************************************************************************
  */
 void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
-		     int ofd, size_t file_stats_size, char ofile[], char new_ofile[])
+		     int ofd, size_t file_stats_size, char ofile[],
+		     char new_ofile[])
 {
+   int do_sa_rotat = 0;
 
    /* Main loop */
    do {
@@ -1754,41 +1717,17 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
       file_stats.minute = loc_time->tm_min;
       file_stats.second = loc_time->tm_sec;
 
-      /* Read stats */
-      read_proc_stat(*flags);
-      read_proc_meminfo();
-      read_proc_loadavg();
-      read_proc_vmstat();
-      read_ktables_stat();
-      read_net_sock_stat();
-      read_net_nfs_stat();
-      read_net_nfsd_stat();
-      if (disk_used) {
-	 if (HAS_DISKSTATS(*flags))
-	    read_diskstats_stat();
-	 else if (HAS_PPARTITIONS(*flags))
-	    read_ppartitions_stat();
-	 /* else disks are in /proc/stat */
-      }
-      if (pid_nr)
- 	 read_pid_stat();
-      if (serial_used)
-	 read_serial_stat();
-      if (irqcpu_used)
-	 read_interrupts_stat();
-      if (iface_used)
-	 read_net_dev_stat();
-
-      /* Write stats */
+      /* Read then write stats */
+      read_stats(flags);
       write_stats(ofd, file_stats_size, flags);
 
-      if DO_SA_ROTAT(*flags) {
+      if (do_sa_rotat) {
 	 /*
 	  * Stats are written at the end of previous file *and* at the
 	  * beginning of the new one (outfile must have been specified
 	  * as '-' on the command line).
 	  */
-	 *flags &= ~S_F_DO_SA_ROTAT;
+	 do_sa_rotat = FALSE;
 	 if (fdatasync(ofd) < 0) {	/* Flush previous file */
 	    perror("fdatasync");
 	    exit(4);
@@ -1823,7 +1762,7 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
 	 new_ofile[MAX_FILE_LEN - 1] = '\0';
 
 	 if (strcmp(ofile, new_ofile))
-	    *flags |= S_F_DO_SA_ROTAT;
+	    do_sa_rotat = TRUE;
       }
    }
    while (count);
@@ -1847,7 +1786,7 @@ int main(int argc, char **argv)
    char new_ofile[MAX_FILE_LEN];
    unsigned int flags = 0;
    struct tm loc_time;
-   int ofd;
+   int ofd, i;
    long count = 0;
    /*
     * This variable contains:
@@ -1894,12 +1833,16 @@ int main(int argc, char **argv)
 	 usage(argv[0]);
 
       else if (!strcmp(argv[opt], "-x") || !strcmp(argv[opt], "-X")) {
-	 if (!GET_PID(sadc_actflag))
-	    /* Get PID list */
-	    get_pid_list();
+	 if (!GET_PID(sadc_actflag)) {
+	    /* Init PID flag the first time */
+	    for (i = 0; i < MAX_PID_NR; i++)
+	       f_pids[i] = 0;
+	 }
 	 sadc_actflag |= A_PID;
 	 if (argv[++opt]) {
 	    if (!strcmp(argv[opt], K_ALL)) {
+	       /* Get PID list */
+	       get_pid_list();
 	       set_pflag(strcmp(argv[opt - 1], "-x"), 0);
 	       continue;	/* Next option */
 	    }
@@ -1968,13 +1911,12 @@ int main(int argc, char **argv)
 
    /* Don't read disk stats if -d option not set */
    if (!WANT_DISKS(flags)) {
-      disk_used = 0;
+      disk_nr = 0;
       sadc_actflag &= ~A_DISK;
    }
 
    if (GET_PID(sadc_actflag))
-      /* Count number of processes to display */
-      pid_nr = count_pids();
+      salloc_pid(pid_nr);
 
    /* Open output file and write header */
    open_ofile(&ofd, ofile, &file_stats_size, &flags);

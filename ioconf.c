@@ -369,7 +369,7 @@ char *ioc_name(unsigned int major, unsigned int minor)
        * That minor test is only there for IDE-style devices
        *  that have no minors over 128.
        */
-      strcpy(name, "nodev");
+      strcpy(name, K_NODEV);
       return (name);
    }
 

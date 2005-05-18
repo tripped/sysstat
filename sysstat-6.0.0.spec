@@ -1,10 +1,10 @@
 Summary: 	SAR, SADF, MPSTAT and IOSTAT for Linux
 Name: 		sysstat
-Version: 	5.1.5
+Version: 	6.0.0
 Release: 	1
 Copyright: 	GPL
 Group: 		Applications/System
-Source0: 	sysstat-5.1.5.tar.gz
+Source0: 	sysstat-6.0.0.tar.gz
 URL:		http://perso.wanadoo.fr/sebastien.godard
 Packager:	Damien Faure <damien-jn.faure@bull.net>
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root-%(id -u -n)

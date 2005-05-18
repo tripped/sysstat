@@ -1,13 +1,13 @@
-.TH IOSTAT 1 "OCTOBER 2004" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "APRIL 2005" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices and partitions.
 .SH SYNOPSIS
-.B iostat [ -c | -d ] [ -k ] [ -m ] [ -t ] [ -V ] [ -x ] [ {
+.B iostat [ -c | -d ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [
 .I device
-.B [ ... ] | ALL } ] [ -p [ {
+.B [ ... ] | ALL ] [ -p [
 .I device
-.B | ALL } ] ] [
+.B | ALL ] ] [
 .I interval
 .B [
 .I count
@@ -147,7 +147,7 @@ request to the device. A transfer is of indeterminate size.
 .RE
 .B Blk_read/s
 .RS
-Indicate the amount of data read from the drive expressed in a number of
+Indicate the amount of data read from the device expressed in a number of
 blocks per second. Blocks are equivalent to sectors with 2.4 kernels and newer
 and therefore have a size of 512 bytes. With older kernels, a block is of
 indeterminate size.
@@ -155,7 +155,7 @@ indeterminate size.
 .RE
 .B Blk_wrtn/s
 .RS
-Indicate the amount of data written to the drive expressed in a number of
+Indicate the amount of data written to the device expressed in a number of
 blocks per second.
 
 .RE
@@ -171,60 +171,56 @@ The total number of blocks written.
 .RE
 .B kB_read/s
 .RS
-Indicate the amount of data read from the drive expressed in kilobytes
-per second. Data displayed are valid only with kernels 2.4 and newer.
+Indicate the amount of data read from the device expressed in kilobytes
+per second.
 
 .RE
 .B kB_wrtn/s
 .RS
-Indicate the amount of data written to the drive expressed in kilobytes
-per second. Data displayed are valid only with kernels 2.4 and newer.
+Indicate the amount of data written to the device expressed in kilobytes
+per second.
 
 .RE
 .B kB_read
 .RS
-The total number of kilobytes read. Data displayed are valid only with
-kernels 2.4 and newer.
+The total number of kilobytes read.
 
 .RE
 .B kB_wrtn
 .RS
-The total number of kilobytes written. Data displayed are valid only with
-kernels 2.4 and newer.
+The total number of kilobytes written.
 
 .RE
 .B MB_read/s
 .RS
-Indicate the amount of data read from the drive expressed in megabytes
-per second. Data displayed are valid only with kernels 2.4 and newer.
+Indicate the amount of data read from the device expressed in megabytes
+per second.
 
 .RE
 .B MB_wrtn/s
 .RS
-Indicate the amount of data written to the drive expressed in megabytes
-per second. Data displayed are valid only with kernels 2.4 and newer.
+Indicate the amount of data written to the device expressed in megabytes
+per second.
 
 .RE
 .B MB_read
 .RS
-The total number of megabytes read. Data displayed are valid only with
-kernels 2.4 and newer.
+The total number of megabytes read.
 
 .RE
 .B MB_wrtn
 .RS
-The total number of megabytes written. Data displayed are valid only with
-kernels 2.4 and newer.
+The total number of megabytes written.
 
 .RE
 .B rrqm/s
 .RS
-The number of read requests merged per second that were issued to the device.
+The number of read requests merged per second that were queued to the device.
 
 .RE
 .B wrqm/s
 .RS
-The number of write requests merged per second that were issued to the device.
+The number of write requests merged per second that were queued to the device.
 
 .RE
 .B r/s
@@ -255,6 +251,16 @@ The number of kilobytes read from the device per second.
 .B wkB/s
 .RS
 The number of kilobytes written to the device per second.
+
+.RE
+.B rMB/s
+.RS
+The number of megabytes read from the device per second.
+
+.RE
+.B wMB/s
+.RS
+The number of megabytes written to the device per second.
 
 .RE
 .B avgrq-sz
@@ -298,9 +304,10 @@ device utilization report.
 Display statistics in kilobytes per second instead of blocks per second.
 Data displayed are valid only with kernels 2.4 and newer.
 .IP -m
-Display statistics in megabytes per second instead of blocks per second.
+Display statistics in megabytes per second instead of blocks or
+kilobytes per second.
 Data displayed are valid only with kernels 2.4 and newer.
-.IP "-p device | ALL"
+.IP "-p [ { device | ALL } ]"
 The -p option is exclusive of the -x option and displays statistics for
 block devices and all their partitions that are used by the system.
 If a device name is entered on the command line, then statistics for it

@@ -1,8 +1,8 @@
-.TH SADF 1 "FEBRUARY 2005" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "APRIL 2005" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
-.B sadf [ -d ] [ -H ] [ -p ] [ -t ] [ -V ] [ -x ] [ -P {
+.B sadf [ -d | -H | -p | -x ] [ -t ] [ -V ] [ -P {
 .I cpu
 .B | ALL } ] [ -s [
 .I hh:mm:ss
@@ -80,7 +80,7 @@ command line options.
 Note that the timestamp is displayed in UTC (Coordinated Universal Time)
 unless option -t is used. In this latter case, the timestamp is displayed
 in local time.
-.IP "-e hh:mm:ss"
+.IP "-e [ hh:mm:ss ]"
 Set the ending time of the report. The default ending time is
 18:00:00. Hours must be given in 24-hour format.
 Note that if you also use
@@ -88,7 +88,7 @@ Note that if you also use
 option, ending time will have to be given in UTC (Coordinated Universal Time).
 .IP -H
 Display the header of the data file.
-.IP "-P cpu | ALL"
+.IP "-P { cpu | ALL }"
 Tell
 .B sadf
 that processor dependent statistics are to be reported only for the
@@ -104,7 +104,7 @@ hostname of the host where the file was created, the interval value
 (or -1 if not applicable), the timestamp (UTC value - Coordinated Universal
 Time) in seconds from the epoch, the device name (or - if not applicable),
 the field name and its value.
-.IP "-s hh:mm:ss"
+.IP "-s [ hh:mm:ss ]"
 Set the starting time of the data, causing the
 .B sadf
 command to extract records time-tagged at, or following, the time

@@ -7,13 +7,6 @@
 #define _MPSTAT_H
 
 
-/* M_: mpstat - F_: Flag */
-#define M_F_BOOT_STATS	0x0001
-
-#define WANT_BOOT_STATS(m)	(((m) & M_F_BOOT_STATS) == M_F_BOOT_STATS)
-
-
-
 struct mp_stats {
    unsigned long long cpu_idle			__attribute__ ((aligned (8)));
    unsigned long long cpu_iowait		__attribute__ ((packed));

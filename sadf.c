@@ -43,9 +43,10 @@
 #endif
 
 
-long interval = 0, count = 0;
+long interval = -1, count = 0;
 unsigned int sadf_actflag = 0;
 unsigned int flags = 0;
+unsigned short format = 0;	/* Output format */
 unsigned char irq_bitmap[(NR_IRQS / 8) + 1];
 unsigned char cpu_bitmap[(NR_CPUS / 8) + 1];
 int kb_shift = 0;
@@ -78,7 +79,7 @@ void usage(char *progname)
 		   "(C) Sebastien Godard\n"
 	           "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
 	           "Options are:\n"
-	           "[ -d ] [ -H ] [ -p ] [ -t ] [ -V ] [ -x ]\n"
+	           "[ -d | -H | -p | -x ] [ -t ] [ -V ]\n"
 		   "[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 		   "[ -- <sar_options...> ]\n"),
 	   VERSION, progname);
@@ -133,7 +134,7 @@ void set_loc_time(short curr)
 
    /* NOTE: loc_time structure must have been init'ed before! */
    if (PRINT_TRUE_TIME(flags) &&
-       (USE_DB_OPTION(flags) || USE_XML_OPTION(flags)))
+       ((format == S_O_DB_OPTION) || (format == S_O_XML_OPTION)))
       /* '-d -t' or '-x -t' */
       ltm = localtime(&file_stats[curr].ust_time);
    else
@@ -154,13 +155,13 @@ void set_timestamp(short curr, char *cur_time, int len)
    set_loc_time(curr);
 	
    /* Set cur_time date value */
-   if (USE_DB_OPTION(flags)) {
+   if (format == S_O_DB_OPTION) {
       if (PRINT_TRUE_TIME(flags))
 	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S", &loc_time);
       else
 	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S UTC", &loc_time);
    }
-   else if (USE_PPC_OPTION(flags))
+   else if (format == S_O_PPC_OPTION)
       sprintf(cur_time, "%ld", file_stats[curr].ust_time);
 }
 
@@ -277,7 +278,7 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
  * making it easier for them to remain in sync and print the same data.
  ***************************************************************************
  */
-void write_mech_stats(int isdb, short curr, unsigned int act,
+void write_mech_stats(short curr, unsigned int act,
 		      unsigned long dt, unsigned long long itv,
 		      unsigned long long g_itv, char *cur_time)
 {
@@ -288,6 +289,7 @@ void write_mech_stats(int isdb, short curr, unsigned int act,
    char pre[80];	/* Text at beginning of each line */
    int wantproc = !WANT_PER_PROC(flags)
       || (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags));
+   int isdb = (format == S_O_DB_OPTION);
 
 
    /*
@@ -508,9 +510,25 @@ void write_mech_stats(int isdb, short curr, unsigned int act,
 		   "ttyS%d\trcvin/s", "%d", cons(iv, ssi->line, NOVAL),
 		   NOVAL, S_VALUE(ssj->rx, ssi->rx, itv));
 
-	    render(isdb, pre, PT_NEWLIN,
+	    render(isdb, pre, PT_NOFLAG,
 		   "ttyS%d\txmtin/s", "%d", cons(iv, ssi->line, NOVAL),
 		   NOVAL, S_VALUE(ssj->tx, ssi->tx, itv));
+	
+	    render(isdb, pre, PT_NOFLAG,
+		   "ttyS%d\tframerr/s", "%d", cons(iv, ssi->line, NOVAL),
+		   NOVAL, S_VALUE(ssj->frame, ssi->frame, itv));
+	
+	    render(isdb, pre, PT_NOFLAG,
+		   "ttyS%d\tprtyerr/s", "%d", cons(iv, ssi->line, NOVAL),
+		   NOVAL, S_VALUE(ssj->parity, ssi->parity, itv));
+	
+	    render(isdb, pre, PT_NOFLAG,
+		   "ttyS%d\tbrk/s", "%d", cons(iv, ssi->line, NOVAL),
+		   NOVAL, S_VALUE(ssj->brk, ssi->brk, itv));
+	
+	    render(isdb, pre, PT_NEWLIN,
+		   "ttyS%d\tovrun/s", "%d", cons(iv, ssi->line, NOVAL),
+		   NOVAL, S_VALUE(ssj->overrun, ssi->overrun, itv));
 	 }
       }
    }
@@ -964,7 +982,7 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
    if ((itv % HZ) >= (HZ / 2))
       dt++;
 
-   write_mech_stats(USE_DB_OPTION(flags), curr, act, dt, itv, g_itv, cur_time);
+   write_mech_stats(curr, act, dt, itv, g_itv, cur_time);
 
    return 1;
 }
@@ -1010,7 +1028,8 @@ void write_xml_stats(short curr, short *tab)
 
    /* cpu */
    xprintf(*tab, "<cpu-load>");
-   xprintf(++(*tab), "<cpu number=\"all\" user=\"%.2f\" nice=\"%.2f\" system=\"%.2f\" iowait=\"%.2f\" idle=\"%.2f\"/>",
+   xprintf(++(*tab), "<cpu number=\"all\" user=\"%.2f\" nice=\"%.2f\" "
+	             "system=\"%.2f\" iowait=\"%.2f\" idle=\"%.2f\"/>",
 	   ll_sp_value(fsj->cpu_user, fsi->cpu_user, g_itv),
 	   ll_sp_value(fsj->cpu_nice, fsi->cpu_nice, g_itv),
 	   ll_sp_value(fsj->cpu_system, fsi->cpu_system, g_itv),
@@ -1030,7 +1049,8 @@ void write_xml_stats(short curr, short *tab)
 	 /* Recalculate itv for current proc */
 	 pc_itv = get_per_cpu_interval(sci, scj);
 	
-	 xprintf(*tab, "<cpu number=\"%d\" user=\"%.2f\" nice=\"%.2f\" system=\"%.2f\" iowait=\"%.2f\" idle=\"%.2f\"/>",
+	 xprintf(*tab, "<cpu number=\"%d\" user=\"%.2f\" nice=\"%.2f\" "
+		       "system=\"%.2f\" iowait=\"%.2f\" idle=\"%.2f\"/>",
 		 i,
 		 ll_sp_value(scj->per_cpu_user, sci->per_cpu_user, pc_itv),
 		 ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice, pc_itv),
@@ -1153,7 +1173,9 @@ void write_xml_stats(short curr, short *tab)
 	    ((sdi->rd_sect - sdj->rd_sect) + (sdi->wr_sect - sdj->wr_sect)) /
 	    ((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
 
-	 xprintf(*tab, "<disk-device dev=\"%s\" tps=\"%.2f\" rd_sec=\"%.2f\" wr_sec=\"%.2f\" avgrq-sz=\"%.2f\" avgqu-sz=\"%.2f\" await=\"%.2f\" svctm=\"%.2f\" util-percent=\"%.2f\"/>",
+	 xprintf(*tab, "<disk-device dev=\"%s\" tps=\"%.2f\" rd_sec=\"%.2f\" "
+		       "wr_sec=\"%.2f\" avgrq-sz=\"%.2f\" avgqu-sz=\"%.2f\" "
+		       "await=\"%.2f\" svctm=\"%.2f\" util-percent=\"%.2f\"/>",
 		 /* Confusion possible here between index and minor numbers */
 		 get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags)),
 		 S_VALUE(sdj->nr_ios,  sdi->nr_ios,  itv),
@@ -1183,10 +1205,16 @@ void write_xml_stats(short curr, short *tab)
 	 if (ssi->line == ~0)
 	    continue;
 	 if (ssi->line == ssj->line) {
-	    xprintf(*tab, "<tty line=\"%d\" rcvin=\"%.2f\" xmtin=\"%.2f\"/>",
+	    xprintf(*tab, "<tty line=\"%d\" rcvin=\"%.2f\" xmtin=\"%.2f\" "
+		          "framerr=\"%.2f\" prtyerr=\"%.2f\" brk=\"%.2f\" "
+		          "ovrun=\"%.2f\"/>",
 		    ssi->line,
 		    S_VALUE(ssj->rx, ssi->rx, itv),
-		    S_VALUE(ssj->tx, ssi->tx, itv));
+		    S_VALUE(ssj->tx, ssi->tx, itv),
+		    S_VALUE(ssj->frame, ssi->frame, itv),
+		    S_VALUE(ssj->parity, ssi->parity, itv),
+		    S_VALUE(ssj->brk, ssi->brk, itv),
+		    S_VALUE(ssj->overrun, ssi->overrun, itv));
 	 }
       }
       xprintf(--(*tab), "</serial>");
@@ -1210,7 +1238,8 @@ void write_xml_stats(short curr, short *tab)
 	
 	 xprintf((*tab)++, "<net-device iface=\"%s\">",
 		 sndi->interface);
-	 xprintf(*tab, "<net-dev rxpck=\"%.2f\" txpck=\"%.2f\" rxbyt=\"%.2f\" txbyt=\"%.2f\" rxcmp=\"%.2f\" txcmp=\"%.2f\" rxmcst=\"%.2f\"/>",
+	 xprintf(*tab, "<net-dev rxpck=\"%.2f\" txpck=\"%.2f\" rxbyt=\"%.2f\" "
+		       "txbyt=\"%.2f\" rxcmp=\"%.2f\" txcmp=\"%.2f\" rxmcst=\"%.2f\"/>",
 		 S_VALUE(sndj->rx_packets, sndi->rx_packets, itv),
 		 S_VALUE(sndj->tx_packets, sndi->tx_packets, itv),
 		 S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv),
@@ -1218,7 +1247,9 @@ void write_xml_stats(short curr, short *tab)
 		 S_VALUE(sndj->rx_compressed, sndi->rx_compressed, itv),
 		 S_VALUE(sndj->tx_compressed, sndi->tx_compressed, itv),
 		 S_VALUE(sndj->multicast, sndi->multicast, itv));
-	 xprintf(*tab, "<net-edev rxerr=\"%.2f\" txerr=\"%.2f\" coll=\"%.2f\" rxdrop=\"%.2f\" txdrop=\"%.2f\" txcarr=\"%.2f\" rxfram=\"%.2f\" rxfifo=\"%.2f\" txfifo=\"%.2f\"/>",
+	 xprintf(*tab, "<net-edev rxerr=\"%.2f\" txerr=\"%.2f\" coll=\"%.2f\" "
+		       "rxdrop=\"%.2f\" txdrop=\"%.2f\" txcarr=\"%.2f\" "
+		       "rxfram=\"%.2f\" rxfifo=\"%.2f\" txfifo=\"%.2f\"/>",
 		 S_VALUE(sndj->rx_errors, sndi->rx_errors, itv),
 		 S_VALUE(sndj->tx_errors, sndi->tx_errors, itv),
 		 S_VALUE(sndj->collisions, sndi->collisions, itv),
@@ -1232,14 +1263,17 @@ void write_xml_stats(short curr, short *tab)
       }
    }
 
-   xprintf(*tab, "<net-nfs call=\"%.2f\" retrans=\"%.2f\" read=\"%.2f\" write=\"%.2f\" access=\"%.2f\" getatt=\"%.2f\"/>",
+   xprintf(*tab, "<net-nfs call=\"%.2f\" retrans=\"%.2f\" read=\"%.2f\" "
+	         "write=\"%.2f\" access=\"%.2f\" getatt=\"%.2f\"/>",
 	   S_VALUE(fsj->nfs_rpccnt, fsi->nfs_rpccnt, itv),
 	   S_VALUE(fsj->nfs_rpcretrans, fsi->nfs_rpcretrans, itv),
 	   S_VALUE(fsj->nfs_readcnt, fsi->nfs_readcnt, itv),
 	   S_VALUE(fsj->nfs_writecnt, fsi->nfs_writecnt, itv),
 	   S_VALUE(fsj->nfs_accesscnt, fsi->nfs_accesscnt, itv),
 	   S_VALUE(fsj->nfs_getattcnt, fsi->nfs_getattcnt, itv));
-   xprintf(*tab, "<net-nfsd scall=\"%.2f\" badcall=\"%.2f\" packet=\"%.2f\" udp=\"%.2f\" tcp=\"%.2f\" hit=\"%.2f\" miss=\"%.2f\" sread=\"%.2f\" swrite=\"%.2f\" saccess=\"%.2f\" sgetatt=\"%.2f\"/>",
+   xprintf(*tab, "<net-nfsd scall=\"%.2f\" badcall=\"%.2f\" packet=\"%.2f\" "
+	         "udp=\"%.2f\" tcp=\"%.2f\" hit=\"%.2f\" miss=\"%.2f\" "
+	         "sread=\"%.2f\" swrite=\"%.2f\" saccess=\"%.2f\" sgetatt=\"%.2f\"/>",
 	   S_VALUE(fsj->nfsd_rpccnt, fsi->nfsd_rpccnt, itv),
 	   S_VALUE(fsj->nfsd_rpcbad, fsi->nfsd_rpcbad, itv),
 	   S_VALUE(fsj->nfsd_netcnt, fsi->nfsd_netcnt, itv),
@@ -1252,14 +1286,16 @@ void write_xml_stats(short curr, short *tab)
 	   S_VALUE(fsj->nfsd_accesscnt, fsi->nfsd_accesscnt, itv),
 	   S_VALUE(fsj->nfsd_getattcnt, fsi->nfsd_getattcnt, itv));
 
-   xprintf(*tab, "<net-sock totsck=\"%u\" tcpsck=\"%u\" udpsck=\"%u\" rawsck=\"%u\" ip-frag=\"%u\"/>",
+   xprintf(*tab, "<net-sock totsck=\"%u\" tcpsck=\"%u\" udpsck=\"%u\" "
+	         "rawsck=\"%u\" ip-frag=\"%u\"/>",
 	   fsi->sock_inuse, fsi->tcp_inuse, fsi->udp_inuse,
 	   fsi->raw_inuse, fsi->frag_inuse);
 
    xprintf(--(*tab), "</network>");
 
    /* paging */
-   xprintf(*tab, "<paging per=\"second\" pgpgin=\"%.2f\" pgpgout=\"%.2f\" fault=\"%.2f\" majflt=\"%.2f\"/>",
+   xprintf(*tab, "<paging per=\"second\" pgpgin=\"%.2f\" pgpgout=\"%.2f\" "
+	         "fault=\"%.2f\" majflt=\"%.2f\"/>",
 	   S_VALUE(fsj->pgpgin, fsi->pgpgin, itv),
 	   S_VALUE(fsj->pgpgout, fsi->pgpgout, itv),
 	   S_VALUE(fsj->pgfault, fsi->pgfault, itv),
@@ -1312,7 +1348,8 @@ void write_xml_stats(short curr, short *tab)
    xprintf(--(*tab), "</kernel>");
 
    /* queue */
-   xprintf(*tab, "<queue runq-sz=\"%lu\" plist-sz=\"%u\" ldavg-1=\"%.2f\" ldavg-5=\"%.2f\" ldavg-15=\"%.2f\"/>",
+   xprintf(*tab, "<queue runq-sz=\"%lu\" plist-sz=\"%u\" ldavg-1=\"%.2f\" "
+	         "ldavg-5=\"%.2f\" ldavg-15=\"%.2f\"/>",
 	   fsi->nr_running,
 	   fsi->nr_threads,
 	   (double) fsi->load_avg_1 / 100,
@@ -1356,10 +1393,10 @@ void write_dummy(short curr, int use_tm_start, int use_tm_end)
        (use_tm_end && (datecmp(&loc_time, &tm_end) > 0)))
       return;
 
-   if (USE_PPC_OPTION(flags))
+   if (format == S_O_PPC_OPTION)
       printf("%s\t-1\t%ld\tLINUX-RESTART\n",
 	     file_hdr.sa_nodename, file_stats[curr].ust_time);
-   else if (USE_DB_OPTION(flags))
+   else if (format == S_O_DB_OPTION)
       printf("%s;-1;%s;LINUX-RESTART\n",
 	     file_hdr.sa_nodename, cur_time);
 }
@@ -1374,8 +1411,8 @@ void display_file_header(char *dfile, struct file_hdr *file_hdr)
 {
    printf("File: %s (%#x)\n", dfile, file_hdr->sa_magic);
 
-   print_gal_header(localtime(&(file_hdr->sa_ust_time)), file_hdr->sa_sysname, file_hdr->sa_release,
-		    file_hdr->sa_nodename);
+   print_gal_header(localtime(&(file_hdr->sa_ust_time)), file_hdr->sa_sysname,
+		    file_hdr->sa_release, file_hdr->sa_nodename);
 
    printf("Activity flag: %#x\n", file_hdr->sa_actflag);
    printf("#CPU:    %u\n", file_hdr->sa_proc + 1);
@@ -1731,7 +1768,7 @@ void read_stats_from_file(char dfile[])
    /* Prepare file for reading */
    prep_file_for_reading(&ifd, dfile, &file_hdr, &sadf_actflag, flags);
 
-   if (USE_H_OPTION(flags)) {
+   if (format == S_O_HDR_OPTION) {
       /* Display data file header */
       display_file_header(dfile, &file_hdr);
       return;
@@ -1741,9 +1778,9 @@ void read_stats_from_file(char dfile[])
    allocate_structures(USE_SA_FILE);
 
    /* Print report header if needed */
-   print_report_hdr(flags, &loc_time, &file_hdr);
+   print_report_hdr(format, flags, &loc_time, &file_hdr);
 
-   if (USE_XML_OPTION(flags))
+   if (format == S_O_XML_OPTION)
      xml_display_loop(ifd);
    else
      main_display_loop(ifd);
@@ -1827,7 +1864,8 @@ int main(int argc, char **argv)
       else if (!strncmp(argv[opt], "-", 1)) {
 	 /* Other options not previously tested */
 	 if (sar_options) {
-	    if (parse_sar_opt(argv, opt, &sadf_actflag, &flags, &dum, C_SADF))
+	    if (parse_sar_opt(argv, opt, &sadf_actflag, &flags, &dum, C_SADF,
+			      irq_bitmap, cpu_bitmap))
 	       usage(argv[0]);
 	 }
 	 else {
@@ -1837,19 +1875,27 @@ int main(int argc, char **argv)
 	       switch (*(argv[opt] + i)) {
 	
 		case 'd':
-		  flags |= S_F_DB_OPTION;
+		  if (format && (format != S_O_DB_OPTION))
+		     usage(argv[0]);
+		  format = S_O_DB_OPTION;
 		  break;
 		case 'H':
-		  flags |= S_F_H_OPTION;
+		  if (format && (format != S_O_HDR_OPTION))
+		     usage(argv[0]);
+		  format = S_O_HDR_OPTION;
 		  break;
 		case 'p':
-		  flags |= S_F_PPC_OPTION;
+		  if (format && (format != S_O_PPC_OPTION))
+		     usage(argv[0]);
+		  format = S_O_PPC_OPTION;
 		  break;
 		case 't':
 		  flags |= S_F_TRUE_TIME;
 		  break;
 		case 'x':
-		  flags |= S_F_XML_OPTION;
+		  if (format && (format != S_O_XML_OPTION))
+		     usage(argv[0]);
+		  format = S_O_XML_OPTION;
 		  break;
 		case 'V':
 		default:
@@ -1869,7 +1915,6 @@ int main(int argc, char **argv)
 	       snprintf(dfile, MAX_FILE_LEN,
 			"%s/sa%02d", SA_DIR, loc_time.tm_mday);
 	       dfile[MAX_FILE_LEN - 1] = '\0';
-	       flags |= S_F_SA_ROTAT;
 	       opt++;
 	    }
 	    else if (!strncmp(argv[opt], "-", 1))
@@ -1886,20 +1931,18 @@ int main(int argc, char **argv)
 	    usage(argv[0]);
       }
 
-      else if (!interval) { 				/* Get interval */
+      else if (interval < 0) { 		/* Get interval */
 	 if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
 	    usage(argv[0]);
 	 interval = atol(argv[opt++]);
 	 if (interval <= 0)
 	   usage(argv[0]);
-	 count = 1;	/* Default value for the count parameter is 1 */
-	 flags |= S_F_DEFAULT_COUNT;
       }
 
-      else {					/* Get count value */
+      else {				/* Get count value */
 	 if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
 	    usage(argv[0]);
-	 if (count && !USE_DEFAULT_COUNT(flags))
+	 if (count)
 	    /* Count parameter already set */
 	    usage(argv[0]);
 	 count = atol(argv[opt++]);
@@ -1907,7 +1950,6 @@ int main(int argc, char **argv)
 	   usage(argv[0]);
 	 else if (!count)
 	    count = -1;	/* To generate a report continuously */
-	 flags &= ~S_F_DEFAULT_COUNT;
       }
    }
 
@@ -1923,7 +1965,7 @@ int main(int argc, char **argv)
     * Display all the contents of the daily data file if the count parameter
     * was not set on the command line.
     */
-   if (USE_DEFAULT_COUNT(flags))
+   if (!count)
       count = -1;
 
    /*
@@ -1932,21 +1974,13 @@ int main(int argc, char **argv)
     * be displayed. So make sure that sadf won't complain about non existent
     * activities in file...
     */
-   if (!sadf_actflag || USE_XML_OPTION(flags))
+   if (!sadf_actflag || (format == S_O_XML_OPTION))
       sadf_actflag |= A_CPU;
-   if (!USE_DB_OPTION(flags) && !USE_PPC_OPTION(flags) && !USE_XML_OPTION(flags))
-      flags |= S_F_PPC_OPTION;
+   if (!format)
+      format = S_O_PPC_OPTION;
 
-   if (!count)
-      count = -1;
-   if (!interval)
+   if (interval < 0)
       interval = 1;
-
-   /* If -A option is used, force '-P ALL' */
-   if (USE_A_OPTION(flags)) {
-      init_bitmap(cpu_bitmap, ~0, NR_CPUS);
-      flags |= S_F_ALL_PROC + S_F_PER_PROC;
-   }
 
    /* Read stats from file */
    read_stats_from_file(dfile);

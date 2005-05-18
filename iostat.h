@@ -24,6 +24,7 @@
 #define I_D_PARTITIONS		0x0400
 #define I_F_HAS_DISKSTATS	0x0800
 #define I_F_HAS_PPARTITIONS	0x1000
+#define I_F_PLAIN_KERNEL24	0x2000
 
 #define DISPLAY_CPU_ONLY(m)	(((m) & I_D_CPU_ONLY) == I_D_CPU_ONLY)
 #define DISPLAY_DISK_ONLY(m)	(((m) & I_D_DISK_ONLY) == I_D_DISK_ONLY)
@@ -38,10 +39,13 @@
 #define DISPLAY_PARTITIONS(m)	(((m) & I_D_PARTITIONS) == I_D_PARTITIONS)
 #define HAS_DISKSTATS(m)	(((m) & I_F_HAS_DISKSTATS) == I_F_HAS_DISKSTATS)
 #define HAS_PPARTITIONS(m)	(((m) & I_F_HAS_PPARTITIONS) == I_F_HAS_PPARTITIONS)
+#define HAS_PLAIN_KERNEL24(m)	(((m) & I_F_PLAIN_KERNEL24) == I_F_PLAIN_KERNEL24)
 
 #define DT_DEVICE	0
 #define DT_PARTITION	1
 
+/* Device name for old kernels */
+#define K_HDISK	"hdisk"
 
 struct comm_stats {
    unsigned long long uptime;
@@ -104,8 +108,7 @@ struct io_stats {
 
 struct io_hdr_stats {
    unsigned int  active				__attribute__ ((aligned (8)));
-   unsigned int  major				__attribute__ ((packed));
-   unsigned int  minor				__attribute__ ((packed));
+   unsigned int  used				__attribute__ ((packed));
             char name[MAX_NAME_LEN]		__attribute__ ((packed));
 };
 

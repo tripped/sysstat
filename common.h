@@ -41,6 +41,8 @@
 
 #define CNT_DEV		0
 #define CNT_PART	1
+#define CNT_ALL_DEV	0
+#define CNT_USED_DEV	1
 
 #define S_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * HZ)
 
@@ -70,9 +72,9 @@ extern char	   *device_name(char *);
 extern unsigned int get_disk_io_nr(void);
 extern int	    get_kb_shift(void);
 extern time_t	    get_localtime(struct tm *);
-extern int	    get_cpu_nr(int *, unsigned int);
+extern int	    get_cpu_nr(unsigned int);
 extern int	    get_sysfs_dev_nr(int);
-extern int	    get_diskstats_dev_nr(int);
+extern int	    get_diskstats_dev_nr(int, int);
 extern int	    get_ppartitions_dev_nr(int);
 extern int	    get_win_height(void);
 extern void	    init_nls(void);

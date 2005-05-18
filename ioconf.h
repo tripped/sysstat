@@ -22,6 +22,8 @@
 
 #define IOCONF	"/etc/sysstat/sysstat.ioconf"
 
+#define K_NODEV	"nodev"
+
 #define IS_WHOLE(maj,min)	((min % ioconf[maj]->blkp->pcount) == 0)
 
 /*

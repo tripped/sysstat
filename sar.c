@@ -40,8 +40,7 @@
 #define _(string) (string)
 #endif
 
-
-long interval = 0, count = 0;
+long interval = -1, count = 0;
 unsigned int sar_actflag = 0;
 unsigned int flags = 0;
 unsigned char irq_bitmap[(NR_IRQS / 8) + 1];
@@ -279,7 +278,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
    /* Print CPU usage */
    if (GET_CPU(act)) {
       if (dis)
-	 printf("\n%-11s       CPU     %%user     %%nice   %%system   %%iowait     %%idle\n",
+	 printf("\n%-11s       CPU     %%user     %%nice   %%system   "
+		"%%iowait     %%idle\n",
 		prev_string);
 
       if (!WANT_PER_PROC(flags) ||
@@ -416,7 +416,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
       }
 
       for (i = 0; i < pid_nr; i++) {
-	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & 0x01))
+	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & X_PID_SET))
 	    continue;
 
  	 printf("%-11s %9ld", curr_string, pid_stats[curr][i]->pid);
@@ -443,7 +443,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 		prev_string);
 
       for (i = 0; i < pid_nr; i++) {
-	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & 0x02))
+	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & X_PPID_SET))
 	    continue;
 	 printf("%-11s %9ld", curr_string, pid_stats[curr][i]->pid);
 
@@ -464,7 +464,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 *ssj = st_serial[prev];
 
       if (dis)
-	 printf("\n%-11s       TTY   rcvin/s   xmtin/s\n", prev_string);
+	 printf("\n%-11s       TTY   rcvin/s   xmtin/s framerr/s prtyerr/s     "
+		"brk/s   ovrun/s\n", prev_string);
 
       for (i = 0; i < file_hdr.sa_serial; i++, ssi++, ssj++) {
 
@@ -474,12 +475,16 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 printf("%-11s       %3d", curr_string, ssi->line);
 
 	 if ((ssi->line == ssj->line) || want_since_boot) {
-	    printf(" %9.2f %9.2f\n",
+	    printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
 		   S_VALUE(ssj->rx, ssi->rx, itv),
-		   S_VALUE(ssj->tx, ssi->tx, itv));
+		   S_VALUE(ssj->tx, ssi->tx, itv),
+		   S_VALUE(ssj->frame, ssi->frame, itv),
+		   S_VALUE(ssj->parity, ssi->parity, itv),
+		   S_VALUE(ssj->brk, ssi->brk, itv),
+		   S_VALUE(ssj->overrun, ssi->overrun, itv));
 	 }
 	 else
-	    printf("       N/A       N/A\n");
+	    printf("       N/A       N/A       N/A       N/A       N/A       N/A\n");
       }
    }
 
@@ -566,7 +571,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 *sndj;
 
       if (dis)
-	 printf("\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   rxcmp/s   txcmp/s  rxmcst/s\n",
+	 printf("\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   "
+		"rxcmp/s   txcmp/s  rxmcst/s\n",
 		prev_string);
 
       for (i = 0; i < file_hdr.sa_iface; i++, sndi++) {
@@ -596,7 +602,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 *sndj;
 
       if (dis)
-	 printf("\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n",
+	 printf("\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s  "
+		"txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n",
 		prev_string);
 
       for (i = 0; i < file_hdr.sa_iface; i++, sndi++) {
@@ -629,7 +636,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 *sdj;
 
       if (dis)
-	 printf("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz  avgqu-sz     await     svctm     %%util\n",
+	 printf("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz  "
+		"avgqu-sz     await     svctm     %%util\n",
 		prev_string);
 
       for (i = 0; i < file_hdr.sa_nr_disk; i++, ++sdi) {
@@ -684,7 +692,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
    /* Print NFS server stats */
    if (GET_NET_NFSD(act)) {
       if (dis)
-	 printf("\n%-11s   scall/s badcall/s  packet/s     udp/s     tcp/s     hit/s    miss/s   sread/s  swrite/s saccess/s sgetatt/s\n",
+	 printf("\n%-11s   scall/s badcall/s  packet/s     udp/s     tcp/s     "
+		"hit/s    miss/s   sread/s  swrite/s saccess/s sgetatt/s\n",
 		prev_string);
 
       printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
@@ -737,7 +746,8 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
    if (GET_MEM_AMT(act)) {
       if (dis)
-	 printf("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached kbswpfree kbswpused  %%swpused  kbswpcad\n",
+	 printf("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached kbswpfree "
+		"kbswpused  %%swpused  kbswpcad\n",
 		string);
 
       printf("%-11s %9.0f %9.0f    %6.2f %9.0f %9.0f %9.0f %9.0f    %6.2f %9.0f\n",
@@ -759,7 +769,8 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
 
    if (GET_KTABLES(act)) {
       if (dis)
-	 printf("\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n",
+	 printf("\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  "
+		"dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n",
 		string);
 
       printf("%-11s %9.0f %9.0f %9.0f %9.0f    %6.2f %9.0f    %6.2f %9.0f    %6.2f\n",
@@ -864,7 +875,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file,
    /* Print amount and usage of memory */
    if (GET_MEM_AMT(act)) {
       if (dis)
-	 printf("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached kbswpfree kbswpused  %%swpused  kbswpcad\n",
+	 printf("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached "
+		"kbswpfree kbswpused  %%swpused  kbswpcad\n",
 		cur_time[!curr]);
 
       printf("%-11s %9lu %9lu    %6.2f %9lu %9lu %9lu %9lu    %6.2f %9lu\n",
@@ -899,7 +911,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file,
    /* Print values of some kernel tables */
    if (GET_KTABLES(act)) {
       if (dis)
-	 printf("\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n",
+	 printf("\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  "
+		"dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n",
 		cur_time[!curr]);
 
       printf("%-11s %9u %9u %9u %9u    %6.2f %9u    %6.2f %9u    %6.2f\n",
@@ -1233,7 +1246,7 @@ void read_stats_from_file(char from_file[])
    allocate_structures(USE_SA_FILE);
 
    /* Print report header */
-   print_report_hdr(flags, &loc_time, &file_hdr);
+   print_report_hdr(S_O_NONE, flags, &loc_time, &file_hdr);
 
    /* Read system statistics from file */
    do {
@@ -1385,7 +1398,7 @@ void read_stats(void)
    allocate_structures(USE_SADC);
 
    /* Print report header */
-   print_report_hdr(flags, &loc_time, &file_hdr);
+   print_report_hdr(S_O_NONE, flags, &loc_time, &file_hdr);
 
    /* Read system statistics sent by the data collector */
    read_stat_bunch(0);
@@ -1551,7 +1564,6 @@ int main(int argc, char **argv)
 	 if (interval < 1)
 	   usage(argv[0]);
 	 flags |= S_F_I_OPTION;
-	 flags |= S_F_DEFAULT_COUNT;
       }
 
       else if (!strcmp(argv[opt], "-x") || !strcmp(argv[opt], "-X")) {
@@ -1594,7 +1606,7 @@ int main(int argc, char **argv)
 		  sar_actflag |= A_PID;
 	       else
 		  sar_actflag |= A_CPID;
-	       salloc(args_idx++, argv[opt -2]);	/* "-x" or "-X" */
+	       salloc(args_idx++, argv[opt - 2]);	/* "-x" or "-X" */
 	       salloc(args_idx++, ltemp);
 	    }
 	 }
@@ -1615,28 +1627,25 @@ int main(int argc, char **argv)
 
       else if (!strncmp(argv[opt], "-", 1)) {
 	 /* Other options not previously tested */
-	 if (parse_sar_opt(argv, opt, &sar_actflag, &flags, &dis_hdr, C_SAR))
+	 if (parse_sar_opt(argv, opt, &sar_actflag, &flags, &dis_hdr, C_SAR,
+			   irq_bitmap, cpu_bitmap))
 	    usage(argv[0]);
 	 opt++;
       }
 
-      else if (!interval) { 				/* Get interval */
-	 if ((strspn(argv[opt], DIGITS) != strlen(argv[opt])) ||
-	     WANT_BOOT_STATS(flags))
+      else if (interval < 0) { 				/* Get interval */
+	 if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
 	    usage(argv[0]);
 	 interval = atol(argv[opt++]);
-	 if (!interval)
-	    flags |= S_F_BOOT_STATS;
-	 else if (interval < 0)
+	 if (interval < 0)
 	   usage(argv[0]);
-	 count = 1;	/* Default value for the count parameter is 1 */
-	 flags |= S_F_DEFAULT_COUNT;
       }
 
       else {					/* Get count value */
-	 if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
+	 if ((strspn(argv[opt], DIGITS) != strlen(argv[opt])) ||
+	     !interval)
 	    usage(argv[0]);
-	 if (count && !USE_DEFAULT_COUNT(flags))
+	 if (count)
 	    /* Count parameter already set */
 	    usage(argv[0]);
 	 count = atol(argv[opt++]);
@@ -1644,14 +1653,12 @@ int main(int argc, char **argv)
 	   usage(argv[0]);
 	 else if (!count)
 	    count = -1;	/* To generate a report continuously */
-	 flags &= ~S_F_DEFAULT_COUNT;
       }
    }
 
    /* 'sar' is equivalent to 'sar -f' */
    if ((argc == 1) ||
-       (!interval && !WANT_BOOT_STATS(flags) &&
-	!from_file[0] && !to_file[0])) {
+       ((interval < 0) && !from_file[0] && !to_file[0])) {
       get_localtime(&loc_time);
       snprintf(from_file, MAX_FILE_LEN,
 	       "%s/sa%02d", SA_DIR, loc_time.tm_mday);
@@ -1673,25 +1680,23 @@ int main(int argc, char **argv)
       exit(1);
    }
    /* Don't print stats since boot time if -o or -f options are used */
-   if (WANT_BOOT_STATS(flags) && (from_file[0] || to_file[0]))
+   if (!interval && (from_file[0] || to_file[0]))
       usage(argv[0]);
-   /*
-    * Display all the contents of the daily data file if the count parameter
-    * was not set on the command line.
-    */
-   if (USE_DEFAULT_COUNT(flags) && from_file[0])
-      count = -1;
+
+   if (!count) {
+      /* count parameter not set */
+      if (from_file[0])
+	 /* Display all the contents of the daily data file */
+	 count = -1;
+      else
+	 /* Default value for the count parameter is 1 */
+	 count = 1;
+   }
 
    /* -x and -X options ignored when writing to a file */
    if (to_file[0]) {
       sar_actflag &= ~A_PID;
       sar_actflag &= ~A_CPID;
-   }
-
-   /* If -A option is used, force '-I XALL' */
-   if (USE_A_OPTION(flags)) {
-      init_bitmap(irq_bitmap, ~0, NR_IRQS);
-      sar_actflag |= A_ONE_IRQ;
    }
 
    /* Default is CPU activity... */
@@ -1706,16 +1711,8 @@ int main(int argc, char **argv)
 
    /* ---Reading stats from file */
    if (from_file[0]) {
-      if (!count)
-	 count = -1;
-      if (!interval)
+      if (interval < 0)
 	 interval = 1;
-
-      /* If -A option is used, force '-P ALL' */
-      if (USE_A_OPTION(flags)) {
-	 init_bitmap(cpu_bitmap, ~0, NR_CPUS);
-	 flags |= S_F_ALL_PROC + S_F_PER_PROC;
-      }
 
       /* Read stats from file */
       read_stats_from_file(from_file);
@@ -1749,12 +1746,10 @@ int main(int argc, char **argv)
       salloc(0, SADC);
 
       /* Interval value */
-      if (!interval) {
-	 if (WANT_BOOT_STATS(flags))
-	    strcpy(ltemp, "1");
-	 else
-	    usage(argv[0]);
-      }
+      if (interval < 0)
+	 usage(argv[0]);
+      else if (!interval)
+	 strcpy(ltemp, "1");
       else
 	 sprintf(ltemp, "%ld", interval);
       salloc(1, ltemp);

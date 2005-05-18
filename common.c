@@ -69,36 +69,31 @@ time_t get_localtime(struct tm *loc_time)
 
 /*
  ***************************************************************************
- * Find number of processors used on the machine
+ * Return the number of processors used on the machine
  * (0 means one proc, 1 means two proc, etc.)
  * As far as I know, there are two possibilities for this:
- * 1) Use /proc/stat or 2) Use /proc/cpuinfo
+ * 1) Use /proc/stat (this is what we are doing here) or
+ * 2) Use /proc/cpuinfo
  * (I haven't heard of a better method to guess it...)
- * See kernel sources:
- * 2.4: linux/fs/proc/proc_misc.c: kstat_read_proc()
- * 2.6: linux/fs/proc/proc_misc.c: show_stat()
  ***************************************************************************
  */
-int get_cpu_nr(int *cpu_nr, unsigned int max_nr_cpus)
+int get_cpu_nr(unsigned int max_nr_cpus)
 {
-   FILE *statfp;
+   FILE *fp;
    char line[16];
-   int proc_nb, smp_box;
+   int proc_nb, cpu_nr = -1;
 
-   *cpu_nr = -1;
-
-   /* Open stat file */
-   if ((statfp = fopen(STAT, "r")) == NULL) {
+   if ((fp = fopen(STAT, "r")) == NULL) {
       fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
       exit(1);
    }
 
-   while (fgets(line, 16, statfp) != NULL) {
+   while (fgets(line, 16, fp) != NULL) {
 
       if (strncmp(line, "cpu ", 4) && !strncmp(line, "cpu", 3)) {
 	 sscanf(line + 3, "%d", &proc_nb);
-	 if (proc_nb > *cpu_nr)
-	   *cpu_nr = proc_nb;
+	 if (proc_nb > cpu_nr)
+	    cpu_nr = proc_nb;
       }
    }
 
@@ -109,19 +104,17 @@ int get_cpu_nr(int *cpu_nr, unsigned int max_nr_cpus)
     * If cpu_nr = 0 then there is only one proc but this is a Linux 2.2 SMP or
     * Linux 2.4 kernel.
     */
-   smp_box = (*cpu_nr > 0);
-   if (*cpu_nr < 0)
-      *cpu_nr = 0;
+   if (cpu_nr < 0)
+      cpu_nr = 0;
 
-   if (*cpu_nr >= max_nr_cpus) {
+   if (cpu_nr >= max_nr_cpus) {
       fprintf(stderr, _("Cannot handle so many processors!\n"));
       exit(1);
    }
 
-   /* Close file */
-   fclose(statfp);
+   fclose(fp);
 
-   return smp_box;
+   return cpu_nr;
 }
 
 
@@ -156,7 +149,7 @@ int get_dev_part_nr(char *dev_name)
    }
 
    /* Close directory */
-   (void) closedir(dir);
+   closedir(dir);
 
    return part;
 }
@@ -199,7 +192,7 @@ int get_sysfs_dev_nr(int display_partitions)
    }
 
     /* Close /sys/block directory */
-   (void) closedir(dir);
+   closedir(dir);
 
    return dev;
 }
@@ -207,20 +200,21 @@ int get_sysfs_dev_nr(int display_partitions)
 
 /*
  ***************************************************************************
- * Find number of devices and partitions available in /proc/diskstats
- * See kernel sources:
- * 2.6: linux/drivers/block/genhd.c: diskstats_show()
+ * Find number of devices and partitions available in /proc/diskstats.
+ * Args: count_part : set to TRUE if devices _and_ partitions are to be
+ *		counted.
+ *       only_used_dev : when counting devices, set to TRUE if only devices
+ 		with non zero stats are to be counted.
  ***************************************************************************
  */
-int get_diskstats_dev_nr(int count_part)
+int get_diskstats_dev_nr(int count_part, int only_used_dev)
 {
-   FILE *dstatsfp;
+   FILE *fp;
    char line[256];
    int dev = 0, i;
-   unsigned int tmp[2];
+   unsigned long rd_ios, wr_ios;
 
-   /* Open /proc/diskstats file */
-   if ((dstatsfp = fopen(DISKSTATS, "r")) == NULL)
+   if ((fp = fopen(DISKSTATS, "r")) == NULL)
       /* File non-existent */
       return 0;
 
@@ -228,19 +222,21 @@ int get_diskstats_dev_nr(int count_part)
     * Counting devices and partitions is simply a matter of counting
     * the number of lines...
     */
-   while (fgets(line, 256, dstatsfp) != NULL) {
+   while (fgets(line, 256, fp) != NULL) {
       if (!count_part) {
-	 i = sscanf(line, "%*d %*d %*s %*u %*u %*u %u %u",
-		    &tmp[0], &tmp[1]);
+	 i = sscanf(line, "%*d %*d %*s %lu %*u %*u %*u %lu",
+		    &rd_ios, &wr_ios);
 	 if (i == 1)
 	    /* It was a partition and not a device */
+	    continue;
+	 if (only_used_dev && !rd_ios && !wr_ios)
+	    /* Unused device */
 	    continue;
       }
       dev++;
    }
 
-   /* Close file */
-   fclose(dstatsfp);
+   fclose(fp);
 
    return dev;
 }
@@ -250,28 +246,25 @@ int get_diskstats_dev_nr(int count_part)
  ***************************************************************************
  * Find number of devices and partitions that have statistics in
  * /proc/partitions.
- * See kernel sources:
- * 2.6: linux/drivers/block/genhd.c: show_partition() (see sysfs instead)
  ***************************************************************************
  */
 int get_ppartitions_dev_nr(int count_part)
 {
-   FILE *ppartfp;
+   FILE *fp;
    char line[256];
    int dev = 0;
    unsigned int major, minor, tmp;
 
-   /* Open /proc/partitions file */
-   if ((ppartfp = fopen(PPARTITIONS, "r")) == NULL)
+   if ((fp = fopen(PPARTITIONS, "r")) == NULL)
       /* File non-existent */
       return 0;
 
-   while (fgets(line, 256, ppartfp) != NULL) {
+   while (fgets(line, 256, fp) != NULL) {
       if (sscanf(line, "%u %u %*u %*s %u", &major, &minor, &tmp) == 3) {
 	 /*
 	  * We have just read a line from /proc/partitions containing stats
-	  * for a device or a partition
-	  * (i.e. this is not a fake line: title, etc.)
+	  * for a device or a partition (i.e. this is not a fake line:
+	  * header, blank line,... or a line without stats!)
 	  */
 	 if (!count_part && !ioc_iswhole(major, minor))
 	    /* This was a partition, and we don't want to count them */
@@ -280,8 +273,7 @@ int get_ppartitions_dev_nr(int count_part)
       }
    }
 
-   /* Close file */
-   fclose(ppartfp);
+   fclose(fp);
 
    return dev;
 }
@@ -295,18 +287,17 @@ int get_ppartitions_dev_nr(int count_part)
  */
 unsigned int get_disk_io_nr(void)
 {
-   FILE *statfp;
+   FILE *fp;
    char line[8192];
    unsigned int dsk = 0;
    int pos;
 
-   /* Open /proc/stat file */
-   if ((statfp = fopen(STAT, "r")) == NULL) {
+   if ((fp = fopen(STAT, "r")) == NULL) {
       fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
       exit(2);
    }
 
-   while (fgets(line, 8192, statfp) != NULL) {
+   while (fgets(line, 8192, fp) != NULL) {
 
       if (!strncmp(line, "disk_io: ", 9)) {
 	 for (pos = 9; pos < strlen(line) - 1; pos +=strcspn(line + pos, " ") + 1)
@@ -314,8 +305,7 @@ unsigned int get_disk_io_nr(void)
       }
    }
 
-   /* Close /proc/stat file */
-   fclose(statfp);
+   fclose(fp);
 
    return dsk;
 }

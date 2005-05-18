@@ -1,3 +1,9 @@
+sysstat (6.0.0-1) experimental; urgency=low
+
+  * New upstream version (stable).
+
+ -- Robert Luberda <robert@debian.org>  Wed, 18 May 2005 20:36:13 +0200
+
 sysstat (5.1.5-1) experimental; urgency=low
 
   * New upstream version (development).

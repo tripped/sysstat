@@ -86,6 +86,9 @@ The following people have contributed to 'sysstat' in one way or another:
 	Thomas Polliard <thomas [at] polliard.com> helped me define the XML
 	output format for sadf. He also wrote the corresponding DTD.
 
+	Dwight Tovey <dtovey [at] emergecore.com> updated sysstat so that
+	it may be installed on Slackware.
+
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
@@ -137,6 +140,7 @@ I would also thank the following people for their hints or bug reports
 	Mike Sweger <mikesw@whi[...].net>
 	Don Totten <dontotten@ibm[...].net>
 	Stephen Tweedie <sct@red[...].com>
+	Thomas Weber <TWEBER@de.ibm.com>
 	Yongjun Wei <yjwei@nan[...].com>
 	Holger Wolf <Holger.Wolf@de.[...].com>
 	Urban Widmark <urban@sve[...].se>

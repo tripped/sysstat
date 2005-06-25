@@ -97,12 +97,11 @@
 #define S_F_F_OPTION		0x0010
 #define S_F_I_OPTION		0x0020
 #define S_F_TRUE_TIME		0x0040
-#define S_F_WANT_DISKS		0x0080
+#define S_F_L_OPTION		0x0080
 #define S_F_HAS_PPARTITIONS	0x0100
 #define S_F_HAS_DISKSTATS	0x0200
 #define S_F_FILE_LCK		0X0400
 #define S_F_PER_PROC		0x0800
-#define S_F_L_OPTION		0x1000
 
 #define WANT_ALL_PROC(m)	(((m) & S_F_ALL_PROC) == S_F_ALL_PROC)
 #define WANT_SA_ROTAT(m)	(((m) & S_F_SA_ROTAT) == S_F_SA_ROTAT)
@@ -111,12 +110,11 @@
 #define USE_F_OPTION(m)		(((m) & S_F_F_OPTION) == S_F_F_OPTION)
 #define USE_I_OPTION(m)		(((m) & S_F_I_OPTION) == S_F_I_OPTION)
 #define PRINT_TRUE_TIME(m)	(((m) & S_F_TRUE_TIME) == S_F_TRUE_TIME)
-#define WANT_DISKS(m)		(((m) & S_F_WANT_DISKS) == S_F_WANT_DISKS)
+#define USE_L_OPTION(m)		(((m) & S_F_L_OPTION) == S_F_L_OPTION)
 #define HAS_PPARTITIONS(m)	(((m) & S_F_HAS_PPARTITIONS) == S_F_HAS_PPARTITIONS)
 #define HAS_DISKSTATS(m)	(((m) & S_F_HAS_DISKSTATS) == S_F_HAS_DISKSTATS)
 #define FILE_LOCKED(m)		(((m) & S_F_FILE_LCK) == S_F_FILE_LCK)
 #define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC) == S_F_PER_PROC)
-#define USE_L_OPTION(m)		(((m) & S_F_L_OPTION) == S_F_L_OPTION)
 
 /* Output formats (O_= Output)  */
 #define S_O_NONE		0
@@ -183,6 +181,7 @@
 /* Record type */
 #define R_STATS		1
 #define R_DUMMY		2
+#define R_LAST_STATS	3
 
 #define SOFT_SIZE	0
 #define HARD_SIZE	1
@@ -405,11 +404,24 @@ struct stats_net_dev {
    unsigned long tx_fifo_errors			__attribute__ ((aligned (8)));
    unsigned long rx_frame_errors		__attribute__ ((aligned (8)));
    unsigned long tx_carrier_errors		__attribute__ ((aligned (8)));
-   unsigned char interface[MAX_IFACE_LEN]	__attribute__ ((aligned (8)));
+   char		 interface[MAX_IFACE_LEN]	__attribute__ ((aligned (8)));
 };
 
 #define STATS_NET_DEV_SIZE	(sizeof(struct stats_net_dev))
 
+
+/*
+ * stats_irq_cpu->irq:       IRQ#-A
+ * stats_irq_cpu->interrupt: number of IRQ#-A for proc 0
+ * stats_irq_cpu->irq:       IRQ#-B
+ * stats_irq_cpu->interrupt: number of IRQ#-B for proc 0
+ * ...
+ * stats_irq_cpu->irq:       (undef'd)
+ * stats_irq_cpu->interrupt: number of IRQ#-A for proc 1
+ * stats_irq_cpu->irq:       (undef'd)
+ * stats_irq_cpu->interrupt: number of IRQ#-B for proc 1
+ * ...
+ */
 struct stats_irq_cpu {
    unsigned int interrupt			__attribute__ ((aligned (8)));
    unsigned int irq				__attribute__ ((packed));
@@ -473,9 +485,23 @@ struct tstamp {
 
 
 /* Using 'do ... while' makes this macro safer to use (trailing semicolon) */
-#define CLOSE_ALL(_fd_)		do { \
+#define CLOSE_ALL(_fd_)		do {		\
 				close(_fd_[0]); \
 				close(_fd_[1]); \
+				} while (0)
+
+#define CLOSE(_fd_)		if (_fd_ >= 0)	\
+				close(_fd_)
+
+#define SREALLOC(S, TYPE, SIZE)	do {							\
+   				   TYPE *p;						\
+				   p = S;						\
+   				   if ((S = (TYPE *) realloc(S, (SIZE))) == NULL) {	\
+				      perror("realloc");				\
+				      exit(4);						\
+				   }							\
+   				   if (!p)						\
+      				      memset(S, 0, (SIZE));				\
 				} while (0)
 
 /* Functions */
@@ -489,7 +515,7 @@ unsigned long long  get_per_cpu_interval(struct stats_one_cpu *,
 					 struct stats_one_cpu *);
 extern char	   *get_devname(unsigned int, unsigned int, int);
 extern void	    init_bitmap(unsigned char [], unsigned char, unsigned int);
-extern void	    init_stats(struct file_stats [], unsigned int [][]);
+extern void	    init_stats(struct file_stats [], unsigned int [][NR_IRQS]);
 extern int	    next_slice(unsigned long long, unsigned long long,
 			       struct file_hdr *, int, long);
 extern int	    parse_sar_opt(char * [], int, unsigned int *,

@@ -1,10 +1,10 @@
 Summary: 	SAR, SADF, MPSTAT and IOSTAT for Linux
 Name: 		sysstat
-Version: 	6.0.0
+Version: 	6.0.1
 Release: 	1
 Copyright: 	GPL
 Group: 		Applications/System
-Source0: 	sysstat-6.0.0.tar.gz
+Source0: 	sysstat-6.0.1.tar.gz
 URL:		http://perso.wanadoo.fr/sebastien.godard
 Packager:	Damien Faure <damien-jn.faure@bull.net>
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root-%(id -u -n)
@@ -14,7 +14,7 @@ The sysstat package contains the sar, sadf, mpstat, iostat and sa
 tools for Linux.
 The sar command collects and reports system activity information.
 The sadf command may  be used to display data collected by sar in
-various formats.
+various formats (XML, database-friendly, etc.).
 The iostat command reports CPU utilization and I/O statistics for disks.
 The mpstat command reports global and per-processor statistics.
 The information collected by sar can be saved in a file in a binary 

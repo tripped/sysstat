@@ -2,7 +2,7 @@
 # (C) 1999-2005 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 6.0.0
+VERSION = 6.0.1
 
 include build/CONFIG
 
@@ -68,6 +68,7 @@ INITD_DIR = init.d
 endif
 
 all: sa1 sa2 crontab sysstat sysstat.sysconfig sysstat.crond \
+	sysstat.cron.daily sysstat.cron.hourly \
 	sadc sar sadf iostat mpstat locales
 
 common.o: common.c common.h ioconf.h
@@ -154,6 +155,12 @@ crontab: crontab.sample
 sysstat.crond: sysstat.crond.in
 	$(SED) -e s+USER+$(CRON_OWNER)+g \
 		-e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
+
+sysstat.cron.daily: sysstat.cron.daily.in
+	$(SED) s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
+
+sysstat.cron.hourly: sysstat.cron.hourly.in
+	$(SED) s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
 
 ifdef REQUIRE_NLS
 locales: nls/af.gmo nls/de.gmo nls/es.gmo nls/fr.gmo nls/it.gmo nls/ja.gmo nls/nb.gmo nls/nn.gmo nls/pl.gmo nls/pt.gmo nls/ro.gmo nls/ru.gmo nls/sk.gmo
@@ -269,6 +276,9 @@ install_all: install_base
 	$(CHOWN) $(CRON_OWNER) $(DESTDIR)$(SA_DIR)
 	if [ -d $(DESTDIR)/etc/cron.d ]; then \
 	   install -m 644 sysstat.crond $(DESTDIR)/etc/cron.d/sysstat; \
+	elif [ -d $(DESTDIR)/etc/cron.hourly -a -d $(DESTDIR)/etc/cron.daily ]; then \
+	   install -m 755 sysstat.cron.hourly $(DESTDIR)/etc/cron.hourly/sysstat; \
+	   install -m 755 sysstat.cron.daily $(DESTDIR)/etc/cron.daily/sysstat; \
 	else \
 	   su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).save"; \
 	   $(CP) -a /tmp/crontab-$(CRON_OWNER).save ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.save; \
@@ -277,11 +287,19 @@ install_all: install_base
 	fi
 	if [ -d $(DESTDIR)$(INIT_DIR) ]; then \
 	   install -m 755 sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
+	   cd $(DESTDIR)$(RC2_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
+	   cd $(DESTDIR)$(RC3_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
+	   cd $(DESTDIR)$(RC5_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
+	elif [ -d $(DESTDIR)$(RC_DIR) ]; then \
+	   install -m 755 sysstat $(DESTDIR)$(RC_DIR)/rc.sysstat; \
+	   [ -d $(DESTDIR)$(RC2_DIR) ] || mkdir -p $(DESTDIR)$(RC2_DIR); \
+	   [ -d $(DESTDIR)$(RC3_DIR) ] || mkdir -p $(DESTDIR)$(RC3_DIR); \
+	   [ -d $(DESTDIR)$(RC5_DIR) ] || mkdir -p $(DESTDIR)$(RC5_DIR); \
+	   cd $(DESTDIR)$(RC2_DIR) && ln -sf ../rc.sysstat S03sysstat; \
+	   cd $(DESTDIR)$(RC3_DIR) && ln -sf ../rc.sysstat S03sysstat; \
+	   cd $(DESTDIR)$(RC5_DIR) && ln -sf ../rc.sysstat S03sysstat; \
 	fi
 	install -m 644 sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
-	cd $(DESTDIR)$(RC2_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
-	cd $(DESTDIR)$(RC3_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
-	cd $(DESTDIR)$(RC5_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat
 
 uninstall_base:
 	rm -f $(DESTDIR)$(SA_LIB_DIR)/sadc
@@ -303,6 +321,7 @@ uninstall_base:
 #	No need to keep sysstat script, config file and links since
 #	the binaries have been deleted.
 	rm -f $(DESTDIR)$(INIT_DIR)/sysstat
+	rm -f $(DESTDIR)$(RC_DIR)/rc.sysstat
 	rm -f $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
 	rm -f $(DESTDIR)$(SYSCONFIG_DIR)/sysstat.ioconf
 	rm -f $(DESTDIR)$(RC2_DIR)/S03sysstat
@@ -310,6 +329,10 @@ uninstall_base:
 	rm -f $(DESTDIR)$(RC5_DIR)/S03sysstat
 #	Vixie cron entries also can be safely deleted here
 	rm -f $(DESTDIR)/etc/cron.d/sysstat
+#	Id. for Slackware cron entries
+	rm -f $(DESTDIR)/etc/cron.hourly/sysstat
+	rm -f $(DESTDIR)/etc/cron.daily/sysstat
+#	Remove locale files
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES/$(PACKAGE).mo

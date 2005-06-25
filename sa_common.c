@@ -85,14 +85,8 @@ void salloc_cpu_array(struct stats_one_cpu *st_cpu[], unsigned int nr_cpu)
 {
    int i;
 
-   for (i = 0; i < DIM; i++) {
-      if ((st_cpu[i] = (struct stats_one_cpu *) malloc(STATS_ONE_CPU_SIZE * nr_cpu)) == NULL) {
-	 perror("malloc");
-	 exit(4);
-      }
-
-      memset(st_cpu[i], 0, STATS_ONE_CPU_SIZE * nr_cpu);
-   }
+   for (i = 0; i < DIM; i++)
+      SREALLOC(st_cpu[i], struct stats_one_cpu, STATS_ONE_CPU_SIZE * nr_cpu);
 }
 
 
@@ -105,14 +99,8 @@ void salloc_serial_array(struct stats_serial *st_serial[], int nr_serial)
 {
    int i;
 
-   for (i = 0; i < DIM; i++) {
-      if ((st_serial[i] = (struct stats_serial *) malloc(STATS_SERIAL_SIZE * nr_serial)) == NULL) {
-	 perror("malloc");
-	 exit(4);
-      }
-
-      memset(st_serial[i], 0, STATS_SERIAL_SIZE * nr_serial);
-   }
+   for (i = 0; i < DIM; i++)
+      SREALLOC(st_serial[i], struct stats_serial, STATS_SERIAL_SIZE * nr_serial);
 }
 
 
@@ -126,14 +114,9 @@ void salloc_irqcpu_array(struct stats_irq_cpu *st_irq_cpu[],
 {
    int i;
 
-   for (i = 0; i < DIM; i++) {
-      if ((st_irq_cpu[i] = (struct stats_irq_cpu *) malloc(STATS_IRQ_CPU_SIZE * nr_cpus * nr_irqcpu)) == NULL) {
-	 perror("malloc");
-	 exit(4);
-      }
-
-      memset(st_irq_cpu[i], 0, STATS_IRQ_CPU_SIZE * nr_cpus * nr_irqcpu);
-   }
+   for (i = 0; i < DIM; i++)
+      SREALLOC(st_irq_cpu[i], struct stats_irq_cpu,
+	       STATS_IRQ_CPU_SIZE * nr_cpus * nr_irqcpu);
 }
 
 
@@ -147,14 +130,8 @@ void salloc_net_dev_array(struct stats_net_dev *st_net_dev[],
 {
    int i;
 
-   for (i = 0; i < DIM; i++) {
-      if ((st_net_dev[i] = (struct stats_net_dev *) malloc(STATS_NET_DEV_SIZE * nr_iface)) == NULL) {
-	 perror("malloc");
-	 exit(4);
-      }
-
-      memset(st_net_dev[i], 0, STATS_NET_DEV_SIZE * nr_iface);
-   }
+   for (i = 0; i < DIM; i++)
+      SREALLOC(st_net_dev[i], struct stats_net_dev, STATS_NET_DEV_SIZE * nr_iface);
 }
 
 
@@ -167,14 +144,8 @@ void salloc_disk_array(struct disk_stats *st_disk[], int nr_disk)
 {
    int i;
 
-   for (i = 0; i < DIM; i++) {
-      if ((st_disk[i] = (struct disk_stats *) malloc(DISK_STATS_SIZE * nr_disk)) == NULL) {
-	 perror("malloc");
-	 exit(4);
-      }
-
-      memset(st_disk[i], 0, DISK_STATS_SIZE * nr_disk);
-   }
+   for (i = 0; i < DIM; i++)
+      SREALLOC(st_disk[i], struct disk_stats, DISK_STATS_SIZE * nr_disk);
 }
 
 

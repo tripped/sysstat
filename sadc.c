@@ -57,11 +57,11 @@ int kb_shift = 0;
 
 struct file_hdr file_hdr;
 struct file_stats file_stats;
-struct stats_one_cpu *st_cpu;
-struct stats_serial *st_serial;
-struct stats_net_dev *st_net_dev;
-struct stats_irq_cpu *st_irq_cpu;
-struct disk_stats *st_disk;
+struct stats_one_cpu *st_cpu = NULL;
+struct stats_serial *st_serial = NULL;
+struct stats_net_dev *st_net_dev = NULL;
+struct stats_irq_cpu *st_irq_cpu = NULL;
+struct disk_stats *st_disk = NULL;
 struct pid_stats *pid_stats[MAX_PID_NR];
 
 unsigned long all_pids[MAX_PID_NR];
@@ -100,100 +100,6 @@ void alarm_handler(int sig)
 {
    signal(SIGALRM, alarm_handler);
    alarm(interval);
-}
-
-
-/*
- ***************************************************************************
- * Allocate stats_one_cpu structures
- * (only on SMP machines)
- ***************************************************************************
- */
-void salloc_cpu(int nb_cpu)
-{
-   if ((st_cpu = (struct stats_one_cpu *) malloc(STATS_ONE_CPU_SIZE * nb_cpu)) == NULL) {
-      perror("malloc");
-      exit(4);
-   }
-
-   memset(st_cpu, 0, STATS_ONE_CPU_SIZE * nb_cpu);
-}
-
-
-/*
- ***************************************************************************
- * Allocate stats_serial structures
- ***************************************************************************
- */
-void salloc_serial(unsigned int nb_serial)
-{
-   if ((st_serial = (struct stats_serial *) malloc(STATS_SERIAL_SIZE * nb_serial)) == NULL) {
-      perror("malloc");
-      exit(4);
-   }
-
-   memset(st_serial, 0, STATS_SERIAL_SIZE * nb_serial);
-}
-
-
-/*
- ***************************************************************************
- * Allocate stats_irq_cpu structures
- ***************************************************************************
- */
-void salloc_irqcpu(int nb_cpu, unsigned int nb_irqcpu)
-{
-   /*
-    * st_irq_cpu->irq:       IRQ#-A
-    * st_irq_cpu->interrupt: number of IRQ#-A for proc 0
-    * st_irq_cpu->irq:       IRQ#-B
-    * st_irq_cpu->interrupt: number of IRQ#-B for proc 0
-    * ...
-    * st_irq_cpu->irq:       (undef'd)
-    * st_irq_cpu->interrupt: number of IRQ#-A for proc 1
-    * st_irq_cpu->irq:       (undef'd)
-    * st_irq_cpu->interrupt: number of IRQ#-B for proc 1
-    * ...
-    */
-
-   if ((st_irq_cpu = (struct stats_irq_cpu *) malloc(STATS_IRQ_CPU_SIZE * nb_cpu * nb_irqcpu)) == NULL) {
-      perror("malloc");
-      exit(4);
-   }
-
-   memset(st_irq_cpu, 0, STATS_IRQ_CPU_SIZE * nb_cpu * nb_irqcpu);
-}
-
-
-/*
- ***************************************************************************
- * Allocate stats_net_dev structures
- ***************************************************************************
- */
-void salloc_net_dev(unsigned int nb_iface)
-{
-   if ((st_net_dev = (struct stats_net_dev *) malloc(STATS_NET_DEV_SIZE * nb_iface)) == NULL) {
-      perror("malloc");
-      exit(4);
-   }
-
-   memset(st_net_dev, 0, STATS_NET_DEV_SIZE * nb_iface);
-}
-
-
-/*
- ***************************************************************************
- * Allocate disk_stats structures
- ***************************************************************************
- */
-void salloc_disk(unsigned int nb_disks)
-{
-   if ((st_disk = (struct disk_stats *) malloc(DISK_STATS_SIZE * nb_disks)) == NULL) {
-      perror("malloc");
-      exit(4);
-   }
-
-   memset(st_disk, 0, DISK_STATS_SIZE * nb_disks);
 }
 
 
@@ -327,7 +233,7 @@ void get_pid_list(void)
  * in /proc/tty/driver/serial file.
  ***************************************************************************
  */
-void get_serial_lines(unsigned int *serial_nr)
+unsigned int get_serial_lines(void)
 #ifdef SMP_RACE
 {
    /*
@@ -335,8 +241,7 @@ void get_serial_lines(unsigned int *serial_nr)
     * This is because there is an SMP race in some 2.2.x kernels that
     * may be triggered when reading the /proc/tty/driver/serial file.
     */
-   *serial_nr = 0;
-   return;
+   return 0;
 }
 #else
 {
@@ -344,10 +249,8 @@ void get_serial_lines(unsigned int *serial_nr)
    char line[256];
    unsigned int sl = 0;
 
-   if ((fp = fopen(SERIAL, "r")) == NULL) {
-      *serial_nr = 0;	/* No SERIAL file */
-      return;
-   }
+   if ((fp = fopen(SERIAL, "r")) == NULL)
+      return 0;	/* No SERIAL file */
 
    while (fgets(line, 256, fp) != NULL) {
       /*
@@ -360,7 +263,7 @@ void get_serial_lines(unsigned int *serial_nr)
 
    fclose(fp);
 
-   *serial_nr = sl + NR_SERIAL_PREALLOC;
+   return (sl + NR_SERIAL_PREALLOC);
 }
 #endif
 
@@ -371,16 +274,14 @@ void get_serial_lines(unsigned int *serial_nr)
  * file
  ***************************************************************************
  */
-void get_net_dev(unsigned int *iface_nr)
+unsigned int get_net_dev(void)
 {
    FILE *fp;
    char line[128];
    unsigned int dev = 0;
 
-   if ((fp = fopen(NET_DEV, "r")) == NULL) {
-      *iface_nr = 0;	/* No network device file */
-      return;
-   }
+   if ((fp = fopen(NET_DEV, "r")) == NULL)
+      return 0;	/* No network device file */
 
    while (fgets(line, 128, fp) != NULL) {
       if (strchr(line, ':'))
@@ -389,7 +290,7 @@ void get_net_dev(unsigned int *iface_nr)
 
    fclose(fp);
 
-   *iface_nr = dev + NR_IFACE_PREALLOC;
+   return (dev + NR_IFACE_PREALLOC);
 }
 
 
@@ -399,16 +300,14 @@ void get_net_dev(unsigned int *iface_nr)
  * /proc/interrupts file). Called on SMP machines only.
  ***************************************************************************
  */
-void get_irqcpu_nb(unsigned int *irqcpu_nr, unsigned int max_nr_irqcpu)
+unsigned int get_irqcpu_nb(unsigned int max_nr_irqcpu)
 {
    FILE *fp;
    char line[256];
    unsigned int irq = 0;
 
-   if ((fp = fopen(INTERRUPTS, "r")) == NULL) {
-      *irqcpu_nr = 0;	/* No interrupts file */
-      return;
-   }
+   if ((fp = fopen(INTERRUPTS, "r")) == NULL)
+      return 0;	/* No interrupts file */
 
    while ((fgets(line, 256, fp) != NULL) && (irq < max_nr_irqcpu)) {
       if (isdigit(line[2]))
@@ -417,7 +316,7 @@ void get_irqcpu_nb(unsigned int *irqcpu_nr, unsigned int max_nr_irqcpu)
 
    fclose(fp);
 
-   *irqcpu_nr = irq + NR_IRQPROC_PREALLOC;
+   return (irq + NR_IRQPROC_PREALLOC);
 }
 
 
@@ -429,52 +328,48 @@ void get_irqcpu_nb(unsigned int *irqcpu_nr, unsigned int max_nr_irqcpu)
 void sa_sys_init(unsigned int *flags)
 {
    /* How many processors on this machine ? */
-   cpu_nr = get_cpu_nr(NR_CPUS);
-   if (cpu_nr > 0)
-      salloc_cpu(cpu_nr + 1);
+   if ((cpu_nr = get_cpu_nr(NR_CPUS)) > 0)
+      SREALLOC(st_cpu, struct stats_one_cpu, STATS_ONE_CPU_SIZE * (cpu_nr + 1));
 
    /* Get serial lines that support accounting */
-   get_serial_lines(&serial_nr);
-   if (serial_nr) {
+   if ((serial_nr = get_serial_lines())) {
       sadc_actflag |= A_SERIAL;
-      salloc_serial(serial_nr);
+      SREALLOC(st_serial, struct stats_serial, STATS_SERIAL_SIZE * serial_nr);
    }
    /* Get number of interrupts available per processor */
    if (cpu_nr > 0) {
-      get_irqcpu_nb(&irqcpu_nr, NR_IRQS);
-      if (irqcpu_nr)
-	 salloc_irqcpu(cpu_nr + 1, irqcpu_nr);
+      if ((irqcpu_nr = get_irqcpu_nb(NR_IRQS)))
+	 SREALLOC(st_irq_cpu, struct stats_irq_cpu,
+		  STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_nr);
    }
    else
       /* IRQ per processor are not provided by sadc on UP machines */
       irqcpu_nr = 0;
 
    /* Get number of network devices (interfaces) */
-   get_net_dev(&iface_nr);
-   if (iface_nr) {
+   if ((iface_nr = get_net_dev())) {
       sadc_actflag |= A_NET_DEV + A_NET_EDEV;
-      salloc_net_dev(iface_nr);
+      SREALLOC(st_net_dev, struct stats_net_dev, STATS_NET_DEV_SIZE * iface_nr);
    }
    /*
     * Get number of devices in /proc/{diskstats,partitions}
     * or number of disk_io entries in /proc/stat.
+    * Alwyays done, since disk stats must be read at least for sar -b
+    * if not for sar -d.
     */
    if ((disk_nr = get_diskstats_dev_nr(CNT_DEV, CNT_USED_DEV)) > 0) {
       *flags |= S_F_HAS_DISKSTATS;
-      sadc_actflag |= A_DISK;
       disk_nr += NR_DISK_PREALLOC;
-      salloc_disk(disk_nr);
+      SREALLOC(st_disk, struct disk_stats, DISK_STATS_SIZE * disk_nr);
    }
    else if ((disk_nr = get_ppartitions_dev_nr(CNT_DEV)) > 0) {
       *flags |= S_F_HAS_PPARTITIONS;
-      sadc_actflag |= A_DISK;
       disk_nr += NR_DISK_PREALLOC;
-      salloc_disk(disk_nr);
+      SREALLOC(st_disk, struct disk_stats, DISK_STATS_SIZE * disk_nr);
    }
    else if ((disk_nr = get_disk_io_nr()) > 0) {
-      sadc_actflag |= A_DISK;
       disk_nr += NR_DISK_PREALLOC;
-      salloc_disk(disk_nr);
+      SREALLOC(st_disk, struct disk_stats, DISK_STATS_SIZE * disk_nr);
    }
 }
 
@@ -488,7 +383,6 @@ void sa_sys_init(unsigned int *flags)
  */
 int ask_for_flock(int fd, unsigned int *flags, int fatal)
 {
-
    /* Option -L may be used only if an outfile was specified on the command line */
    if (USE_L_OPTION(*flags)) {
       /*
@@ -519,7 +413,7 @@ int ask_for_flock(int fd, unsigned int *flags, int fatal)
  * Fill system activity file header, then print it
  ***************************************************************************
  */
-void setup_file_hdr(int ofd, size_t *file_stats_size)
+void setup_file_hdr(int fd, size_t *file_stats_size)
 {
    int nb;
    struct tm loc_time;
@@ -543,7 +437,10 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
    file_hdr.sa_serial  = serial_nr;
    file_hdr.sa_irqcpu  = irqcpu_nr;
    file_hdr.sa_iface   = iface_nr;
-   file_hdr.sa_nr_disk = disk_nr;
+   if (GET_DISK(sadc_actflag))
+      file_hdr.sa_nr_disk = disk_nr;
+   else
+      file_hdr.sa_nr_disk = 0;
 
    *file_stats_size = FILE_STATS_SIZE;
 
@@ -557,7 +454,7 @@ void setup_file_hdr(int ofd, size_t *file_stats_size)
    file_hdr.sa_release[UTSNAME_LEN - 1] = '\0';
 
    /* Write file header */
-   if ((nb = write(ofd, &file_hdr, FILE_HDR_SIZE)) != FILE_HDR_SIZE) {
+   if ((nb = write(fd, &file_hdr, FILE_HDR_SIZE)) != FILE_HDR_SIZE) {
       fprintf(stderr, _("Cannot write system activity file header: %s\n"),
 	      strerror(errno));
       exit(2);
@@ -622,7 +519,6 @@ void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
 	 /* Unable to lock file: wait for next iteration to try again to save data */
 	 return;
    }
-
    if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
       p_write_error();
    if (cpu_nr > 0) {
@@ -651,7 +547,8 @@ void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
       if ((nb = write(ofd, st_net_dev, STATS_NET_DEV_SIZE * iface_nr)) != (STATS_NET_DEV_SIZE * iface_nr))
 	 p_write_error();
    }
-   if (disk_nr) {
+   if (disk_nr && GET_DISK(sadc_actflag)) {
+      /* Disk stats written only if -d option used */
       if ((nb = write(ofd, st_disk, DISK_STATS_SIZE * disk_nr)) != (DISK_STATS_SIZE * disk_nr))
 	 p_write_error();
    }
@@ -688,7 +585,26 @@ void create_sa_file(int *ofd, char *ofile, size_t *file_stats_size,
 
 /*
  ***************************************************************************
- * Get file descriptor for output
+ * Get descriptor for stdout.
+ ***************************************************************************
+ */
+void open_stdout(int *stdfd, size_t *file_stats_size)
+{
+   if (*stdfd >= 0) {
+      if ((*stdfd = dup(STDOUT_FILENO)) < 0) {
+	 perror("dup");
+	 exit(4);
+      }
+      /* Write file header on STDOUT */
+      setup_file_hdr(*stdfd, file_stats_size);
+   }
+}
+
+
+/*
+ ***************************************************************************
+ * Get descriptor for output file and write its header.
+ * We may enter this function several times (when we rotate a file).
  ***************************************************************************
  */
 void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *flags)
@@ -729,7 +645,7 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
 	 /*
 	  * Ok: it's a true system activity file.
 	  * File activity flag prevails over that of the user
-	  * in particular for the A_ONE_IRQ activity...
+	  * e.g. for the A_ONE_IRQ activity...
 	  * Same thing with file file_stats size.
 	  */
 	 sadc_actflag     = file_hdr.sa_actflag;
@@ -750,39 +666,28 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
 	  * to that of the file.
 	  */
 	 if (file_hdr.sa_serial != serial_nr) {
-	    if (serial_nr)
-	       free(st_serial);
 	    serial_nr = file_hdr.sa_serial;
-	    salloc_serial(serial_nr);
+	    SREALLOC(st_serial, struct stats_serial, STATS_SERIAL_SIZE * serial_nr);
 	 }
 	 if (file_hdr.sa_iface != iface_nr) {
-	    if (iface_nr)
-	       free(st_net_dev);
 	    iface_nr = file_hdr.sa_iface;
-	    salloc_net_dev(iface_nr);
+	    SREALLOC(st_net_dev, struct stats_net_dev, STATS_NET_DEV_SIZE * iface_nr);
 	 }
 	 if (file_hdr.sa_irqcpu != irqcpu_nr) {
-	    if (irqcpu_nr)
-	       free(st_irq_cpu);
 	    irqcpu_nr = file_hdr.sa_irqcpu;
-	    salloc_irqcpu(cpu_nr + 1, irqcpu_nr);
+	    SREALLOC(st_irq_cpu, struct stats_irq_cpu,
+		     STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_nr);
 	 }
 	 if (file_hdr.sa_nr_disk != disk_nr) {
-	    if (disk_nr)
-	       free(st_disk);
-	    disk_nr = file_hdr.sa_nr_disk;
-	    salloc_disk(disk_nr);
+	    if (!file_hdr.sa_nr_disk)
+	       /* Remove use of option -d */
+	       sadc_actflag &= ~A_DISK;
+	    else {
+	       disk_nr = file_hdr.sa_nr_disk;
+	       SREALLOC(st_disk, struct disk_stats, DISK_STATS_SIZE * disk_nr);
+	    }
 	 }
       }
-   }
-   /* Duplicate stdout file descriptor */
-   else {
-      if ((*ofd = dup(STDOUT_FILENO)) < 0) {
-	 perror("dup");
-	 exit(4);
-      }
-      /* Write file header */
-      setup_file_hdr(*ofd, file_stats_size);
    }
 }
 
@@ -1671,13 +1576,12 @@ void read_stats(unsigned int *flags)
    read_net_nfs_stat();
    read_net_nfsd_stat();
 
-   if (disk_nr) {
-      if (HAS_DISKSTATS(*flags))
-	 read_diskstats_stat();
-      else if (HAS_PPARTITIONS(*flags))
-	 read_ppartitions_stat();
-      /* else disks are in /proc/stat */
-   }
+   /* Read disk stats, at least for sar -b */
+   if (HAS_DISKSTATS(*flags))
+      read_diskstats_stat();
+   else if (HAS_PPARTITIONS(*flags))
+      read_ppartitions_stat();
+   /* else disks are in /proc/stat */
 
    if (pid_nr)
        read_pid_stat();
@@ -1697,19 +1601,27 @@ void read_stats(unsigned int *flags)
  ***************************************************************************
  */
 void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
-		     int ofd, size_t file_stats_size, char ofile[],
+		     int stdfd, int ofd, size_t file_stats_size, char ofile[],
 		     char new_ofile[])
 {
    int do_sa_rotat = 0;
+   unsigned int save_flags;
 
    /* Main loop */
    do {
 
-      /* Init stat structure */
+      /*
+       * Init file_stats structure. Every record of other structures
+       * is set when reading corresponding stat file (records are set
+       * to 0 if there are not enough data to fill the structure).
+       */
       memset(&file_stats, 0, FILE_STATS_SIZE);
 
       /* Set record type */
-      file_stats.record_type = R_STATS;
+      if (do_sa_rotat)
+	 file_stats.record_type = R_LAST_STATS;
+      else
+	 file_stats.record_type = R_STATS;
 
       /* Save time */
       file_stats.ust_time = get_localtime(loc_time);
@@ -1719,7 +1631,17 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
 
       /* Read then write stats */
       read_stats(flags);
-      write_stats(ofd, file_stats_size, flags);
+
+      if (stdfd >= 0) {
+	 save_flags = *flags;
+	 *flags &= ~S_F_L_OPTION;
+	 write_stats(stdfd, file_stats_size, flags);
+	 *flags = save_flags;
+      }
+
+      file_stats.record_type = R_STATS;
+      if (ofile[0])
+	 write_stats(ofd, file_stats_size, flags);
 
       if (do_sa_rotat) {
 	 /*
@@ -1728,12 +1650,18 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
 	  * as '-' on the command line).
 	  */
 	 do_sa_rotat = FALSE;
+
 	 if (fdatasync(ofd) < 0) {	/* Flush previous file */
 	    perror("fdatasync");
 	    exit(4);
 	 }
 	 close(ofd);
 	 strcpy(ofile, new_ofile);
+	 /* Recalculate nb of system items and reallocate structures */
+	 sa_sys_init(flags);
+	 /* Rewrite header to stdout */
+	 if (stdfd >= 0)
+	    setup_file_hdr(stdfd, &file_stats_size);
 	 /* Open and init new file */
 	 open_ofile(&ofd, ofile, &file_stats_size, flags);
 	 /* Write stats again */
@@ -1767,9 +1695,8 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
    }
    while (count);
 
-   /* Close output file */
-   close(ofd);
-
+   CLOSE(stdfd);
+   CLOSE(ofd);
 }
 
 
@@ -1780,13 +1707,13 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
  */
 int main(int argc, char **argv)
 {
-   int opt = 0;
+   int opt = 0, optz = 0, i;
    unsigned long pid;
    char ofile[MAX_FILE_LEN];
    char new_ofile[MAX_FILE_LEN];
    unsigned int flags = 0;
    struct tm loc_time;
-   int ofd, i;
+   int stdfd = 0, ofd = -1;
    long count = 0;
    /*
     * This variable contains:
@@ -1812,16 +1739,13 @@ int main(int argc, char **argv)
                   A_MEMORY + A_MEM_AMT + A_KTABLES + A_NET_SOCK + A_QUEUE +
       		  A_NET_NFS + A_NET_NFSD;
 
-   /* Init structures according to machine architecture */
-   sa_sys_init(&flags);
-
    while (++opt < argc) {
 
       if (!strcmp(argv[opt], "-I"))
 	 sadc_actflag |= A_ONE_IRQ;
 
       else if (!strcmp(argv[opt], "-d"))
-	 flags |= S_F_WANT_DISKS;
+	 sadc_actflag |= A_DISK;
 
       else if (!strcmp(argv[opt], "-F"))
 	 flags |= S_F_F_OPTION;
@@ -1831,6 +1755,9 @@ int main(int argc, char **argv)
 
       else if (!strcmp(argv[opt], "-V"))
 	 usage(argv[0]);
+
+      else if (!strcmp(argv[opt], "-z"))	/* Set by sar command */
+	 optz = 1;
 
       else if (!strcmp(argv[opt], "-x") || !strcmp(argv[opt], "-X")) {
 	 if (!GET_PID(sadc_actflag)) {
@@ -1861,6 +1788,7 @@ int main(int argc, char **argv)
 
       else if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
 	 if (!ofile[0]) {
+	    stdfd = -1;	/* Don't write to STDOUT */
 	    if (!strcmp(argv[opt], "-")) {
 	       /* File name set to '-' */
 	       get_localtime(&loc_time);
@@ -1900,6 +1828,13 @@ int main(int argc, char **argv)
 	 usage(argv[0]);
    }
 
+   /*
+    * If option -z used, write to STDOUT even if a filename
+    * has been entered on the command line.
+    */
+   if (optz)
+      stdfd = 0;
+
    /* -x and -X options ignored when writing to a file */
    if (ofile[0]) {
       pid_nr = 0;
@@ -1909,22 +1844,26 @@ int main(int argc, char **argv)
       /* -L option ignored when writing to STDOUT */
       flags &= ~S_F_L_OPTION;
 
-   /* Don't read disk stats if -d option not set */
-   if (!WANT_DISKS(flags)) {
-      disk_nr = 0;
-      sadc_actflag &= ~A_DISK;
-   }
+   /* Init structures according to machine architecture */
+   sa_sys_init(&flags);
 
    if (GET_PID(sadc_actflag))
       salloc_pid(pid_nr);
 
-   /* Open output file and write header */
+   /*
+    * Open output file then STDOUT. Write header for each of them.
+    * NB: Output file must be opened first because we may change
+    * the activity flag to that of the file, and the activity flag
+    * written on STDOUT must be consistent.
+    */
    open_ofile(&ofd, ofile, &file_stats_size, &flags);
+   open_stdout(&stdfd, &file_stats_size);
 
    if (!interval) {
       /* Interval (and count) not set: write a dummy record and exit */
       write_dummy_record(ofd, file_stats_size, &flags);
-      close(ofd);
+      CLOSE(ofd);
+      CLOSE(stdfd);
       exit(0);
    }
 
@@ -1932,8 +1871,8 @@ int main(int argc, char **argv)
    alarm_handler(0);
 
    /* Main loop */
-   rw_sa_stat_loop(&flags, count, &loc_time, ofd, file_stats_size,
-		   ofile, new_ofile);
+   rw_sa_stat_loop(&flags, count, &loc_time, stdfd, ofd,
+		   file_stats_size, ofile, new_ofile);
 
    return 0;
 }

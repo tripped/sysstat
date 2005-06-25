@@ -94,18 +94,17 @@ ${INIT_DIR}/sysstat
 /etc/sysconfig/sysstat
 /etc/sysconfig/sysstat.ioconf
 /etc/cron.d/sysstat
+/etc/rc.d/rc.sysstat		for [SLACKWARE]
 ${RC_DIR}/rc2.d/S03sysstat
 ${RC_DIR}/rc3.d/S03sysstat
 ${RC_DIR}/rc5.d/S03sysstat
 
 with:
 
-${INIT_DIR}=/etc/rc.d/init.d/	for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX]
-				    [KONDARA]
+${INIT_DIR}=/etc/rc.d/init.d/	for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX] [KONDARA]
 ${INIT_DIR}=/sbin/init.d/	for [SUSE <= 7.0]
 ${INIT_DIR}=/etc/init.d/	for [SUSE >= 7.1] [DEBIAN]
-${RC_DIR}=/etc/rc.d/		for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX]
-				    [KONDARA]
+${RC_DIR}=/etc/rc.d/		for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX] [KONDARA] [SLACKWARE]
 ${RC_DIR}=/sbin/init.d/		for [SUSE <= 7.0]
 ${RC_DIR}=/etc/init.d/		for [SUSE >= 7.1]
 ${RC_DIR}=/etc/			for [DEBIAN]

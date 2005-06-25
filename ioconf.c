@@ -38,7 +38,7 @@
 #endif
 
 static unsigned int ioc_parsed = 0;
-static struct ioc_entry *ioconf[MAX_BLKDEV+1];
+static struct ioc_entry *ioconf[MAX_BLKDEV + 1];
 
 /*
  ***************************************************************************
@@ -193,7 +193,7 @@ int ioc_init(void)
 	    continue;
 	 }
 	 /*
-	  * Cool. Point this device at it's referent.
+	  * Cool. Point this device at its referent.
 	  * Skip last: (last field my be empty...)
 	  * if it was empty and : was in the sscanf spec
 	  * we'd only see 3 fields...
@@ -331,6 +331,9 @@ int ioc_init(void)
       free(blkp);
    if (iocp != NULL)
       free(iocp);
+
+   /* Indicate that ioconf file has been parsed */
+   ioc_parsed = 1;
 
    return (count);
 }

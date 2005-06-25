@@ -1,5 +1,20 @@
 Changes:
 
+2005/06/25: Version 6.0.1 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* Fixed a memory leak in ioconf parsing functions used by sar
+	  and iostat.
+	* sar now displays its statistics to STDOUT in addition to saving
+	  them into the file when option -o has been entered on the
+	  command line.
+	* sar now recalculates number of system items (network interfaces,
+	  disks, serial lines, etc.) when a file rotation happens.
+	* Make sar -b work again when used without option -d.
+	* Small changes so that sysstat can be compiled with gcc-4.0.1.
+	* sysstat updated so that it may be installed on Slackware.
+	* sar manual page updated.
+	* CREDITS file updated.
+	* Code cleaned.
+
 2005/05/14: Version 6.0.0 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x2167]

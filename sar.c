@@ -50,11 +50,11 @@ int kb_shift = 0;
 struct stats_sum asum;
 struct file_hdr file_hdr;
 struct file_stats file_stats[DIM];
-struct stats_one_cpu *st_cpu[DIM];
-struct stats_serial *st_serial[DIM];
-struct stats_irq_cpu *st_irq_cpu[DIM];
-struct stats_net_dev *st_net_dev[DIM];
-struct disk_stats *st_disk[DIM];
+struct stats_one_cpu *st_cpu[DIM] = {NULL, NULL, NULL};
+struct stats_serial *st_serial[DIM] = {NULL, NULL, NULL};
+struct stats_irq_cpu *st_irq_cpu[DIM] = {NULL, NULL, NULL};
+struct stats_net_dev *st_net_dev[DIM] = {NULL, NULL, NULL};
+struct disk_stats *st_disk[DIM] = {NULL, NULL, NULL};
 
 /* Array members of common types are always packed */
 unsigned int interrupts[DIM][NR_IRQS];
@@ -99,8 +99,13 @@ void usage(char *progname)
  */
 void init_all_stats(void)
 {
+   int i;
+
    init_stats(file_stats, interrupts);
    memset(&asum, 0, STATS_SUM_SIZE);
+
+   for (i = 0; i < DIM; i++)
+      pid_stats[i][0] = NULL;
 }
 
 
@@ -129,6 +134,8 @@ void salloc_pid(int nr_pid)
    int i, pid;
 
    for (i = 0; i < DIM; i++) {
+      if (pid_stats[i][0])
+	 free(pid_stats[i][0]);
       if ((pid_stats[i][0] = (struct pid_stats *) malloc(PID_STATS_SIZE * nr_pid)) == NULL) {
 	 perror("malloc");
 	 exit(4);
@@ -140,6 +147,31 @@ void salloc_pid(int nr_pid)
 	 /* Structures are aligned but also padded. Thus array members are packed */
 	 pid_stats[i][pid] = pid_stats[i][0] + pid;	/* Assume nr_pids <= MAX_PID_NR */
    }
+}
+
+
+/*
+ ***************************************************************************
+ * Allocate structures
+ ***************************************************************************
+ */
+void allocate_structures(int stype)
+{
+   if (file_hdr.sa_proc > 0)
+      salloc_cpu_array(st_cpu, file_hdr.sa_proc + 1);
+   if ((stype == USE_SADC) &&
+       (GET_PID(sar_actflag) || GET_CPID(sar_actflag))) {
+      pid_nr = file_hdr.sa_nr_pid;
+      salloc_pid(pid_nr);
+   }
+   if (file_hdr.sa_serial)
+      salloc_serial_array(st_serial, file_hdr.sa_serial);
+   if (file_hdr.sa_irqcpu)
+      salloc_irqcpu_array(st_irq_cpu, file_hdr.sa_proc + 1, file_hdr.sa_irqcpu);
+   if (file_hdr.sa_iface)
+      salloc_net_dev_array(st_net_dev, file_hdr.sa_iface);
+   if (file_hdr.sa_nr_disk)
+      salloc_disk_array(st_disk, file_hdr.sa_nr_disk);
 }
 
 
@@ -987,6 +1019,41 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file,
 
 /*
  ***************************************************************************
+ * Display stats since system startup
+ ***************************************************************************
+ */
+void write_stats_startup(short curr)
+{
+   /* Set to 0 previous structures corresponding to boot time */
+   memset(&file_stats[!curr], 0, FILE_STATS_SIZE);
+   file_stats[!curr].record_type = R_STATS;
+   file_stats[!curr].hour        = file_stats[curr].hour;
+   file_stats[!curr].minute      = file_stats[curr].minute;
+   file_stats[!curr].second      = file_stats[curr].second;
+   file_stats[!curr].ust_time    = file_stats[curr].ust_time;
+   if (file_hdr.sa_proc > 0)
+      memset(st_cpu[!curr], 0, STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
+   memset(interrupts[!curr], 0, STATS_ONE_IRQ_SIZE);
+   if (pid_nr)
+      memset (pid_stats[!curr][0], 0, PID_STATS_SIZE * pid_nr);
+   if (file_hdr.sa_serial)
+      memset(st_serial[!curr], 0, STATS_SERIAL_SIZE * file_hdr.sa_serial);
+   if (file_hdr.sa_irqcpu)
+      memset(st_irq_cpu[!curr], 0, STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
+   if (file_hdr.sa_iface)
+      memset(st_net_dev[!curr], 0, STATS_NET_DEV_SIZE * file_hdr.sa_iface);
+   if (file_hdr.sa_nr_disk)
+      memset(st_disk[!curr], 0, DISK_STATS_SIZE * file_hdr.sa_nr_disk);
+	
+   /* Display stats since boot time */
+   write_stats(curr, DISP_HDR, sar_actflag, USE_SADC, &count,
+	       NO_TM_START, NO_TM_END, NO_RESET, ST_SINCE_BOOT);
+   exit(0);
+   }
+
+
+/*
+ ***************************************************************************
  * Read data sent by the data collector
  ***************************************************************************
  */
@@ -1029,31 +1096,6 @@ void write_dummy(short curr, int use_tm_start, int use_tm_end)
       return;
 
    printf("\n%-11s       LINUX RESTART\n", cur_time);
-}
-
-
-/*
- ***************************************************************************
- * Allocate structures
- ***************************************************************************
- */
-void allocate_structures(int stype)
-{
-   if (file_hdr.sa_proc > 0)
-      salloc_cpu_array(st_cpu, file_hdr.sa_proc + 1);
-   if ((stype == USE_SADC) &&
-       (GET_PID(sar_actflag) || GET_CPID(sar_actflag))) {
-      pid_nr = file_hdr.sa_nr_pid;
-      salloc_pid(pid_nr);
-   }
-   if (file_hdr.sa_serial)
-      salloc_serial_array(st_serial, file_hdr.sa_serial);
-   if (file_hdr.sa_irqcpu)
-      salloc_irqcpu_array(st_irq_cpu, file_hdr.sa_proc + 1, file_hdr.sa_irqcpu);
-   if (file_hdr.sa_iface)
-      salloc_net_dev_array(st_net_dev, file_hdr.sa_iface);
-   if (file_hdr.sa_nr_disk)
-      salloc_disk_array(st_disk, file_hdr.sa_nr_disk);
 }
 
 
@@ -1153,10 +1195,10 @@ void read_stat_bunch(short curr)
 
 /*
  ***************************************************************************
- * Read stats for current activity from file
+ * Read stats for current activity from file and display them.
  ***************************************************************************
  */
-void read_curr_act_stats(int ifd, off_t fpos, short *curr, long *cnt, int *eosaf,
+void handle_curr_act_stats(int ifd, off_t fpos, short *curr, long *cnt, int *eosaf,
 			 int rows, unsigned int act, int *reset)
 {
    short dis = 1;
@@ -1213,6 +1255,25 @@ void read_curr_act_stats(int ifd, off_t fpos, short *curr, long *cnt, int *eosaf
       write_stats_avg(!(*curr), dis, act, USE_SA_FILE);
 
    *reset = TRUE;
+}
+
+
+/*
+ ***************************************************************************
+ * Read header data sent by sadc
+ ***************************************************************************
+ */
+void read_header_data(void)
+{
+   /* Read stats header */
+   if (sa_read(&file_hdr, FILE_HDR_SIZE))
+      exit(0);
+   if (file_hdr.sa_magic != SA_MAGIC) {
+      /* sar and sadc commands are not consistent */
+      fprintf(stderr, _("Invalid data format\n"));
+      exit(3);
+   }
+
 }
 
 
@@ -1294,14 +1355,14 @@ void read_stats_from_file(char from_file[])
 	    if ((act == A_IRQ) && WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)) {
 	       /* Distinguish -I SUM activity from IRQs per processor activity */
 	       flags &= ~S_F_PER_PROC;
-	       read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows, act, &reset);
+	       handle_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows, act, &reset);
 	       flags |= S_F_PER_PROC;
 	       flags &= ~S_F_ALL_PROC;
-	       read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows, act, &reset);
+	       handle_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows, act, &reset);
 	       flags |= S_F_ALL_PROC;
 	    }
 	    else
-	       read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows, act, &reset);
+	       handle_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows, act, &reset);
 	 }
       }
 
@@ -1338,13 +1399,7 @@ void read_stats(void)
    unsigned int rows = 23, more = 1;
 
    /* Read stats header */
-   if (sa_read(&file_hdr, FILE_HDR_SIZE))
-      exit(0);
-   if (file_hdr.sa_magic != SA_MAGIC) {
-      /* sar and sadc commands are not consistent */
-      fprintf(stderr, _("Invalid data format\n"));
-      exit(3);
-   }
+   read_header_data();
 
    /* Force '-P ALL' flag if -A option is used on SMP machines */
    if (USE_A_OPTION(flags) && file_hdr.sa_proc) {
@@ -1410,33 +1465,9 @@ void read_stats(void)
 	 more = pid_nr;
    }
 
-   if (!interval) {
-      /* Update structures corresponding to boot time */
-      memset(&file_stats[1], 0, FILE_STATS_SIZE);
-      file_stats[1].record_type = R_STATS;
-      file_stats[1].hour        = file_stats[0].hour;
-      file_stats[1].minute      = file_stats[0].minute;
-      file_stats[1].second      = file_stats[0].second;
-      file_stats[1].ust_time    = file_stats[0].ust_time;
-      if (file_hdr.sa_proc > 0)
-	 memset(st_cpu[1], 0, STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
-      memset(interrupts[1], 0, STATS_ONE_IRQ_SIZE);
-      if (pid_nr)
-	 memset (pid_stats[1][0], 0, PID_STATS_SIZE * pid_nr);
-      if (file_hdr.sa_serial)
-	 memset(st_serial[1], 0, STATS_SERIAL_SIZE * file_hdr.sa_serial);
-      if (file_hdr.sa_irqcpu)
-	 memset(st_irq_cpu[1], 0, STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
-      if (file_hdr.sa_iface)
-	 memset(st_net_dev[1], 0, STATS_NET_DEV_SIZE * file_hdr.sa_iface);
-      if (file_hdr.sa_nr_disk)
-	 memset(st_disk[1], 0, DISK_STATS_SIZE * file_hdr.sa_nr_disk);
-	
-      /* Display stats since boot time (First arg: !curr) */
-      write_stats(0, DISP_HDR, sar_actflag, USE_SADC, &count,
-		  NO_TM_START, NO_TM_END, NO_RESET, ST_SINCE_BOOT);
-      exit(0);
-   }
+   if (!interval)
+      /* Display stats since boot time and exit */
+      write_stats_startup(0);
 
    /* Save the first stats collected. Will be used to compute the average */
    copy_structures(2, 0, USE_SADC);
@@ -1457,6 +1488,12 @@ void read_stats(void)
       write_stats(curr, dis, sar_actflag, USE_SADC, &count, NO_TM_START,
 		  tm_end.use, NO_RESET, ST_IMMEDIATE);
       fflush(stdout);	/* Don't buffer data if redirected to a pipe... */
+
+      if (file_stats[curr].record_type == R_LAST_STATS) {
+	 /* File rotation is happening: re-read header data sent by sadc */
+	 read_header_data();
+	 allocate_structures(USE_SADC);
+      }
 
       if (count > 0)
 	 count--;
@@ -1761,6 +1798,7 @@ int main(int argc, char **argv)
       }
 
       /* Flags to be passed to sadc */
+      salloc(args_idx++, "-z");
       if (GET_ONE_IRQ(sar_actflag))
 	 salloc(args_idx++, "-I");
       if (GET_DISK(sar_actflag))

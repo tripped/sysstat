@@ -5,8 +5,12 @@ sysstat (6.0.1-1) unstable; urgency=low
       and iostat (closes: #310402).
     + sar -b works again (closes: #314436, #204057).
     + sysstat can be compiled with gcc-4.0.1 now (closes: #314652).
+  * sysstat.postinst: fix rm command call (closes: #313429).
+  * Bump debhelper's version number in build-dependens field.
+  * Standards-Versions: 3.6.2 (no changes).
+  * 
 
- -- Robert Luberda <robert@debian.org>  Wed, 29 Jun 2005 19:36:17 +0200
+ -- Robert Luberda <robert@debian.org>  Wed, 29 Jun 2005 19:46:23 +0200
 
 sysstat (6.0.0-2) unstable; urgency=low
 

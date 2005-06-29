@@ -2,9 +2,8 @@ Source: sysstat
 Section: admin
 Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
-Build-Depends: debhelper (>= 4.2), gettext
-Build-Depends-Indep: debhelper (>= 4.2) 
-Standards-Version: 3.6.1
+Build-Depends: debhelper (>= 4.9), gettext
+Standards-Version: 3.6.2
 
 Package: sysstat
 Architecture: any

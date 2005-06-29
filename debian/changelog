@@ -1,3 +1,13 @@
+sysstat (6.0.1-1) unstable; urgency=low
+
+  * New upstream version:
+    + fixed a memory leak in ioconf parsing functions used by sar
+      and iostat (closes: #310402).
+    + sar -b works again (closes: #314436, #204057).
+    + sysstat can be compiled with gcc-4.0.1 now (closes: #314652).
+
+ -- Robert Luberda <robert@debian.org>  Wed, 29 Jun 2005 19:36:17 +0200
+
 sysstat (6.0.0-2) unstable; urgency=low
 
   * Upload to unstable:

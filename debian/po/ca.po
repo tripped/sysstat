@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sysstat_4.1.5-2_templates\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2004-04-27 20:37+0200\n"
+"POT-Creation-Date: 2005-06-29 19:52+0200\n"
 "PO-Revision-Date: 2004-01-31 20:03GMT\n"
 "Last-Translator: Aleix Badia i Bosch <abadia@ica.es>\n"
 "Language-Team: Debian L10n Catalan <debian-l10n-catalan@lists.debian.org>\n"
@@ -13,31 +13,9 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#. Type: note
-#. Description
-#: ../sysstat.templates:3
-msgid "WARNING: daily data files format has changed!"
-msgstr "Avís: el format dels fitxers diaris de dades ha canviat"
-
-#. Type: note
-#. Description
-#: ../sysstat.templates:3
-msgid ""
-"Format of daily data statistics files has changed in version ${s_version} of "
-"sysstat and is *not* compatible with the previous one!"
-msgstr ""
-"El format dels fitxers d'estadístiques de dades diaris ha canviat en la "
-"versió de sysstat ${s_version} ; *no* és compatible amb l'anterior."
-
-#. Type: note
-#. Description
-#: ../sysstat.templates:3
-msgid "Existing data files need to be deleted."
-msgstr "Cal suprimir els fitxers de dades existents."
-
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:12
+#: ../sysstat.templates:4
 msgid "Do you want post-installation script to remove these data files?"
 msgstr ""
 "Voleu que la seqüència posterior a la instal·lació suprimeixi tot aquests "
@@ -45,7 +23,17 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:12
+#: ../sysstat.templates:4
+msgid ""
+"Format of daily data statistics files has changed in version ${s_version} of "
+"sysstat and is *not* compatible with the previous one!"
+msgstr ""
+"El format dels fitxers d'estadístiques de dades diaris ha canviat en la "
+"versió de sysstat ${s_version} ; *no* és compatible amb l'anterior."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:4
 msgid ""
 "If you activate this option, any existing data files in /var/log/sysstat/ "
 "directory will be deleted."
@@ -55,7 +43,7 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:12
+#: ../sysstat.templates:4
 msgid ""
 "If you don't want to remove them automatically, please remove them by hand "
 "later, in order to the sar command work properly."
@@ -65,13 +53,13 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid "Do you want to activate sysstat's cron job?"
 msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid ""
 "If this option is enabled the sysstat package will collect (using the cron "
 "daemon and init.d script) binary data concerning system activities and store "
@@ -80,7 +68,7 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid ""
 "With this data the sar(1) command will be able to display day-long system "
 "statistics."
@@ -88,8 +76,14 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid ""
 "If you don't enable this option, the sar(1) command will show only the "
 "current statistics."
 msgstr ""
+
+#~ msgid "WARNING: daily data files format has changed!"
+#~ msgstr "Avís: el format dels fitxers diaris de dades ha canviat"
+
+#~ msgid "Existing data files need to be deleted."
+#~ msgstr "Cal suprimir els fitxers de dades existents."

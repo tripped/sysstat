@@ -8,30 +8,31 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sysstat_5.0.6-1_de\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2004-04-27 20:37+0200\n"
+"POT-Creation-Date: 2005-06-29 19:52+0200\n"
 "PO-Revision-Date: 2004-11-14 16:54+0100\n"
 "Last-Translator: Erik Schanze <mail@erikschanze.de>\n"
-"org>\n"
 "Language-Team: German <debian-l10n-german@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"org>\n"
 "X-Generator: KBabel 1.3.1\n"
 "Plural-Forms:  nplurals=2; plural=(n != 1);\n"
 
-#  Template: sysstat/notice
+#  Template: sysstat/remove_files
 #  ddtp-prioritize: 62
 #
-#. Type: note
+#. Type: boolean
 #. Description
-#: ../sysstat.templates:3
-msgid "WARNING: daily data files format has changed!"
-msgstr "WARNUNG:  Das Format der Daily-Data-Dateien wurde geändert!"
+#: ../sysstat.templates:4
+msgid "Do you want post-installation script to remove these data files?"
+msgstr ""
+"Sollen diese Dateien am Ende des Einrichtungsprogramms entfernt werden?"
 
 #
-#. Type: note
+#. Type: boolean
 #. Description
-#: ../sysstat.templates:3
+#: ../sysstat.templates:4
 msgid ""
 "Format of daily data statistics files has changed in version ${s_version} of "
 "sysstat and is *not* compatible with the previous one!"
@@ -41,25 +42,9 @@ msgstr ""
 "vorherigen!"
 
 #
-#. Type: note
-#. Description
-#: ../sysstat.templates:3
-msgid "Existing data files need to be deleted."
-msgstr "Vorhandene Dateien müssen gelöscht werden."
-
-#  Template: sysstat/remove_files
-#  ddtp-prioritize: 62
-#
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:12
-msgid "Do you want post-installation script to remove these data files?"
-msgstr "Sollen diese Dateien am Ende des Einrichtungsprogramms entfernt werden?"
-
-#
-#. Type: boolean
-#. Description
-#: ../sysstat.templates:12
+#: ../sysstat.templates:4
 msgid ""
 "If you activate this option, any existing data files in /var/log/sysstat/ "
 "directory will be deleted."
@@ -70,7 +55,7 @@ msgstr ""
 #
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:12
+#: ../sysstat.templates:4
 msgid ""
 "If you don't want to remove them automatically, please remove them by hand "
 "later, in order to the sar command work properly."
@@ -80,25 +65,25 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid "Do you want to activate sysstat's cron job?"
 msgstr "Einen Cronjob für sysstat einrichten?"
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid ""
 "If this option is enabled the sysstat package will collect (using the cron "
 "daemon and init.d script) binary data concerning system activities and store "
 "them in log files within /var/log/sysstat/ directory."
 msgstr ""
-"Wenn Sie zustimmen, wird sysstat (mittels des Dienstes cron und "
-"init.d-Skripten) binäre Daten über Systemaktivitäten sammeln und in "
+"Wenn Sie zustimmen, wird sysstat (mittels des Dienstes cron und init.d-"
+"Skripten) binäre Daten über Systemaktivitäten sammeln und in "
 "Protokolldateien im Verzeichnis /var/log/sysstat/ anlegen."
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid ""
 "With this data the sar(1) command will be able to display day-long system "
 "statistics."
@@ -108,7 +93,7 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid ""
 "If you don't enable this option, the sar(1) command will show only the "
 "current statistics."
@@ -116,3 +101,12 @@ msgstr ""
 "Wenn Sie ablehnen, kann das Kommando sar(1) nur die aktuellen Statistiken "
 "anzeigen."
 
+#  Template: sysstat/notice
+#  ddtp-prioritize: 62
+#
+#~ msgid "WARNING: daily data files format has changed!"
+#~ msgstr "WARNUNG:  Das Format der Daily-Data-Dateien wurde geändert!"
+
+#
+#~ msgid "Existing data files need to be deleted."
+#~ msgstr "Vorhandene Dateien müssen gelöscht werden."

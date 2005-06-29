@@ -43,8 +43,7 @@ if [ "$1" = "configure" ] ; then
         fi
     fi
 
-    # show notice & question next time
-    db_reset sysstat/notice || true
+    # show the question next time
     db_reset sysstat/remove_files || true
 
     db_get sysstat/enable || true

@@ -1,15 +1,10 @@
-Template: sysstat/notice
-Type: note
-_Description: WARNING: daily data files format has changed!
- Format of daily data statistics files has changed in version ${s_version}
- of sysstat and is *not* compatible with the previous one!
- .
- Existing data files need to be deleted.
-
 Template: sysstat/remove_files
 Type: boolean
 Default: true
 _Description: Do you want post-installation script to remove these data files?
+ Format of daily data statistics files has changed in version ${s_version}
+ of sysstat and is *not* compatible with the previous one!
+ .
  If you activate this option, any existing data files in /var/log/sysstat/
  directory will be deleted.
  .

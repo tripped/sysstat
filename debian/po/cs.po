@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sysstat\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2004-04-27 20:37+0200\n"
+"POT-Creation-Date: 2005-06-29 19:52+0200\n"
 "PO-Revision-Date: 2005-01-31 18:07+0100\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <provoz@debian.cz>\n"
@@ -23,37 +23,25 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-2\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#. Type: note
-#. Description
-#: ../sysstat.templates:3
-msgid "WARNING: daily data files format has changed!"
-msgstr "VAROVÁNÍ: formát souborù s denními daty se zmìnil!"
-
-#. Type: note
-#. Description
-#: ../sysstat.templates:3
-msgid ""
-"Format of daily data statistics files has changed in version ${s_version} of "
-"sysstat and is *not* compatible with the previous one!"
-msgstr ""
-"Formát denních statistických souborù se v sysstatu verze ${s_version} "
-"zmìnil a *není* kompatibilní s pøedchozími verzemi!"
-
-#. Type: note
-#. Description
-#: ../sysstat.templates:3
-msgid "Existing data files need to be deleted."
-msgstr "Stávající datové soubory musí být smazány."
-
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:12
+#: ../sysstat.templates:4
 msgid "Do you want post-installation script to remove these data files?"
 msgstr "Chcete, aby poinstalaèní skript tyto datové soubory smazal?"
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:12
+#: ../sysstat.templates:4
+msgid ""
+"Format of daily data statistics files has changed in version ${s_version} of "
+"sysstat and is *not* compatible with the previous one!"
+msgstr ""
+"Formát denních statistických souborù se v sysstatu verze ${s_version} zmìnil "
+"a *není* kompatibilní s pøedchozími verzemi!"
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:4
 msgid ""
 "If you activate this option, any existing data files in /var/log/sysstat/ "
 "directory will be deleted."
@@ -63,7 +51,7 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:12
+#: ../sysstat.templates:4
 msgid ""
 "If you don't want to remove them automatically, please remove them by hand "
 "later, in order to the sar command work properly."
@@ -73,25 +61,25 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid "Do you want to activate sysstat's cron job?"
 msgstr "Chcete aktivovat cronovou úlohu programu sysstat?"
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid ""
 "If this option is enabled the sysstat package will collect (using the cron "
 "daemon and init.d script) binary data concerning system activities and store "
 "them in log files within /var/log/sysstat/ directory."
 msgstr ""
-"Je-li tato mo¾nost povolená, bude balík sysstat sbírat (pomocí cronové "
-"úlohy a init.d skriptu) binární data o aktivitách v systému a bude je "
-"ukládat v souborech v adresáøi /var/log/sysstat/."
+"Je-li tato mo¾nost povolená, bude balík sysstat sbírat (pomocí cronové úlohy "
+"a init.d skriptu) binární data o aktivitách v systému a bude je ukládat v "
+"souborech v adresáøi /var/log/sysstat/."
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid ""
 "With this data the sar(1) command will be able to display day-long system "
 "statistics."
@@ -99,10 +87,16 @@ msgstr "Z posbíraných dat mù¾e pøíkaz sar(1) zobrazovat denní statistiky."
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:22
+#: ../sysstat.templates:17
 msgid ""
 "If you don't enable this option, the sar(1) command will show only the "
 "current statistics."
 msgstr ""
 "Pokud tuto mo¾nost nepovolíte, pøíkaz sar(1) bude zobrazovat pouze aktuální "
 "statistiku."
+
+#~ msgid "WARNING: daily data files format has changed!"
+#~ msgstr "VAROVÁNÍ: formát souborù s denními daty se zmìnil!"
+
+#~ msgid "Existing data files need to be deleted."
+#~ msgstr "Stávající datové soubory musí být smazány."

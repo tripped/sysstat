@@ -1,3 +1,9 @@
+sysstat (6.0.1-2) unstable; urgency=low
+
+  * Add Vietnamese translation of debconf templates (closes: #319857).
+
+ -- Robert Luberda <robert@debian.org>  Sat, 20 Aug 2005 13:15:25 +0200
+
 sysstat (6.0.1-1) unstable; urgency=low
 
   * New upstream version:

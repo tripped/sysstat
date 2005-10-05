@@ -1,3 +1,9 @@
+sysstat (6.0.1-3) unstable; urgency=low
+
+  * Swedish debconf templates translation (closes: #331184).
+
+ -- Robert Luberda <robert@debian.org>  Wed,  5 Oct 2005 20:44:33 +0200
+
 sysstat (6.0.1-2) unstable; urgency=low
 
   * Add Vietnamese translation of debconf templates (closes: #319857).

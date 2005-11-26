@@ -90,7 +90,7 @@ static void ioc_free(void)
 static char *ioc_conv(int radix, int nozero, const char *syms,
 		      unsigned int val)
 {
-   static char out[16];
+   static char out[17];
    char *p;
    int j;
 

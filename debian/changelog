@@ -1,3 +1,42 @@
+sysstat (6.0.1-4) unstable; urgency=low
+
+  * Review changes made by upstream in 6.0.x versions to improve handling
+    of transition from previous versions (closes: #316713).
+    Sorry about doing this so late - one and a half year since the version 6
+    was released.
+
+  * Re-enable collecting disk statistics by default (closes: #316855):
+    + /etc/default/sysstat:
+      - add `-d' option to OPTIONS passed to sadc by the init.d
+      - introduce SA1_OPTIONS variable with `-d' as default value
+      - for completion add SA2_OPTIONS, empty by default.
+    + /etc/cron.d/sysstat: pass $SA1_OPTIONS to sa1 and $SA2_OPTIONS to sa2.
+    + add NEWS.Debian file saying about the above change.
+
+  * ioconf.c: Fix overflow in ioc_conv() (closes: #334305).
+    Many thanks to Andrew Patterson for the patch!
+
+  * Edit build-time configuration and change the default behaviour of
+    the sa2 command: generate daily summary for the *previous* day, not
+    for the current as before.
+  * As a result of the above, move the sa2 invocation from cron.d to
+    the new cron.daily job.
+
+  * /etc/cron.d/sysstat: run sa1 around midnight to have the daily
+    statistics file properly rotated.
+
+  * Made the init.d script LSB-compliant.
+  * Makefile: remove hard-coded setting CC to gcc-4.0, which me added in
+    6.0.1-1 to test #314652 and than forgot to remove.
+  * debian/sysstat.{postinst,postrm}: handle /etc/default/sysstat with ucf.
+  * debian/compat: bump debhelper compatibility level to 5.
+  * debian/sysstat.config: remove some old cruft.
+  * debian/control: add dependency on ucf & lsb-base and update
+    build-dependency on dephelper.
+  * Remove lintian source overrides file, it's not needed.
+
+ -- Robert Luberda <robert@debian.org>  Sat, 26 Nov 2005 10:26:33 +0100
+
 sysstat (6.0.1-3) unstable; urgency=low
 
   * Swedish debconf templates translation (closes: #331184).
@@ -20,7 +59,7 @@ sysstat (6.0.1-1) unstable; urgency=low
   * sysstat.postinst: fix rm command call (closes: #313429).
   * templates,po/*: merge the message about necessity of deleting old log
     files with question about permission to do it (closes: #314438).
-  * Bump debhelper's version number in build-dependens field to have the menu
+  * Bump debhelper's version number in build-depends field to have the menu
     file moved to /usr/share.
   * Standards-Versions: 3.6.2 (no changes).
 
@@ -173,7 +212,7 @@ sysstat (5.0.4-1) unstable; urgency=low
   * Add Italian translation of debconf templates (closes: #249174).
     Thanks to Luca Monducci <luca.mo@tiscali.it>.
 
-  * Remove linitan override file for `shell-script-fails-syntax-check',
+  * Remove lintian override file for `shell-script-fails-syntax-check',
     it's not needed for the newest lintian.
   * Add lintian source overrides for `cvsignore-file-in-source'.
 

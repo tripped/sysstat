@@ -7,7 +7,7 @@ VERSION = 6.0.1
 include build/CONFIG
 
 # Compiler to use
-CC = gcc-4.0
+CC = gcc
 # 'ar' command
 AR = ar
 # Other commands

@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules,v 1.8 2004-11-14 11:17:34 robert Exp $
+# $Id: rules,v 1.9 2005-11-16 22:20:10 robert Exp $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -66,6 +66,7 @@ binary-common:
 	dh_installdebconf
 #	dh_installlogrotate
 #	dh_installemacsen
+#	dh_installcatalogs
 #	dh_installpam
 #	dh_installmime
 	dh_installinit --no-start
@@ -80,9 +81,10 @@ binary-common:
 	dh_link
 	dh_compress
 	dh_fixperms
+#	dh_perl
+#	dh_python
 #	dh_makeshlibs
 	dh_installdeb
-#	dh_perl
 	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
@@ -103,4 +105,4 @@ binary-%: build install
 	make -f debian/rules binary-common DH_OPTIONS=-p$*
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install
+.PHONY: build clean binary-indep binary-arch binary-common binary install

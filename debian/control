@@ -2,12 +2,12 @@ Source: sysstat
 Section: admin
 Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
-Build-Depends: debhelper (>= 4.9), gettext
+Build-Depends: debhelper (>= 5.0.7), gettext
 Standards-Version: 3.6.2
 
 Package: sysstat
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, ucf (>= 2.003), lsb-base (>= 3.0-6)
 Recommends: cron
 Suggests: isag
 Conflicts: atsar (<< 1.5-3)

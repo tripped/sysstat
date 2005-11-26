@@ -1,16 +1,31 @@
 #! /bin/sh
 # vim:ts=4:et
+# $Id: sysstat.postinst,v 1.24 2005-11-16 22:20:10 robert Exp $
+
 set -e
 
 S_VERSION="6.0.0-1"
 DEFAULT="/etc/default/sysstat"
 ENABLED="false"
 
-create_default_file() {
+### manage_default_file: manages $DEFAULT file with ucf ###
+manage_default_file() {
     ENABLED="$1"
-    cat > "$DEFAULT" << EOF
+    
+    if [ "$ENABLED" != "true" ] && [ "$ENABLED" != "false" ] ; then
+        echo "Internal error in the sysstat's postinst: \$ENABLED=$ENABLED" 1>&2;
+        exit 1;
+    fi                
+    
+    # Generate temporary files
+    def_file=`tempfile -p sstat -s .def`
+    md5_file=`tempfile -p sstat -s .md5`
+
+    # Fill new temporary default file
+    cat > "$def_file" << EOF
 #
-# Default settings for /etc/init.d/sysstat and /etc/cron.d/sysstat
+# Default settings for /etc/init.d/sysstat, /etc/cron.d/sysstat
+# and /etc/cron.daily/sysstat files
 #
 
 # Should sadc collect system activity informations? Valid values
@@ -18,15 +33,41 @@ create_default_file() {
 # will be overwritten by debconf!
 ENABLED="$ENABLED"
 
-# Options passed to sadc in the /etc/init.d/sysstat script.
+# Options passed to sadc by the /etc/init.d/sysstat script.
 # See sadc(8) for more information
-OPTIONS="-F -L -"
+OPTIONS="-d -F -L -"
 
+# Additional options passed to sa1 by /etc/cron.d/sysstat.
+# By default contains the \`-d\' option responsible for 
+# generating disk statisitcs.
+SA1_OPTIONS="-d"
+
+# Additional options passed to sa2 by /etc/cron.daily/sysstat.
+SA2_OPTIONS=""
 EOF
-    chmod 644 "$DEFAULT"
+
+    # Fill historical md5sums file
+    cat > "$md5_file" << EOF
+a02e85973f7fdb600c97bb8c2d95b99c  v5.0.3-1-false
+17858d506362e304f3f079adaeb6db8c  v5.0.3-1-true
+6f9a02d4f43d60e5c6b276708851f614  v5.1.1-2-false
+2898e78bd579e4635ff28f7d77e82968  v5.1.1-2-true
+1f9894df4e750f0b77db3813d1aab7f6  v5.1.3-1-false
+efebd191fca58d10975faf2389aaffc0  v5.1.3-1-true
+efebd191fca58d10975faf2389aaffc0  default
+EOF
+
+    # Finally, run ucf
+    ucf --three-way \
+        --debconf-ok \
+        --sum-file "$md5_file" \
+        "$def_file" "$DEFAULT"
+
+    [ -e "$DEFAULT" ] && chmod 644 "$DEFAULT"
+    rm -f "$def_file" "$md5_file"
 }
 
-
+### Main ###
 
 . /usr/share/debconf/confmodule
 
@@ -48,35 +89,25 @@ if [ "$1" = "configure" ] ; then
 
     db_get sysstat/enable || true
     ENABLED="$RET"
+    
+    manage_default_file "$ENABLED"
 
+    # must be called *before* manage_default_file, which uses ucf --debconf-ok
     db_stop || true
 
-    if [ -e "$DEFAULT" ] ; then
-        perl -e '
-            $enabled="$ARGV[0]";
-            while (<STDIN>) {
-                $cnt += s/(^\s*ENABLED=).*(\s*)$/$1\"${enabled}\"$2/;
-                print;
-            }
-            print "ENABLED=\"$enabled\"\n" if ($cnt==0);
-          ' "$ENABLED" < "$DEFAULT" > "$DEFAULT.dpkg-tmp" &&
-        mv -f "$DEFAULT.dpkg-tmp" "$DEFAULT"
 
-    else
-        create_default_file "$ENABLED"
-    fi
-
-
-    if ! update-alternatives --display sar | grep -q '^/usr/bin/sar\.sysstat'
-    then
+    if ! update-alternatives --display sar | grep -q '^/usr/bin/sar\.sysstat'; then
         update-alternatives --install /usr/bin/sar sar /usr/bin/sar.sysstat 0 \
                             --slave /usr/share/man/man1/sar.1.gz sar.1.gz \
                             /usr/share/man/man1/sar.sysstat.1.gz
     fi
 
 
-    [ "$ENABLED" = "true " ] && [ -x /usr/lib/sysstat/sa1 ] \
-                             && /usr/lib/sysstat/sa1 || true
+    # execute sa1 in a subshell not to clobber the postinst script with potentially
+    # unsafe values from "$DEFAULT"
+    if [ "$ENABLED" = "true" ] && [ -x /usr/lib/sysstat/sa1 ] && [ -r "$DEFAULT" ];  then
+        ( set +e ; . "$DEFAULT" ; /usr/lib/sysstat/sa1 "$SA_OPTIONS" )&
+    fi
 
 fi
 

@@ -2,7 +2,7 @@
 # (C) 1999-2005 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 6.0.1
+VERSION = 6.0.2
 
 include build/CONFIG
 
@@ -27,6 +27,7 @@ endif
 DESTDIR = $(RPM_BUILD_ROOT)
 BIN_DIR = $(PREFIX)/bin
 ifndef MAN_DIR
+# Don't use $(PREFIX)/share/man by default: not necessarily in man path!
 MAN_DIR = $(PREFIX)/man
 endif
 MAN1_DIR = $(MAN_DIR)/man1
@@ -68,10 +69,10 @@ INITD_DIR = init.d
 endif
 
 all: sa1 sa2 crontab sysstat sysstat.sysconfig sysstat.crond \
-	sysstat.cron.daily sysstat.cron.hourly \
+	sysstat.cron.daily sysstat.cron.hourly sysstat.crond.sample \
 	sadc sar sadf iostat mpstat locales
 
-common.o: common.c common.h ioconf.h
+common.o: common.c common.h ioconf.h version.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
 sa_common.o: sa_common.c sa.h common.h ioconf.h
@@ -91,31 +92,31 @@ libsyssa.a: sa_common.o
 version.h: version.in
 	$(SED) s+VERSION_NUMBER+$(VERSION)+g $< > $@
 
-sadc.o: sadc.c sa.h common.h version.h ioconf.h
+sadc.o: sadc.c sa.h common.h ioconf.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sadc: sadc.o libsyscom.a libsyssa.a
 	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG)
 
-sar.o: sar.c sa.h common.h version.h
+sar.o: sar.c sa.h common.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sar: sar.o libsyscom.a libsyssa.a
 	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG)
 
-sadf.o: sadf.c sadf.h sa.h common.h version.h
+sadf.o: sadf.c sadf.h sa.h common.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sadf: sadf.o libsyscom.a libsyssa.a
 	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG)
 
-iostat.o: iostat.c iostat.h common.h version.h ioconf.h
+iostat.o: iostat.c iostat.h common.h ioconf.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
 iostat: iostat.o libsyscom.a
 	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS)
 
-mpstat.o: mpstat.c mpstat.h common.h version.h
+mpstat.o: mpstat.c mpstat.h common.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
 mpstat: mpstat.o libsyscom.a
@@ -155,6 +156,11 @@ crontab: crontab.sample
 sysstat.crond: sysstat.crond.in
 	$(SED) -e s+USER+$(CRON_OWNER)+g \
 		-e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
+
+sysstat.crond.sample: sysstat.crond.in
+	$(SED) -e s+USER+$(CRON_OWNER)+g \
+		-e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
+		-e s/^/#/ $< > $@
 
 sysstat.cron.daily: sysstat.cron.daily.in
 	$(SED) s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
@@ -397,7 +403,8 @@ endif
 
 clean:
 	rm -f sadc sa1 sa2 sysstat sar sadf iostat mpstat *.o *.a core TAGS crontab
-	rm -f version.h sysstat.sysconfig sysstat.crond
+	rm -f version.h sysstat.sysconfig sysstat.crond sysstat.cron.daily
+	rm -f sysstat.cron.hourly sysstat.crond.sample
 	find nls -name "*.gmo" -exec rm -f {} \;
 
 distclean: clean

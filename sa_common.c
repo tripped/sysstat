@@ -710,6 +710,8 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 	 (*dis_hdr)++;
 	 break;
        case 'V':
+	 print_version();
+	 break;
        default:
 	 return 1;
       }

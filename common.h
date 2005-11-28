@@ -83,5 +83,6 @@ extern double	    ll_s_value(unsigned long long, unsigned long long,
 extern double	    ll_sp_value(unsigned long long, unsigned long long,
 				unsigned long long);
 extern void	    print_gal_header(struct tm *, char *, char *, char *);
+extern void	    print_version(void);
 
 #endif  /* _COMMON_H */

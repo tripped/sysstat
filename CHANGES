@@ -1,5 +1,19 @@
 Changes:
 
+2005/11/28: Version 6.0.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* New field added to mpstat and iostat: %steal.
+	* sar updated to take into account cpu steal time.
+	* Off-by-one error in ioc_conv which was corrupting device names
+	  on 64-bit architecture [Debian bug #334305].
+	* Binary RPM package now installs a sample crontab in /etc/cron.d.
+	* Makefile updated (remove sysstat.cron.* during make clean -
+	  new target added: sysstat.crond.sample).
+	* sar now checks exit code from dup2() system calls.
+	* Option -V now only displays sysstat version number.
+	* NLS updated.
+	* FAQ updated.
+	* Manual pages updated.
+
 2005/06/25: Version 6.0.1 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* Fixed a memory leak in ioconf parsing functions used by sar
 	  and iostat.

@@ -1,4 +1,4 @@
-.TH SAR 1 "JUNE 2005" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "OCTOBER 2005" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -110,9 +110,9 @@ Run the
 .B sar
 command as a background process. The syntax for this is:
 
-.B sar -o data.file interval count >/dev/null 2>&1 &
+.B sar -o datafile interval count >/dev/null 2>&1 &
 
-All data is captured in binary form and saved to a file (data.file).
+All data is captured in binary form and saved to a file (datafile).
 The data can then be selectively displayed with the
 .B sar
 command using the
@@ -183,11 +183,15 @@ Report paging statistics. The following values are displayed:
 .RS
 .RS
 Total number of kilobytes the system paged in from disk per second.
+Note: With old kernels (2.2.x) this value is a number of blocks per
+second (and not kilobytes).
 .RE
 
 .B pgpgout/s
 .RS
 Total number of kilobytes the system paged out to disk per second.
+Note: With old kernels (2.2.x) this value is a number of blocks per
+second (and not kilobytes).
 .RE
 
 .B fault/s
@@ -737,7 +741,9 @@ the system had an outstanding disk I/O request.
 .B %idle
 .RS
 Percentage of time that the CPU or CPUs were idle and the system
-did not have an outstanding disk I/O request.
+did not have an outstanding disk I/O request. Note: In virtualized hardware
+environment, this also includes the time spent in involuntary wait by the virtual CPU
+or CPUs while the hypervisor was servicing another virtual processor.
 .RE
 .RE
 .IP -v
@@ -794,7 +800,7 @@ of RT signals that can be queued.
 .RE
 .RE
 .IP -V
-Print version number and usage then exit.
+Print version number then exit.
 .IP -w
 Report system switching activity.
 

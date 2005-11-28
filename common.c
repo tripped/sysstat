@@ -37,6 +37,7 @@
  */
 #include <asm/page.h>
 
+#include "version.h"
 #include "common.h"
 #include "ioconf.h"
 
@@ -47,6 +48,19 @@
 #else
 #define _(string) (string)
 #endif
+
+
+/*
+ ***************************************************************************
+ * Print sysstat version number and exit
+ ***************************************************************************
+ */
+void print_version(void)
+{
+   fprintf(stderr, _("sysstat version %s\n"
+		   "(C) Sebastien Godard\n"), VERSION);
+   exit(1);
+}
 
 
 /*

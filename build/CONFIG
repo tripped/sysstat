@@ -6,6 +6,7 @@ PREFIX = /usr/local
 SA_LIB_DIR = /usr/local/lib/sa
 SADC_PATH = ${SA_LIB_DIR}/sadc
 SA_DIR = /var/log/sa
+# Do not use ${PREFIX}/share/man by default: not necessarily in man path!
 MAN_DIR = ${PREFIX}/man
 CLEAN_SA_DIR = n
 YESTERDAY =
@@ -16,9 +17,7 @@ SAS_DFLAGS =
 
 # NLS (National Language Support)
 REQUIRE_NLS = -DUSE_NLS -DPACKAGE=\"$(PACKAGE)\" -DLOCALEDIR=\"$(PREFIX)/share/locale\"
-ifdef REQUIRE_NLS
-   DFLAGS += $(REQUIRE_NLS)
-endif
+DFLAGS += $(REQUIRE_NLS)
 
 # Uncomment this to enable workaround for Linux kernel SMP race condition
 #SAS_DFLAGS += -DSMP_RACE

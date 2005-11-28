@@ -27,7 +27,6 @@
 #include <errno.h>
 #include <sys/param.h>	/* for HZ */
 
-#include "version.h"
 #include "sa.h"
 #include "common.h"
 
@@ -76,9 +75,7 @@ char *args[MAX_ARGV_NR];
  */
 void usage(char *progname)
 {
-   fprintf(stderr, _("sysstat version %s\n"
-		   "(C) Sebastien Godard\n"
-	           "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
+   fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 	           "Options are:\n"
 	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
@@ -87,7 +84,7 @@ void usage(char *progname)
 		   "[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 	           "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 		   "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"),
-	   VERSION, progname);
+	   progname);
    exit(1);
 }
 
@@ -1773,7 +1770,10 @@ int main(int argc, char **argv)
       break;
 
     case 0: /* Child */
-      dup2(fd[1], STDOUT_FILENO);
+      if (dup2(fd[1], STDOUT_FILENO) < 0) {
+	 perror("dup2");
+	 exit(4);
+      }
       CLOSE_ALL(fd);
 
       /*
@@ -1824,7 +1824,10 @@ int main(int argc, char **argv)
       break;
 
     default: /* Parent */
-      dup2(fd[0], STDIN_FILENO);
+      if (dup2(fd[0], STDIN_FILENO) < 0) {
+	 perror("dup2");
+	 exit(4);
+      }
       CLOSE_ALL(fd);
 
       /* Get now the statistics */

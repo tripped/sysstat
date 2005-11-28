@@ -33,7 +33,6 @@
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
-#include "version.h"
 #include "sa.h"
 #include "common.h"
 #include "ioconf.h"
@@ -81,12 +80,10 @@ void usage(char *progname)
     * Don't show options like -x ALL or -X SELF.
     * They should only be used with sar.
     */
-   fprintf(stderr, _("sysstat version %s\n"
-		   "(C) Sebastien Godard\n"
-	           "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
+   fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
 		   "Options are:\n"
 		   "[ -d ] [ -F ] [ -I ] [ -V ]\n"),
-	   VERSION, progname);
+	   progname);
    exit(1);
 }
 
@@ -216,7 +213,7 @@ void get_pid_list(void)
    /* Get directory entries */
    while ((drp = readdir(dir)) != NULL) {
       if (isdigit(drp->d_name[0])) {
-	 /* Save PID in th list */
+	 /* Save PID in the list */
 	 if (save_pid(atol(drp->d_name)) == MAX_PID_NR)
 	    break;
       }
@@ -704,7 +701,7 @@ void read_proc_stat(unsigned int flags)
    struct disk_stats *st_disk_i;
    static char line[8192];
    unsigned long long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
-   unsigned long long cc_idle, cc_iowait;
+   unsigned long long cc_idle, cc_iowait, cc_steal;
    unsigned int v_tmp[5], v_major, v_index;
    int proc_nb, i, pos;
 
@@ -722,17 +719,20 @@ void read_proc_stat(unsigned int flags)
 	  * to one processor to avoid rounding problems.
 	  */
 	 file_stats.cpu_iowait = 0;	/* For pre 2.5 kernels */
-	 cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu",
+	 cc_hardirq = cc_softirq = cc_steal = 0;
+	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu",
 		&(file_stats.cpu_user),   &(file_stats.cpu_nice),
 		&(file_stats.cpu_system), &(file_stats.cpu_idle),
-		&(file_stats.cpu_iowait), &cc_hardirq, &cc_softirq);
+		&(file_stats.cpu_iowait), &cc_hardirq, &cc_softirq,
+		&cc_steal);
 
 	 /*
 	  * Time spent in system mode also includes time spent
-	  * servicing interrrupts and softirqs
+	  * servicing hard interrrupts and softirqs.
+	  * Time spent in idle mode also include 'steal' time.
 	  */
 	 file_stats.cpu_system += cc_hardirq + cc_softirq;
+	 file_stats.cpu_idle += cc_steal;
 	
 	 /*
 	  * Compute the uptime of the system in jiffies (1/100ths of a second
@@ -759,12 +759,13 @@ void read_proc_stat(unsigned int flags)
 	     * has SMP support enabled.
 	     */
 	    cc_iowait = 0;	/* For pre 2.5 kernels */
-	    cc_hardirq = cc_softirq = 0;
-	    sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu",
+	    cc_hardirq = cc_softirq = cc_steal = 0;
+	    sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu %llu",
 		   &proc_nb,
 		   &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
-		   &cc_hardirq, &cc_softirq);
+		   &cc_hardirq, &cc_softirq, &cc_steal);
 	    cc_system += cc_hardirq + cc_softirq;
+	    cc_idle += cc_steal;
 	
 	    if (proc_nb <= cpu_nr) {
 	       st_cpu_i = st_cpu + proc_nb;
@@ -1754,7 +1755,7 @@ int main(int argc, char **argv)
 	 flags |= S_F_L_OPTION;
 
       else if (!strcmp(argv[opt], "-V"))
-	 usage(argv[0]);
+	 print_version();
 
       else if (!strcmp(argv[opt], "-z"))	/* Set by sar command */
 	 optz = 1;

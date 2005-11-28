@@ -89,11 +89,11 @@ static void ioc_free(void)
 static char *ioc_conv(int radix, int nozero, const char *syms,
 		      unsigned int val)
 {
-   static char out[16];
+   static char out[17];
    char *p;
    int j;
 
-   *(p = out+16) = '\0';
+   *(p = out + 16) = '\0';
 
    val += nozero;
 
@@ -351,7 +351,7 @@ int ioc_init(void)
 
 char *ioc_name(unsigned int major, unsigned int minor)
 {
-   static char name[IOC_DEVLEN+1];
+   static char name[IOC_DEVLEN + 1];
    struct ioc_entry *p;
    int base, offset;
 

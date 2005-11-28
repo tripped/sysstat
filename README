@@ -101,10 +101,10 @@ ${RC_DIR}/rc5.d/S03sysstat
 
 with:
 
-${INIT_DIR}=/etc/rc.d/init.d/	for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX] [KONDARA]
+${INIT_DIR}=/etc/rc.d/init.d/	for [REDHAT] [CALDERA] [MANDRIVA] [TURBOLINUX] [KONDARA]
 ${INIT_DIR}=/sbin/init.d/	for [SUSE <= 7.0]
 ${INIT_DIR}=/etc/init.d/	for [SUSE >= 7.1] [DEBIAN]
-${RC_DIR}=/etc/rc.d/		for [REDHAT] [CALDERA] [MANDRAKE] [TURBOLINUX] [KONDARA] [SLACKWARE]
+${RC_DIR}=/etc/rc.d/		for [REDHAT] [CALDERA] [MANDRIVA] [TURBOLINUX] [KONDARA] [SLACKWARE]
 ${RC_DIR}=/sbin/init.d/		for [SUSE <= 7.0]
 ${RC_DIR}=/etc/init.d/		for [SUSE >= 7.1]
 ${RC_DIR}=/etc/			for [DEBIAN]

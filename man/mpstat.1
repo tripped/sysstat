@@ -1,4 +1,4 @@
-.TH MPSTAT 1 "MARCH 2005" Linux "Linux User's Manual" -*- nroff -*-
+.TH MPSTAT 1 "NOVEMBER 2005" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 mpstat \- Report processors related statistics.
 .SH SYNOPSIS
@@ -67,7 +67,7 @@ executing at the user level with nice priority.
 .RS
 Show the percentage of CPU utilization that occurred while
 executing at the system level (kernel). Note that this does not
-include the time spent servicing interrupts or softirqs.
+include time spent servicing interrupts or softirqs.
 .RE
 .B %iowait
 .RS
@@ -83,6 +83,11 @@ Show the percentage of time spent by the CPU or CPUs to service interrupts.
 Show the percentage of time spent by the CPU or CPUs to service softirqs.
 A softirq (software interrupt) is one of up to 32 enumerated software
 interrupts which can run on multiple CPUs at once.
+.RE
+.B %steal
+.RS
+Show the percentage of time spent in involuntary wait by the virtual CPU
+or CPUs while the hypervisor was servicing another virtual processor.
 .RE
 .B %idle
 .RS
@@ -105,7 +110,7 @@ The
 .I ALL
 keyword indicates that statistics are to be reported for all processors.
 .IP -V
-Print version number and usage then exit.
+Print version number then exit.
 
 .SH ENVIRONMENT
 The

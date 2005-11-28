@@ -34,7 +34,6 @@
 #include <sys/utsname.h>
 #include <sys/param.h>	/* for HZ */
 
-#include "version.h"
 #include "iostat.h"
 #include "common.h"
 #include "ioconf.h"
@@ -77,13 +76,11 @@ int cpu_nr = -1;
  */
 void usage(char *progname)
 {
-   fprintf(stderr, _("sysstat version %s\n"
-		   "(C) Sebastien Godard\n"
-	           "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
+   fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 		   "Options are:\n"
 		   "[ -c | -d ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
 		   "[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"),
-	   VERSION, progname);
+	   progname);
    exit(1);
 }
 
@@ -341,7 +338,7 @@ void read_proc_stat(int curr, int flags)
    unsigned long v_tmp[4];
    unsigned int v_major, v_index;
    struct io_stats *st_iodev_tmp[4];
-   unsigned long long cc_idle, cc_iowait;
+   unsigned long long cc_idle, cc_iowait, cc_steal;
    unsigned long long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
 
 
@@ -367,16 +364,18 @@ void read_proc_stat(int curr, int flags)
 	  * Some fields are only presnt in 2.6 kernels.
 	  */
 	 comm_stats[curr].cpu_iowait = 0;	/* For pre 2.6 kernels */
+	 comm_stats[curr].cpu_steal = 0;
 	 cc_hardirq = cc_softirq = 0;
 	 /* CPU counters became unsigned long long with kernel 2.6.5 */
-	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu",
+	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu",
 	        &(comm_stats[curr].cpu_user), &(comm_stats[curr].cpu_nice),
 		&(comm_stats[curr].cpu_system), &(comm_stats[curr].cpu_idle),
-		&(comm_stats[curr].cpu_iowait), &cc_hardirq, &cc_softirq);
+		&(comm_stats[curr].cpu_iowait), &cc_hardirq, &cc_softirq,
+		&(comm_stats[curr].cpu_steal));
 
 	 /*
 	  * Time spent in system mode also includes time spent servicing
-	  * interrupts and softirqs.
+	  * hard interrupts and softirqs.
 	  */
 	 comm_stats[curr].cpu_system += cc_hardirq + cc_softirq;
 	
@@ -388,7 +387,8 @@ void read_proc_stat(int curr, int flags)
 	                           comm_stats[curr].cpu_nice +
 	                           comm_stats[curr].cpu_system +
 	                           comm_stats[curr].cpu_idle +
-	                           comm_stats[curr].cpu_iowait;
+	                           comm_stats[curr].cpu_iowait +
+	    			   comm_stats[curr].cpu_steal;
       }
 
       else if ((!strncmp(line, "cpu0", 4)) && cpu_nr) {
@@ -397,13 +397,13 @@ void read_proc_stat(int curr, int flags)
 	  * Useful to compute uptime reduced to one processor on SMP machines,
 	  * with fewer risks to get an overflow...
 	  */
-	 cc_iowait = cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu",
+	 cc_iowait = cc_hardirq = cc_softirq = cc_steal = 0;
+	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu",
 		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
-		&cc_hardirq, &cc_softirq);
+		&cc_hardirq, &cc_softirq, &cc_steal);
 	 comm_stats[curr].uptime0 = cc_user + cc_nice + cc_system +
 	    			    cc_idle + cc_iowait +
-	    			    cc_hardirq + cc_softirq;
+	    			    cc_hardirq + cc_softirq + cc_steal;
       }
 
       else if (DISPLAY_EXTENDED(flags) || HAS_DISKSTATS(flags) ||
@@ -774,13 +774,14 @@ void read_ppartitions_stat(int curr, int flags)
  */
 void write_cpu_stat(int curr, unsigned long long itv)
 {
-   printf("avg-cpu:  %%user   %%nice %%system %%iowait   %%idle\n");
+   printf("avg-cpu:  %%user   %%nice %%system %%iowait  %%steal   %%idle\n");
 
-   printf("         %6.2f  %6.2f  %6.2f  %6.2f  %6.2f\n\n",
+   printf("         %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f\n\n",
 	  ll_sp_value(comm_stats[!curr].cpu_user,   comm_stats[curr].cpu_user,   itv),
 	  ll_sp_value(comm_stats[!curr].cpu_nice,   comm_stats[curr].cpu_nice,   itv),
 	  ll_sp_value(comm_stats[!curr].cpu_system, comm_stats[curr].cpu_system, itv),
 	  ll_sp_value(comm_stats[!curr].cpu_iowait, comm_stats[curr].cpu_iowait, itv),
+	  ll_sp_value(comm_stats[!curr].cpu_steal,  comm_stats[curr].cpu_steal,  itv),
 	  (comm_stats[curr].cpu_idle < comm_stats[!curr].cpu_idle) ?
 	  0.0 :
 	  ll_sp_value(comm_stats[!curr].cpu_idle, comm_stats[curr].cpu_idle, itv));
@@ -1199,7 +1200,10 @@ int main(int argc, char **argv)
 	       flags |= I_D_EXTENDED;	/* Display extended stats */
 	       break;
 
-	     case 'V':			/* Print usage and exit	*/
+	     case 'V':			/* Print version number and exit */
+	       print_version();
+	       break;
+	
 	     default:
 	       usage(argv[0]);
 	    }

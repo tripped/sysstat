@@ -1,4 +1,4 @@
-.TH IOSTAT 1 "APRIL 2005" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "NOVEMBER 2005" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices and partitions.
@@ -92,6 +92,11 @@ executing at the system level (kernel).
 Show the percentage of time that the CPU or CPUs were idle during which
 the system had an outstanding disk I/O request.
 .RE
+.B %steal
+.RS
+Show the percentage of time spent in involuntary wait by the virtual CPU
+or CPUs while the hypervisor was servicing another virtual processor.
+.RE
 .B %idle
 .RS
 Show the percentage of time that the CPU or CPUs were idle and the system
@@ -106,10 +111,7 @@ Report. The device report provides statistics on a per physical device
 or partition basis. Block devices for which statistics are to be displayed
 may be entered on the command line. Partitions may also be entered on the
 command line providing that option -x is not used.
-If no
-.I device
-nor
-.I partition
+If no device nor partition
 is entered, then statistics are displayed
 for every device used by the system, and
 providing that the kernel maintains statistics for it.
@@ -320,7 +322,7 @@ Note that this option works only with post 2.5 kernels.
 .IP -t
 Print the time for each report displayed.
 .IP -V
-Print version number and usage then exit.
+Print version number then exit.
 .IP -x
 Display extended statistics.
 This option is exclusive of the -p one, and works with

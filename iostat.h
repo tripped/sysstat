@@ -55,6 +55,7 @@ struct comm_stats {
    unsigned long long cpu_user;
    unsigned long long cpu_nice;
    unsigned long long cpu_system;
+   unsigned long long cpu_steal;
 };
 
 #define COMM_STATS_SIZE	(sizeof(struct comm_stats))

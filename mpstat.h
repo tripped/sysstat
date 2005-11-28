@@ -15,6 +15,7 @@ struct mp_stats {
    unsigned long long cpu_system		__attribute__ ((packed));
    unsigned long long cpu_hardirq		__attribute__ ((packed));
    unsigned long long cpu_softirq		__attribute__ ((packed));
+   unsigned long long cpu_steal			__attribute__ ((packed));
    unsigned long long irq			__attribute__ ((packed));
    /* Structure must be a multiple of 8 bytes, since we use an array of structures.
     * Each structure is *aligned*, and we want the structures to be packed together. */

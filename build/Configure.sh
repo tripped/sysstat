@@ -129,7 +129,7 @@ then
 fi
 
 # Man directory
-
+# Beware that ${PREFIX}/share/man may not be in the man path
 if [ -L ${PREFIX}/man -a -d ${PREFIX}/share/man ];
 then
 	MANDIR=${PREFIX}/share/man

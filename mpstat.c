@@ -30,7 +30,6 @@
 #include <sys/utsname.h>
 #include <sys/param.h>	/* for HZ */
 
-#include "version.h"
 #include "mpstat.h"
 #include "common.h"
 
@@ -60,12 +59,10 @@ long interval = -1, count = 0;
  */
 void usage(char *progname)
 {
-   fprintf(stderr, _("sysstat version %s\n"
-		   "(C) Sebastien Godard\n"
-	           "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
+   fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 		   "Options are:\n"
 		   "[ -P { <cpu> | ALL } ] [ -V ]\n"),
-	   VERSION, progname);
+	   progname);
    exit(1);
 }
 
@@ -150,7 +147,7 @@ void write_stats_core(short prev, short curr, short dis,
    /* Print stats */
    if (dis)
       printf("\n%-11s  CPU   %%user   %%nice    %%sys %%iowait    %%irq   "
-	     "%%soft   %%idle    intr/s\n",
+	     "%%soft  %%steal   %%idle    intr/s\n",
 	     prev_string);
 
    /* Check if we want global stats among all proc */
@@ -158,13 +155,14 @@ void write_stats_core(short prev, short curr, short dis,
 
       printf("%-11s  all", curr_string);
 
-      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f",
+      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f",
 	     ll_sp_value(st_mp_cpu[prev]->cpu_user,    st_mp_cpu[curr]->cpu_user,    itv),
  	     ll_sp_value(st_mp_cpu[prev]->cpu_nice,    st_mp_cpu[curr]->cpu_nice,    itv),
 	     ll_sp_value(st_mp_cpu[prev]->cpu_system,  st_mp_cpu[curr]->cpu_system,  itv),
 	     ll_sp_value(st_mp_cpu[prev]->cpu_iowait,  st_mp_cpu[curr]->cpu_iowait,  itv),
 	     ll_sp_value(st_mp_cpu[prev]->cpu_hardirq, st_mp_cpu[curr]->cpu_hardirq, itv),
 	     ll_sp_value(st_mp_cpu[prev]->cpu_softirq, st_mp_cpu[curr]->cpu_softirq, itv),
+	     ll_sp_value(st_mp_cpu[prev]->cpu_steal,   st_mp_cpu[curr]->cpu_steal  , itv),
 	     (st_mp_cpu[curr]->cpu_idle < st_mp_cpu[prev]->cpu_idle) ?
 	     0.0 :	/* Handle buggy kernels */
 	     ll_sp_value(st_mp_cpu[prev]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
@@ -199,13 +197,14 @@ void write_stats_core(short prev, short curr, short dis,
       st_mp_cpu_i = st_mp_cpu[curr] + cpu;
       st_mp_cpu_j = st_mp_cpu[prev] + cpu;
 
-      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f %9.2f\n",
+      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f %9.2f\n",
 	     ll_sp_value(st_mp_cpu_j->cpu_user,    st_mp_cpu_i->cpu_user,    itv),
 	     ll_sp_value(st_mp_cpu_j->cpu_nice,    st_mp_cpu_i->cpu_nice,    itv),
 	     ll_sp_value(st_mp_cpu_j->cpu_system,  st_mp_cpu_i->cpu_system,  itv),
 	     ll_sp_value(st_mp_cpu_j->cpu_iowait,  st_mp_cpu_i->cpu_iowait,  itv),
 	     ll_sp_value(st_mp_cpu_j->cpu_hardirq, st_mp_cpu_i->cpu_hardirq, itv),
 	     ll_sp_value(st_mp_cpu_j->cpu_softirq, st_mp_cpu_i->cpu_softirq, itv),
+	     ll_sp_value(st_mp_cpu_j->cpu_steal,   st_mp_cpu_i->cpu_steal,   itv),
 	     (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle) ?
 	     0.0 :
 	     ll_sp_value(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv),
@@ -267,7 +266,7 @@ void read_proc_stat(short curr)
    struct mp_stats *st_mp_cpu_i;
    static char line[80];
    unsigned long long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
-   unsigned long long cc_idle, cc_iowait;
+   unsigned long long cc_idle, cc_iowait, cc_steal;
    int proc_nb;
 
    if ((fp = fopen(STAT, "r")) == NULL) {
@@ -284,16 +283,17 @@ void read_proc_stat(short curr)
 	  * processor to avoid rounding problems.
 	  */
 	 st_mp_cpu[curr]->cpu_iowait = 0;	/* For pre 2.5 kernels */
-	 cc_hardirq = cc_softirq = 0;
+	 cc_hardirq = cc_softirq = cc_steal = 0;
 	 /* CPU counters became unsigned long long with kernel 2.6.5 */
-	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu",
+	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu",
 		&(st_mp_cpu[curr]->cpu_user),
 		&(st_mp_cpu[curr]->cpu_nice),
 		&(st_mp_cpu[curr]->cpu_system),
 		&(st_mp_cpu[curr]->cpu_idle),
 		&(st_mp_cpu[curr]->cpu_iowait),
 		&(st_mp_cpu[curr]->cpu_hardirq),
-		&(st_mp_cpu[curr]->cpu_softirq));
+		&(st_mp_cpu[curr]->cpu_softirq),
+		&(st_mp_cpu[curr]->cpu_steal));
 
 	 /*
 	  * Compute the uptime of the system in jiffies (1/100ths of a second
@@ -306,7 +306,8 @@ void read_proc_stat(short curr)
 	                             st_mp_cpu[curr]->cpu_idle +
 	                             st_mp_cpu[curr]->cpu_iowait +
 	    			     st_mp_cpu[curr]->cpu_hardirq +
-	    			     st_mp_cpu[curr]->cpu_softirq;
+	    			     st_mp_cpu[curr]->cpu_softirq +
+	    			     st_mp_cpu[curr]->cpu_steal;
       }
 
       else if (!strncmp(line, "cpu", 3)) {
@@ -315,11 +316,11 @@ void read_proc_stat(short curr)
 	  * (user, nice, etc.) for current proc.
 	  * This is done only on SMP machines.
 	  */
-	 cc_iowait = cc_hardirq = cc_softirq = 0;
-	 sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu",
+	 cc_iowait = cc_hardirq = cc_softirq = cc_steal = 0;
+	 sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu %llu",
 		&proc_nb,
 		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
-		&cc_hardirq, &cc_softirq);
+		&cc_hardirq, &cc_softirq, &cc_steal);
 
 	 if (proc_nb <= cpu_nr) {
 	    st_mp_cpu_i = st_mp_cpu[curr] + proc_nb + 1;
@@ -330,6 +331,7 @@ void read_proc_stat(short curr)
 	    st_mp_cpu_i->cpu_iowait  = cc_iowait;
 	    st_mp_cpu_i->cpu_hardirq = cc_hardirq;
 	    st_mp_cpu_i->cpu_softirq = cc_softirq;
+	    st_mp_cpu_i->cpu_steal   = cc_steal;
 	 }
 	 /* else:
 	  * Additional CPUs have been dynamically registered in /proc/stat.
@@ -343,7 +345,7 @@ void read_proc_stat(short curr)
 	     */
 	    st_mp_tstamp[curr].uptime0 = cc_user + cc_nice + cc_system +
 	       				 cc_idle + cc_iowait + cc_hardirq +
-	    				 cc_softirq;
+	    				 cc_softirq + cc_steal;
       }
 
       else if (!strncmp(line, "intr ", 5))
@@ -503,7 +505,7 @@ int main(int argc, char **argv)
    while (++opt < argc) {
 
       if (!strcmp(argv[opt], "-V"))
-	 usage(argv[0]);
+	 print_version();
 
       else if (!strcmp(argv[opt], "-P")) {
 	 /* '-P ALL' can be used on UP machines */

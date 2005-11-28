@@ -1,10 +1,10 @@
 Summary: 	SAR, SADF, MPSTAT and IOSTAT for Linux
 Name: 		sysstat
-Version: 	6.0.1
+Version: 	6.0.2
 Release: 	1
 Copyright: 	GPL
 Group: 		Applications/System
-Source0: 	sysstat-6.0.1.tar.gz
+Source0: 	%{name}-%{version}.tar.gz
 URL:		http://perso.wanadoo.fr/sebastien.godard
 Packager:	Damien Faure <damien-jn.faure@bull.net>
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root-%(id -u -n)
@@ -14,7 +14,7 @@ The sysstat package contains the sar, sadf, mpstat, iostat and sa
 tools for Linux.
 The sar command collects and reports system activity information.
 The sadf command may  be used to display data collected by sar in
-various formats (XML, database-friendly, etc.).
+various formats (XML, etc.).
 The iostat command reports CPU utilization and I/O statistics for disks.
 The mpstat command reports global and per-processor statistics.
 The information collected by sar can be saved in a file in a binary 
@@ -48,6 +48,8 @@ install -m 755  sysstat $RPM_BUILD_ROOT/etc/rc.d/init.d/sysstat
 mkdir -p $RPM_BUILD_ROOT/etc/sysconfig
 install -m 644 sysstat.sysconfig $RPM_BUILD_ROOT/etc/sysconfig/sysstat
 install -m 644 sysstat.ioconf $RPM_BUILD_ROOT/etc/sysconfig/sysstat.ioconf
+mkdir -p $RPM_BUILD_ROOT/etc/cron.d
+install -m 644 sysstat.crond.sample $RPM_BUILD_ROOT/etc/cron.d/sysstat
 mkdir -p $RPM_BUILD_ROOT/etc/rc2.d
 cd $RPM_BUILD_ROOT/etc/rc2.d && ln -sf ../init.d/sysstat S03sysstat
 mkdir -p $RPM_BUILD_ROOT/etc/rc3.d
@@ -72,4 +74,5 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) /etc/rc2.d/S03sysstat
 %attr(755,root,root) /etc/rc3.d/S03sysstat
 %attr(755,root,root) /etc/rc5.d/S03sysstat
+%config(noreplace) %attr(0644,root,root) /etc/cron.d/sysstat
 

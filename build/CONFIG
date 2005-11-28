@@ -6,6 +6,7 @@ PREFIX = /usr
 SA_LIB_DIR = /usr/lib/sysstat
 SADC_PATH = ${SA_LIB_DIR}/sadc
 SA_DIR = /var/log/sysstat
+# Do not use ${PREFIX}/share/man by default: not necessarily in man path!
 MAN_DIR = ${PREFIX}/share/man
 CLEAN_SA_DIR = n
 YESTERDAY = --date=yesterday
@@ -20,9 +21,7 @@ ENABLE_SMP_WRKARD = y
 ifeq ($(ENABLE_NLS),y)
 # NLS (National Language Support)
 REQUIRE_NLS = -DUSE_NLS -DPACKAGE=\"$(PACKAGE)\" -DLOCALEDIR=\"$(PREFIX)/share/locale\"
-endif
-ifdef REQUIRE_NLS
-   DFLAGS += $(REQUIRE_NLS)
+DFLAGS += $(REQUIRE_NLS)
 endif
 
 ifeq ($(ENABLE_SMP_WRKARD),y)

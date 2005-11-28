@@ -13,7 +13,7 @@ Here are the things I would like (or I should) do for the next releases:
 
 * Use autoconf to configure sysstat.
 
-* Add support for hotplug CPU ?
+* Add support for hotplug CPU or memory?
 
 * Dynamically allocate structures for IRQs (just like for CPUs).
 

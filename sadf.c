@@ -28,7 +28,6 @@
 #include <errno.h>
 #include <sys/param.h>	/* for HZ */
 
-#include "version.h"
 #include "sadf.h"
 #include "sa.h"
 #include "common.h"
@@ -75,14 +74,12 @@ char *args[MAX_ARGV_NR];
  */
 void usage(char *progname)
 {
-   fprintf(stderr, _("sysstat version %s\n"
-		   "(C) Sebastien Godard\n"
-	           "Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
+   fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
 	           "Options are:\n"
 	           "[ -d | -H | -p | -x ] [ -t ] [ -V ]\n"
 		   "[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 		   "[ -- <sar_options...> ]\n"),
-	   VERSION, progname);
+	   progname);
    exit(1);
 }
 
@@ -1898,6 +1895,8 @@ int main(int argc, char **argv)
 		  format = S_O_XML_OPTION;
 		  break;
 		case 'V':
+		  print_version();
+		  break;
 		default:
 		  usage(argv[0]);
 	       }

@@ -37,7 +37,6 @@
 #define _(string) (string)
 #endif
 
-#define MAX_BLKDEV 255
 static unsigned int ioc_parsed = 0;
 static struct ioc_entry *ioconf[MAX_BLKDEV + 1];
 
@@ -94,7 +93,7 @@ static char *ioc_conv(int radix, int nozero, const char *syms,
    char *p;
    int j;
 
-   *(p = out+16) = '\0';
+   *(p = out + 16) = '\0';
 
    val += nozero;
 
@@ -352,7 +351,7 @@ int ioc_init(void)
 
 char *ioc_name(unsigned int major, unsigned int minor)
 {
-   static char name[IOC_DEVLEN+1];
+   static char name[IOC_DEVLEN + 1];
    struct ioc_entry *p;
    int base, offset;
 

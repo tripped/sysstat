@@ -1,3 +1,9 @@
+sysstat (6.0.2-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Robert Luberda <robert@debian.org>  Tue, 29 Nov 2005 00:33:10 +0100
+
 sysstat (6.0.1-4) unstable; urgency=low
 
   * Review changes made by upstream in 6.0.x versions to improve handling

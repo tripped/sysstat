@@ -1,6 +1,6 @@
 #! /bin/sh
 # vim:ts=4:et
-# $Id: sysstat.postinst,v 1.24 2005-11-16 22:20:10 robert Exp $
+# $Id: sysstat.postinst,v 1.25 2005-11-28 23:33:32 robert Exp $
 
 set -e
 
@@ -106,7 +106,7 @@ if [ "$1" = "configure" ] ; then
     # execute sa1 in a subshell not to clobber the postinst script with potentially
     # unsafe values from "$DEFAULT"
     if [ "$ENABLED" = "true" ] && [ -x /usr/lib/sysstat/sa1 ] && [ -r "$DEFAULT" ];  then
-        ( set +e ; . "$DEFAULT" ; /usr/lib/sysstat/sa1 "$SA_OPTIONS" )&
+        ( set +e ; . "$DEFAULT" ; /usr/lib/sysstat/sa1 "$SA_OPTIONS" 1 1 )&
     fi
 
 fi

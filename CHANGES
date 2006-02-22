@@ -1,5 +1,18 @@
 Changes:
 
+2006/02/22: Version 6.1.1 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x2168]
+	* New field added to sar: %steal.
+	* The size of a long integer in now saved in the header of the
+	  data file created by sar. This size can be displayed with
+	  sadf -H.
+	* Replaced the keyword "FULL" by the keyword "ALL" for sar -n
+	  to be consistent with remaining options.
+	* Makefile updated (use implicit rules).
+	* sar manual page updated.
+	* CREDITS and FAQ files updated.
+
 2005/11/28: Version 6.0.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* New field added to mpstat and iostat: %steal.
 	* sar updated to take into account cpu steal time.

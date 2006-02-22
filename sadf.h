@@ -1,6 +1,6 @@
 /*
  * sadf: System activity data formatter
- * (C) 1999-2005 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2006 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _SADF_H

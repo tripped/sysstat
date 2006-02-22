@@ -1,11 +1,11 @@
-.TH SAR 1 "OCTOBER 2005" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "FEBRUARY 2006" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
 .B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i
 .I interval
 .B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
-.B [ -n { DEV | EDEV | NFS | NFSD | SOCK | FULL } ]
+.B [ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]
 .B [ -x {
 .I pid
 .B | SELF | ALL } ] [ -X {
@@ -93,7 +93,7 @@ flags. Not specifying any flags selects only CPU activity.
 Specifying the
 .B -A
 flag is equivalent to specifying
-.BR "-bBcdqrRuvwWy -I SUM -I XALL -n FULL -P ALL".
+.BR "-bBcdqrRuvwWy -I SUM -I XALL -n ALL -P ALL".
 
 The default version of the
 .B sar
@@ -139,7 +139,7 @@ command only reports on local activities.
 .SH OPTIONS
 .IP -A
 This is equivalent to specifying
-.BR "-bBcdqrRuvwWy -I SUM -I XALL -n FULL -P ALL".
+.BR "-bBcdqrRuvwWy -I SUM -I XALL -n ALL -P ALL".
 .IP -b
 Report I/O and transfer rate statistics.
 The following values are displayed:
@@ -322,7 +322,7 @@ the first 16 interrupts are to be reported, whereas the
 .B XALL
 keyword indicates that statistics from all interrupts, including potential
 APIC interrupt sources, are to be reported.
-.IP "-n { DEV | EDEV | NFS | NFSD | SOCK | FULL }"
+.IP "-n { DEV | EDEV | NFS | NFSD | SOCK | ALL }"
 Report network statistics.
 
 With the
@@ -554,7 +554,7 @@ Number of IP fragments currently in use.
 .RE
 
 The
-.B FULL
+.B ALL
 keyword is equivalent to specifying all the keywords above and therefore all the network
 activities are reported.
 .RE
@@ -736,6 +736,12 @@ level (kernel).
 .RS
 Percentage of time that the CPU or CPUs were idle during which
 the system had an outstanding disk I/O request.
+.RE
+
+.B %steal
+.RS
+Show the percentage of time spent in involuntary wait by the virtual CPU
+or CPUs while the hypervisor was servicing another virtual processor.
 .RE
 
 .B %idle

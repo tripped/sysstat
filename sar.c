@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -80,7 +80,7 @@ void usage(char *progname)
 	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 		   "[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-		   "[ -n { DEV | EDEV | NFS | NFSD | SOCK | FULL } ]\n"
+		   "[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
 		   "[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 	           "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 		   "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"),
@@ -308,7 +308,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
    if (GET_CPU(act)) {
       if (dis)
 	 printf("\n%-11s       CPU     %%user     %%nice   %%system   "
-		"%%iowait     %%idle\n",
+		"%%iowait    %%steal     %%idle\n",
 		prev_string);
 
       if (!WANT_PER_PROC(flags) ||
@@ -316,11 +316,12 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 
 	 printf("%-11s       all", curr_string);
 
-	 printf("    %6.2f    %6.2f    %6.2f    %6.2f",
+	 printf("    %6.2f    %6.2f    %6.2f    %6.2f    %6.2f",
 		ll_sp_value(fsj->cpu_user, fsi->cpu_user, g_itv),
 		ll_sp_value(fsj->cpu_nice, fsi->cpu_nice, g_itv),
 		ll_sp_value(fsj->cpu_system, fsi->cpu_system, g_itv),
-		ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv));
+		ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv),
+		ll_sp_value(fsj->cpu_steal, fsi->cpu_steal, g_itv));
 
 	 printf("    %6.2f\n",
 		fsi->cpu_idle < fsj->cpu_idle ? /* Handle buggy kernels */
@@ -341,11 +342,12 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	       /* Recalculate itv for current proc */
 	       pc_itv = get_per_cpu_interval(sci, scj);
 	
-	       printf("    %6.2f    %6.2f    %6.2f    %6.2f",
+	       printf("    %6.2f    %6.2f    %6.2f    %6.2f    %6.2f",
 		      ll_sp_value(scj->per_cpu_user, sci->per_cpu_user, pc_itv),
 		      ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice, pc_itv),
 		      ll_sp_value(scj->per_cpu_system, sci->per_cpu_system, pc_itv),
-		      ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait, pc_itv));
+		      ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait, pc_itv),
+		      ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal, pc_itv));
 
 	       printf("    %6.2f\n",
 		      sci->per_cpu_idle < scj->per_cpu_idle ?
@@ -610,7 +612,6 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	    continue;
 	 j = check_iface_reg(&file_hdr, st_net_dev, curr, prev, i);
 	 sndj = st_net_dev[prev] + j;
-	
 	 printf("%-11s %9s", curr_string, sndi->interface);
 	
 	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",

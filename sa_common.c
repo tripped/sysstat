@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -542,10 +542,10 @@ unsigned long long get_per_cpu_interval(struct stats_one_cpu *st_cpu_i,
 {
    return ((st_cpu_i->per_cpu_user + st_cpu_i->per_cpu_nice +
 	    st_cpu_i->per_cpu_system + st_cpu_i->per_cpu_iowait +
-	    st_cpu_i->per_cpu_idle) -
+	    st_cpu_i->per_cpu_idle + st_cpu_i->per_cpu_steal) -
 	   (st_cpu_j->per_cpu_user + st_cpu_j->per_cpu_nice +
 	    st_cpu_j->per_cpu_system + st_cpu_j->per_cpu_iowait +
-	    st_cpu_j->per_cpu_idle));
+	    st_cpu_j->per_cpu_idle + st_cpu_j->per_cpu_steal));
 }
 
 
@@ -738,7 +738,7 @@ int parse_sar_n_opt(char *argv[], int *opt, unsigned int *actflag,
       *actflag |= A_NET_NFS;
    else if (!strcmp(argv[*opt], K_NFSD))
       *actflag |= A_NET_NFSD;
-   else if (!strcmp(argv[*opt], K_FULL)) {
+   else if (!strcmp(argv[*opt], K_ALL)) {
       *actflag |= A_NET_DEV + A_NET_EDEV + A_NET_SOCK + A_NET_NFS + A_NET_NFSD;
       *dis_hdr = 9;
    }

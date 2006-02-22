@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1998-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1998-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -847,14 +847,14 @@ void write_ext_stat(int curr, unsigned long long itv, int flags, int fctr,
     * sometimes negative...
     */
    nr_ios = (ioi->rd_ios - ioj->rd_ios) + (ioi->wr_ios - ioj->wr_ios);
-   tput   = ((double) nr_ios) * HZ / itv;
+   tput = ((double) nr_ios) * HZ / itv;
    util = S_VALUE(ioj->tot_ticks, ioi->tot_ticks, itv);
-   svctm  = tput ? util / tput : 0.0;
+   svctm = tput ? util / tput : 0.0;
    /*
     * kernel gives ticks already in milliseconds for all platforms
     * => no need for further scaling.
     */
-   await  = nr_ios ?
+   await = nr_ios ?
       ((ioi->rd_ticks - ioj->rd_ticks) + (ioi->wr_ticks - ioj->wr_ticks)) /
       nr_ios : 0.0;
 
@@ -865,7 +865,7 @@ void write_ext_stat(int curr, unsigned long long itv, int flags, int fctr,
    if ((ioi->wr_sectors < ioj->wr_sectors) && (ioj->wr_sectors <= 0xffffffff))
       wr_sec &= 0xffffffff;
 
-   arqsz  = nr_ios ? (rd_sec + wr_sec) / nr_ios : 0.0;
+   arqsz = nr_ios ? (rd_sec + wr_sec) / nr_ios : 0.0;
 
    printf("%-10s", shi->name);
    if (strlen(shi->name) > 10)

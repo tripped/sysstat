@@ -1,6 +1,6 @@
 #!/bin/sh
 # SA_LIB_DIR/sa2.sh
-# (C) 1999-2005 Sebastien Godard (sysstat <at> wanadoo.fr)
+# (C) 1999-2006 Sebastien Godard (sysstat <at> wanadoo.fr)
 #
 # Changes:
 # - 2004-01-22 Nils Philippsen <nphilipp@redhat.com>

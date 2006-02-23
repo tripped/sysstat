@@ -1,6 +1,6 @@
 /*
  * sadf: system activity data formatter
- * (C) 1999-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -341,6 +341,11 @@ void write_mech_stats(short curr, unsigned int act,
 	     NOVAL,
 	     ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv));
 
+      render(isdb, pre, PT_NOFLAG,
+	     "all\t%%steal", NULL, NULL,
+	     NOVAL,
+	     ll_sp_value(fsj->cpu_steal, fsi->cpu_steal, g_itv));
+
       render(isdb, pre, PT_NEWLIN,
 	     "all\t%%idle", NULL, NULL,
 	     NOVAL,
@@ -384,6 +389,11 @@ void write_mech_stats(short curr, unsigned int act,
 		   "cpu%d\t%%iowait", NULL, cons(iv, i, NOVAL),
 		   NOVAL,
 		   ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait, pc_itv));
+
+	    render(isdb, pre, PT_NOFLAG,
+		   "cpu%d\t%%steal", NULL, cons(iv, i, NOVAL),
+		   NOVAL,
+		   ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal, pc_itv));
 
 	    render(isdb, pre, PT_NEWLIN,
 		   "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
@@ -1026,11 +1036,12 @@ void write_xml_stats(short curr, short *tab)
    /* cpu */
    xprintf(*tab, "<cpu-load>");
    xprintf(++(*tab), "<cpu number=\"all\" user=\"%.2f\" nice=\"%.2f\" "
-	             "system=\"%.2f\" iowait=\"%.2f\" idle=\"%.2f\"/>",
+	             "system=\"%.2f\" iowait=\"%.2f\" steal=\"%.2f\" idle=\"%.2f\"/>",
 	   ll_sp_value(fsj->cpu_user, fsi->cpu_user, g_itv),
 	   ll_sp_value(fsj->cpu_nice, fsi->cpu_nice, g_itv),
 	   ll_sp_value(fsj->cpu_system, fsi->cpu_system, g_itv),
 	   ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv),
+	   ll_sp_value(fsj->cpu_steal, fsi->cpu_steal, g_itv),
 	   (fsi->cpu_idle < fsj->cpu_idle)
 	   ? 0.0
 	   : ll_sp_value(fsj->cpu_idle, fsi->cpu_idle, g_itv));
@@ -1047,12 +1058,13 @@ void write_xml_stats(short curr, short *tab)
 	 pc_itv = get_per_cpu_interval(sci, scj);
 	
 	 xprintf(*tab, "<cpu number=\"%d\" user=\"%.2f\" nice=\"%.2f\" "
-		       "system=\"%.2f\" iowait=\"%.2f\" idle=\"%.2f\"/>",
+		       "system=\"%.2f\" iowait=\"%.2f\" steal=\"%.2f\" idle=\"%.2f\"/>",
 		 i,
 		 ll_sp_value(scj->per_cpu_user, sci->per_cpu_user, pc_itv),
 		 ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice, pc_itv),
 		 ll_sp_value(scj->per_cpu_system, sci->per_cpu_system, pc_itv),
 		 ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait, pc_itv),
+		 ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal, pc_itv),
 		 (sci->per_cpu_idle < scj->per_cpu_idle)
 		 ? 0.0
 		 : ll_sp_value(scj->per_cpu_idle, sci->per_cpu_idle, pc_itv));
@@ -1412,6 +1424,7 @@ void display_file_header(char *dfile, struct file_hdr *file_hdr)
 		    file_hdr->sa_release, file_hdr->sa_nodename);
 
    printf("Activity flag: %#x\n", file_hdr->sa_actflag);
+   printf("Sizeof(long): %d\n", file_hdr->sa_sizeof_long);
    printf("#CPU:    %u\n", file_hdr->sa_proc + 1);
    printf("#IrqCPU: %u\n", file_hdr->sa_irqcpu);
    printf("#Disks:  %u\n", file_hdr->sa_nr_disk);

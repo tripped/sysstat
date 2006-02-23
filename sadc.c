@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2005 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -424,16 +424,17 @@ void setup_file_hdr(int fd, size_t *file_stats_size)
 
    /* Ok, now fill the header */
    file_hdr.sa_actflag = sadc_actflag;
-   file_hdr.sa_magic   = SA_MAGIC;
+   file_hdr.sa_magic = SA_MAGIC;
    file_hdr.sa_st_size = FILE_STATS_SIZE;
-   file_hdr.sa_day     = loc_time.tm_mday;
-   file_hdr.sa_month   = loc_time.tm_mon;
-   file_hdr.sa_year    = loc_time.tm_year;
-   file_hdr.sa_proc    = cpu_nr;
-   file_hdr.sa_nr_pid  = pid_nr;
-   file_hdr.sa_serial  = serial_nr;
-   file_hdr.sa_irqcpu  = irqcpu_nr;
-   file_hdr.sa_iface   = iface_nr;
+   file_hdr.sa_day = loc_time.tm_mday;
+   file_hdr.sa_month = loc_time.tm_mon;
+   file_hdr.sa_year = loc_time.tm_year;
+   file_hdr.sa_sizeof_long = sizeof(long);
+   file_hdr.sa_proc = cpu_nr;
+   file_hdr.sa_nr_pid = pid_nr;
+   file_hdr.sa_serial = serial_nr;
+   file_hdr.sa_irqcpu = irqcpu_nr;
+   file_hdr.sa_iface = iface_nr;
    if (GET_DISK(sadc_actflag))
       file_hdr.sa_nr_disk = disk_nr;
    else
@@ -719,20 +720,19 @@ void read_proc_stat(unsigned int flags)
 	  * to one processor to avoid rounding problems.
 	  */
 	 file_stats.cpu_iowait = 0;	/* For pre 2.5 kernels */
-	 cc_hardirq = cc_softirq = cc_steal = 0;
+	 file_stats.cpu_steal = 0;
+	 cc_hardirq = cc_softirq = 0;
 	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu",
 		&(file_stats.cpu_user),   &(file_stats.cpu_nice),
 		&(file_stats.cpu_system), &(file_stats.cpu_idle),
 		&(file_stats.cpu_iowait), &cc_hardirq, &cc_softirq,
-		&cc_steal);
+		&(file_stats.cpu_steal));
 
 	 /*
 	  * Time spent in system mode also includes time spent
 	  * servicing hard interrrupts and softirqs.
-	  * Time spent in idle mode also include 'steal' time.
 	  */
 	 file_stats.cpu_system += cc_hardirq + cc_softirq;
-	 file_stats.cpu_idle += cc_steal;
 	
 	 /*
 	  * Compute the uptime of the system in jiffies (1/100ths of a second
@@ -746,7 +746,7 @@ void read_proc_stat(unsigned int flags)
 	  */
 	 file_stats.uptime = file_stats.cpu_user   + file_stats.cpu_nice +
 	                     file_stats.cpu_system + file_stats.cpu_idle +
-	                     file_stats.cpu_iowait;
+	                     file_stats.cpu_iowait + file_stats.cpu_steal;
       }
 
       else if (!strncmp(line, "cpu", 3)) {
@@ -758,14 +758,13 @@ void read_proc_stat(unsigned int flags)
 	     * Warning: st_cpu_i struct is _not_ allocated even if the kernel
 	     * has SMP support enabled.
 	     */
-	    cc_iowait = 0;	/* For pre 2.5 kernels */
-	    cc_hardirq = cc_softirq = cc_steal = 0;
+	    cc_iowait = cc_steal = 0;	/* For pre 2.5 kernels */
+	    cc_hardirq = cc_softirq = 0;
 	    sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu %llu",
 		   &proc_nb,
 		   &cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
 		   &cc_hardirq, &cc_softirq, &cc_steal);
 	    cc_system += cc_hardirq + cc_softirq;
-	    cc_idle += cc_steal;
 	
 	    if (proc_nb <= cpu_nr) {
 	       st_cpu_i = st_cpu + proc_nb;
@@ -774,6 +773,7 @@ void read_proc_stat(unsigned int flags)
 	       st_cpu_i->per_cpu_system = cc_system;
 	       st_cpu_i->per_cpu_idle   = cc_idle;
 	       st_cpu_i->per_cpu_iowait = cc_iowait;
+	       st_cpu_i->per_cpu_steal  = cc_steal;
 	    }
 	    /* else:
 	     * Additional CPUs have been dynamically registered in /proc/stat.
@@ -783,7 +783,7 @@ void read_proc_stat(unsigned int flags)
 	    if (!proc_nb)
 	       /* Compute uptime reduced to one proc using proc#0 */
 	       file_stats.uptime0 = cc_user + cc_nice + cc_system +
-	       			    cc_idle + cc_iowait;
+	       			    cc_idle + cc_iowait + cc_steal;
 	 }
       }
 

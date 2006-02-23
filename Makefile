@@ -1,15 +1,13 @@
 # Makefile to build sysstat commands
-# (C) 1999-2005 Sebastien GODARD (sysstat <at> wanadoo.fr)
+# (C) 1999-2006 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 6.0.2
+VERSION = 6.1.1
 
 include build/CONFIG
 
 # Compiler to use
 CC = gcc
-# 'ar' command
-AR = ar
 # Other commands
 SED = sed
 CHMOD = chmod
@@ -38,8 +36,7 @@ SYSCONFIG_DIR = /etc/sysstat
 
 # Compiler flags
 CFLAGS = -Wall -Wstrict-prototypes -pipe -g -fno-strength-reduce
-LFLAGS = -L. -lsyscom -s
-LSAFLAG = -lsyssa
+LFLAGS = -s
 SAS_DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
@@ -78,26 +75,30 @@ ifndef INITD_DIR
 INITD_DIR = init.d
 endif
 
+.SUFFIXES: .po .gmo
+
+%.gmo: %.po
+	$(MSGFMT) -o $@ $<
+
+%.o: %.c
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
+
+% : %.o
+	$(CC) -o $@ $(CFLAGS) $^ $(LFLAGS)
+
 all: sa1 sa2 crontab sysstat sysstat.sysconfig sysstat.crond \
 	sysstat.cron.daily sysstat.cron.hourly sysstat.crond.sample \
 	sadc sar sadf iostat mpstat locales
 
-common.o: common.c common.h ioconf.h version.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
+common.o: common.c version.h common.h ioconf.h
 
 sa_common.o: sa_common.c sa.h common.h ioconf.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
 ioconf.o: ioconf.c ioconf.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
-libsyscom.a: common.o ioconf.o
-	$(AR) r $@ common.o ioconf.o
-	$(AR) s $@
+libsyscom.a: libsyscom.a(common.o) libsyscom.a(ioconf.o)
 
-libsyssa.a: sa_common.o
-	$(AR) r $@ $<
-	$(AR) s $@
+libsyssa.a: libsyssa.a(sa_common.o)
 
 version.h: version.in
 	$(SED) s+VERSION_NUMBER+$(VERSION)+g $< > $@
@@ -106,31 +107,25 @@ sadc.o: sadc.c sa.h common.h ioconf.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sadc: sadc.o libsyscom.a libsyssa.a
-	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG)
+	$(CC) -o $@ $(CFLAGS) $^ $(LFLAGS)
 
 sar.o: sar.c sa.h common.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sar: sar.o libsyscom.a libsyssa.a
-	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG)
 
 sadf.o: sadf.c sadf.h sa.h common.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sadf: sadf.o libsyscom.a libsyssa.a
-	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS) $(LSAFLAG)
 
 iostat.o: iostat.c iostat.h common.h ioconf.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
 iostat: iostat.o libsyscom.a
-	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS)
 
 mpstat.o: mpstat.c mpstat.h common.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $<
 
 mpstat: mpstat.o libsyscom.a
-	$(CC) -o $@ $(CFLAGS) $< $(LFLAGS)
 
 sa1: sa1.in
 	$(SED) s+SA_LIB_DIR+$(SA_LIB_DIR)+g $< > $@
@@ -184,48 +179,9 @@ else
 locales:
 endif
 
-nls/af.gmo: nls/af.po
-	$(MSGFMT) -o $@ $<
-
-nls/de.gmo: nls/de.po
-	$(MSGFMT) -o $@ $<
-
-nls/es.gmo: nls/es.po
-	$(MSGFMT) -o $@ $<
-
-nls/fr.gmo: nls/fr.po
-	$(MSGFMT) -o $@ $<
-
-nls/it.gmo: nls/it.po
-	$(MSGFMT) -o $@ $<
-
-nls/ja.gmo: nls/ja.po
-	$(MSGFMT) -o $@ $<
-
-nls/nb.gmo: nls/nb.po
-	$(MSGFMT) -o $@ $<
-
-nls/nn.gmo: nls/nn.po
-	$(MSGFMT) -o $@ $<
-
-nls/pl.gmo: nls/pl.po
-	$(MSGFMT) -o $@ $<
-
-nls/pt.gmo: nls/pt.po
-	$(MSGFMT) -o $@ $<
-
-nls/ro.gmo: nls/ro.po
-	$(MSGFMT) -o $@ $<
-
-nls/ru.gmo: nls/ru.po
-	$(MSGFMT) -o $@ $<
-
-nls/sk.gmo: nls/sk.po
-	$(MSGFMT) -o $@ $<
-
 # Phony targets
 .PHONY: clean distclean config install install_base install_all uninstall \
-	uninstall_base uninstall_all dist bdist squeeze
+	uninstall_base uninstall_all dist bdist
 
 install_base: all man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/iostat.1
 	mkdir -p $(DESTDIR)$(SA_LIB_DIR)

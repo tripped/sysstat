@@ -1,6 +1,6 @@
 /*
  * sar/sadc: report system activity
- * (C) 1999-2005 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2006 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _SA_H
@@ -18,7 +18,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x2167
+#define SA_MAGIC	0x2168
 
 
 /* Define activities */
@@ -87,7 +87,6 @@
 #define K_NFS	"NFS"
 #define K_NFSD	"NFSD"
 #define K_SOCK	"SOCK"
-#define K_FULL	"FULL"
 
 /* S_= sar/sadc/sadf - F_= Flag */
 #define S_F_ALL_PROC      	0x0001
@@ -241,6 +240,11 @@ struct file_hdr {
    unsigned char  sa_day			__attribute__ ((packed));
    unsigned char  sa_month			__attribute__ ((packed));
    unsigned char  sa_year			__attribute__ ((packed));
+   /*
+    * Size of a long integer. Useful to know the architecture on which
+    * the datafile was created.
+    */
+   char		  sa_sizeof_long		__attribute__ ((packed));
    /* Operating system name */
    char           sa_sysname[UTSNAME_LEN]	__attribute__ ((packed));
    /* Machine hostname */
@@ -263,6 +267,7 @@ struct file_stats {
    unsigned long long cpu_system		__attribute__ ((aligned (16)));
    unsigned long long cpu_idle			__attribute__ ((aligned (16)));
    unsigned long long cpu_iowait		__attribute__ ((aligned (16)));
+   unsigned long long cpu_steal			__attribute__ ((aligned (16)));
    unsigned long long irq_sum			__attribute__ ((aligned (16)));
    /* --- LONG --- */
    /* Time stamp (number of seconds since the epoch) */
@@ -344,6 +349,7 @@ struct stats_one_cpu {
    unsigned long long per_cpu_user		__attribute__ ((aligned (16)));
    unsigned long long per_cpu_nice		__attribute__ ((aligned (16)));
    unsigned long long per_cpu_system		__attribute__ ((aligned (16)));
+   unsigned long long per_cpu_steal		__attribute__ ((aligned (16)));
    unsigned long long pad			__attribute__ ((aligned (16)));
 };
 

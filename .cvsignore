@@ -11,4 +11,7 @@ sar
 sysstat
 sysstat.crond
 sysstat.sysconfig
+sysstat.cron.daily
+sysstat.cron.hourly
+sysstat.crond.sample
 version.h

@@ -1,5 +1,16 @@
 Changes:
 
+2006/04/23: Version 6.1.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* Fix incorrect NFS client and server statistics for sar.
+	* sar can now display stats for newly created processes when
+	  option -x ALL or -X ALL is used.
+	* iostat -x was displaying redundant information. It now
+	  displays amount of data read from or written to devices in
+	  sectors, kilobytes or megabytes depending on the switch used.
+	* isag updated to keep up with current sar version.
+	* sar and mpstat manual pages updated.
+	* FAQ updated.
+
 2006/02/22: Version 6.1.1 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x2168]

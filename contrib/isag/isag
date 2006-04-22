@@ -21,6 +21,10 @@ exec wish "$0" -- "$@"
 #
 ###############################################################################
 #
+# 2006/04/14 : Sebastien GODARD
+# isag v1.3
+# Updated to current sysstat version (6.1.2).
+#
 # $Id: isag.m4,v 1.26 2004/03/22 19:39:14 david Exp $
 # $State: Exp $
 #
@@ -269,7 +273,6 @@ proc out_msg {title text} {
 set sar_data_path "/var/log/sa"
 set sar_data_mask "sa\[0-9\]\[0-9\]"
 set sar "/usr/bin/sar"
-#set sar "/home/sarrep/source/sysstat-3.3.6/sar"
 
 # following check added: Thu Mar 18 21:44:52 GMT+1 2004
 if { 1 != [file executable $sar]} {
@@ -405,18 +408,16 @@ set val_cur(W) 1
 #	plotstr - string plot for gnuplot, describes a graph
 #
 # view_n(ame) array
-set view_n(b) "I/O transfer rate"
-set view_n(B) "Paging statistics"
-set view_n(c) "Process creation"
-set view_n(n) "Network statistics"
+set view_n(b) "I/O Transfer Rate"
+set view_n(B) "Paging Statistics"
+set view_n(c) "Process Creation"
 set view_n(q) "Run Queue"
 set view_n(r) "Memory and Swap"
-set view_n(R) "Memory statistics"
-set view_n(R) "Memory Activities"
+set view_n(R) "Memory Statistics"
 set view_n(u) "CPU Utilization"
-set view_n(v) "inode status"
-set view_n(w) "System switching"
-set view_n(W) "System swapping"
+set view_n(v) "Inode Status"
+set view_n(w) "System Switching"
+set view_n(W) "System Swapping"
 
 # xlabel is not an array - all values are same
 set xlabel "Time"
@@ -425,9 +426,8 @@ set xlabel "Time"
 set ylabel(b) "ops/sec"
 set ylabel(B) "pages/sec"
 set ylabel(c) "procs/sec"
-set ylabel(n) ""
 set ylabel(q) ""
-set ylabel(r) "KB"
+set ylabel(r) "kB"
 set ylabel(R) "ops/sec"
 set ylabel(u) "Percent"
 set ylabel(v) ""
@@ -437,7 +437,6 @@ set ylabel(W) "swp/sec"
 set y2label(b) ""
 set y2label(B) ""
 set y2label(c) ""
-set y2label(n) ""
 set y2label(q) ""
 set y2label(r) ""
 set y2label(R) ""
@@ -449,24 +448,25 @@ set y2label(W) ""
 # sag_if_out_tokens describes how is input file covered
 # if no list specified the proc_line_$l() is called
 # Note: first element has index 0 (zero)!
+# SGo 2006-04-14: update fields taken for options -B, -q, -r, -R, -v.
 set sag_if_out_tokens(b) [list 1 2 3 4]
 set sag_if_out_tokens2(b) ""
-set sag_if_out_tokens(B) [list 0 1 3 4 5 6]
+set sag_if_out_tokens(B) [list 0 1 2 3]
 set sag_if_out_tokens2(B) ""
 set sag_if_out_tokens(c) [list 0]
 set sag_if_out_tokens2(c) ""
-set sag_if_out_tokens(q) [list 0 1 2 3]
+set sag_if_out_tokens(q) [list 0 1 2 3 4]
 set sag_if_out_tokens2(q) ""
-set sag_if_out_tokens(r) [list 0 1 3 4 5 6 7]
+set sag_if_out_tokens(r) [list 0 1 3 4 5 6 8]
 set sag_if_out_tokens2(r) ""
-set sag_if_out_tokens(R) [list 0 1 2 3]
+set sag_if_out_tokens(R) [list 0 1 2]
 set sag_if_out_tokens2(R) ""
 # CPU needs special computation, following list must be empty
 # if no list is entered then following functions must be defined
 # __output_zero_metrics_$l & proc_line_$l (see: proc_line_u())
 set sag_if_out_tokens(u) ""
 set sag_if_out_tokens2(u) ""
-set sag_if_out_tokens(v) [list 1 3 5 7 9]
+set sag_if_out_tokens(v) [list 0 1 2 3 5 7]
 set sag_if_out_tokens2(v) ""
 set sag_if_out_tokens(w) [list 0]
 set sag_if_out_tokens2(w) ""
@@ -479,7 +479,6 @@ set sag_if_out_tokens2(W) ""
 set sar_elim(b) "tps"
 set sar_elim(B) "pgpgin"
 set sar_elim(c) "proc"
-set sar_elim(n) ""
 set sar_elim(q) "runq-sz"
 set sar_elim(r) "kbmemfree"
 set sar_elim(R) "frmpg"
@@ -508,7 +507,7 @@ proc set_file {name} {
 	global sag_if_archive last_graph
 
 	set sag_if_archive $name
-	.file.lbl configure -text "data source: $name"
+	.file.lbl configure -text "Data Source: $name"
 
 	if {"" != $last_graph} {
 		new_chart $last_graph
@@ -563,7 +562,7 @@ menu .menu.file.m -tearoff false
 .menu.file.m add command -label "Save Picture" -underline 0 \
 		-command "sag_save_graph"
 .menu.file.m add separator
-.menu.file.m add command -label "Exit program" -underline 0 \
+.menu.file.m add command -label "Exit Program" -underline 0 \
         -command "exit_program" -accelerator "Alt-X"
 
 menubutton .menu.chart -text "Chart" -menu .menu.chart.m -underline 0
@@ -578,10 +577,10 @@ foreach l $prog_swtch {
 
 menubutton .menu.opt -text "Options" -menu .menu.opt.m -underline 0
 menu .menu.opt.m -tearoff false
-.menu.opt.m add checkbutton -label "Whole day (00:00-23:59)" -underline 0 \
+.menu.opt.m add checkbutton -label "Whole Day (00:00-23:59)" -underline 0 \
         -variable sag_opt_whole_day \
 		-command "set isag_gr_scale_old 0;redraw_graph"
-.menu.opt.m add checkbutton -label "Show grid" -underline 0 \
+.menu.opt.m add checkbutton -label "Show Grid" -underline 0 \
         -variable sag_opt_grid -command "set isag_gr_scale_old 0;redraw_graph"
 		
 menubutton .menu.help -text "Help" -menu .menu.help.m -underline 0
@@ -594,7 +593,7 @@ pack .menu.help -side right
 
 frame .file -relief raised
 pack .file -side top -fill x
-label .file.lbl -text "(no file)" -borderwidth 2
+label .file.lbl -text "(No File)" -borderwidth 2
 menubutton .file.menu -relief raised -borderwidth 2 -text "-" -menu .file.menu.m
 fill_file_menu
 pack .file.lbl .file.menu -side left
@@ -901,16 +900,16 @@ proc create_gnuplot_file {gp_term ext fn title xlabel ylabel y2label yrange plot
 
 # plotstr array
 # in future - this string will not be fixed but functions will coming
-
+# SGo 2006-04-14: update fields for options -B, -q, -r, -R, -u, -v.
 set plotstr(b) "\"__FNGR__\" using 1:2 t \"rtps\" with line, \"__FNGR__\" using 1:3 t \"wtps\" with line, \"__FNGR__\" using 1:4 t \"bread/s\" with line,  \"__FNGR__\" using 1:5 t \"bwrtn/s\" with line"
-set plotstr(B) "\"__FNGR__\" using 1:2 t \"pgpgin/s\" with line, \"__FNGR__\" using 1:3 t \"pgpgout/s\" with line, \"__FNGR__\" using 1:4 t \"activepg\" with line, \"__FNGR__\" using 1:5 t \"inadtypg\" with line,  \"__FNGR__\" using 1:6 t \"inaclnpg\" with line, \"__FNGR__\" using 1:7 t \"inatarpg\" with line"
+set plotstr(B) "\"__FNGR__\" using 1:2 t \"pgpgin/s\" with line, \"__FNGR__\" using 1:3 t \"pgpgout/s\" with line, \"__FNGR__\" using 1:4 t \"fault/s\" with line, \"__FNGR__\" using 1:5 t \"majflt/s\" with line"
 set plotstr(c) "\"__FNGR__\" using 1:2 t \"proc/s\" with line"
 set plotstr(n) ""
-set plotstr(q) "\"__FNGR__\" using 1:2 t \"runq-sz\" with line, \"__FNGR__\" using 1:3 t \"plist-sz\" with line, \"__FNGR__\" using 1:4 t \"ldavg-1\" with line, \"__FNGR__\" using 1:5 t \"ldavg-5\" with line"
-set plotstr(r) "\"__FNGR__\" using 1:2 t \"kbmemfree\" with line, \"__FNGR__\" using 1:3 t \"kbmemused\" with line, \"__FNGR__\" using 1:4 t \"kbmemshrd\" with line, \"__FNGR__\" using 1:5 t \"kbbuffers\" with line, \"__FNGR__\" using 1:6 t \"kbcached\" with line, \"__FNGR__\" using 1:7 t \"kbswpfree\" with line, \"__FNGR__\" using 1:8 t \"kbswpused\" with line"
-set plotstr(R) "\"__FNGR__\" using 1:2 t \"frmpg/s\" with line, \"__FNGR__\" using 1:3 t \"shmpg/s\" with line, \"__FNGR__\" using 1:4 t \"bufpg/s\" with line, \"__FNGR__\" using 1:5 t \"campg/s\" with line"
-set plotstr(u) "\"__FNGR__\" using 1:2 t \"%user\" with line, \"__FNGR__\" using 1:3 t \"%nice\" with line, \"__FNGR__\" using 1:4 t \"%system\" with line"
-set plotstr(v) "\"__FNGR__\" using 1:2 t \"file-sz\" with line, \"__FNGR__\" using 1:3 t \"inode-sz\" with line, \"__FNGR__\" using 1:4 t \"super-sz\" with line, \"__FNGR__\" using 1:5 t \"dquot-sz\" with line, \"__FNGR__\" using 1:6 t \"rtsig-sz\" with line"
+set plotstr(q) "\"__FNGR__\" using 1:2 t \"runq-sz\" with line, \"__FNGR__\" using 1:3 t \"plist-sz\" with line, \"__FNGR__\" using 1:4 t \"ldavg-1\" with line, \"__FNGR__\" using 1:5 t \"ldavg-5\" with line, \"__FNGR__\" using 1:6 t \"ldavg-15\" with line"
+set plotstr(r) "\"__FNGR__\" using 1:2 t \"kbmemfree\" with line, \"__FNGR__\" using 1:3 t \"kbmemused\" with line, \"__FNGR__\" using 1:4 t \"kbbuffers\" with line, \"__FNGR__\" using 1:5 t \"kbcached\" with line, \"__FNGR__\" using 1:6 t \"kbswpfree\" with line, \"__FNGR__\" using 1:7 t \"kbswpused\" with line, \"__FNGR__\" using 1:8 t \"kbswpcad\" with line"
+set plotstr(R) "\"__FNGR__\" using 1:2 t \"frmpg/s\" with line, \"__FNGR__\" using 1:3 t \"bufpg/s\" with line, \"__FNGR__\" using 1:4 t \"campg/s\" with line"
+set plotstr(u) "\"__FNGR__\" using 1:2 t \"%user\" with line, \"__FNGR__\" using 1:3 t \"%nice\" with line, \"__FNGR__\" using 1:4 t \"%system\" with line, \"__FNGR__\" using 1:5 t \"%iowait\" with line, \"__FNGR__\" using 1:6 t \"%steal\" with line"
+set plotstr(v) "\"__FNGR__\" using 1:2 t \"dentunusd\" with line, \"__FNGR__\" using 1:3 t \"file-sz\" with line, \"__FNGR__\" using 1:4 t \"inode-sz\" with line, \"__FNGR__\" using 1:5 t \"super-sz\" with line, \"__FNGR__\" using 1:6 t \"dquot-sz\" with line, \"__FNGR__\" using 1:7 t \"rtsig-sz\" with line"
 set plotstr(w) "\"__FNGR__\" using 1:2 t \"cswch/s\" with line"
 set plotstr(W) "\"__FNGR__\" using 1:2 t \"pswpin/s\" with line, \"__FNGR__\" using 1:3 t \"pswpout/s\" with line"
 
@@ -941,6 +940,7 @@ set plotstr(W) "\"__FNGR__\" using 1:2 t \"pswpin/s\" with line, \"__FNGR__\" us
 ###############################################################################
 
 # CPU measurement specific line processing
+# SGo 2006-04-14: take into account time spent in iowait and steal modes
 proc sag_if_proc_line_u {fp line} {
 	global val_cur val_max sag_if_last_time sag_if_reboot_flag
 
@@ -954,25 +954,27 @@ proc sag_if_proc_line_u {fp line} {
 # after reboot, set to zero also, all charts are with lines
 						set sag_if_reboot_flag 0
 # NOTE: The func __output_zero_metrics() cannot be used, because 'u' don't have sag_if_out_tokens
-			puts $fp "$time 0 0 0"
+			puts $fp "$time 0 0 0 0 0"
 		}
 
 				set nums [parse_line $rest]
-			# user nice system (idle)
-		set user [lindex $nums 0]
-		set nice [lindex $nums 1]
-		set syst [lindex $nums 2]
+			# user nice system iowait steal (idle)
+		set user  [lindex $nums 0]
+		set nice  [lindex $nums 1]
+		set syst  [lindex $nums 2]
+		set iow   [lindex $nums 3]
+		set steal [lindex $nums 4]
 
-		set total [expr $user + $nice + $syst]
+		set total [expr $user + $nice + $syst + $iow + $steal]
 		if {$total > $val_max(u)} {set val_max(u) $total}
-				puts $fp "$time $total [expr $nice + $syst] $syst"
+				puts $fp "$time $total [expr $nice + $syst + $iow + $steal] [expr $syst + $iow + $steal] [expr $iow + $steal] $steal"
 		set rval 1
 		set sag_if_last_time $time
 	} else {if {-1 != [string first "RESTART" $line]} {
 				set sag_if_reboot_flag 1
 # see previous NOTE
 		if {$sag_if_last_time != ""} {
-			puts $fp "$sag_if_last_time 0 0 0"
+			puts $fp "$sag_if_last_time 0 0 0 0 0"
 			set rval 1
 		}
 	}}
@@ -980,7 +982,7 @@ proc sag_if_proc_line_u {fp line} {
 }
 
 proc sag_if__output_zero_metrics_u {time} {
-	return 	"$time 0 0 0"
+	return 	"$time 0 0 0 0 0"
 }
 
 # $Source: /var/CVSROOT/cvs/i-sag/isag/isag.perf_data_procs.m4,v $

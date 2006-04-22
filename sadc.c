@@ -49,7 +49,7 @@
 /* Nb of processors on the machine. A value of 1 means two processors */
 int cpu_nr = -1;
 unsigned int serial_nr = 0, iface_nr = 0, irqcpu_nr = 0, disk_nr = 0;
-int pid_nr = 0;
+int pid_idx = 0, pid_nr = 0;
 unsigned int sadc_actflag;
 long interval = 0;
 int kb_shift = 0;
@@ -159,11 +159,11 @@ int save_pid(unsigned long pid)
 {
    int i = 0;
 
-   while ((i < pid_nr) && (all_pids[i] != pid))
+   while ((i < pid_idx) && (all_pids[i] != pid))
       i++;
    /* PID not found: insert it if possible */
-   if ((i == pid_nr) && (pid_nr < MAX_PID_NR))
-      all_pids[pid_nr++] = pid;
+   if ((i == pid_idx) && (pid_idx < MAX_PID_NR))
+      all_pids[pid_idx++] = pid;
 
    return i;
 }
@@ -1038,13 +1038,16 @@ void read_proc_vmstat(void)
  * Read stats from /proc/<pid>/stat
  ***************************************************************************
  */
-void read_pid_stat(void)
+void read_pid_stat(unsigned int flags)
 {
    FILE *fp;
    int pid;
    static char filename[24];
 
-   for (pid = 0; pid < pid_nr; pid++) {
+   if (WANT_ALL_PIDS(flags))
+      get_pid_list();
+
+   for (pid = 0; pid < pid_idx; pid++) {
 
       if (!all_pids[pid])
 	 continue;
@@ -1387,9 +1390,9 @@ void read_net_nfs_stat(void)
 		&(file_stats.nfs_rpccnt), &(file_stats.nfs_rpcretrans));
 	
       else if (!strncmp(line, "proc3", 5))
-	 sscanf(line + 5, "%*u %u %*u %*u %u %*u %u %u",
+	 sscanf(line + 5, "%*u %*u %u %*u %*u %u %*u %u %u",
 		&(file_stats.nfs_getattcnt), &(file_stats.nfs_accesscnt),
-		&(file_stats.nfs_writecnt), &(file_stats.nfs_readcnt));
+		&(file_stats.nfs_readcnt), &(file_stats.nfs_writecnt));
    }
 
    fclose(fp);
@@ -1425,9 +1428,9 @@ void read_net_nfsd_stat(void)
 		&(file_stats.nfsd_rpccnt), &(file_stats.nfsd_rpcbad));
 	
       else if (!strncmp(line, "proc3", 5))
-	 sscanf(line + 5, "%*u %u %*u %*u %u %*u %u %u",
+	 sscanf(line + 5, "%*u %*u %u %*u %*u %u %*u %u %u",
 		&(file_stats.nfsd_getattcnt), &(file_stats.nfsd_accesscnt),
-		&(file_stats.nfsd_writecnt), &(file_stats.nfsd_readcnt));
+		&(file_stats.nfsd_readcnt), &(file_stats.nfsd_writecnt));
    }
 
    fclose(fp);
@@ -1585,7 +1588,7 @@ void read_stats(unsigned int *flags)
    /* else disks are in /proc/stat */
 
    if (pid_nr)
-       read_pid_stat();
+       read_pid_stat(*flags);
     if (serial_nr)
       read_serial_stat();
    if (irqcpu_nr)
@@ -1769,8 +1772,7 @@ int main(int argc, char **argv)
 	 sadc_actflag |= A_PID;
 	 if (argv[++opt]) {
 	    if (!strcmp(argv[opt], K_ALL)) {
-	       /* Get PID list */
-	       get_pid_list();
+	       flags |= S_F_X_ALL;
 	       set_pflag(strcmp(argv[opt - 1], "-x"), 0);
 	       continue;	/* Next option */
 	    }
@@ -1838,12 +1840,18 @@ int main(int argc, char **argv)
 
    /* -x and -X options ignored when writing to a file */
    if (ofile[0]) {
-      pid_nr = 0;
+      pid_idx = 0;
+      flags &= ~S_F_X_ALL;
       sadc_actflag &= ~A_PID;
    }
    else
       /* -L option ignored when writing to STDOUT */
       flags &= ~S_F_L_OPTION;
+
+   if (WANT_ALL_PIDS(flags))
+      pid_nr = MAX_PID_NR;
+   else
+      pid_nr = pid_idx;
 
    /* Init structures according to machine architecture */
    sa_sys_init(&flags);

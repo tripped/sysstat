@@ -797,15 +797,17 @@ void write_stat_header(int flags, int *fctr)
 {
    if (DISPLAY_EXTENDED(flags)) {
       /* Extended stats */
-      printf("Device:    rrqm/s wrqm/s   r/s   w/s  rsec/s  wsec/s");
+      printf("Device:    rrqm/s wrqm/s   r/s   w/s");
       if (DISPLAY_MEGABYTES(flags)) {
 	 printf("    rMB/s    wMB/s");
 	 *fctr = 2048;
       }
-      else {
+      else if (DISPLAY_KILOBYTES(flags)) {
 	 printf("    rkB/s    wkB/s");
 	 *fctr = 2;
       }
+      else
+	 printf("   rsec/s   wsec/s");
       printf(" avgrq-sz avgqu-sz   await  svctm  %%util\n");
    }
    else {
@@ -870,14 +872,12 @@ void write_ext_stat(int curr, unsigned long long itv, int flags, int fctr,
    printf("%-10s", shi->name);
    if (strlen(shi->name) > 10)
       printf("\n          ");
-   /*       rrq/s wrq/s   r/s   w/s  rsec  wsec   r?B   w?B  rqsz  qusz await svctm %util */
-   printf(" %6.2f %6.2f %5.2f %5.2f %7.2f %7.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
+   /*       rrq/s wrq/s   r/s   w/s  rsec  wsec  rqsz  qusz await svctm %util */
+   printf(" %6.2f %6.2f %5.2f %5.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
 	  S_VALUE(ioj->rd_merges, ioi->rd_merges, itv),
 	  S_VALUE(ioj->wr_merges, ioi->wr_merges, itv),
 	  S_VALUE(ioj->rd_ios, ioi->rd_ios, itv),
 	  S_VALUE(ioj->wr_ios, ioi->wr_ios, itv),
-	  ll_s_value(ioj->rd_sectors, ioi->rd_sectors, itv),
-	  ll_s_value(ioj->wr_sectors, ioi->wr_sectors, itv),
 	  ll_s_value(ioj->rd_sectors, ioi->rd_sectors, itv) / fctr,
 	  ll_s_value(ioj->wr_sectors, ioi->wr_sectors, itv) / fctr,
 	  arqsz,

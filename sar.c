@@ -1197,7 +1197,7 @@ void read_stat_bunch(short curr)
  ***************************************************************************
  */
 void handle_curr_act_stats(int ifd, off_t fpos, short *curr, long *cnt, int *eosaf,
-			 int rows, unsigned int act, int *reset)
+			   int rows, unsigned int act, int *reset)
 {
    short dis = 1;
    unsigned long lines;

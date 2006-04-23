@@ -101,6 +101,7 @@
 #define S_F_HAS_DISKSTATS	0x0200
 #define S_F_FILE_LCK		0X0400
 #define S_F_PER_PROC		0x0800
+#define S_F_X_ALL		0x1000
 
 #define WANT_ALL_PROC(m)	(((m) & S_F_ALL_PROC) == S_F_ALL_PROC)
 #define WANT_SA_ROTAT(m)	(((m) & S_F_SA_ROTAT) == S_F_SA_ROTAT)
@@ -114,6 +115,7 @@
 #define HAS_DISKSTATS(m)	(((m) & S_F_HAS_DISKSTATS) == S_F_HAS_DISKSTATS)
 #define FILE_LOCKED(m)		(((m) & S_F_FILE_LCK) == S_F_FILE_LCK)
 #define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC) == S_F_PER_PROC)
+#define WANT_ALL_PIDS(m)	(((m) & S_F_X_ALL) == S_F_X_ALL)
 
 /* Output formats (O_= Output)  */
 #define S_O_NONE		0
@@ -153,6 +155,7 @@
 
 /* Maximum number of processes that can be monitored simultaneously */
 #define MAX_PID_NR	256
+
 /* Maximum length of network interface name */
 #define MAX_IFACE_LEN	IFNAMSIZ
 /*

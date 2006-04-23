@@ -1,4 +1,4 @@
-.TH SAR 1 "FEBRUARY 2006" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "APRIL 2006" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -598,7 +598,7 @@ Run queue length (number of processes waiting for run time).
 
 .B plist-sz
 .RS
-Number of processes in the process list.
+Number of processes and threads in the process list.
 .RE
 
 .B ldavg-1
@@ -866,7 +866,7 @@ which have required loading a memory page from disk.
 .B %user
 .RS
 Percentage of CPU used by the process while executing at the user level
-(application).
+(application), with or without nice priority.
 .RE
 
 .B %system
@@ -922,7 +922,7 @@ which have required loading a memory page from disk.
 .B %cuser
 .RS
 Percentage of CPU used by the child processes while executing at the user level
-(application).
+(application), with or without nice priority.
 .RE
 
 .B %csystem

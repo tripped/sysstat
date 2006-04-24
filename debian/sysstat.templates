@@ -9,7 +9,7 @@ _Description: Do you want post-installation script to remove these data files?
  directory will be deleted.
  .
  If you don't want to remove them automatically, please remove them by hand later,
- in order to the sar command work properly.
+ in order for the sar command to work properly.
 
 Template: sysstat/enable
 Type: boolean

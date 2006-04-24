@@ -7,26 +7,26 @@
 # /usr/share/doc/po-debconf/README-trans
 # or http://www.debian.org/intl/l10n/po-debconf/README-trans
 # Developers do not need to manually edit POT or PO files.
-# , fuzzy
 # 
 # 
 msgid ""
 msgstr ""
 "Project-Id-Version: sysstat 6.0.1-2\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2005-06-29 19:52+0200\n"
+"Report-Msgid-Bugs-To: robert@debian.org\n"
+"POT-Creation-Date: 2006-04-24 20:17+0200\n"
 "PO-Revision-Date: 2005-10-02 02:33-0700\n"
 "Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
 "Language-Team: Swedish <sv@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=iso-8859-1\n"
-"Content-Transfer-Encoding: 8bit"
+"Content-Transfer-Encoding: 8bit\n"
 
 #. Type: boolean
 #. Description
 #: ../sysstat.templates:4
 msgid "Do you want post-installation script to remove these data files?"
-msgstr "Vill du att skriptet som körs efter installation ska radera dessa filer?"
+msgstr ""
+"Vill du att skriptet som körs efter installation ska radera dessa filer?"
 
 #. Type: boolean
 #. Description
@@ -35,8 +35,8 @@ msgid ""
 "Format of daily data statistics files has changed in version ${s_version} of "
 "sysstat and is *not* compatible with the previous one!"
 msgstr ""
-"Formatet på daglig datastatistiken har ändrats i version ${s_version} av sysstat och "
-"är *inte* kompatibel med tidigare versioner!"
+"Formatet på daglig datastatistiken har ändrats i version ${s_version} av "
+"sysstat och är *inte* kompatibel med tidigare versioner!"
 
 #. Type: boolean
 #. Description
@@ -45,17 +45,18 @@ msgid ""
 "If you activate this option, any existing data files in /var/log/sysstat/ "
 "directory will be deleted."
 msgstr ""
-"Om du aktiverar denna funktion kommer alla existerande datafiler i mappen /var/log/sysstat/ att raderas."
+"Om du aktiverar denna funktion kommer alla existerande datafiler i mappen /"
+"var/log/sysstat/ att raderas."
 
 #. Type: boolean
 #. Description
 #: ../sysstat.templates:4
 msgid ""
 "If you don't want to remove them automatically, please remove them by hand "
-"later, in order to the sar command work properly."
+"later, in order for the sar command to work properly."
 msgstr ""
-"Om du inte vill raderar dom automatiskt, vänligen radera dom på egen hand senare för att "
-"kommandot sar ska fungerar korrekt."
+"Om du inte vill raderar dom automatiskt, vänligen radera dom på egen hand "
+"senare för att kommandot sar ska fungerar korrekt."
 
 #. Type: boolean
 #. Description
@@ -71,8 +72,9 @@ msgid ""
 "daemon and init.d script) binary data concerning system activities and store "
 "them in log files within /var/log/sysstat/ directory."
 msgstr ""
-"Om denna funktion är aktiverat kommer sysstat-paketet att samla in (mde cron-daemonen och init.d-skript) "
-"binärdata om aktiviteter på ditt system och lagra dom i en loggfil i mappen /var/log/sysstat/."
+"Om denna funktion är aktiverat kommer sysstat-paketet att samla in (mde cron-"
+"daemonen och init.d-skript) binärdata om aktiviteter på ditt system och "
+"lagra dom i en loggfil i mappen /var/log/sysstat/."
 
 #. Type: boolean
 #. Description
@@ -81,7 +83,8 @@ msgid ""
 "With this data the sar(1) command will be able to display day-long system "
 "statistics."
 msgstr ""
-"Med detta data kommer kommandot sar(1) att kunna visa systemstatistik för hela dagen."
+"Med detta data kommer kommandot sar(1) att kunna visa systemstatistik för "
+"hela dagen."
 
 #. Type: boolean
 #. Description
@@ -90,5 +93,5 @@ msgid ""
 "If you don't enable this option, the sar(1) command will show only the "
 "current statistics."
 msgstr ""
-"Om du inte aktiverar denna funktion kan kommandot sar(1) bara visa nuvarande statistik."
-
+"Om du inte aktiverar denna funktion kan kommandot sar(1) bara visa nuvarande "
+"statistik."

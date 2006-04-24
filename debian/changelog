@@ -1,9 +1,11 @@
-sysstat (6.1.2-1) UNRELEASED; urgency=low
+sysstat (6.1.2-1) unstable; urgency=low
 
   * New upstream version (development).
-  * debian/watch: update
+  * Update Russian debconf templates translation (closes: #361117).
+  * Fix typo in debconf message (closes: #363284).
+  * debian/watch: update the download URL.
 
- -- Robert Luberda <robert@debian.org>  Sun, 23 Apr 2006 14:20:13 +0200
+ -- Robert Luberda <robert@debian.org>  Mon, 24 Apr 2006 20:49:53 +0200
 
 sysstat (6.1.1-1) unstable; urgency=low
 

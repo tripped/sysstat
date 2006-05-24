@@ -182,15 +182,18 @@ int next_slice(unsigned long long uptime_ref, unsigned long long uptime,
 {
    unsigned long file_interval, entry;
    static unsigned long long last_uptime = 0;
-   int min, max, pt1, pt2;
+   int min, max, pt1, pt2, cpu_nr;
    double f;
 
    if (!last_uptime || reset)
       last_uptime = uptime_ref;
 
+   cpu_nr = file_hdr->sa_proc;
+   if (!cpu_nr)
+      cpu_nr = 1;
+
    /* Interval cannot be greater than 0xffffffff here */
-   f = (((double) ((uptime - last_uptime) & 0xffffffff)) /
-	(file_hdr->sa_proc + 1)) / HZ;
+   f = (((double) ((uptime - last_uptime) & 0xffffffff)) / cpu_nr) / HZ;
    file_interval = (unsigned long) f;
    if ((f * 10) - (file_interval * 10) >= 5)
       file_interval++; /* Rounding to correct value */
@@ -210,8 +213,7 @@ int next_slice(unsigned long long uptime_ref, unsigned long long uptime,
     *       (Pn * Iu) or (P'n * Iu) belongs to In
     * with  Pn = En / Iu and P'n = En / Iu + 1
     */
-   f = (((double) ((uptime - uptime_ref) & 0xffffffff)) /
-	(file_hdr->sa_proc + 1)) / HZ;
+   f = (((double) ((uptime - uptime_ref) & 0xffffffff)) / cpu_nr) / HZ;
    entry = (unsigned long) f;
    if ((f * 10) - (entry * 10) >= 5)
       entry++;
@@ -312,7 +314,7 @@ void get_itv_value(struct file_stats *file_stats_curr,
    if (!(*g_itv))	/* Paranoia checking */
       *g_itv = 1;
 
-   if (nr_proc) {
+   if (nr_proc > 1) {
       if (!file_stats_prev->uptime0)
 	 *itv = file_stats_curr->uptime0;
       else

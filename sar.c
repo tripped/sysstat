@@ -154,8 +154,8 @@ void salloc_pid(int nr_pid)
  */
 void allocate_structures(int stype)
 {
-   if (file_hdr.sa_proc > 0)
-      salloc_cpu_array(st_cpu, file_hdr.sa_proc + 1);
+   if (file_hdr.sa_proc)
+      salloc_cpu_array(st_cpu, file_hdr.sa_proc);
    if ((stype == USE_SADC) &&
        (GET_PID(sar_actflag) || GET_CPID(sar_actflag))) {
       pid_nr = file_hdr.sa_nr_pid;
@@ -164,7 +164,7 @@ void allocate_structures(int stype)
    if (file_hdr.sa_serial)
       salloc_serial_array(st_serial, file_hdr.sa_serial);
    if (file_hdr.sa_irqcpu)
-      salloc_irqcpu_array(st_irq_cpu, file_hdr.sa_proc + 1, file_hdr.sa_irqcpu);
+      salloc_irqcpu_array(st_irq_cpu, file_hdr.sa_proc, file_hdr.sa_irqcpu);
    if (file_hdr.sa_iface)
       salloc_net_dev_array(st_net_dev, file_hdr.sa_iface);
    if (file_hdr.sa_nr_disk)
@@ -184,12 +184,12 @@ void check_smp_option(unsigned int cpu_nr)
 {
    unsigned int j = 0, i;
 
-   if (cpu_nr == 0) {
+   if (!cpu_nr) {
       fprintf(stderr, _("Not an SMP machine...\n"));
       exit(1);
    }
 
-   for (i = (cpu_nr + 1); i < NR_CPUS; i++)
+   for (i = cpu_nr; i < NR_CPUS; i++)
       j |= cpu_bitmap[i >> 3] & (1 << (i & 0x07));
 
    if (j) {
@@ -211,7 +211,7 @@ void prep_smp_option(unsigned int cpu_nr)
 
    if (WANT_PER_PROC(flags)) {
       if (WANT_ALL_PROC(flags))
-	 for (i = cpu_nr + 1; i < ((NR_CPUS >> 3) + 1) << 3; i++)
+	 for (i = cpu_nr; i < ((NR_CPUS >> 3) + 1) << 3; i++)
 	    /*
 	     * Reset every bit for proc > cpu_nr
 	     * (only done when -P ALL entered on the command line)
@@ -334,7 +334,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	    *sci = st_cpu[curr],
 	    *scj = st_cpu[prev];
 	
-	 for (i = 0; i <= file_hdr.sa_proc; i++, sci++, scj++) {
+	 for (i = 0; i < file_hdr.sa_proc; i++, sci++, scj++) {
 	    if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
 
 	       printf("%-11s       %3d", curr_string, i);
@@ -549,7 +549,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 printf("\n");
       }
 
-      for (k = 0; k <= file_hdr.sa_proc; k++) {
+      for (k = 0; k < file_hdr.sa_proc; k++) {
 	 if (cpu_bitmap[k >> 3] & (1 << (k & 0x07))) {
 
 	    printf("%-11s  %3d", curr_string, k);
@@ -1029,15 +1029,15 @@ void write_stats_startup(short curr)
    file_stats[!curr].minute      = file_stats[curr].minute;
    file_stats[!curr].second      = file_stats[curr].second;
    file_stats[!curr].ust_time    = file_stats[curr].ust_time;
-   if (file_hdr.sa_proc > 0)
-      memset(st_cpu[!curr], 0, STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
+   if (file_hdr.sa_proc)
+      memset(st_cpu[!curr], 0, STATS_ONE_CPU_SIZE * file_hdr.sa_proc);
    memset(interrupts[!curr], 0, STATS_ONE_IRQ_SIZE);
    if (pid_nr)
       memset (pid_stats[!curr][0], 0, PID_STATS_SIZE * pid_nr);
    if (file_hdr.sa_serial)
       memset(st_serial[!curr], 0, STATS_SERIAL_SIZE * file_hdr.sa_serial);
    if (file_hdr.sa_irqcpu)
-      memset(st_irq_cpu[!curr], 0, STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
+      memset(st_irq_cpu[!curr], 0, STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu);
    if (file_hdr.sa_iface)
       memset(st_net_dev[!curr], 0, STATS_NET_DEV_SIZE * file_hdr.sa_iface);
    if (file_hdr.sa_nr_disk)
@@ -1105,9 +1105,9 @@ void write_dummy(short curr, int use_tm_start, int use_tm_end)
 void copy_structures(int dest, int src, int stype)
 {
    memcpy(&file_stats[dest], &file_stats[src], FILE_STATS_SIZE);
-   if (file_hdr.sa_proc > 0)
+   if (file_hdr.sa_proc)
       memcpy(st_cpu[dest], st_cpu[src],
-	     STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
+	     STATS_ONE_CPU_SIZE * file_hdr.sa_proc);
    if (GET_ONE_IRQ(file_hdr.sa_actflag))
       memcpy(interrupts[dest], interrupts[src],
 	     STATS_ONE_IRQ_SIZE);
@@ -1119,7 +1119,7 @@ void copy_structures(int dest, int src, int stype)
 	     STATS_SERIAL_SIZE * file_hdr.sa_serial);
    if (file_hdr.sa_irqcpu)
       memcpy(st_irq_cpu[dest], st_irq_cpu[src],
-	     STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
+	     STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu);
    if (file_hdr.sa_iface)
       memcpy(st_net_dev[dest], st_net_dev[src],
 	     STATS_NET_DEV_SIZE * file_hdr.sa_iface);
@@ -1136,9 +1136,9 @@ void copy_structures(int dest, int src, int stype)
  */
 void read_extra_stats(short curr, int ifd)
 {
-   if (file_hdr.sa_proc > 0)
+   if (file_hdr.sa_proc)
       sa_fread(ifd, st_cpu[curr],
-	       STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1), HARD_SIZE);
+	       STATS_ONE_CPU_SIZE * file_hdr.sa_proc, HARD_SIZE);
    if (GET_ONE_IRQ(file_hdr.sa_actflag))
       sa_fread(ifd, interrupts[curr],
 	       STATS_ONE_IRQ_SIZE, HARD_SIZE);
@@ -1147,7 +1147,7 @@ void read_extra_stats(short curr, int ifd)
 	       STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
    if (file_hdr.sa_irqcpu)
       sa_fread(ifd, st_irq_cpu[curr],
-	       STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu, HARD_SIZE);
+	       STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu, HARD_SIZE);
    if (file_hdr.sa_iface)
       sa_fread(ifd, st_net_dev[curr],
 	       STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
@@ -1167,8 +1167,8 @@ void read_stat_bunch(short curr)
 {
    if (sa_read(&file_stats[curr], file_hdr.sa_st_size))
       exit(0);
-   if ((file_hdr.sa_proc > 0) &&
-       sa_read(st_cpu[curr], STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1)))
+   if ((file_hdr.sa_proc) &&
+       sa_read(st_cpu[curr], STATS_ONE_CPU_SIZE * file_hdr.sa_proc))
       exit(0);
    if (GET_ONE_IRQ(file_hdr.sa_actflag) &&
        sa_read(interrupts[curr], STATS_ONE_IRQ_SIZE))
@@ -1180,7 +1180,7 @@ void read_stat_bunch(short curr)
        sa_read(st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial))
       exit(0);
    if (file_hdr.sa_irqcpu &&
-       sa_read(st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu))
+       sa_read(st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu))
       exit(0);
    if (file_hdr.sa_iface &&
        sa_read(st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface))
@@ -1457,7 +1457,7 @@ void read_stats(void)
    read_stat_bunch(0);
 
    if (!dis_hdr) {
-      if (file_hdr.sa_proc > 0)
+      if (file_hdr.sa_proc)
 	 more = 2 + file_hdr.sa_proc;
       if (pid_nr)
 	 more = pid_nr;

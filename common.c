@@ -83,12 +83,13 @@ time_t get_localtime(struct tm *loc_time)
 
 /*
  ***************************************************************************
- * Return the number of processors used on the machine
- * (0 means one proc, 1 means two proc, etc.)
+ * Return the number of processors used on the machine:
+ * 0: one proc and non SMP kernel
+ * 1: one proc and SMP kernel, or SMP machine with all but one offlined CPU
+ * 2: two proc...
  * As far as I know, there are two possibilities for this:
  * 1) Use /proc/stat (this is what we are doing here) or
  * 2) Use /proc/cpuinfo
- * (I haven't heard of a better method to guess it...)
  ***************************************************************************
  */
 int get_cpu_nr(unsigned int max_nr_cpus)
@@ -111,24 +112,14 @@ int get_cpu_nr(unsigned int max_nr_cpus)
       }
    }
 
-   /*
-    * cpu_nr initial value: -1
-    * If cpu_nr < 0 then there is only one proc.
-    * If cpu_nr > 0 then this is an SMP machine.
-    * If cpu_nr = 0 then there is only one proc but this is a Linux 2.2 SMP or
-    * Linux 2.4 kernel.
-    */
-   if (cpu_nr < 0)
-      cpu_nr = 0;
-
-   if (cpu_nr >= max_nr_cpus) {
+   if ((cpu_nr + 1) > max_nr_cpus) {
       fprintf(stderr, _("Cannot handle so many processors!\n"));
       exit(1);
    }
 
    fclose(fp);
 
-   return cpu_nr;
+   return (cpu_nr + 1);
 }
 
 

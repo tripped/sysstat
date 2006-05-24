@@ -18,7 +18,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x2168
+#define SA_MAGIC	0x2169
 
 
 /* Define activities */
@@ -123,6 +123,7 @@
 #define S_O_PPC_OPTION		2
 #define S_O_DB_OPTION		3
 #define S_O_XML_OPTION		4
+#define S_O_DBD_OPTION		5
 
 /* Files */
 #define PROC		"/proc"
@@ -223,7 +224,11 @@ struct file_hdr {
    unsigned int   sa_irqcpu			__attribute__ ((packed));
    /* Number of disks */
    unsigned int   sa_nr_disk			__attribute__ ((packed));
-   /* Number of processors: 1 means two proc */
+   /* Number of processors:
+    * 0 means 1 proc and non SMP machine
+    * 1 means 1 proc and SMP machine
+    * 2 means two proc, etc.
+    */
    unsigned int   sa_proc 			__attribute__ ((packed));
    /* Number of serial lines: 2 means two lines (ttyS00 and ttyS01) */
    unsigned int   sa_serial 			__attribute__ ((packed));

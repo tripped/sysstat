@@ -47,8 +47,8 @@ struct mp_stats *st_mp_cpu[DIM];
 /* NOTE: Use array of _char_ for bitmaps to avoid endianness problems...*/
 unsigned char *cpu_bitmap;	/* Bit 0: Global; Bit 1: 1st proc; etc. */
 struct mp_timestamp st_mp_tstamp[DIM];
-/* Nb of processors on the machine. A value of 1 means two processors */
-int cpu_nr = -1;
+/* Nb of processors on the machine */
+int cpu_nr = 0;
 long interval = -1, count = 0;
 
 
@@ -172,7 +172,7 @@ void write_stats_core(short prev, short curr, short dis,
     * Here, we reduce the interval value to one processor,
     * using the uptime computed for proc#0.
     */
-   if (cpu_nr) {
+   if (cpu_nr > 1) {
       if (!interval)
 	 itv = st_mp_tstamp[curr].uptime0;
       else
@@ -186,7 +186,7 @@ void write_stats_core(short prev, short curr, short dis,
 	  ll_s_value(st_mp_cpu[prev]->irq, st_mp_cpu[curr]->irq, itv));
    }
 
-   for (cpu = 1; cpu <= cpu_nr + 1; cpu++) {
+   for (cpu = 1; cpu <= cpu_nr; cpu++) {
 
       /* Check if we want stats about this proc */
       if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
@@ -322,7 +322,7 @@ void read_proc_stat(short curr)
 		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
 		&cc_hardirq, &cc_softirq, &cc_steal);
 
-	 if (proc_nb <= cpu_nr) {
+	 if (proc_nb < cpu_nr) {
 	    st_mp_cpu_i = st_mp_cpu[curr] + proc_nb + 1;
 	    st_mp_cpu_i->cpu_user    = cc_user;
 	    st_mp_cpu_i->cpu_nice    = cc_nice;
@@ -373,7 +373,7 @@ void read_interrupts_stat(short curr)
    unsigned long irq = 0;
    unsigned int cpu;
 
-   for (cpu = 0; cpu <= cpu_nr; cpu++) {
+   for (cpu = 0; cpu < cpu_nr; cpu++) {
       st_mp_cpu_i = st_mp_cpu[curr] + cpu +1;
       st_mp_cpu_i->irq = 0;
    }
@@ -384,7 +384,7 @@ void read_interrupts_stat(short curr)
 
 	 if (isdigit(line[2])) {
 	
-	    for (cpu = 0; cpu <= cpu_nr; cpu++) {
+	    for (cpu = 0; cpu < cpu_nr; cpu++) {
 	       st_mp_cpu_i = st_mp_cpu[curr] + cpu + 1;
 	       sscanf(line + 4 + 11 * cpu, " %10lu", &irq);
 	       st_mp_cpu_i->irq += irq;
@@ -419,7 +419,7 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
    if (!interval) {
       /* Display since boot time */
       st_mp_tstamp[1] = st_mp_tstamp[0];
-      memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 2));
+      memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 1));
       write_stats(0, DISP_HDR, loc_time);
       exit(0);
    }
@@ -429,7 +429,7 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
 
    /* Save the first stats collected. Will be used to compute the average */
    st_mp_tstamp[2] = st_mp_tstamp[0];
-   memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (cpu_nr + 2));
+   memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (cpu_nr + 1));
 
    pause();
 
@@ -497,10 +497,10 @@ int main(int argc, char **argv)
    cpu_nr = get_cpu_nr(~0);
 
    /*
-    * cpu_nr: a value of 1 means there are 2 processors (0 and 1).
+    * cpu_nr: a value of 2 means there are 2 processors (0 and 1).
     * In this case, we have to allocate 3 structures: global, proc0 and proc1.
     */
-   salloc_mp_cpu(cpu_nr + 2);
+   salloc_mp_cpu(cpu_nr + 1);
 
    while (++opt < argc) {
 
@@ -519,13 +519,13 @@ int main(int argc, char **argv)
 		* Set bit for every processor.
 		* Also indicate to display stats for CPU 'all'.
 		*/
-	       memset(cpu_bitmap, 0xff, ((cpu_nr + 1 + (cpu_nr > 0)) >> 3) + 1);
+	       memset(cpu_bitmap, 0xff, ((cpu_nr + 1) >> 3) + 1);
 	    }
 	    else {
 	       if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
 		  usage(argv[0]);
 	       i = atoi(argv[opt]);	/* Get cpu number */
-	       if (i > cpu_nr) {
+	       if (i >= cpu_nr) {
 		  fprintf(stderr, _("Not that many processors!\n"));
 		  exit(1);
 	       }

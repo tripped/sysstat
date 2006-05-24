@@ -76,7 +76,7 @@ void usage(char *progname)
 {
    fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
 	           "Options are:\n"
-	           "[ -d | -H | -p | -x ] [ -t ] [ -V ]\n"
+	           "[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
 		   "[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 		   "[ -- <sar_options...> ]\n"),
 	   progname);
@@ -109,7 +109,7 @@ void xprintf(short nr_tab, const char *fmt, ...)
    va_list args;
 
    va_start(args, fmt);
-   vsprintf(buf, fmt, args);
+   vsnprintf(buf, sizeof(buf), fmt, args);
    va_end(args);
 
    prtab(nr_tab);
@@ -132,10 +132,10 @@ void set_loc_time(short curr)
    /* NOTE: loc_time structure must have been init'ed before! */
    if (PRINT_TRUE_TIME(flags) &&
        ((format == S_O_DB_OPTION) || (format == S_O_XML_OPTION)))
-      /* '-d -t' or '-x -t' */
+      /* '-d -t' or '-x -t'. Option -t is ignored with option -p and -D */
       ltm = localtime(&file_stats[curr].ust_time);
    else
-      /* '-p' or '-p -t' or '-d' or '-x' */
+      /* '-p' od '-D' or '-d' or '-x' */
       ltm = gmtime(&file_stats[curr].ust_time);
 
    loc_time = *ltm;
@@ -158,7 +158,7 @@ void set_timestamp(short curr, char *cur_time, int len)
       else
 	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S UTC", &loc_time);
    }
-   else if (format == S_O_PPC_OPTION)
+   else if ((format == S_O_PPC_OPTION) || (format == S_O_DBD_OPTION))
       sprintf(cur_time, "%ld", file_stats[curr].ust_time);
 }
 
@@ -282,12 +282,10 @@ void write_mech_stats(short curr, unsigned int act,
    struct file_stats
       *fsi = &file_stats[curr],
       *fsj = &file_stats[!curr];
-
    char pre[80];	/* Text at beginning of each line */
    int wantproc = !WANT_PER_PROC(flags)
       || (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags));
-   int isdb = (format == S_O_DB_OPTION);
-
+   int isdb = ((format == S_O_DB_OPTION) || (format == S_O_DBD_OPTION));
 
    /*
     * This substring appears on every output line, preformat it here
@@ -362,7 +360,7 @@ void write_mech_stats(short curr, unsigned int act,
 	 *sci = st_cpu[curr],
          *scj = st_cpu[!curr];
 
-      for (i = 0; i <= file_hdr.sa_proc; i++, sci++, scj++) {
+      for (i = 0; i < file_hdr.sa_proc; i++, sci++, scj++) {
 	 if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
 
 	    /* Recalculate itv for current proc */
@@ -580,7 +578,7 @@ void write_mech_stats(short curr, unsigned int act,
       int j, k, offset;
       struct stats_irq_cpu *p, *q, *p0, *q0;
 
-      for (k = 0; k <= file_hdr.sa_proc; k++) {
+      for (k = 0; k < file_hdr.sa_proc; k++) {
 	 if (!(cpu_bitmap[k >> 3] & (1 << (k & 0x07))))
 	    continue;
 
@@ -1052,7 +1050,7 @@ void write_xml_stats(short curr, short *tab)
 	 *sci = st_cpu[curr],
          *scj = st_cpu[!curr];
 
-      for (i = 0; i <= file_hdr.sa_proc; i++, sci++, scj++) {
+      for (i = 0; i < file_hdr.sa_proc; i++, sci++, scj++) {
 
 	 /* Recalculate itv for current proc */
 	 pc_itv = get_per_cpu_interval(sci, scj);
@@ -1095,7 +1093,7 @@ void write_xml_stats(short curr, short *tab)
       xprintf(*tab, "<int-proc per=\"second\">");
       (*tab)++;
 
-      for (k = 0; k <= file_hdr.sa_proc; k++) {
+      for (k = 0; k < file_hdr.sa_proc; k++) {
 
 	 for (j = 0; j < file_hdr.sa_irqcpu; j++) {
 	    p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
@@ -1405,7 +1403,7 @@ void write_dummy(short curr, int use_tm_start, int use_tm_end)
    if (format == S_O_PPC_OPTION)
       printf("%s\t-1\t%ld\tLINUX-RESTART\n",
 	     file_hdr.sa_nodename, file_stats[curr].ust_time);
-   else if (format == S_O_DB_OPTION)
+   else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
       printf("%s;-1;%s;LINUX-RESTART\n",
 	     file_hdr.sa_nodename, cur_time);
 }
@@ -1425,7 +1423,7 @@ void display_file_header(char *dfile, struct file_hdr *file_hdr)
 
    printf("Activity flag: %#x\n", file_hdr->sa_actflag);
    printf("Sizeof(long): %d\n", file_hdr->sa_sizeof_long);
-   printf("#CPU:    %u\n", file_hdr->sa_proc + 1);
+   printf("#CPU:    %u\n", file_hdr->sa_proc);
    printf("#IrqCPU: %u\n", file_hdr->sa_irqcpu);
    printf("#Disks:  %u\n", file_hdr->sa_nr_disk);
    printf("#Serial: %u\n", file_hdr->sa_serial);
@@ -1460,12 +1458,12 @@ void display_xml_header(short *tab)
  */
 void allocate_structures(int stype)
 {
-   if (file_hdr.sa_proc > 0)
-      salloc_cpu_array(st_cpu, file_hdr.sa_proc + 1);
+   if (file_hdr.sa_proc)
+      salloc_cpu_array(st_cpu, file_hdr.sa_proc);
    if (file_hdr.sa_serial)
       salloc_serial_array(st_serial, file_hdr.sa_serial);
    if (file_hdr.sa_irqcpu)
-      salloc_irqcpu_array(st_irq_cpu, file_hdr.sa_proc + 1,
+      salloc_irqcpu_array(st_irq_cpu, file_hdr.sa_proc,
 			  file_hdr.sa_irqcpu);
    if (file_hdr.sa_iface)
       salloc_net_dev_array(st_net_dev, file_hdr.sa_iface);
@@ -1482,9 +1480,9 @@ void allocate_structures(int stype)
 void copy_structures(int dest, int src)
 {
    memcpy(&file_stats[dest], &file_stats[src], FILE_STATS_SIZE);
-   if (file_hdr.sa_proc > 0)
+   if (file_hdr.sa_proc)
       memcpy(st_cpu[dest], st_cpu[src],
-	     STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1));
+	     STATS_ONE_CPU_SIZE * file_hdr.sa_proc);
    if (GET_ONE_IRQ(file_hdr.sa_actflag))
       memcpy(interrupts[dest], interrupts[src],
 	     STATS_ONE_IRQ_SIZE);
@@ -1493,7 +1491,7 @@ void copy_structures(int dest, int src)
 	     STATS_SERIAL_SIZE * file_hdr.sa_serial);
    if (file_hdr.sa_irqcpu)
       memcpy(st_irq_cpu[dest], st_irq_cpu[src],
-	     STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu);
+	     STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu);
    if (file_hdr.sa_iface)
       memcpy(st_net_dev[dest], st_net_dev[src],
 	     STATS_NET_DEV_SIZE * file_hdr.sa_iface);
@@ -1510,9 +1508,9 @@ void copy_structures(int dest, int src)
  */
 void read_extra_stats(short curr, int ifd)
 {
-   if (file_hdr.sa_proc > 0)
+   if (file_hdr.sa_proc)
       sa_fread(ifd, st_cpu[curr],
-	       STATS_ONE_CPU_SIZE * (file_hdr.sa_proc + 1), HARD_SIZE);
+	       STATS_ONE_CPU_SIZE * file_hdr.sa_proc, HARD_SIZE);
    if (GET_ONE_IRQ(file_hdr.sa_actflag))
       sa_fread(ifd, interrupts[curr],
 	       STATS_ONE_IRQ_SIZE, HARD_SIZE);
@@ -1521,7 +1519,7 @@ void read_extra_stats(short curr, int ifd)
 	       STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
    if (file_hdr.sa_irqcpu)
       sa_fread(ifd, st_irq_cpu[curr],
-	       STATS_IRQ_CPU_SIZE * (file_hdr.sa_proc + 1) * file_hdr.sa_irqcpu, HARD_SIZE);
+	       STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu, HARD_SIZE);
    if (file_hdr.sa_iface)
       sa_fread(ifd, st_net_dev[curr],
 	       STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
@@ -1888,6 +1886,11 @@ int main(int argc, char **argv)
 		  if (format && (format != S_O_DB_OPTION))
 		     usage(argv[0]);
 		  format = S_O_DB_OPTION;
+		  break;
+		case 'D':
+		  if (format && (format != S_O_DBD_OPTION))
+		     usage(argv[0]);
+		  format = S_O_DBD_OPTION;
 		  break;
 		case 'H':
 		  if (format && (format != S_O_HDR_OPTION))

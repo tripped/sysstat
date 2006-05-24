@@ -1,5 +1,20 @@
 Changes:
 
+2006/05/24: Version 6.1.3 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x2169]
+	* Option -P can now be used with sar even on SMP machines where
+	  only one processor is available.
+	* Small bug fixed for mpstat, where explicitly specifying
+	  processor 0 ("-P 0") could lead to incorrect output on UP
+	  machines.
+	* Option -D added to sadf: this option displays the contents of
+	  a data file in a database-friendly format with a timestamp
+	  expressed in seconds from the epoch.
+	* sadf manual page updated.
+	* NLS updated.
+	* CREDITS file updated.
+
 2006/04/23: Version 6.1.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* Fix incorrect NFS client and server statistics for sar.
 	* sar can now display stats for newly created processes when

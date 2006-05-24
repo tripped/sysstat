@@ -46,8 +46,8 @@
 #define _(string) (string)
 #endif
 
-/* Nb of processors on the machine. A value of 1 means two processors */
-int cpu_nr = -1;
+/* Nb of processors on the machine */
+int cpu_nr = 0;
 unsigned int serial_nr = 0, iface_nr = 0, irqcpu_nr = 0, disk_nr = 0;
 int pid_idx = 0, pid_nr = 0;
 unsigned int sadc_actflag;
@@ -326,7 +326,7 @@ void sa_sys_init(unsigned int *flags)
 {
    /* How many processors on this machine ? */
    if ((cpu_nr = get_cpu_nr(NR_CPUS)) > 0)
-      SREALLOC(st_cpu, struct stats_one_cpu, STATS_ONE_CPU_SIZE * (cpu_nr + 1));
+      SREALLOC(st_cpu, struct stats_one_cpu, STATS_ONE_CPU_SIZE * cpu_nr);
 
    /* Get serial lines that support accounting */
    if ((serial_nr = get_serial_lines())) {
@@ -334,10 +334,10 @@ void sa_sys_init(unsigned int *flags)
       SREALLOC(st_serial, struct stats_serial, STATS_SERIAL_SIZE * serial_nr);
    }
    /* Get number of interrupts available per processor */
-   if (cpu_nr > 0) {
+   if (cpu_nr) {
       if ((irqcpu_nr = get_irqcpu_nb(NR_IRQS)))
 	 SREALLOC(st_irq_cpu, struct stats_irq_cpu,
-		  STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_nr);
+		  STATS_IRQ_CPU_SIZE * cpu_nr * irqcpu_nr);
    }
    else
       /* IRQ per processor are not provided by sadc on UP machines */
@@ -499,12 +499,13 @@ void write_dummy_record(int ofd, size_t file_stats_size, unsigned int *flags)
  ***************************************************************************
  * Write stats.
  * NB: sadc provides all the stats, including:
- * -> CPU utilization per processor (on SMP machines only)
- * -> IRQ per processor (on SMP machines only)
+ * -> CPU utilization per processor (*)
+ * -> IRQ per processor (*)
  * -> number of each IRQ (if -I option passed to sadc), including APIC
  *    interrupts sources
  * -> device stats for sar -d (kernels 2.4 and newer only, and only if
  *    -d option passed to sadc)
+ * (*): on SMP machines only, even if there is only one available proc.
  ***************************************************************************
  */
 void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
@@ -519,8 +520,8 @@ void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
    }
    if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
       p_write_error();
-   if (cpu_nr > 0) {
-      if ((nb = write(ofd, st_cpu, STATS_ONE_CPU_SIZE * (cpu_nr + 1))) != (STATS_ONE_CPU_SIZE * (cpu_nr + 1)))
+   if (cpu_nr) {
+      if ((nb = write(ofd, st_cpu, STATS_ONE_CPU_SIZE * cpu_nr)) != (STATS_ONE_CPU_SIZE * cpu_nr))
 	 p_write_error();
    }
    if (GET_ONE_IRQ(sadc_actflag)) {
@@ -537,8 +538,8 @@ void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
 	 p_write_error();
    }
    if (irqcpu_nr) {
-      if ((nb = write(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_nr))
-	  != (STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_nr))
+      if ((nb = write(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * cpu_nr * irqcpu_nr))
+	  != (STATS_IRQ_CPU_SIZE * cpu_nr * irqcpu_nr))
 	 p_write_error();
    }
    if (iface_nr) {
@@ -674,7 +675,7 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
 	 if (file_hdr.sa_irqcpu != irqcpu_nr) {
 	    irqcpu_nr = file_hdr.sa_irqcpu;
 	    SREALLOC(st_irq_cpu, struct stats_irq_cpu,
-		     STATS_IRQ_CPU_SIZE * (cpu_nr + 1) * irqcpu_nr);
+		     STATS_IRQ_CPU_SIZE * cpu_nr * irqcpu_nr);
 	 }
 	 if (file_hdr.sa_nr_disk != disk_nr) {
 	    if (!file_hdr.sa_nr_disk)
@@ -750,13 +751,11 @@ void read_proc_stat(unsigned int flags)
       }
 
       else if (!strncmp(line, "cpu", 3)) {
-	 if (cpu_nr > 0) {
+	 if (cpu_nr) {
 	    /*
 	     * Read the number of jiffies spent in the different modes
 	     * (user, nice, etc) for current proc.
 	     * This is done only on SMP machines.
-	     * Warning: st_cpu_i struct is _not_ allocated even if the kernel
-	     * has SMP support enabled.
 	     */
 	    cc_iowait = cc_steal = 0;	/* For pre 2.5 kernels */
 	    cc_hardirq = cc_softirq = 0;
@@ -766,7 +765,7 @@ void read_proc_stat(unsigned int flags)
 		   &cc_hardirq, &cc_softirq, &cc_steal);
 	    cc_system += cc_hardirq + cc_softirq;
 	
-	    if (proc_nb <= cpu_nr) {
+	    if (proc_nb < cpu_nr) {
 	       st_cpu_i = st_cpu + proc_nb;
 	       st_cpu_i->per_cpu_user   = cc_user;
 	       st_cpu_i->per_cpu_nice   = cc_nice;
@@ -1156,7 +1155,7 @@ void read_interrupts_stat(void)
 	    p = st_irq_cpu + irq;
 	    sscanf(line, "%3u", &(p->irq));
 	
-	    for (cpu = 0; cpu <= cpu_nr; cpu++) {
+	    for (cpu = 0; cpu < cpu_nr; cpu++) {
 	       p = st_irq_cpu + cpu * irqcpu_nr + irq;
 	       /*
 		* No need to set (st_irq_cpu + cpu * irqcpu_nr)->irq:

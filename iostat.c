@@ -62,11 +62,8 @@ int dlist_idx = 0;
 long interval = 0;
 unsigned char timestamp[64];
 
-/*
- * Nb of processors on the machine.
- * A value of 1 means two procs...
- */
-int cpu_nr = -1;
+/* Nb of processors on the machine */
+int cpu_nr = 0;
 
 
 /*
@@ -391,7 +388,7 @@ void read_proc_stat(int curr, int flags)
 	    			   comm_stats[curr].cpu_steal;
       }
 
-      else if ((!strncmp(line, "cpu0", 4)) && cpu_nr) {
+      else if ((!strncmp(line, "cpu0", 4)) && (cpu_nr > 1)) {
 	 /*
 	  * Read CPU line for proc#0 (if available).
 	  * Useful to compute uptime reduced to one processor on SMP machines,
@@ -988,7 +985,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
       /* Display CPU utilization */
       write_cpu_stat(curr, itv);
 
-   if (cpu_nr) {
+   if (cpu_nr > 1) {
       /* On SMP machines, reduce itv to one processor (see note above) */
       if (!comm_stats[!curr].uptime0)
 	 itv = comm_stats[curr].uptime0;

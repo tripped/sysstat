@@ -1,4 +1,4 @@
 # control file for the uscan(1) tool
 version=2
 http://perso.wanadoo.fr/sebastien.godard/download.html \
-	(?:.*/)sysstat-([\d\.]+)\.tar\.gz
+	(?:.*perso.*/)sysstat-([\d\.]+)\.tar\.gz

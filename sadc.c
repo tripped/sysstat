@@ -420,7 +420,7 @@ void setup_file_hdr(int fd, size_t *file_stats_size)
    memset(&file_hdr, 0, FILE_HDR_SIZE);
 
    /* Then get current date */
-   file_hdr.sa_ust_time = get_localtime(&loc_time);
+   file_hdr.sa_ust_time = get_time(&loc_time);
 
    /* Ok, now fill the header */
    file_hdr.sa_actflag = sadc_actflag;
@@ -483,7 +483,7 @@ void write_dummy_record(int ofd, size_t file_stats_size, unsigned int *flags)
    file_stats.record_type = R_DUMMY;
 
    /* Save time */
-   file_stats.ust_time = get_localtime(&loc_time);
+   file_stats.ust_time = get_time(&loc_time);
 
    file_stats.hour   = loc_time.tm_hour;
    file_stats.minute = loc_time.tm_min;
@@ -1627,7 +1627,7 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
 	 file_stats.record_type = R_STATS;
 
       /* Save time */
-      file_stats.ust_time = get_localtime(loc_time);
+      file_stats.ust_time = get_time(loc_time);
       file_stats.hour   = loc_time->tm_hour;
       file_stats.minute = loc_time->tm_min;
       file_stats.second = loc_time->tm_sec;
@@ -1687,10 +1687,7 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
       /* Rotate activity file if necessary */
       if (WANT_SA_ROTAT(*flags)) {
 	 /* The user specified '-' as the filename to use */
-	 get_localtime(loc_time);
-	 snprintf(new_ofile, MAX_FILE_LEN,
-		  "%s/sa%02d", SA_DIR, loc_time->tm_mday);
-	 new_ofile[MAX_FILE_LEN - 1] = '\0';
+	 set_default_file(loc_time, new_ofile);
 
 	 if (strcmp(ofile, new_ofile))
 	    do_sa_rotat = TRUE;
@@ -1793,10 +1790,7 @@ int main(int argc, char **argv)
 	    stdfd = -1;	/* Don't write to STDOUT */
 	    if (!strcmp(argv[opt], "-")) {
 	       /* File name set to '-' */
-	       get_localtime(&loc_time);
-	       snprintf(ofile, MAX_FILE_LEN,
-			"%s/sa%02d", SA_DIR, loc_time.tm_mday);
-	       ofile[MAX_FILE_LEN - 1] = '\0';
+	       set_default_file(&loc_time, ofile);
 	       flags |= S_F_SA_ROTAT;
 	    }
 	    else if (!strncmp(argv[opt], "-", 1))

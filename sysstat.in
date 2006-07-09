@@ -1,5 +1,9 @@
 #!/bin/sh
 #
+# chkconfig: 235 03 97
+# description: sysstat utilities for \
+#              system monitoring.
+#
 # Author: Klaus.Franken@fth2.siemens.de
 # Die Okt 12 10:05:41 EDT 1999
 #
@@ -10,6 +14,8 @@
 #	Rewritten from scratch. Call sadc instead of sar.
 # 2004/10/10 - Sebastien Godard (sysstat <at> wanadoo.fr)
 #	Now returns real exit code.
+# 2006/07/05 - Sebastien Godard (sysstat <at> wanadoo.fr)
+#	Added support for chkconfig
 #
 # INIT_DIR/sysstat
 #

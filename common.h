@@ -24,6 +24,7 @@
 /* Keywords */
 #define K_ISO	"ISO"
 #define K_ALL	"ALL"
+#define K_UTC	"UTC"
 
 /* Files */
 #define STAT		"/proc/stat"
@@ -56,8 +57,9 @@
  */
 #define DIM	3
 
-/* Environment variable */
-#define TM_FMT_VAR	"S_TIME_FORMAT"
+/* Environment variables */
+#define ENV_TIME_FMT	"S_TIME_FORMAT"
+#define ENV_TIME_DEFTM	"S_TIME_DEF_TIME"
 
 #define DIGITS		"0123456789"
 
@@ -67,11 +69,16 @@
 
 #define DISP_HDR	1
 
+#define HZ		hz
+extern unsigned int hz;
+
 /* Functions */
 extern char	   *device_name(char *);
+extern void	    get_HZ(void);
 extern unsigned int get_disk_io_nr(void);
 extern int	    get_kb_shift(void);
 extern time_t	    get_localtime(struct tm *);
+extern time_t	    get_time(struct tm *);
 extern int	    get_cpu_nr(unsigned int);
 extern int	    get_sysfs_dev_nr(int);
 extern int	    get_diskstats_dev_nr(int, int);

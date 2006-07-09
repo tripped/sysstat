@@ -4,7 +4,7 @@ sysstat: System performance tools for the Linux operating system...
 
 The latest version of sysstat can always be found on my web site at:
 
-http://perso.wanadoo.fr/sebastien.godard/
+http://perso.orange.fr/sebastien.godard/
 
 sysstat package is also available at ibiblio's Linux archive
 in the following directory:
@@ -109,6 +109,8 @@ ${RC_DIR}=/sbin/init.d/		for [SUSE <= 7.0]
 ${RC_DIR}=/etc/init.d/		for [SUSE >= 7.1]
 ${RC_DIR}=/etc/			for [DEBIAN]
 
+sysstat may also install some links in ${RC_DIR}/rc[0146].d/ directory
+if chkconfig is used.
 
 MISCELLANEOUS
 -------------

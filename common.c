@@ -28,7 +28,6 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#include <sys/param.h>	/* for HZ */
 
 /*
  * For PAGE_SIZE (which may be itself a call to getpagesize()).
@@ -49,6 +48,8 @@
 #define _(string) (string)
 #endif
 
+/* Get HZ from the kernel */
+unsigned int hz;
 
 /*
  ***************************************************************************
@@ -65,7 +66,37 @@ void print_version(void)
 
 /*
  ***************************************************************************
- * Get current date or time
+ * Get date and time and take into account <ENV_TIME_DEFTM> variable
+ ***************************************************************************
+ */
+time_t get_time(struct tm *loc_time)
+{
+   time_t timer;
+   struct tm *ltm;
+   static int utc = 0;
+   char *e;
+
+   if (!utc) {
+      /* Read environment variable value once */
+      if ((e = getenv(ENV_TIME_DEFTM)) != NULL)
+	 utc = !strcmp(e, K_UTC);
+      utc++;
+   }
+
+   time(&timer);
+   if (utc ==  2)
+      ltm = gmtime(&timer);
+   else
+      ltm = localtime(&timer);
+
+   *loc_time = *ltm;
+   return timer;
+}
+
+
+/*
+ ***************************************************************************
+ * Get local date and time
  ***************************************************************************
  */
 time_t get_localtime(struct tm *loc_time)
@@ -326,7 +357,7 @@ inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, 
    char cur_date[64];
    char *e;
 
-   if (((e = getenv(TM_FMT_VAR)) != NULL) && !strcmp(e, K_ISO))
+   if (((e = getenv(ENV_TIME_FMT)) != NULL) && !strcmp(e, K_ISO))
       strftime(cur_date, sizeof(cur_date), "%Y-%m-%d", loc_time);
    else
       strftime(cur_date, sizeof(cur_date), "%x", loc_time);
@@ -407,6 +438,22 @@ int get_kb_shift(void)
    }
 
    return shift;
+}
+
+
+/*
+ ***************************************************************************
+ * Get number of clock ticks per second
+ ***************************************************************************
+ */
+void get_HZ(void)
+{
+   long ticks;
+
+   if ((ticks = sysconf(_SC_CLK_TCK)) < 0)
+      perror("sysconf");
+
+   hz = (unsigned int) ticks;
 }
 
 

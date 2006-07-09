@@ -2,7 +2,7 @@
 # (C) 1999-2006 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 6.1.3
+VERSION = 7.0.0
 
 include build/CONFIG
 
@@ -14,6 +14,8 @@ CHMOD = chmod
 CHOWN = chown
 # Full path to prevent from using aliases
 CP = /bin/cp
+
+CHKCONFIG = /sbin/chkconfig
 
 # Directories
 ifndef PREFIX
@@ -55,9 +57,13 @@ endif
 ifndef RC_DIR
 RC_DIR = /etc/rc.d
 endif
+RC0_DIR = $(RC_DIR)/rc0.d
+RC1_DIR = $(RC_DIR)/rc1.d
 RC2_DIR = $(RC_DIR)/rc2.d
 RC3_DIR = $(RC_DIR)/rc3.d
+RC4_DIR = $(RC_DIR)/rc4.d
 RC5_DIR = $(RC_DIR)/rc5.d
+RC6_DIR = $(RC_DIR)/rc6.d
 ifndef INIT_DIR
 INIT_DIR = /etc/rc.d/init.d
 endif
@@ -83,6 +89,7 @@ all: sa1 sa2 crontab sysstat sysstat.sysconfig sysstat.crond \
 common.o: common.c version.h common.h ioconf.h
 
 sa_common.o: sa_common.c sa.h common.h ioconf.h
+	 $(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 ioconf.o: ioconf.c ioconf.h
 
@@ -94,10 +101,8 @@ version.h: version.in
 	$(SED) s+VERSION_NUMBER+$(VERSION)+g $< > $@
 
 sadc.o: sadc.c sa.h common.h ioconf.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sadc: sadc.o libsyscom.a libsyssa.a
-	$(CC) -o $@ $(CFLAGS) $^ $(LFLAGS)
 
 sar.o: sar.c sa.h common.h
 	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
@@ -105,7 +110,6 @@ sar.o: sar.c sa.h common.h
 sar: sar.o libsyscom.a libsyssa.a
 
 sadf.o: sadf.c sadf.h sa.h common.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sadf: sadf.o libsyscom.a libsyssa.a
 
@@ -249,17 +253,25 @@ install_all: install_base
 	fi
 	if [ -d $(DESTDIR)$(INIT_DIR) ]; then \
 	   install -m 755 sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
-	   cd $(DESTDIR)$(RC2_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
-	   cd $(DESTDIR)$(RC3_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
-	   cd $(DESTDIR)$(RC5_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
+	   if [ -x $(CHKCONFIG) ]; then \
+	      cd $(DESTDIR)$(INIT_DIR) && $(CHKCONFIG) --add sysstat; \
+	   else \
+	      cd $(DESTDIR)$(RC2_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC3_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC5_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
+	   fi \
 	elif [ -d $(DESTDIR)$(RC_DIR) ]; then \
 	   install -m 755 sysstat $(DESTDIR)$(RC_DIR)/rc.sysstat; \
-	   [ -d $(DESTDIR)$(RC2_DIR) ] || mkdir -p $(DESTDIR)$(RC2_DIR); \
-	   [ -d $(DESTDIR)$(RC3_DIR) ] || mkdir -p $(DESTDIR)$(RC3_DIR); \
-	   [ -d $(DESTDIR)$(RC5_DIR) ] || mkdir -p $(DESTDIR)$(RC5_DIR); \
-	   cd $(DESTDIR)$(RC2_DIR) && ln -sf ../rc.sysstat S03sysstat; \
-	   cd $(DESTDIR)$(RC3_DIR) && ln -sf ../rc.sysstat S03sysstat; \
-	   cd $(DESTDIR)$(RC5_DIR) && ln -sf ../rc.sysstat S03sysstat; \
+	   if [ -x $(CHKCONFIG) ]; then \
+	      cd $(DESTDIR)$(RC_DIR) && $(CHKCONFIG) --add sysstat; \
+	   else \
+	      [ -d $(DESTDIR)$(RC2_DIR) ] || mkdir -p $(DESTDIR)$(RC2_DIR); \
+	      [ -d $(DESTDIR)$(RC3_DIR) ] || mkdir -p $(DESTDIR)$(RC3_DIR); \
+	      [ -d $(DESTDIR)$(RC5_DIR) ] || mkdir -p $(DESTDIR)$(RC5_DIR); \
+	      cd $(DESTDIR)$(RC2_DIR) && ln -sf ../rc.sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC3_DIR) && ln -sf ../rc.sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC5_DIR) && ln -sf ../rc.sysstat S03sysstat; \
+	   fi \
 	fi
 	install -m 644 sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
 
@@ -286,9 +298,14 @@ uninstall_base:
 	rm -f $(DESTDIR)$(RC_DIR)/rc.sysstat
 	rm -f $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
 	rm -f $(DESTDIR)$(SYSCONFIG_DIR)/sysstat.ioconf
-	rm -f $(DESTDIR)$(RC2_DIR)/S03sysstat
-	rm -f $(DESTDIR)$(RC3_DIR)/S03sysstat
-	rm -f $(DESTDIR)$(RC5_DIR)/S03sysstat
+	rm -f $(DESTDIR)$(RC2_DIR)/S??sysstat
+	rm -f $(DESTDIR)$(RC3_DIR)/S??sysstat
+	rm -f $(DESTDIR)$(RC5_DIR)/S??sysstat
+#	Delete possible kill entries installed by chkconfig
+	rm -f $(DESTDIR)$(RC0_DIR)/K??sysstat
+	rm -f $(DESTDIR)$(RC1_DIR)/K??sysstat
+	rm -f $(DESTDIR)$(RC4_DIR)/K??sysstat
+	rm -f $(DESTDIR)$(RC6_DIR)/K??sysstat
 #	Vixie cron entries also can be safely deleted here
 	rm -f $(DESTDIR)/etc/cron.d/sysstat
 #	Id. for Slackware cron entries

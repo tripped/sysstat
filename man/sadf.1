@@ -1,4 +1,4 @@
-.TH SADF 1 "APRIL 2006" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "JUNE 2006" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
@@ -69,7 +69,7 @@ Not specifying any flags selects only CPU activity.
 .SH OPTIONS
 .IP -D
 This option is equivalent to option -d below, except that the timestamp
-is always expressed in seconds since the epoch (01/01/1970 UTC).
+is always expressed in seconds since the epoch (00:00:00 UTC 01/01/1970).
 .IP -d
 Print the contents of the data file in a format that can easily
 be ingested by a relational database system. The output consists
@@ -130,8 +130,22 @@ unless option -t is used, in which case they are displayed
 in local time. The corresponding
 DTD (Document Type Definition) is included in the sysstat source package.
 It is also available at
-.I http://perso.wanadoo.fr/sebastien.godard/sysstat.dtd
+.I http://perso.orange.fr/sebastien.godard/sysstat.dtd
 
+.SH ENVIRONMENT
+The
+.B sadf
+command takes into account the following environment variable:
+
+.IP S_TIME_DEF_TIME
+If this variable exists and its value is
+.BR UTC
+then
+.B sadf
+will use UTC time instead of local time to determine the current daily data
+file located in the
+.IR /var/log/sa
+directory.
 .SH EXAMPLES
 .B sadf -d /var/log/sa/sa21 -- -r -n DEV
 .RS
@@ -167,4 +181,4 @@ Sebastien Godard (sysstat <at> wanadoo.fr)
 .BR iostat (1),
 .BR vmstat (8)
 
-.I http://perso.wanadoo.fr/sebastien.godard/
+.I http://perso.orange.fr/sebastien.godard/

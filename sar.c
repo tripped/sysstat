@@ -25,7 +25,6 @@
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
-#include <sys/param.h>	/* for HZ */
 
 #include "sa.h"
 #include "common.h"
@@ -66,7 +65,6 @@ struct tstamp tm_start, tm_end;
 short dis_hdr = -1;
 int pid_nr = 0;
 char *args[MAX_ARGV_NR];
-
 
 /*
  ***************************************************************************
@@ -231,8 +229,6 @@ void prep_smp_option(unsigned int cpu_nr)
 void set_loc_time(short curr)
 {
    struct tm *ltm;
-
-   /* NOTE: loc_time structure must have been init'ed before! */
 
    /* Check if option -t was specified on the command line */
    if (PRINT_TRUE_TIME(flags)) {
@@ -1160,7 +1156,7 @@ void read_extra_stats(short curr, int ifd)
 
 /*
  ***************************************************************************
- * Read a bunch of statistics sent by the data collector
+ * Read a bunch of statistics sent by the data collector (sadc)
  ***************************************************************************
  */
 void read_stat_bunch(short curr)
@@ -1305,7 +1301,7 @@ void read_stats_from_file(char from_file[])
    allocate_structures(USE_SA_FILE);
 
    /* Print report header */
-   print_report_hdr(S_O_NONE, flags, &loc_time, &file_hdr);
+   print_report_hdr(flags, &loc_time, &file_hdr);
 
    /* Read system statistics from file */
    do {
@@ -1451,7 +1447,7 @@ void read_stats(void)
    allocate_structures(USE_SADC);
 
    /* Print report header */
-   print_report_hdr(S_O_NONE, flags, &loc_time, &file_hdr);
+   print_report_hdr(flags, &loc_time, &file_hdr);
 
    /* Read system statistics sent by the data collector */
    read_stat_bunch(0);
@@ -1518,6 +1514,9 @@ int main(int argc, char **argv)
    char from_file[MAX_FILE_LEN], to_file[MAX_FILE_LEN];
    char ltemp[20];
 
+   /* Get HZ */
+   get_HZ();
+
    /* Compute page shift in kB */
    kb_shift = get_kb_shift();
 
@@ -1572,12 +1571,8 @@ int main(int argc, char **argv)
 	    strncpy(from_file, argv[opt++], MAX_FILE_LEN);
 	    from_file[MAX_FILE_LEN - 1] = '\0';
 	 }
-	 else {
-	    get_localtime(&loc_time);
-	    snprintf(from_file, MAX_FILE_LEN,
-		     "%s/sa%02d", SA_DIR, loc_time.tm_mday);
-	    from_file[MAX_FILE_LEN - 1] = '\0';
-	 }
+	 else
+	    set_default_file(&loc_time, from_file);
       }
 
       else if (!strcmp(argv[opt], "-s")) {
@@ -1693,12 +1688,8 @@ int main(int argc, char **argv)
 
    /* 'sar' is equivalent to 'sar -f' */
    if ((argc == 1) ||
-       ((interval < 0) && !from_file[0] && !to_file[0])) {
-      get_localtime(&loc_time);
-      snprintf(from_file, MAX_FILE_LEN,
-	       "%s/sa%02d", SA_DIR, loc_time.tm_mday);
-      from_file[MAX_FILE_LEN - 1] = '\0';
-   }
+       ((interval < 0) && !from_file[0] && !to_file[0]))
+      set_default_file(&loc_time, from_file);
 
    /*
     * Check option dependencies

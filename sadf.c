@@ -26,7 +26,6 @@
 #include <unistd.h>
 #include <time.h>
 #include <errno.h>
-#include <sys/param.h>	/* for HZ */
 
 #include "sadf.h"
 #include "sa.h"
@@ -65,7 +64,6 @@ struct tm loc_time;
 /* Contain the date specified by -s and -e options */
 struct tstamp tm_start, tm_end;
 char *args[MAX_ARGV_NR];
-
 
 /*
  ***************************************************************************
@@ -129,13 +127,11 @@ void set_loc_time(short curr)
 {
    struct tm *ltm;
 
-   /* NOTE: loc_time structure must have been init'ed before! */
    if (PRINT_TRUE_TIME(flags) &&
        ((format == S_O_DB_OPTION) || (format == S_O_XML_OPTION)))
-      /* '-d -t' or '-x -t'. Option -t is ignored with option -p and -D */
+      /* Option -t is valid only with options -d and -x */
       ltm = localtime(&file_stats[curr].ust_time);
    else
-      /* '-p' od '-D' or '-d' or '-x' */
       ltm = gmtime(&file_stats[curr].ust_time);
 
    loc_time = *ltm;
@@ -1440,7 +1436,7 @@ void display_xml_header(short *tab)
 {
    printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
    printf("<!DOCTYPE Configure PUBLIC \"DTD v%s sysstat //EN\"\n", XML_DTD_VERSION);
-   printf("\"http://perso.wanadoo.fr/sebastien.godard/sysstat.dtd\">\n");
+   printf("\"http://perso.orange.fr/sebastien.godard/sysstat.dtd\">\n");
 
    xprintf(*tab, "<sysstat>");
    xprintf(++(*tab), "<sysdata-version>%s</sysdata-version>", XML_DTD_VERSION);
@@ -1785,8 +1781,7 @@ void read_stats_from_file(char dfile[])
    /* Perform required allocations */
    allocate_structures(USE_SA_FILE);
 
-   /* Print report header if needed */
-   print_report_hdr(format, flags, &loc_time, &file_hdr);
+   set_hdr_loc_time(flags, &loc_time, &file_hdr);
 
    if (format == S_O_XML_OPTION)
      xml_display_loop(ifd);
@@ -1808,6 +1803,9 @@ int main(int argc, char **argv)
    int i;
    char dfile[MAX_FILE_LEN];
    short dum;
+
+   /* Get HZ */
+   get_HZ();
 
    /* Compute page shift in kB */
    kb_shift = get_kb_shift();
@@ -1926,10 +1924,7 @@ int main(int argc, char **argv)
 	 if (!dfile[0]) {
 	    if (!strcmp(argv[opt], "-")) {
 	       /* File name set to '-' */
-	       get_localtime(&loc_time);
-	       snprintf(dfile, MAX_FILE_LEN,
-			"%s/sa%02d", SA_DIR, loc_time.tm_mday);
-	       dfile[MAX_FILE_LEN - 1] = '\0';
+	       set_default_file(&loc_time, dfile);
 	       opt++;
 	    }
 	    else if (!strncmp(argv[opt], "-", 1))
@@ -1969,12 +1964,8 @@ int main(int argc, char **argv)
    }
 
    /* sadf reads current daily data file by default */
-   if (!dfile[0]) {
-      get_localtime(&loc_time);
-      snprintf(dfile, MAX_FILE_LEN,
-	       "%s/sa%02d", SA_DIR, loc_time.tm_mday);
-      dfile[MAX_FILE_LEN - 1] = '\0';
-   }
+   if (!dfile[0])
+      set_default_file(&loc_time, dfile);
 
    /*
     * Display all the contents of the daily data file if the count parameter

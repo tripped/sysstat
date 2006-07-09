@@ -1,4 +1,4 @@
-.TH SAR 1 "APRIL 2006" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "JUNE 2006" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -979,7 +979,7 @@ root.
 .SH ENVIRONMENT
 The
 .B sar
-command takes into account the following environment variable:
+command takes into account the following environment variables:
 
 .IP S_TIME_FORMAT
 If this variable exists and its value is
@@ -989,6 +989,17 @@ The
 .B sar
 command will use the ISO 8601 format (YYYY-MM-DD) instead.
 
+.IP S_TIME_DEF_TIME
+If this variable exists and its value is
+.BR UTC
+then
+.B sar
+will save its data in UTC time (data will still be displayed in local time).
+.B sar
+will also use UTC time instead of local time to determine the current daily
+data file located in the
+.IR /var/log/sa
+directory.
 .SH EXAMPLES
 .B sar -u 2 5
 .RS
@@ -1039,4 +1050,4 @@ Sebastien Godard (sysstat <at> wanadoo.fr)
 .BR iostat (1),
 .BR vmstat (8)
 
-.I http://perso.wanadoo.fr/sebastien.godard/
+.I http://perso.orange.fr/sebastien.godard/

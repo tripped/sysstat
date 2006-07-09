@@ -1,4 +1,4 @@
-.TH SADC 8 "OCTOBER 2005" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "JUNE 2006" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
@@ -101,6 +101,22 @@ this situation can result in a corrupted system activity file.
 .IP -V
 Print version number then exit.
 
+.SH ENVIRONMENT
+The
+.B sadc
+command takes into account the following environment variable:
+
+.IP S_TIME_DEF_TIME
+If this variable exists and its value is
+.BR UTC
+then
+.B sadc
+will save its data in UTC time.
+.B sadc
+will also use UTC time instead of local time to determine the current
+daily data file located in the
+.IR /var/log/sa
+directory.
 .SH EXAMPLES
 .B /usr/lib/sa/sadc 1 10 /tmp/datafile
 .RS
@@ -133,4 +149,4 @@ Sebastien Godard (sysstat <at> wanadoo.fr)
 .BR iostat (1),
 .BR vmstat (8)
 
-.I http://perso.wanadoo.fr/sebastien.godard/
+.I http://perso.orange.fr/sebastien.godard/

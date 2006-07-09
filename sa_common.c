@@ -29,7 +29,6 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
-#include <sys/param.h>	/* for HZ */
 
 #include "sa.h"
 #include "common.h"
@@ -289,6 +288,20 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
 
 /*
  ***************************************************************************
+ * Set current daily datafile
+ ***************************************************************************
+ */
+void set_default_file(struct tm *loc_time, char *datafile)
+{
+   get_time(loc_time);
+   snprintf(datafile, MAX_FILE_LEN,
+	    "%s/sa%02d", SA_DIR, loc_time->tm_mday);
+   datafile[MAX_FILE_LEN - 1] = '\0';
+}
+
+
+/*
+ ***************************************************************************
  * Set interval value.
  * g_itv is the interval in jiffies multiplied by the # of proc.
  * itv is the interval in jiffies.
@@ -331,16 +344,17 @@ void get_itv_value(struct file_stats *file_stats_curr,
 
 /*
  ***************************************************************************
- * Print report header
+ * Fill loc_time structure according to data saved in file header
  ***************************************************************************
  */
-void print_report_hdr(unsigned short format, unsigned int flags,
-		      struct tm *loc_time, struct file_hdr *file_hdr)
+void set_hdr_loc_time(unsigned int flags, struct tm *loc_time,
+		      struct file_hdr *file_hdr)
 {
+   struct tm *loc_t;
 
    if (PRINT_TRUE_TIME(flags)) {
       /* Get local time */
-      get_localtime(loc_time);
+      get_time(loc_time);
 
       loc_time->tm_mday = file_hdr->sa_day;
       loc_time->tm_mon  = file_hdr->sa_month;
@@ -352,13 +366,26 @@ void print_report_hdr(unsigned short format, unsigned int flags,
       loc_time->tm_hour = loc_time->tm_min = loc_time->tm_sec = 0;
       mktime(loc_time);
    }
-   else
-      loc_time = localtime(&(file_hdr->sa_ust_time));
+   else {
+      loc_t = localtime(&(file_hdr->sa_ust_time));
+      *loc_time = *loc_t;
+   }
+}
 
-   if (!format)
-      /* No output format (we are not using sadf) */
-      print_gal_header(loc_time, file_hdr->sa_sysname, file_hdr->sa_release,
-		       file_hdr->sa_nodename);
+
+/*
+ ***************************************************************************
+ * Print report header
+ ***************************************************************************
+ */
+void print_report_hdr(unsigned int flags, struct tm *loc_time,
+		      struct file_hdr *file_hdr)
+{
+
+   set_hdr_loc_time(flags, loc_time, file_hdr);
+
+   print_gal_header(loc_time, file_hdr->sa_sysname, file_hdr->sa_release,
+		    file_hdr->sa_nodename);
 }
 
 

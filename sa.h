@@ -118,7 +118,6 @@
 #define WANT_ALL_PIDS(m)	(((m) & S_F_X_ALL) == S_F_X_ALL)
 
 /* Output formats (O_= Output)  */
-#define S_O_NONE		0
 #define S_O_HDR_OPTION		1
 #define S_O_PPC_OPTION		2
 #define S_O_DB_OPTION		3
@@ -547,8 +546,8 @@ extern void	    prep_file_for_reading(int *, char *, struct file_hdr *,
 extern void	    get_itv_value(struct file_stats *, struct file_stats *,
 				  unsigned int, unsigned long long *,
 				  unsigned long long *);
-extern void	    print_report_hdr(unsigned short, unsigned int,
-				     struct tm *, struct file_hdr *);
+extern void	    print_report_hdr(unsigned int, struct tm *,
+				     struct file_hdr *);
 extern int	    sa_fread(int, void *, int, int);
 extern void	    salloc_cpu_array(struct stats_one_cpu * [], unsigned int);
 extern void	    salloc_disk_array(struct disk_stats * [], int);
@@ -557,5 +556,8 @@ extern void	    salloc_irqcpu_array(struct stats_irq_cpu * [],
 extern void	    salloc_net_dev_array(struct stats_net_dev * [],
 					 unsigned int);
 extern void	    salloc_serial_array(struct stats_serial * [], int);
+extern void	    set_default_file(struct tm *, char *);
+extern void	    set_hdr_loc_time(unsigned int, struct tm *,
+				     struct file_hdr *);
 
 #endif  /* _SA_H */

@@ -1,6 +1,6 @@
 # NLS support for the sysstat package.
 # Copyright (C) 1999 Free Software Foundation, Inc.
-# Sébastien GODARD <sebastien.godard@wanadoo.fr>, 1999.
+# Sébastien GODARD <sysstat [at] wanadoo.fr>, 1999.
 #
 msgid ""
 msgstr ""

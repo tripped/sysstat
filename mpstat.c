@@ -28,7 +28,6 @@
 #include <errno.h>
 #include <ctype.h>
 #include <sys/utsname.h>
-#include <sys/param.h>	/* for HZ */
 
 #include "mpstat.h"
 #include "common.h"
@@ -47,10 +46,10 @@ struct mp_stats *st_mp_cpu[DIM];
 /* NOTE: Use array of _char_ for bitmaps to avoid endianness problems...*/
 unsigned char *cpu_bitmap;	/* Bit 0: Global; Bit 1: 1st proc; etc. */
 struct mp_timestamp st_mp_tstamp[DIM];
-/* Nb of processors on the machine */
-int cpu_nr = 0;
 long interval = -1, count = 0;
 
+/* Nb of processors on the machine */
+int cpu_nr = 0;
 
 /*
  ***************************************************************************
@@ -492,6 +491,9 @@ int main(int argc, char **argv)
    /* Init National Language Support */
    init_nls();
 #endif
+
+   /* Get HZ */
+   get_HZ();
 
    /* How many processors on this machine ? */
    cpu_nr = get_cpu_nr(~0);

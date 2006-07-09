@@ -32,7 +32,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
-#include <sys/param.h>	/* for HZ */
 
 #include "iostat.h"
 #include "common.h"
@@ -794,7 +793,7 @@ void write_stat_header(int flags, int *fctr)
 {
    if (DISPLAY_EXTENDED(flags)) {
       /* Extended stats */
-      printf("Device:    rrqm/s wrqm/s   r/s   w/s");
+      printf("Device:         rrqm/s   wrqm/s   r/s   w/s");
       if (DISPLAY_MEGABYTES(flags)) {
 	 printf("    rMB/s    wMB/s");
 	 *fctr = 2048;
@@ -866,11 +865,11 @@ void write_ext_stat(int curr, unsigned long long itv, int flags, int fctr,
 
    arqsz = nr_ios ? (rd_sec + wr_sec) / nr_ios : 0.0;
 
-   printf("%-10s", shi->name);
+   printf("%-13s", shi->name);
    if (strlen(shi->name) > 10)
       printf("\n          ");
    /*       rrq/s wrq/s   r/s   w/s  rsec  wsec  rqsz  qusz await svctm %util */
-   printf(" %6.2f %6.2f %5.2f %5.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
+   printf(" %8.2f %8.2f %5.2f %5.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
 	  S_VALUE(ioj->rd_merges, ioi->rd_merges, itv),
 	  S_VALUE(ioj->wr_merges, ioi->wr_merges, itv),
 	  S_VALUE(ioj->rd_ios, ioi->rd_ios, itv),
@@ -1134,6 +1133,9 @@ int main(int argc, char **argv)
    /* Init National Language Support */
    init_nls();
 #endif
+
+   /* Get HZ */
+   get_HZ();
 
    /* Allocate structures for device list */
    if (argc > 1)

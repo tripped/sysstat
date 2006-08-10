@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=Isag System Activity Grapher
+Comment=Interactive System Activity Grapher for sysstat
+Exec=isag
+Type=Application
+Categories=System;Monitor;

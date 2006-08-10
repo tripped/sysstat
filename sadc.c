@@ -666,7 +666,8 @@ void open_ofile(int *ofd, char ofile[], size_t *file_stats_size, unsigned int *f
 	  */
 	 if (file_hdr.sa_serial != serial_nr) {
 	    serial_nr = file_hdr.sa_serial;
-	    SREALLOC(st_serial, struct stats_serial, STATS_SERIAL_SIZE * serial_nr);
+	    if (serial_nr)
+	    	SREALLOC(st_serial, struct stats_serial, STATS_SERIAL_SIZE * serial_nr);
 	 }
 	 if (file_hdr.sa_iface != iface_nr) {
 	    iface_nr = file_hdr.sa_iface;

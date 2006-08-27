@@ -29,13 +29,6 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
-/*
- * For PAGE_SIZE (which may be itself a call to getpagesize()).
- * PAGE_SHIFT no longer necessarily exists in <asm/page.h>. So
- * we use PAGE_SIZE to compute PAGE_SHIFT...
- */
-#include <asm/page.h>
-
 #include "version.h"
 #include "common.h"
 #include "ioconf.h"
@@ -431,7 +424,7 @@ int get_kb_shift(void)
    int shift = 0;
    int size;
 
-   size = PAGE_SIZE >> 10; /* Assume that a page has a minimum size of 1 kB */
+   size = sysconf(_SC_PAGE_SIZE) >> 10; /* Assume that a page has a minimum size of 1 kB */
    while (size > 1) {
       shift++;
       size >>= 1;

@@ -1,0 +1,166 @@
+# Swedish translation of the sysstat package.
+# Copyright (C) 1999, 2006 Free Software Foundation, Inc.
+# Daniel Nylander <po@danielnylander.se>, 2006.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: sysstat 3.0\n"
+"PO-Revision-Date: 2006-09-05 15:57+0100\n"
+"Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
+"Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: \n"
+
+#: common.c
+msgid ""
+"sysstat version %s\n"
+"(C) Sebastien Godard\n"
+msgstr ""
+"sysstat version %s\n"
+"(C) Sebastien Godard\n"
+
+#: mpstat.c:62
+msgid ""
+"Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
+"Options are:\n"
+"[ -P { <cpu> | ALL } ] [ -V ]\n"
+msgstr ""
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ]\n"
+"Flaggor:\n"
+"[ -P { <processor> | ALL } ] [ -V ]\n"
+
+#: iostat.c:73
+msgid ""
+"Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
+"Options are:\n"
+"[ -c | -d ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+"[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"
+msgstr ""
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ]\n"
+"Flaggor:\n"
+"[ -c | -d ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+"[ <enhet> [ ... ] | ALL ] [ -p [ <enhet> | ALL ] ]\n"
+
+#: iostat.c:555
+msgid "Time: %s\n"
+msgstr "Tid: %s\n"
+
+#: iostat.c
+msgid "-x and -p options are mutually exclusive\n"
+msgstr "flaggorna -x och -p är ömsesidigt uteslutande\n"
+
+#: sar.c:91
+msgid ""
+"Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
+"Options are:\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
+"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
+"[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
+"[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
+"[ -o [ <filename> ] | -f [ <filename> ] ]\n"
+"[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+msgstr ""
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ]\n"
+"Flaggor:\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <intervall> ] [ -p ] [ -q ]\n"
+"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <processor> | ALL } ]\n"
+"[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
+"[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
+"[ -o [ <filnamn> ] | -f [ <filnamn> ] ]\n"
+"[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+
+#: sar.c:184
+msgid "Not an SMP machine...\n"
+msgstr "Inte en flerprocessorsmaskin...\n"
+
+#: sar.c:194
+msgid "Not that many processors!\n"
+msgstr "Inte så många processorer!\n"
+
+#: sar.c:284
+msgid "Error while reading system activity file: %s\n"
+msgstr "Fel vid inläsning av systemaktivitetsfil: %s\n"
+
+#: sar.c:288
+msgid "End of system activity file unexpected\n"
+msgstr "Oväntat slut på systemaktivitetsfil\n"
+
+#: sar.c:402
+msgid "Cannot open %s: %s\n"
+msgstr "Kan inte öppna %s: %s\n"
+
+#: sar.c:521
+msgid "Invalid system activity file: %s (%#x)\n"
+msgstr "Ogiltig systemaktivitetsfil: %s (%#x)\n"
+
+msgid "Invalid data format\n"
+msgstr "Ogiltigt dataformat\n"
+
+#: sar.c:
+msgid "Average:"
+msgstr "Medel:"
+
+#: sar.c:568
+msgid "Requested activities not available in file\n"
+msgstr "Begärda aktiviteter inte tillgängliga i filen\n"
+
+#: sar.c:797
+msgid "Cannot write system activity file header: %s\n"
+msgstr "Kan inte skriva systemaktivitetsfilhuvud: %s\n"
+
+#: sar.c:970
+msgid "Cannot write data to system activity file: %s\n"
+msgstr "Kan inte skriva data till systemaktivitetsfil: %s\n"
+
+#: sar.c:1074
+msgid "Please give a smaller interval value\n"
+msgstr "Ange ett mindre intervallvärde\n"
+
+#: sar.c:1419
+msgid "Not reading from a system activity file (use -f option)\n"
+msgstr "Läser inte från en systemaktivitetsfil (använd flaggan -f)\n"
+
+#: sar.c:1610
+msgid "-f and -o options are mutually exclusive\n"
+msgstr "flaggorna -f och -o är ömsesidigt uteslutande\n"
+
+#: sar.c:1846
+msgid "Requested activities not available\n"
+msgstr "Begärda aktiviteter är inte tillgängliga\n"
+
+#: sadc.c:74
+msgid ""
+"Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
+"Options are:\n"
+"[ -d ] [ -F ] [ -I ] [ -V ]\n"
+msgstr ""
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ] [ <utfil> ]\n"
+"Flaggor:\n"
+"[ -d ] [ -F ] [ -I ] [ -V ]\n"
+
+#: sadc.c:614
+msgid "Cannot append data to that file\n"
+msgstr "Kan inte lägga till data till den filen\n"
+
+#: common.c:91
+msgid "Cannot handle so many processors!\n"
+msgstr "Kan inte hantera så många processorer!\n"
+
+#: sadf.c:75
+msgid ""
+"Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
+"Options are:\n"
+"[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
+"[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_options...> ]\n"
+msgstr ""
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ] [ <datafil> ]\n"
+"Flaggor:\n"
+"[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
+"[ -P { <processor> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_flaggor...> ]\n"
+

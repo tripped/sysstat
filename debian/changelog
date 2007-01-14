@@ -1,11 +1,11 @@
-sysstat (7.0.0-3) UNRELEASED; urgency=low
+sysstat (7.0.0-2.9) UNRELEASED; urgency=low
 
   * systat.config: don't overwrite systat/enable debconf variable unless
     /etc/default/sysstat exists (closes: #306504).
+  * Add Swedish PO translation  (closes: #386136).
   * ioconf.c: Fix FTBFS on GNU/kFreeBSD (closes: #395038).
 
-
- -- Robert Luberda <robert@debian.org>  Thu, 11 Jan 2007 21:04:17 +0100
+ -- Robert Luberda <robert@debian.org>  Sun, 14 Jan 2007 12:54:21 +0100
 
 sysstat (7.0.0-2) unstable; urgency=low
 

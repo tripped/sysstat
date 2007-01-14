@@ -1,15 +1,15 @@
 #! /bin/sh
 # vim:ft=sh:et
 ### BEGIN INIT INFO
-# Provides:         sysstat
-# Required-Start:   $local_fs $syslog
+# Provides:          sysstat
+# Required-Start:    $local_fs $syslog
 # Required-Stop:    
-# Default-Start:    2 3 4 5
-# Default-Stop:     0 1 6
-# ShortDescription: Start/stop sysstat's sadc
-# Description:      Sysstat contains system performance tools for Linux
-#                   The init file runs the sadc command in order to write
-#                   the "LINUX RESTART" mark to the daily data file
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start/stop sysstat's sadc
+# Description:       Sysstat contains system performance tools for Linux
+#                    The init file runs the sadc command in order to write
+#                    the "LINUX RESTART" mark to the daily data file
 ### END INIT INFO
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin

@@ -1,3 +1,12 @@
+sysstat (7.0.0-3) UNRELEASED; urgency=low
+
+  * systat.config: don't overwrite systat/enable debconf variable unless
+    /etc/default/sysstat exists (closes: #306504).
+  * ioconf.c: Fix FTBFS on GNU/kFreeBSD (closes: #395038).
+
+
+ -- Robert Luberda <robert@debian.org>  Thu, 11 Jan 2007 21:04:17 +0100
+
 sysstat (7.0.0-2) unstable; urgency=low
 
   * common.c: Fix FTBFS on powerpc (closes: #384307).

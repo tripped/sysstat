@@ -25,10 +25,12 @@ The following people have contributed to 'sysstat' in one way or another:
 	    translation.
 	  * Robert Luberda <robert [at] debian.org> for the translation into
 	    Polish.
-	  * Miroslav David <md20128 [at] decef.elf.stuba.sk> for the slovak
+	  * Miroslav David <md20128 [at] decef.elf.stuba.sk> for the Slovak
 	    translation.
 	  * Hideki Yamane <henrich [at] samba.gr.jp> for the translation into
 	    Japanese.
+	  * Daniel Nylander <po [at] danielnylander.se> for the Swedish
+	    translation.
 
 	Carl-Christian Weber <ccweber [at] itz-koeln.de> helped me to make sar
 	work on SMP machines.
@@ -89,6 +91,12 @@ The following people have contributed to 'sysstat' in one way or another:
 	Dwight Tovey <dtovey [at] emergecore.com> updated sysstat so that
 	it may be installed on Slackware.
 
+	Bryce Harrington <bryce [at] osdl.org> helped me to add support for
+	hotplug CPU to sysstat.
+
+	Ivana Varekova <varekova [at] redhat.com> added support for iostat
+	NFS statistics.
+
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
@@ -112,6 +120,7 @@ I would also thank the following people for their hints or bug reports
 	Erik Jacobson <erikj@sub[...].com>	
 	Jordan <ledzep37@hom[...].com>	
 	Jurriaan <thunder7@xs4[...].nl>
+	Ilya Katsnelson <ilya.katsnelson@mot[...].com>
 	Byeong-taek Lee <btlee@psy[...].kr>
 	Ivo Letzas <letzas@for[...].nu>	
 	Robert Luberda <robert@deb[...].org>

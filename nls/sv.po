@@ -1,22 +1,22 @@
-# NLS support for the sysstat package.
-# Copyright (C) 1999 Free Software Foundation, Inc.
-# Sébastien GODARD <sysstat [at] wanadoo.fr>, 1999.
+# Swedish translation of the sysstat package.
+# Copyright (C) 1999, 2006 Free Software Foundation, Inc.
+# Daniel Nylander <po@danielnylander.se>, 2006.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: sysstat 3.0\n"
-"PO-Revision-Date: 2000-01-12 20:17\n"
-"Last-Translator: Gert Brits <webmaster@linuxhelp.za.net>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2006-09-05 15:57+0100\n"
+"Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
+"Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=ISO-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: \n"
 
 #: common.c
 msgid "sysstat version %s\n"
 "(C) Sebastien Godard\n"
-msgstr "sysstat weergawe %s\n"
+msgstr "sysstat version %s\n"
 "(C) Sebastien Godard\n"
 
 #: mpstat.c:62
@@ -25,9 +25,9 @@ msgid ""
 "Options are:\n"
 "[ -P { <cpu> | ALL } ] [ -V ]\n"
 msgstr ""
-"Gebruik: %s [ opsies... ] [ <interval> [ <nommer> ] ]\n"
-"Opsies moontlik:\n"
-"[ -P { <cpu> | ALL } ] [ -V ]\n"
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ]\n"
+"Flaggor:\n"
+"[ -P { <processor> | ALL } ] [ -V ]\n"
 
 #: iostat.c:73
 msgid ""
@@ -36,18 +36,18 @@ msgid ""
 "[ -c ] [ -d ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
 "[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"
 msgstr ""
-"Gebruik: %s [ opsies... ] [ <interval> [ <nommer> ] ]\n"
-"Opsies moontlik:\n"
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ]\n"
+"Flaggor:\n"
 "[ -c ] [ -d ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"
+"[ <enhet> [ ... ] | ALL ] [ -p [ <enhet> | ALL ] ]\n"
 
 #: iostat.c:555
 msgid "Time: %s\n"
-msgstr "Tyd:  %s\n"
+msgstr "Tid: %s\n"
 
 #: iostat.c
 msgid "-x and -p options are mutually exclusive\n"
-msgstr "Opsies -x en -p is beide uitgesluit\n"
+msgstr "flaggorna -x och -p är ömsesidigt uteslutande\n"
 
 #: sar.c:91
 msgid ""
@@ -61,77 +61,75 @@ msgid ""
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr ""
-"Gebruik: %s [ opsies... ] [ <interval> [ <nommer> ] ]\n"
-"Opsies moontlik:\n"
-"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
-"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n" 
-"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n" 
-"[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n" 
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ]\n"
+"Flaggor:\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <intervall> ] [ -p ] [ -q ]\n"
+"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <processor> | ALL } ]\n"
+"[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
 "[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
-"[ -o [ <leer> ] | -f [ <leer> ] ]\n"
+"[ -o [ <filnamn> ] | -f [ <filnamn> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 
 #: sar.c:184
 msgid "Not an SMP machine...\n"
-msgstr "Nie 'n SMP rekenaar nie...\n"
+msgstr "Inte en flerprocessorsmaskin...\n"
 
 #: sar.c:194
 msgid "Not that many processors!\n"
-msgstr "Nie soveel proseseerders nie !\n"
+msgstr "Inte så många processorer!\n"
 
 #: sar.c:284
 msgid "Error while reading system activity file: %s\n"
-msgstr "Probleem gekry met die lees van die sisteem aktiviteit leer: %s\n"
+msgstr "Fel vid inläsning av systemaktivitetsfil: %s\n"
 
 #: sar.c:288
 msgid "End of system activity file unexpected\n"
-msgstr "Einde van sisteem aktiviteit leer onbeplan geeindig\n"
+msgstr "Oväntat slut på systemaktivitetsfil\n"
 
 #: sar.c:402
 msgid "Cannot open %s: %s\n"
-msgstr "Probleem met oopmaak van %s: %s\n"
+msgstr "Kan inte öppna %s: %s\n"
 
 #: sar.c:521
 msgid "Invalid system activity file: %s (%#x)\n"
-msgstr "Ongemagtige aktiviteit proses: %s (%#x)\n"
+msgstr "Ogiltig systemaktivitetsfil: %s (%#x)\n"
 
 #:
 msgid "Invalid data format\n"
-msgstr "Verkeerde data formaat\n"
+msgstr "Ogiltigt dataformat\n"
 
 #: sar.c:
 msgid "Average:"
-msgstr "Gemideld:"
+msgstr "Medel:"
 
 #: sar.c:568
 msgid "Requested activities not available in file\n"
-msgstr "Aangevraagte data is nie beskikbaar in leer nie\n"
+msgstr "Begärda aktiviteter inte tillgängliga i filen\n"
 
 #: sar.c:797
 msgid "Cannot write system activity file header: %s\n"
-msgstr "Probleem met skryf van sisteem aktiviteit hoof: %s\n"
+msgstr "Kan inte skriva systemaktivitetsfilhuvud: %s\n"
 
 #: sar.c:970
 msgid "Cannot write data to system activity file: %s\n"
-msgstr "Probleem met skryf van sisteem aktiviteit leer: %s\n"
+msgstr "Kan inte skriva data till systemaktivitetsfil: %s\n"
 
 #: sar.c:1074
 msgid "Please give a smaller interval value\n"
-msgstr "Gee asseblief 'n kleiner interval nommer\n"
+msgstr "Ange ett mindre intervallvärde\n"
 
 #: sar.c:1419
 msgid "Not reading from a system activity file (use -f option)\n"
-msgstr ""
-"Kan nie van sisteem aktiviteit leer lees nie "
-"(gebruik opsie -f)\n"
+msgstr "Läser inte från en systemaktivitetsfil (använd flaggan -f)\n"
 
 #: sar.c:1610
 msgid "-f and -o options are mutually exclusive\n"
-msgstr "Opsies -f en -o is beide uitgesluit\n"
+msgstr "flaggorna -f och -o är ömsesidigt uteslutande\n"
 
 #: sar.c:1846
 msgid "Requested activities not available\n"
-msgstr "Aangevraagte aktiviteite nie beskikbaar nie\n"
+msgstr "Begärda aktiviteter är inte tillgängliga\n"
 
 #: sadc.c:74
 msgid ""
@@ -139,17 +137,17 @@ msgid ""
 "Options are:\n"
 "[ -d ] [ -F ] [ -I ] [ -V ]\n"
 msgstr ""
-"Gebruik: %s [ opsies... ] [ <interval> [ <nommer> ] ] [ <uitleer> ]\n"
-"Opsies moontlik:\n"
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ] [ <utfil> ]\n"
+"Flaggor:\n"
 "[ -d ] [ -F ] [ -I ] [ -V ]\n"
 
 #: sadc.c:614
 msgid "Cannot append data to that file\n"
-msgstr "Kan nie data byskryf by die file nie\n"
+msgstr "Kan inte lägga till data till den filen\n"
 
 #: common.c:91
 msgid "Cannot handle so many processors!\n"
-msgstr "Kan nie soveel proseseerders hanteer nie !\n"
+msgstr "Kan inte hantera så många processorer!\n"
 
 #: sadf.c:75
 msgid ""
@@ -159,8 +157,8 @@ msgid ""
 "[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_options...> ]\n"
 msgstr ""
-"Gebruik: %s [ opsies... ] [ <interval> [ <nommer> ] ] [ <leer> ]\n"
-"Opsies moontlik:\n"
-"[ -d [ -D | -H | -p | -x ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ -- <sar_opsies...> ]\n"
+"Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ] [ <datafil> ]\n"
+"Flaggor:\n"
+"[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
+"[ -P { <processor> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_flaggor...> ]\n"

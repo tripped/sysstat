@@ -49,11 +49,14 @@
 
 struct comm_stats  comm_stats[2];
 struct io_stats *st_iodev[2];
-struct io_hdr_stats *st_hdr_iodev;
+struct io_nfs_stats *st_ionfs[2];
+struct io_hdr_stats *st_hdr_iodev, *st_hdr_ionfs;
 struct io_dlist *st_dev_list;
 
 /* Nb of devices and partitions found */
 int iodev_nr = 0;
+/* Nb of NFS mounted directories found */
+int ionfs_nr = 0;
 
 /* Nb of devices entered on the command line */
 int dlist_idx = 0;
@@ -74,7 +77,7 @@ void usage(char *progname)
 {
    fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 		   "Options are:\n"
-		   "[ -c | -d ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+		   "[ -c ] [ -d ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
 		   "[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"),
 	   progname);
    exit(1);
@@ -107,15 +110,15 @@ void init_stats(void)
 
 /*
  ***************************************************************************
- * Set every disk_io entry to inactive state
+ * Set every disk_io or nfs_io entry to inactive state
  ***************************************************************************
  */
-void set_entries_inactive(int iodev_nr)
+void set_entries_inactive(int ioln_nr, struct io_hdr_stats *st_hdr_ioln)
 {
    int i;
-   struct io_hdr_stats *shi = st_hdr_iodev;
+   struct io_hdr_stats *shi = st_hdr_ioln;
 
-   for (i = 0; i < iodev_nr; i++, shi++)
+   for (i = 0; i < ioln_nr; i++, shi++)
       shi->active = FALSE;
 }
 
@@ -125,12 +128,12 @@ void set_entries_inactive(int iodev_nr)
  * Set structures's state to free for inactive entries
  ***************************************************************************
  */
-void free_inactive_entries(int iodev_nr)
+void free_inactive_entries(int ioln_nr, struct io_hdr_stats *st_hdr_ioln)
 {
    int i;
-   struct io_hdr_stats *shi = st_hdr_iodev;
+   struct io_hdr_stats *shi = st_hdr_ioln;
 
-   for (i = 0; i < iodev_nr; i++, shi++) {
+   for (i = 0; i < ioln_nr; i++, shi++) {
       if (!shi->active)
 	 shi->used = FALSE;
    }
@@ -159,6 +162,31 @@ void salloc_device(int iodev_nr)
       exit(4);
    }
    memset(st_hdr_iodev, 0, IO_HDR_STATS_SIZE * iodev_nr);
+}
+
+
+/*
+ ***************************************************************************
+ * Allocate and init I/O NFS directories structures
+ ***************************************************************************
+ */
+void salloc_nfs(int ionfs_nr)
+{
+   int i;
+
+   for (i = 0; i < 2; i++) {
+      if ((st_ionfs[i] = (struct io_nfs_stats *) malloc(IO_NFS_STATS_SIZE * ionfs_nr)) == NULL) {
+	 perror("malloc");
+	 exit(4);
+      }
+      memset(st_ionfs[i], 0, IO_NFS_STATS_SIZE * ionfs_nr);
+   }
+
+   if ((st_hdr_ionfs = (struct io_hdr_stats *) malloc(IO_HDR_STATS_SIZE * ionfs_nr)) == NULL) {
+      perror("malloc");
+      exit(4);
+   }
+   memset(st_hdr_ionfs, 0, IO_HDR_STATS_SIZE * ionfs_nr);
 }
 
 
@@ -215,7 +243,7 @@ void io_sys_init(int *flags)
    /* Init stat common counters */
    init_stats();
 
-   /* How many processors on this machine ? */
+   /* How many processors on this machine? */
    cpu_nr = get_cpu_nr(~0);
 
    /* Get number of block devices and partitions in /proc/diskstats */
@@ -256,7 +284,10 @@ void io_sys_init(int *flags)
 	 *flags |= I_F_OLD_KERNEL;
       }
    }
-   /* Allocate structures for number of disks found */
+   /*
+    * Allocate structures for number of disks found.
+    * iodev_nr must be <> 0.
+    */
    salloc_device(iodev_nr);
 
    if (HAS_OLD_KERNEL(*flags)) {
@@ -270,52 +301,79 @@ void io_sys_init(int *flags)
 	 sprintf(shi->name, "%s%d", K_HDISK, i);
       }
    }
+
+   /* Get number of NFS directories in /proc/self/mountstats */
+   if (DISPLAY_NFS(*flags) &&
+       ((ionfs_nr = get_nfs_mount_nr()) > 0)) {
+      *flags |= I_F_HAS_NFS;
+      ionfs_nr += NR_NFS_PREALLOC;
+
+      /* Allocate structures for number of NFS directories found */
+      salloc_nfs(ionfs_nr);
+   }
 }
 
 
 /*
  ***************************************************************************
- * Save stats for current device or partition
+ * Save stats for current device, partition or NFS directory
  ***************************************************************************
  */
-void save_dev_stats(char *dev_name, int curr, struct io_stats *sdev)
+void save_stats(char *name, int curr, void *st_io, int ioln_nr,
+		struct io_hdr_stats *st_hdr_ioln)
 {
    int i;
-   struct io_hdr_stats *st_hdr_iodev_i;
+   struct io_hdr_stats *st_hdr_ioln_i;
    struct io_stats *st_iodev_i;
+   struct io_nfs_stats *st_ionfs_i;
 
-   /* Look for device in data table */
-   for (i = 0; i < iodev_nr; i++) {
-      st_hdr_iodev_i = st_hdr_iodev + i;
-      if (!strcmp(st_hdr_iodev_i->name, dev_name)) {
+   /* Look for device or NFS directory in data table */
+   for (i = 0; i < ioln_nr; i++) {
+      st_hdr_ioln_i = st_hdr_ioln + i;
+      if (!strcmp(st_hdr_ioln_i->name, name)) {
 	 break;
       }
    }
 	
-   if (i == iodev_nr) {
+   if (i == ioln_nr) {
       /*
        * This is a new device: look for an unused entry to store it.
        * Thus we are able to handle dynamically registered devices.
        */
-      for (i = 0; i < iodev_nr; i++) {
-	 st_hdr_iodev_i = st_hdr_iodev + i;
-	 if (!st_hdr_iodev_i->used) {
+      for (i = 0; i < ioln_nr; i++) {
+	 st_hdr_ioln_i = st_hdr_ioln + i;
+	 if (!st_hdr_ioln_i->used) {
 	    /* Unused entry found... */
-	    st_hdr_iodev_i->used = TRUE;	/* Indicate it is now used */
-	    strcpy(st_hdr_iodev_i->name, dev_name);
-	    st_iodev_i = st_iodev[!curr] + i;
-	    memset(st_iodev_i, 0, IO_STATS_SIZE);
+	    st_hdr_ioln_i->used = TRUE;	/* Indicate it is now used */
+	    strcpy(st_hdr_ioln_i->name, name);
+	    if (st_hdr_ioln == st_hdr_iodev) {
+	       st_iodev_i = st_iodev[!curr] + i;
+	       memset(st_iodev_i, 0, IO_STATS_SIZE);
+	    }
+	    else {
+	       st_ionfs_i = st_ionfs[!curr] + i;
+	       memset(st_ionfs_i, 0, IO_NFS_STATS_SIZE);
+	    }
 	    break;
 	 }
       }
    }
-   if (i < iodev_nr) {
-      st_hdr_iodev_i = st_hdr_iodev + i;
-      st_hdr_iodev_i->active = TRUE;
-      st_iodev_i = st_iodev[curr] + i;
-      *st_iodev_i = *sdev;
+   if (i < ioln_nr) {
+      st_hdr_ioln_i = st_hdr_ioln + i;
+      st_hdr_ioln_i->active = TRUE;
+      if (st_hdr_ioln == st_hdr_iodev) {
+	 st_iodev_i = st_iodev[curr] + i;
+	 *st_iodev_i = *((struct io_stats *) st_io);
+      }
+      else {
+	 st_ionfs_i = st_ionfs[curr] + i;
+	 *st_ionfs_i = *((struct io_nfs_stats *) st_io);
+      }
    }
-   /* else it was a new device but there was no free structure to store it */
+   /*
+    * else it was a new device or NFS directory
+    * but there was no free structure to store it.
+    */
 }
 
 
@@ -357,7 +415,7 @@ void read_proc_stat(int curr, int flags)
 	  * Read the number of jiffies spent in the different modes,
 	  * and compute system uptime in jiffies (1/100ths of a second
 	  * if HZ=100).
-	  * Some fields are only presnt in 2.6 kernels.
+	  * Some fields are only present in 2.6 kernels.
 	  */
 	 comm_stats[curr].cpu_iowait = 0;	/* For pre 2.6 kernels */
 	 comm_stats[curr].cpu_steal = 0;
@@ -379,7 +437,7 @@ void read_proc_stat(int curr, int flags)
 	  * Compute system uptime in jiffies.
 	  * Uptime is multiplied by the number of processors.
 	  */
-	 comm_stats[curr].uptime = comm_stats[curr].cpu_user   +
+	 comm_stats[curr].uptime = comm_stats[curr].cpu_user +
 	                           comm_stats[curr].cpu_nice +
 	                           comm_stats[curr].cpu_system +
 	                           comm_stats[curr].cpu_idle +
@@ -390,8 +448,9 @@ void read_proc_stat(int curr, int flags)
       else if ((!strncmp(line, "cpu0", 4)) && (cpu_nr > 1)) {
 	 /*
 	  * Read CPU line for proc#0 (if available).
-	  * Useful to compute uptime reduced to one processor on SMP machines,
-	  * with fewer risks to get an overflow...
+	  * This is necessary to compute time interval since
+	  * processors may be disabled (offline) sometimes.
+	  * (Assume that proc#0 can never be offline).
 	  */
 	 cc_iowait = cc_hardirq = cc_softirq = cc_steal = 0;
 	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu",
@@ -455,7 +514,7 @@ void read_proc_stat(int curr, int flags)
 	 pos = 9;
 
 	 /* Every disk_io entry is potentially unregistered */
-	 set_entries_inactive(iodev_nr);
+	 set_entries_inactive(iodev_nr, st_hdr_iodev);
 	
 	 /* Read disks I/O statistics (for 2.4 kernels) */
 	 while (pos < strlen(line) - 1) {
@@ -467,13 +526,13 @@ void read_proc_stat(int curr, int flags)
 	    sdev.dk_drive      = v_tmp[0];
 	    sdev.dk_drive_rblk = v_tmp[1];
 	    sdev.dk_drive_wblk = v_tmp[2];
-	    save_dev_stats(dev_name, curr, &sdev);
+	    save_stats(dev_name, curr, &sdev, iodev_nr, st_hdr_iodev);
 
 	    pos += strcspn(line + pos, " ") + 1;
 	 }
 
 	 /* Free structures corresponding to unregistered disks */
-	 free_inactive_entries(iodev_nr);
+	 free_inactive_entries(iodev_nr, st_hdr_iodev);
       }
    }
 
@@ -510,7 +569,7 @@ int read_sysfs_file_stat(int curr, char *filename, char *dev_name,
 		  &sdev.wr_ios, &sdev.wr_sectors) == 4);
 
    if (i)
-      save_dev_stats(dev_name, curr, &sdev);
+      save_stats(dev_name, curr, &sdev, iodev_nr, st_hdr_iodev);
 
    fclose(fp);
 
@@ -563,7 +622,7 @@ void read_sysfs_dlist_stat(int curr, int flags)
    struct io_dlist *st_dev_list_i;
 
    /* Every I/O device (or partition) is potentially unregistered */
-   set_entries_inactive(iodev_nr);
+   set_entries_inactive(iodev_nr, st_hdr_iodev);
 
    for (dev = 0; dev < dlist_idx; dev++) {
       st_dev_list_i = st_dev_list + dev;
@@ -579,7 +638,7 @@ void read_sysfs_dlist_stat(int curr, int flags)
    }
 
    /* Free structures corresponding to unregistered devices */
-   free_inactive_entries(iodev_nr);
+   free_inactive_entries(iodev_nr, st_hdr_iodev);
 }
 
 
@@ -597,7 +656,7 @@ void read_sysfs_stat(int curr, int flags)
    int ok;
 
    /* Every I/O device entry is potentially unregistered */
-   set_entries_inactive(iodev_nr);
+   set_entries_inactive(iodev_nr, st_hdr_iodev);
 
    /* Open /sys/block directory */
    if ((dir = opendir(SYSFS_BLOCK)) != NULL) {
@@ -624,7 +683,7 @@ void read_sysfs_stat(int curr, int flags)
    }
 
    /* Free structures corresponding to unregistered devices */
-   free_inactive_entries(iodev_nr);
+   free_inactive_entries(iodev_nr, st_hdr_iodev);
 }
 
 
@@ -646,7 +705,7 @@ void read_diskstats_stat(int curr, int flags)
    unsigned int major, minor;
 
    /* Every I/O device entry is potentially unregistered */
-   set_entries_inactive(iodev_nr);
+   set_entries_inactive(iodev_nr, st_hdr_iodev);
 
    if ((fp = fopen(DISKSTATS, "r")) == NULL)
       return;
@@ -693,16 +752,16 @@ void read_diskstats_stat(int curr, int flags)
 	     * No match: Use name generated from sysstat.ioconf data (if different
 	     * from "nodev") works around known issues with EMC PowerPath.
 	     */
-	    strcpy(dev_name, ioc_dname);
+	    strncpy(dev_name, ioc_dname, MAX_NAME_LEN);
       }
 
-      save_dev_stats(dev_name, curr, &sdev);
+      save_stats(dev_name, curr, &sdev, iodev_nr, st_hdr_iodev);
    }
 
    fclose(fp);
 
    /* Free structures corresponding to unregistered devices */
-   free_inactive_entries(iodev_nr);
+   free_inactive_entries(iodev_nr, st_hdr_iodev);
 }
 
 
@@ -723,7 +782,7 @@ void read_ppartitions_stat(int curr, int flags)
    unsigned int major, minor;
 
    /* Every I/O device entry is potentially unregistered */
-   set_entries_inactive(iodev_nr);
+   set_entries_inactive(iodev_nr, st_hdr_iodev);
 
    if ((fp = fopen(PPARTITIONS, "r")) == NULL)
       return;
@@ -750,16 +809,68 @@ void read_ppartitions_stat(int curr, int flags)
       if ((ioc_dname = ioc_name(major, minor)) != NULL) {
 	 if (strcmp(dev_name, ioc_dname) && strcmp(ioc_dname, K_NODEV))
 	    /* Compensate for EMC PowerPath driver bug */
-	    strcpy(dev_name, ioc_dname);
+	    strncpy(dev_name, ioc_dname, MAX_NAME_LEN);
       }
 
-      save_dev_stats(dev_name, curr, &sdev);
+      save_stats(dev_name, curr, &sdev, iodev_nr, st_hdr_iodev);
    }
 
    fclose(fp);
 
    /* Free structures corresponding to unregistered devices */
-   free_inactive_entries(iodev_nr);
+   free_inactive_entries(iodev_nr, st_hdr_iodev);
+}
+
+/*
+ ***************************************************************************
+ * Read NFS-mount directories stats from /proc/self/mountstats
+ ***************************************************************************
+ */
+void read_nfs_stat(int curr, int flags)
+{
+   FILE *fp;
+   int i, sw = 0;
+   char line[8192];
+   char nfs_name[MAX_NAME_LEN];
+   char mount[10], on[10], bytes[10], aux[32];
+   struct io_nfs_stats snfs;
+
+   /* Every I/O NFS entry is potentially unregistered */
+   set_entries_inactive(ionfs_nr, st_hdr_ionfs);
+
+   if ((fp = fopen(NFSMOUNTSTATS, "r")) == NULL)
+      return;
+
+   sprintf(aux, "%%%ds %%10s %%10s",
+	   MAX_NAME_LEN < 200 ? MAX_NAME_LEN : 200);
+
+   while (fgets(line, 256, fp) != NULL) {
+
+      /* read NFS directory name */
+      if (!strncmp(line, "device", 6)) {
+         sw = 0;
+         sscanf(line + 6, aux, nfs_name, mount, on);
+         if ((!strncmp(mount, "mounted", 7)) && (!strncmp(on, "on", 2))) {
+            sw = 1;
+         }
+      }
+
+      sscanf(line, "%10s", bytes);
+      if (sw && (!strncmp(bytes, "bytes:", 6))) {
+         /* Read the stats for the last NFS-mounted directory */
+         i = sscanf(strstr(line, "bytes:") + 6, "%llu %llu %llu %llu %llu %llu",
+		    &snfs.rd_normal_bytes, &snfs.wr_normal_bytes, &snfs.rd_direct_bytes,
+		    &snfs.wr_direct_bytes, &snfs.rd_server_bytes, &snfs.wr_server_bytes);
+
+         save_stats(nfs_name, curr, &snfs, ionfs_nr, st_hdr_ionfs);
+         sw = 0;
+      }
+   }
+
+   fclose(fp);
+
+   /* Free structures corresponding to unregistered devices */
+   free_inactive_entries(ionfs_nr, st_hdr_ionfs);
 }
 
 
@@ -786,14 +897,14 @@ void write_cpu_stat(int curr, unsigned long long itv)
 
 /*
  ***************************************************************************
- * Display stats header
+ * Display disk stats header
  ***************************************************************************
  */
-void write_stat_header(int flags, int *fctr)
+void write_disk_stat_header(int flags, int *fctr)
 {
    if (DISPLAY_EXTENDED(flags)) {
       /* Extended stats */
-      printf("Device:         rrqm/s   wrqm/s   r/s   w/s");
+      printf("Device:         rrqm/s   wrqm/s     r/s     w/s");
       if (DISPLAY_MEGABYTES(flags)) {
 	 printf("    rMB/s    wMB/s");
 	 *fctr = 2048;
@@ -819,6 +930,29 @@ void write_stat_header(int flags, int *fctr)
       }
       else
 	 printf("   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n");
+   }
+}
+
+
+/*
+ ***************************************************************************
+ * Display NFS stats header
+ ***************************************************************************
+ */
+void write_nfs_stat_header(int flags, int *fctr)
+{
+   printf("Device:               ");
+   if (DISPLAY_KILOBYTES(flags)) {
+      printf("    rkB_nor/s    wkB_nor/s    rkB_dir/s    wkB_dir/s    rkB_svr/s    wkB_svr/s\n");
+      *fctr = 1024;
+   }
+   else if (DISPLAY_MEGABYTES(flags)) {
+      printf("    rMB_nor/s    wMB_nor/s    rMB_dir/s    wMB_dir/s    rMB_svr/s    wMB_svr/s\n");
+      *fctr = 1024 * 1024;
+   }
+   else {
+      printf("   rBlk_nor/s   wBlk_nor/s   rBlk_dir/s   wBlk_dir/s   rBlk_svr/s   wBlk_svr/s\n");
+      *fctr = 512;
    }
 }
 
@@ -865,11 +999,9 @@ void write_ext_stat(int curr, unsigned long long itv, int flags, int fctr,
 
    arqsz = nr_ios ? (rd_sec + wr_sec) / nr_ios : 0.0;
 
-   printf("%-13s", shi->name);
-   if (strlen(shi->name) > 10)
-      printf("\n          ");
-   /*       rrq/s wrq/s   r/s   w/s  rsec  wsec  rqsz  qusz await svctm %util */
-   printf(" %8.2f %8.2f %5.2f %5.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
+   /*      DEV   rrq/s wrq/s   r/s   w/s  rsec  wsec  rqsz  qusz await svctm %util */
+   printf("%-13s %8.2f %8.2f %7.2f %7.2f %8.2f %8.2f %8.2f %8.2f %7.2f %6.2f %6.2f\n",
+	  shi->name,
 	  S_VALUE(ioj->rd_merges, ioi->rd_merges, itv),
 	  S_VALUE(ioj->wr_merges, ioi->wr_merges, itv),
 	  S_VALUE(ioj->rd_ios, ioi->rd_ios, itv),
@@ -899,8 +1031,6 @@ void write_basic_stat(int curr, unsigned long long itv, int flags, int fctr,
    unsigned long long rd_sec, wr_sec;
 
    printf("%-13s", shi->name);
-   if (strlen(shi->name) > 13)
-      printf("\n             ");
 
    if (HAS_SYSFS(flags) ||
        HAS_DISKSTATS(flags) || HAS_PPARTITIONS(flags)) {
@@ -933,15 +1063,34 @@ void write_basic_stat(int curr, unsigned long long itv, int flags, int fctr,
 
 /*
  ***************************************************************************
+ * Write NFS stats read from /proc/self/mountstats
+ ***************************************************************************
+ */
+void write_nfs_stat(int curr, unsigned long long itv, int flags, int fctr,
+		    struct io_hdr_stats *shi, struct io_nfs_stats *ioni,
+		    struct io_nfs_stats *ionj)
+{
+   printf("%-22s %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f\n",
+	  shi->name,
+	  S_VALUE(ionj->rd_normal_bytes, ioni->rd_normal_bytes, itv) / fctr,
+	  S_VALUE(ionj->wr_normal_bytes, ioni->wr_normal_bytes, itv) / fctr,
+	  S_VALUE(ionj->rd_direct_bytes, ioni->rd_direct_bytes, itv) / fctr,
+	  S_VALUE(ionj->wr_direct_bytes, ioni->wr_direct_bytes, itv) / fctr,
+	  S_VALUE(ionj->rd_server_bytes, ioni->rd_server_bytes, itv) / fctr,
+	  S_VALUE(ionj->wr_server_bytes, ioni->wr_server_bytes, itv) / fctr);
+}
+
+
+/*
+ ***************************************************************************
  * Print everything now (stats and uptime)
  ***************************************************************************
  */
-int write_stat(int curr, int flags, struct tm *loc_time)
+int write_stat(int curr, int flags, struct tm *rectime)
 {
    int dev, i, fctr = 1;
    unsigned long long itv;
-   struct io_hdr_stats *shi = st_hdr_iodev;
-   struct io_stats *ioi, *ioj;
+   struct io_hdr_stats *shi;
    struct io_dlist *st_dev_list_i;
 
    /*
@@ -955,7 +1104,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 
    /* Print time stamp */
    if (DISPLAY_TIMESTAMP(flags)) {
-      strftime(timestamp, sizeof(timestamp), "%X", loc_time);
+      strftime(timestamp, sizeof(timestamp), "%X", rectime);
       printf(_("Time: %s\n"), timestamp);
    }
 
@@ -963,7 +1112,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
     * itv is multiplied by the number of processors.
     * This is OK to compute CPU usage since the number of jiffies spent in the
     * different modes (user, nice, etc.) is the sum of all the processors.
-    * But itv should be reduced to one processor before displaying disk
+    * But itv should be reduced to one processor before displaying disk or NFS
     * utilization.
     */
    if (!comm_stats[!curr].uptime)
@@ -980,7 +1129,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
    if (!itv)
       itv = 1;
 
-   if (!DISPLAY_DISK_ONLY(flags))
+   if (DISPLAY_CPU(flags))
       /* Display CPU utilization */
       write_cpu_stat(curr, itv);
 
@@ -995,10 +1144,13 @@ int write_stat(int curr, int flags, struct tm *loc_time)
 	 itv = 1;
    }
 
-   if (!DISPLAY_CPU_ONLY(flags)) {
+   if (DISPLAY_DISK(flags)) {
+      struct io_stats *ioi, *ioj;
 
-      /* Display stats header */
-      write_stat_header(flags, &fctr);
+      shi = st_hdr_iodev;
+
+      /* Display disk stats header */
+      write_disk_stat_header(flags, &fctr);
 
       if (DISPLAY_EXTENDED(flags) &&
 	  (HAS_OLD_KERNEL(flags) || HAS_PLAIN_KERNEL24(flags))) {
@@ -1050,6 +1202,31 @@ int write_stat(int curr, int flags, struct tm *loc_time)
       }
       printf("\n");
    }
+
+   if (DISPLAY_NFS(flags)) {
+      struct io_nfs_stats *ioni, *ionj;
+
+      shi = st_hdr_ionfs;
+
+      /* Display NFS stats header */
+      write_nfs_stat_header(flags, &fctr);
+
+      if (!HAS_NFS(flags)) {
+	 /* No NFS stats */
+	 printf("\n");
+	 return 1;
+      }
+
+      for (i = 0; i < ionfs_nr; i++, shi++) {
+	 if (shi->used) {
+	
+	    ioni = st_ionfs[curr] + i;
+	    ionj = st_ionfs[!curr] + i;
+	    write_nfs_stat(curr, itv, flags, fctr, shi, ioni, ionj);
+	 }
+      }
+      printf("\n");
+   }
    return 1;
 }
 
@@ -1060,7 +1237,7 @@ int write_stat(int curr, int flags, struct tm *loc_time)
  * and display them.
  ***************************************************************************
  */
-void rw_io_stat_loop(int flags, long int count, struct tm *loc_time)
+void rw_io_stat_loop(int flags, long int count, struct tm *rectime)
 {
    int curr = 1;
    int next;
@@ -1094,11 +1271,15 @@ void rw_io_stat_loop(int flags, long int count, struct tm *loc_time)
 	    read_ppartitions_stat(curr, flags);
       }
 
+      /* Read NFS directories stats */
+      if (HAS_NFS(flags))
+	 read_nfs_stat(curr, flags);
+
       /* Save time */
-      get_localtime(loc_time);
+      get_localtime(rectime);
 
       /* Print results */
-      if ((next = write_stat(curr, flags, loc_time))
+      if ((next = write_stat(curr, flags, rectime))
 	  && (count > 0))
 	 count--;
       fflush(stdout);
@@ -1127,7 +1308,7 @@ int main(int argc, char **argv)
    long count = 1;
    struct utsname header;
    struct io_dlist *st_dev_list_i;
-   struct tm loc_time;
+   struct tm rectime;
 
 #ifdef USE_NLS
    /* Init National Language Support */
@@ -1170,13 +1351,11 @@ int main(int argc, char **argv)
 	    switch (*(argv[opt] + i)) {
 
 	     case 'c':
-	       flags |= I_D_CPU_ONLY;	/* Display cpu usage only */
-	       flags &= ~I_D_DISK_ONLY;
+	       flags |= I_D_CPU;	/* Display cpu usage */
 	       break;
 
 	     case 'd':
-	       flags |= I_D_DISK_ONLY;	/* Display disk utilization only */
-	       flags &= ~I_D_CPU_ONLY;
+	       flags |= I_D_DISK;	/* Display disk utilization */
 	       break;
 	
 	     case 'k':
@@ -1189,6 +1368,10 @@ int main(int argc, char **argv)
 	       if (DISPLAY_KILOBYTES(flags))
 		  usage(argv[0]);
 	       flags |= I_D_MEGABYTES;	/* Display stats in MB/s */
+	       break;
+	
+	     case 'n':
+	       flags |= I_D_NFS;	/* Display NFS stats */
 	       break;
 
 	     case 't':
@@ -1234,7 +1417,18 @@ int main(int argc, char **argv)
       }
    }
 
-   /* Linux does not provide extended stats for partitions */
+   /* Default: Display CPU and DISK reports */
+   if (!DISPLAY_CPU(flags) && !DISPLAY_DISK(flags) && !DISPLAY_NFS(flags))
+      flags |= I_D_CPU + I_D_DISK;
+   /*
+    * Also display DISK reports if options -p, -x or a device has been entered
+    * on the command line.
+    */
+   if (DISPLAY_PARTITIONS(flags) || DISPLAY_EXTENDED(flags) ||
+       DISPLAY_UNFILTERED(flags))
+      flags |= I_D_DISK;
+
+   /* Linux does not provide extended stats for partitions nor for NFS directories */
    if (DISPLAY_PARTITIONS(flags) && DISPLAY_EXTENDED(flags)) {
       fprintf(stderr, _("-x and -p options are mutually exclusive\n"));
       exit(1);
@@ -1247,11 +1441,11 @@ int main(int argc, char **argv)
    /* Init structures according to machine architecture */
    io_sys_init(&flags);
 
-   get_localtime(&loc_time);
+   get_localtime(&rectime);
 
    /* Get system name, release number and hostname */
    uname(&header);
-   print_gal_header(&loc_time,
+   print_gal_header(&rectime,
 		    header.sysname, header.release, header.nodename);
    printf("\n");
 
@@ -1259,7 +1453,7 @@ int main(int argc, char **argv)
    alarm_handler(0);
 
    /* Main loop */
-   rw_io_stat_loop(flags, count, &loc_time);
+   rw_io_stat_loop(flags, count, &rectime);
 
    return 0;
 }

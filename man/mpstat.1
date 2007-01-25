@@ -1,4 +1,4 @@
-.TH MPSTAT 1 "JUNE 2006" Linux "Linux User's Manual" -*- nroff -*-
+.TH MPSTAT 1 "OCTOBER 2006" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 mpstat \- Report processors related statistics.
 .SH SYNOPSIS
@@ -99,6 +99,9 @@ did not have an outstanding disk I/O request.
 Show the total number of interrupts received per second by
 the CPU or CPUs.
 .RE
+
+Note: On SMP machines a processor that does not have any activity at all
+is a disabled (offline) processor.
 .RE
 
 .SH OPTIONS
@@ -140,6 +143,12 @@ Display five reports of statistics for all processors at two second intervals.
 filesystem must be mounted for the
 .B mpstat
 command to work.
+
+On SMP machines
+.B mpstat
+assumes that CPU #0 is never disabled. Indeed
+.B mpstat
+uses it to calculate the time interval.
 
 Only a few activities are supplied by the Linux kernel for each processor.
 

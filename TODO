@@ -11,9 +11,9 @@ Here are the things I would like (or I should) do for the next releases:
 
 * Try to add new fields to sar -B and sar -W (pgscan, pgfree, pgsteal, etc.).
 
-* Use autoconf to configure sysstat.
+* Use autoconf to configure sysstat (I need help for this).
 
-* Add support for hotplug CPU or memory?
+* Add support for hotplug memory?
 
 * Dynamically allocate structures for IRQs (just like for CPUs).
 

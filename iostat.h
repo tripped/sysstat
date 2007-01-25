@@ -11,8 +11,8 @@
 #define MAX_NAME_LEN	72
 
 /* I_: iostat - D_: Display - F_: Flag */
-#define I_D_CPU_ONLY		0x0001
-#define I_D_DISK_ONLY		0x0002
+#define I_D_CPU			0x0001
+#define I_D_DISK		0x0002
 #define I_D_TIMESTAMP		0x0004
 #define I_D_EXTENDED		0x0008
 #define I_D_PART_ALL		0x0010
@@ -25,9 +25,11 @@
 #define I_F_HAS_DISKSTATS	0x0800
 #define I_F_HAS_PPARTITIONS	0x1000
 #define I_F_PLAIN_KERNEL24	0x2000
+#define I_D_NFS			0x4000
+#define I_F_HAS_NFS		0x8000
 
-#define DISPLAY_CPU_ONLY(m)	(((m) & I_D_CPU_ONLY) == I_D_CPU_ONLY)
-#define DISPLAY_DISK_ONLY(m)	(((m) & I_D_DISK_ONLY) == I_D_DISK_ONLY)
+#define DISPLAY_CPU(m)		(((m) & I_D_CPU) == I_D_CPU)
+#define DISPLAY_DISK(m)		(((m) & I_D_DISK) == I_D_DISK)
 #define DISPLAY_TIMESTAMP(m)	(((m) & I_D_TIMESTAMP) == I_D_TIMESTAMP)
 #define DISPLAY_EXTENDED(m)	(((m) & I_D_EXTENDED) == I_D_EXTENDED)
 #define DISPLAY_PART_ALL(m)	(((m) & I_D_PART_ALL) == I_D_PART_ALL)
@@ -40,6 +42,8 @@
 #define HAS_DISKSTATS(m)	(((m) & I_F_HAS_DISKSTATS) == I_F_HAS_DISKSTATS)
 #define HAS_PPARTITIONS(m)	(((m) & I_F_HAS_PPARTITIONS) == I_F_HAS_PPARTITIONS)
 #define HAS_PLAIN_KERNEL24(m)	(((m) & I_F_PLAIN_KERNEL24) == I_F_PLAIN_KERNEL24)
+#define DISPLAY_NFS(m)		(((m) & I_D_NFS) == I_D_NFS)
+#define HAS_NFS(m)		(((m) & I_F_HAS_NFS) == I_F_HAS_NFS)
 
 #define DT_DEVICE	0
 #define DT_PARTITION	1
@@ -75,20 +79,20 @@ struct comm_stats {
  * structure is set to 0.
  */
 struct io_stats {
+   /* # of sectors read */
+   unsigned long long rd_sectors		__attribute__ ((aligned (16)));
+   /* # of sectors written */
+   unsigned long long wr_sectors		__attribute__ ((packed));
    /* # of read operations issued to the device */
-   unsigned long rd_ios				__attribute__ ((aligned (8)));
+   unsigned long rd_ios				__attribute__ ((packed));
    /* # of read requests merged */
    unsigned long rd_merges			__attribute__ ((packed));
-   /* # of sectors read */
-   unsigned long long rd_sectors		__attribute__ ((packed));
    /* Time of read requests in queue */
    unsigned long rd_ticks			__attribute__ ((packed));
    /* # of write operations issued to the device */
    unsigned long wr_ios				__attribute__ ((packed));
    /* # of write requests merged */
    unsigned long wr_merges			__attribute__ ((packed));
-   /* # of sectors written */
-   unsigned long long wr_sectors		__attribute__ ((packed));
    /* Time of write requests in queue */
    unsigned long wr_ticks			__attribute__ ((packed));
    /* # of I/Os in progress */
@@ -107,10 +111,21 @@ struct io_stats {
 
 #define IO_STATS_SIZE	(sizeof(struct io_stats))
 
+struct io_nfs_stats {
+   unsigned long long rd_normal_bytes		__attribute__ ((aligned (16)));
+   unsigned long long wr_normal_bytes		__attribute__ ((packed));
+   unsigned long long rd_direct_bytes		__attribute__ ((packed));
+   unsigned long long wr_direct_bytes		__attribute__ ((packed));
+   unsigned long long rd_server_bytes		__attribute__ ((packed));
+   unsigned long long wr_server_bytes		__attribute__ ((packed));
+};
+
+#define IO_NFS_STATS_SIZE	(sizeof(struct io_nfs_stats))
+
 struct io_hdr_stats {
-   unsigned int  active				__attribute__ ((aligned (8)));
-   unsigned int  used				__attribute__ ((packed));
-            char name[MAX_NAME_LEN]		__attribute__ ((packed));
+   unsigned int active				__attribute__ ((aligned (8)));
+   unsigned int used				__attribute__ ((packed));
+   char name[MAX_NAME_LEN]			__attribute__ ((packed));
 };
 
 #define IO_HDR_STATS_SIZE	(sizeof(struct io_hdr_stats))
@@ -118,7 +133,7 @@ struct io_hdr_stats {
 /* List of devices entered on the command line */
 struct io_dlist {
    /* Indicate whether its partitions are to be displayed or not */
-   int  disp_part				__attribute__ ((aligned (8)));
+   int disp_part				__attribute__ ((aligned (8)));
    /* Device name */
    char dev_name[MAX_NAME_LEN]			__attribute__ ((packed));
 };

@@ -32,6 +32,8 @@
 #define DISKSTATS	"/proc/diskstats"
 #define INTERRUPTS	"/proc/interrupts"
 #define SYSFS_BLOCK	"/sys/block"
+#define SYSFS_DEVCPU	"/sys/devices/system/cpu"
+#define NFSMOUNTSTATS	"/proc/self/mountstats"
 #define S_STAT		"stat"
 
 #define MAX_FILE_LEN	256
@@ -39,6 +41,7 @@
 
 #define NR_DEV_PREALLOC		4
 #define NR_DISK_PREALLOC	3
+#define NR_NFS_PREALLOC		2
 
 #define CNT_DEV		0
 #define CNT_PART	1
@@ -69,20 +72,25 @@
 
 #define DISP_HDR	1
 
+/* Number of ticks per second */
 #define HZ		hz
 extern unsigned int hz;
+
+/* Number of bit shifts to convert pages to kB */
+extern unsigned int kb_shift;
 
 /* Functions */
 extern char	   *device_name(char *);
 extern void	    get_HZ(void);
 extern unsigned int get_disk_io_nr(void);
-extern int	    get_kb_shift(void);
+extern void	    get_kb_shift(void);
 extern time_t	    get_localtime(struct tm *);
 extern time_t	    get_time(struct tm *);
 extern int	    get_cpu_nr(unsigned int);
 extern int	    get_sysfs_dev_nr(int);
 extern int	    get_diskstats_dev_nr(int, int);
 extern int	    get_ppartitions_dev_nr(int);
+extern int	    get_nfs_mount_nr(void);
 extern int	    get_win_height(void);
 extern void	    init_nls(void);
 extern double	    ll_s_value(unsigned long long, unsigned long long,

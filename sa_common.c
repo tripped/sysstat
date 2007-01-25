@@ -254,16 +254,16 @@ int decode_timestamp(char timestamp[], struct tstamp *tse)
  * Compare two time stamps
  ***************************************************************************
  */
-int datecmp(struct tm *loc_time, struct tstamp *tse)
+int datecmp(struct tm *rectime, struct tstamp *tse)
 {
-   if (loc_time->tm_hour == tse->tm_hour) {
-      if (loc_time->tm_min == tse->tm_min)
-	return (loc_time->tm_sec - tse->tm_sec);
+   if (rectime->tm_hour == tse->tm_hour) {
+      if (rectime->tm_min == tse->tm_min)
+	return (rectime->tm_sec - tse->tm_sec);
       else
-	return (loc_time->tm_min - tse->tm_min);
+	return (rectime->tm_min - tse->tm_min);
    }
    else
-     return (loc_time->tm_hour - tse->tm_hour);
+     return (rectime->tm_hour - tse->tm_hour);
 }
 
 
@@ -291,11 +291,11 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
  * Set current daily datafile
  ***************************************************************************
  */
-void set_default_file(struct tm *loc_time, char *datafile)
+void set_default_file(struct tm *rectime, char *datafile)
 {
-   get_time(loc_time);
+   get_time(rectime);
    snprintf(datafile, MAX_FILE_LEN,
-	    "%s/sa%02d", SA_DIR, loc_time->tm_mday);
+	    "%s/sa%02d", SA_DIR, rectime->tm_mday);
    datafile[MAX_FILE_LEN - 1] = '\0';
 }
 
@@ -344,31 +344,31 @@ void get_itv_value(struct file_stats *file_stats_curr,
 
 /*
  ***************************************************************************
- * Fill loc_time structure according to data saved in file header
+ * Fill rectime structure according to data saved in file header
  ***************************************************************************
  */
-void set_hdr_loc_time(unsigned int flags, struct tm *loc_time,
+void set_hdr_rectime(unsigned int flags, struct tm *rectime,
 		      struct file_hdr *file_hdr)
 {
    struct tm *loc_t;
 
    if (PRINT_TRUE_TIME(flags)) {
       /* Get local time */
-      get_time(loc_time);
+      get_time(rectime);
 
-      loc_time->tm_mday = file_hdr->sa_day;
-      loc_time->tm_mon  = file_hdr->sa_month;
-      loc_time->tm_year = file_hdr->sa_year;
+      rectime->tm_mday = file_hdr->sa_day;
+      rectime->tm_mon  = file_hdr->sa_month;
+      rectime->tm_year = file_hdr->sa_year;
       /*
        * Call mktime() to set DST (Daylight Saving Time) flag.
        * Has anyone a better way to do it?
        */
-      loc_time->tm_hour = loc_time->tm_min = loc_time->tm_sec = 0;
-      mktime(loc_time);
+      rectime->tm_hour = rectime->tm_min = rectime->tm_sec = 0;
+      mktime(rectime);
    }
    else {
       loc_t = localtime(&(file_hdr->sa_ust_time));
-      *loc_time = *loc_t;
+      *rectime = *loc_t;
    }
 }
 
@@ -378,13 +378,13 @@ void set_hdr_loc_time(unsigned int flags, struct tm *loc_time,
  * Print report header
  ***************************************************************************
  */
-void print_report_hdr(unsigned int flags, struct tm *loc_time,
+void print_report_hdr(unsigned int flags, struct tm *rectime,
 		      struct file_hdr *file_hdr)
 {
 
-   set_hdr_loc_time(flags, loc_time, file_hdr);
+   set_hdr_rectime(flags, rectime, file_hdr);
 
-   print_gal_header(loc_time, file_hdr->sa_sysname, file_hdr->sa_release,
+   print_gal_header(rectime, file_hdr->sa_sysname, file_hdr->sa_release,
 		    file_hdr->sa_nodename);
 }
 
@@ -661,7 +661,7 @@ void prep_file_for_reading(int *ifd, char *dfile, struct file_hdr *file_hdr,
  ***************************************************************************
  */
 int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
-		  unsigned int *flags, short *dis_hdr, int caller,
+		  unsigned int *flags, int caller,
 		  unsigned char irq_bitmap[], unsigned char cpu_bitmap[])
 {
    int i;
@@ -683,34 +683,27 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 	 break;
        case 'B':
 	 *actflag |= A_PAGE;
-	 (*dis_hdr)++;
 	 break;
        case 'b':
 	 *actflag |= A_IO;
-	 (*dis_hdr)++;
 	 break;
        case 'c':
 	 *actflag |= A_PROC;
-	 (*dis_hdr)++;
 	 break;
        case 'd':
 	 *actflag |= A_DISK;
-	 (*dis_hdr)++;
 	 break;
        case 'p':
 	 *flags |= S_F_DEV_PRETTY;
 	 break;
        case 'q':
 	 *actflag |= A_QUEUE;
-	 (*dis_hdr)++;
 	 break;
        case 'r':
 	 *actflag |= A_MEM_AMT;
-	 (*dis_hdr)++;
 	 break;
        case 'R':
 	 *actflag |= A_MEMORY;
-	 (*dis_hdr)++;
 	 break;
        case 't':
 	 if (caller == C_SAR)
@@ -720,23 +713,18 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 	 break;
        case 'u':
 	 *actflag |= A_CPU;
-	 (*dis_hdr)++;
 	 break;
        case 'v':
 	 *actflag |= A_KTABLES;
-	 (*dis_hdr)++;
 	 break;
        case 'w':
 	 *actflag |= A_CTXSW;
-	 (*dis_hdr)++;
 	 break;
        case 'W':
 	 *actflag |= A_SWAP;
-	 (*dis_hdr)++;
 	 break;
        case 'y':
 	 *actflag |= A_SERIAL;
-	 (*dis_hdr)++;
 	 break;
        case 'V':
 	 print_version();
@@ -754,8 +742,7 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
  * Parse sar "-n" option
  ***************************************************************************
  */
-int parse_sar_n_opt(char *argv[], int *opt, unsigned int *actflag,
-		    short *dis_hdr)
+int parse_sar_n_opt(char *argv[], int *opt, unsigned int *actflag)
 {
    if (!strcmp(argv[*opt], K_DEV))
       *actflag |= A_NET_DEV;
@@ -767,10 +754,8 @@ int parse_sar_n_opt(char *argv[], int *opt, unsigned int *actflag,
       *actflag |= A_NET_NFS;
    else if (!strcmp(argv[*opt], K_NFSD))
       *actflag |= A_NET_NFSD;
-   else if (!strcmp(argv[*opt], K_ALL)) {
+   else if (!strcmp(argv[*opt], K_ALL))
       *actflag |= A_NET_DEV + A_NET_EDEV + A_NET_SOCK + A_NET_NFS + A_NET_NFSD;
-      *dis_hdr = 9;
-   }
    else
       return 1;
 
@@ -785,7 +770,7 @@ int parse_sar_n_opt(char *argv[], int *opt, unsigned int *actflag,
  ***************************************************************************
  */
 int parse_sar_I_opt(char *argv[], int *opt, unsigned int *actflag,
-		    short *dis_hdr, unsigned char irq_bitmap[])
+		    unsigned char irq_bitmap[])
 {
    int i;
 
@@ -794,16 +779,13 @@ int parse_sar_I_opt(char *argv[], int *opt, unsigned int *actflag,
    else {
       *actflag |= A_ONE_IRQ;
       if (!strcmp(argv[*opt], K_ALL)) {
-	 *dis_hdr = 9;
 	 /* Set bit for the first 16 irq */
 	 irq_bitmap[0] = 0xff;
 	 irq_bitmap[1] = 0xff;
       }
-      else if (!strcmp(argv[*opt], K_XALL)) {
-	 *dis_hdr = 9;
+      else if (!strcmp(argv[*opt], K_XALL))
 	 /* Set every bit */
 	 init_bitmap(irq_bitmap, ~0, NR_IRQS);
-      }
       else {
 	 /*
 	  * Get irq number.
@@ -827,15 +809,13 @@ int parse_sar_I_opt(char *argv[], int *opt, unsigned int *actflag,
  ***************************************************************************
  */
 int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags,
-		   short *dis_hdr, unsigned char cpu_bitmap[])
+		   unsigned char cpu_bitmap[])
 {
    int i;
 
    if (argv[++(*opt)]) {
       *flags |= S_F_PER_PROC;
-      (*dis_hdr)++;
       if (!strcmp(argv[*opt], K_ALL)) {
-	 *dis_hdr = 9;
 	 /*
 	  * Set bit for every processor.
 	  * We still don't know if we are going to read stats

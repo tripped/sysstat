@@ -45,6 +45,8 @@ Also tell me what version your kernel is).
 2.16. Are the measurements gathered by sadc cumulative or instantaneous?
 2.17. Some fields are always displayed as 0.00 when I use the sar -d
       command.
+2.18. The sar command complains with the following message:
+      "Requested activities not available".
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -266,10 +268,13 @@ to strip the "UTC" characters from the data being loaded into the database.
 options -s and -e. Unfortunately, I have nothing displayed at all.
 
 This is because no data belong to the specified time interval!
-In fact, -p option makes sadf display its timestamp as a UTC value
-(Coordinated Universal Time), as indicated in the manual page. The UTC value
-may be different from the value that sar (or sadf without option -p) displays.
-The same remark applies to the use of -d option.
+With versions older than 7.0.1, the time specified by options -s or -e
+may be considered as given in UTC (Coordinated Universal Time) or local
+time depending on whether sadf displays its output in UTC or local time.
+Option -p makes sadf display its timestamp in UTC, as indicated in the
+manual page. The UTC value may be different from the value that sar
+(or sadf without option -p) displays. The same remark applies to the
+use of -d option.
 
 ~~~
 
@@ -329,7 +334,7 @@ data for midnight at the end of each daily data file :
 ~~~
 
 2.14. The sar command complains with the following message:
-Requested activities not available in file.
+Requested activities not available in file
 
 This error message means that you are trying to extract non-existent activities
 from the data file. Usually sadc reads all the available activities from the
@@ -345,8 +350,7 @@ Please read sadc manual page to know exactly which activities may be extracted
 from a data file.
 NB: If the sar command complains with the error message:
 "Requested activities not available" (without mentioning "in file"),
-it means that you are trying to display activities that the kernel itself is
-unable to provide.
+please see question 2.18 below.
 
 ~~~
 
@@ -380,6 +384,18 @@ where dt is the interval given on the command line.
 command.
 
 See question 3.2 below.
+
+~~~
+
+2.18. The sar command complains with the following message:
+Requested activities not available
+
+This error message means that you are trying to display activities that the
+kernel itself is unable to provide.
+When this error message is displayed while trying to save the data into an
+existing file ("sar -o datafile ..."), this may also be because the target
+file cannot accept the requested activities. In this case, just try to use
+another file or create a new one.
 
 
 3. QUESTIONS RELATING TO IOSTAT

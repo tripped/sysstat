@@ -107,14 +107,35 @@ void salloc_mp_cpu(int nr_cpus)
 
 /*
  ***************************************************************************
+ * Recalculate interval based on each CPU's tick count
+ ***************************************************************************
+ */
+unsigned long long mget_per_cpu_interval(struct mp_stats *st_mp_cpu_i,
+					 struct mp_stats *st_mp_cpu_j)
+{
+   return ((st_mp_cpu_i->cpu_user + st_mp_cpu_i->cpu_nice +
+	    st_mp_cpu_i->cpu_system + st_mp_cpu_i->cpu_iowait +
+	    st_mp_cpu_i->cpu_hardirq + st_mp_cpu_i->cpu_softirq +
+	    st_mp_cpu_i->cpu_steal + st_mp_cpu_i->cpu_idle) -
+	   (st_mp_cpu_j->cpu_user + st_mp_cpu_j->cpu_nice +
+	    st_mp_cpu_j->cpu_system + st_mp_cpu_j->cpu_iowait +
+	    st_mp_cpu_j->cpu_hardirq + st_mp_cpu_j->cpu_softirq +
+	    st_mp_cpu_j->cpu_steal + st_mp_cpu_j->cpu_idle));
+}
+
+
+/*
+ ***************************************************************************
  * Core function used to display statistics
  ***************************************************************************
  */
 void write_stats_core(short prev, short curr, short dis,
 		      char *prev_string, char *curr_string)
 {
-   struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
-   unsigned long long itv;
+   struct mp_stats
+      *smci = st_mp_cpu[curr] + 1,
+      *smcj = st_mp_cpu[prev] + 1;
+   unsigned long long itv, pc_itv;
    int cpu;
 
    /*
@@ -185,7 +206,7 @@ void write_stats_core(short prev, short curr, short dis,
 	  ll_s_value(st_mp_cpu[prev]->irq, st_mp_cpu[curr]->irq, itv));
    }
 
-   for (cpu = 1; cpu <= cpu_nr; cpu++) {
+   for (cpu = 1; cpu <= cpu_nr; cpu++, smci++, smcj++) {
 
       /* Check if we want stats about this proc */
       if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
@@ -193,21 +214,26 @@ void write_stats_core(short prev, short curr, short dis,
 
       printf("%-11s %4d", curr_string, cpu - 1);
 
-      st_mp_cpu_i = st_mp_cpu[curr] + cpu;
-      st_mp_cpu_j = st_mp_cpu[prev] + cpu;
+      /* Recalculate itv for current proc */
+      pc_itv = mget_per_cpu_interval(smci, smcj);
 
-      printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f %9.2f\n",
-	     ll_sp_value(st_mp_cpu_j->cpu_user,    st_mp_cpu_i->cpu_user,    itv),
-	     ll_sp_value(st_mp_cpu_j->cpu_nice,    st_mp_cpu_i->cpu_nice,    itv),
-	     ll_sp_value(st_mp_cpu_j->cpu_system,  st_mp_cpu_i->cpu_system,  itv),
-	     ll_sp_value(st_mp_cpu_j->cpu_iowait,  st_mp_cpu_i->cpu_iowait,  itv),
-	     ll_sp_value(st_mp_cpu_j->cpu_hardirq, st_mp_cpu_i->cpu_hardirq, itv),
-	     ll_sp_value(st_mp_cpu_j->cpu_softirq, st_mp_cpu_i->cpu_softirq, itv),
-	     ll_sp_value(st_mp_cpu_j->cpu_steal,   st_mp_cpu_i->cpu_steal,   itv),
-	     (st_mp_cpu_i->cpu_idle < st_mp_cpu_j->cpu_idle) ?
-	     0.0 :
-	     ll_sp_value(st_mp_cpu_j->cpu_idle, st_mp_cpu_i->cpu_idle, itv),
-	     ll_s_value(st_mp_cpu_j->irq, st_mp_cpu_i->irq, itv));
+      if (!pc_itv)
+	 /* Current CPU is offline */
+	 printf("    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00      0.00\n");
+      else {
+	 printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f %9.2f\n",
+		ll_sp_value(smcj->cpu_user,    smci->cpu_user,    pc_itv),
+		ll_sp_value(smcj->cpu_nice,    smci->cpu_nice,    pc_itv),
+		ll_sp_value(smcj->cpu_system,  smci->cpu_system,  pc_itv),
+		ll_sp_value(smcj->cpu_iowait,  smci->cpu_iowait,  pc_itv),
+		ll_sp_value(smcj->cpu_hardirq, smci->cpu_hardirq, pc_itv),
+		ll_sp_value(smcj->cpu_softirq, smci->cpu_softirq, pc_itv),
+		ll_sp_value(smcj->cpu_steal,   smci->cpu_steal,   pc_itv),
+		(smci->cpu_idle < smcj->cpu_idle) ?
+		0.0 :
+		ll_sp_value(smcj->cpu_idle, smci->cpu_idle, pc_itv),
+		ll_s_value(smcj->irq, smci->irq, itv));
+      }
    }
 }
 
@@ -231,24 +257,24 @@ void write_stats_avg(short curr, short dis)
  * Print statistics
  ***************************************************************************
  */
-void write_stats(short curr, short dis, struct tm *loc_time)
+void write_stats(short curr, short dis, struct tm *rectime)
 {
    char cur_time[2][16];
 
    /*
     * Get previous timestamp
-    * NOTE: loc_time structure must have been init'ed before!
+    * NOTE: rectime structure must have been init'ed before!
     */
-   loc_time->tm_hour = st_mp_tstamp[!curr].hour;
-   loc_time->tm_min  = st_mp_tstamp[!curr].minute;
-   loc_time->tm_sec  = st_mp_tstamp[!curr].second;
-   strftime(cur_time[!curr], 16, "%X", loc_time);
+   rectime->tm_hour = st_mp_tstamp[!curr].hour;
+   rectime->tm_min  = st_mp_tstamp[!curr].minute;
+   rectime->tm_sec  = st_mp_tstamp[!curr].second;
+   strftime(cur_time[!curr], 16, "%X", rectime);
 
    /* Get current timestamp */
-   loc_time->tm_hour = st_mp_tstamp[curr].hour;
-   loc_time->tm_min  = st_mp_tstamp[curr].minute;
-   loc_time->tm_sec  = st_mp_tstamp[curr].second;
-   strftime(cur_time[curr], 16, "%X", loc_time);
+   rectime->tm_hour = st_mp_tstamp[curr].hour;
+   rectime->tm_min  = st_mp_tstamp[curr].minute;
+   rectime->tm_sec  = st_mp_tstamp[curr].second;
+   strftime(cur_time[curr], 16, "%X", rectime);
 
    write_stats_core(!curr, curr, dis, cur_time[!curr], cur_time[curr]);
 }
@@ -332,15 +358,12 @@ void read_proc_stat(short curr)
 	    st_mp_cpu_i->cpu_softirq = cc_softirq;
 	    st_mp_cpu_i->cpu_steal   = cc_steal;
 	 }
-	 /* else:
-	  * Additional CPUs have been dynamically registered in /proc/stat.
-	  * mpstat won't crash, but the CPU stats might be false...
-	  */
+	 /* else additional CPUs have been dynamically registered in /proc/stat */
 	
 	 if (!proc_nb)
 	    /*
-	     * Compute uptime reduced for one proc,
-	     * using jiffies count for proc#0.
+	     * Compute uptime reduced for one proc using proc#0.
+	     * NB: Assume that proc#0 can never be offline.
 	     */
 	    st_mp_tstamp[curr].uptime0 = cc_user + cc_nice + cc_system +
 	       				 cc_idle + cc_iowait + cc_hardirq +
@@ -403,13 +426,15 @@ void read_interrupts_stat(short curr)
  ***************************************************************************
  */
 void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
-		     struct tm *loc_time)
+		     struct tm *rectime)
 {
+   struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
+   int cpu;
    short curr = 1, dis = 1;
 
-   st_mp_tstamp[0].hour   = loc_time->tm_hour;
-   st_mp_tstamp[0].minute = loc_time->tm_min;
-   st_mp_tstamp[0].second = loc_time->tm_sec;
+   st_mp_tstamp[0].hour   = rectime->tm_hour;
+   st_mp_tstamp[0].minute = rectime->tm_min;
+   st_mp_tstamp[0].second = rectime->tm_sec;
 
    /* Read stats */
    read_proc_stat(0);
@@ -419,7 +444,7 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
       /* Display since boot time */
       st_mp_tstamp[1] = st_mp_tstamp[0];
       memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 1));
-      write_stats(0, DISP_HDR, loc_time);
+      write_stats(0, DISP_HDR, rectime);
       exit(0);
    }
 
@@ -433,15 +458,23 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
    pause();
 
    do {
-
-      /* Resetting the structure not needed since every fields will be set */
+      /*
+       * Resetting the structure not needed since every fields will be set.
+       * Exceptions are per-CPU structures: some of them may not be filled
+       * if corresponding processor is disabled (offline).
+       */
+      for (cpu = 1; cpu <= cpu_nr; cpu++) {
+	 st_mp_cpu_i = st_mp_cpu[curr] + cpu;
+	 st_mp_cpu_j = st_mp_cpu[!curr] + cpu;
+	 *st_mp_cpu_i = *st_mp_cpu_j;
+      }
 
       /* Save time */
-      get_localtime(loc_time);
+      get_localtime(rectime);
 
-      st_mp_tstamp[curr].hour   = loc_time->tm_hour;
-      st_mp_tstamp[curr].minute = loc_time->tm_min;
-      st_mp_tstamp[curr].second = loc_time->tm_sec;
+      st_mp_tstamp[curr].hour   = rectime->tm_hour;
+      st_mp_tstamp[curr].minute = rectime->tm_min;
+      st_mp_tstamp[curr].second = rectime->tm_sec;
 
       /* Read stats */
       read_proc_stat(curr);
@@ -454,7 +487,7 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
 	    lines %= rows;
 	 lines++;
       }
-      write_stats(curr, dis, loc_time);
+      write_stats(curr, dis, rectime);
 
       /* Flush data */
       fflush(stdout);
@@ -485,7 +518,7 @@ int main(int argc, char **argv)
    short dis_hdr = -1, opt_used = 0;
    unsigned long lines = 0;
    int rows = 23;
-   struct tm loc_time;
+   struct tm rectime;
 
 #ifdef USE_NLS
    /* Init National Language Support */
@@ -576,14 +609,14 @@ int main(int argc, char **argv)
       interval = 0;
 
    /* Get time */
-   get_localtime(&loc_time);
+   get_localtime(&rectime);
 
    /* Get system name, release number and hostname */
    uname(&header);
-   print_gal_header(&loc_time, header.sysname, header.release, header.nodename);
+   print_gal_header(&rectime, header.sysname, header.release, header.nodename);
 
    /* Main loop */
-   rw_mp_stat_loop(dis_hdr, lines, rows, &loc_time);
+   rw_mp_stat_loop(dis_hdr, lines, rows, &rectime);
 
    return 0;
 }

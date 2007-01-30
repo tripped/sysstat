@@ -52,7 +52,6 @@ unsigned int serial_nr = 0, iface_nr = 0, irqcpu_nr = 0, disk_nr = 0;
 int pid_idx = 0, pid_nr = 0;
 unsigned int sadc_actflag;
 long interval = 0;
-int kb_shift = 0;
 
 struct file_hdr file_hdr;
 struct file_stats file_stats;
@@ -413,22 +412,22 @@ int ask_for_flock(int fd, unsigned int *flags, int fatal)
 void setup_file_hdr(int fd, size_t *file_stats_size)
 {
    int nb;
-   struct tm loc_time;
+   struct tm rectime;
    struct utsname header;
 
    /* First reset the structure */
    memset(&file_hdr, 0, FILE_HDR_SIZE);
 
    /* Then get current date */
-   file_hdr.sa_ust_time = get_time(&loc_time);
+   file_hdr.sa_ust_time = get_time(&rectime);
 
    /* Ok, now fill the header */
    file_hdr.sa_actflag = sadc_actflag;
    file_hdr.sa_magic = SA_MAGIC;
    file_hdr.sa_st_size = FILE_STATS_SIZE;
-   file_hdr.sa_day = loc_time.tm_mday;
-   file_hdr.sa_month = loc_time.tm_mon;
-   file_hdr.sa_year = loc_time.tm_year;
+   file_hdr.sa_day = rectime.tm_mday;
+   file_hdr.sa_month = rectime.tm_mon;
+   file_hdr.sa_year = rectime.tm_year;
    file_hdr.sa_sizeof_long = sizeof(long);
    file_hdr.sa_proc = cpu_nr;
    file_hdr.sa_nr_pid = pid_nr;
@@ -471,23 +470,23 @@ void setup_file_hdr(int fd, size_t *file_stats_size)
 void write_dummy_record(int ofd, size_t file_stats_size, unsigned int *flags)
 {
    int nb;
-   struct tm loc_time;
+   struct tm rectime;
 
    /* Check if file is locked */
    if (!FILE_LOCKED(*flags))
       ask_for_flock(ofd, flags, FATAL);
 
-   /* Reset the structure (not compulsory, but a bit cleaner */
+   /* Reset the structure (not compulsory, but a bit cleaner) */
    memset(&file_stats, 0, FILE_STATS_SIZE);
 
    file_stats.record_type = R_DUMMY;
 
    /* Save time */
-   file_stats.ust_time = get_time(&loc_time);
+   file_stats.ust_time = get_time(&rectime);
 
-   file_stats.hour   = loc_time.tm_hour;
-   file_stats.minute = loc_time.tm_min;
-   file_stats.second = loc_time.tm_sec;
+   file_stats.hour   = rectime.tm_hour;
+   file_stats.minute = rectime.tm_min;
+   file_stats.second = rectime.tm_sec;
 
    /* Write record now */
    if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
@@ -775,13 +774,13 @@ void read_proc_stat(unsigned int flags)
 	       st_cpu_i->per_cpu_iowait = cc_iowait;
 	       st_cpu_i->per_cpu_steal  = cc_steal;
 	    }
-	    /* else:
-	     * Additional CPUs have been dynamically registered in /proc/stat.
-	     * sar won't crash, but the CPU stats might be false...
-	     */
+	    /* else additional CPUs have been dynamically registered in /proc/stat */
 	
 	    if (!proc_nb)
-	       /* Compute uptime reduced to one proc using proc#0 */
+	       /*
+		* Compute uptime reduced to one proc using proc#0.
+		* Assume that proc#0 can never be offlined.
+		*/
 	       file_stats.uptime0 = cc_user + cc_nice + cc_system +
 	       			    cc_idle + cc_iowait + cc_steal;
 	 }
@@ -1604,7 +1603,7 @@ void read_stats(unsigned int *flags)
  * and display them.
  ***************************************************************************
  */
-void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
+void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *rectime,
 		     int stdfd, int ofd, size_t file_stats_size, char ofile[],
 		     char new_ofile[])
 {
@@ -1628,10 +1627,10 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
 	 file_stats.record_type = R_STATS;
 
       /* Save time */
-      file_stats.ust_time = get_time(loc_time);
-      file_stats.hour   = loc_time->tm_hour;
-      file_stats.minute = loc_time->tm_min;
-      file_stats.second = loc_time->tm_sec;
+      file_stats.ust_time = get_time(rectime);
+      file_stats.hour   = rectime->tm_hour;
+      file_stats.minute = rectime->tm_min;
+      file_stats.second = rectime->tm_sec;
 
       /* Read then write stats */
       read_stats(flags);
@@ -1688,7 +1687,7 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *loc_time,
       /* Rotate activity file if necessary */
       if (WANT_SA_ROTAT(*flags)) {
 	 /* The user specified '-' as the filename to use */
-	 set_default_file(loc_time, new_ofile);
+	 set_default_file(rectime, new_ofile);
 
 	 if (strcmp(ofile, new_ofile))
 	    do_sa_rotat = TRUE;
@@ -1713,7 +1712,7 @@ int main(int argc, char **argv)
    char ofile[MAX_FILE_LEN];
    char new_ofile[MAX_FILE_LEN];
    unsigned int flags = 0;
-   struct tm loc_time;
+   struct tm rectime;
    int stdfd = 0, ofd = -1;
    long count = 0;
    /*
@@ -1726,7 +1725,7 @@ int main(int argc, char **argv)
    size_t file_stats_size = FILE_STATS_SIZE;
 
    /* Compute page shift in kB */
-   kb_shift = get_kb_shift();
+   get_kb_shift();
 
    ofile[0] = new_ofile[0] = '\0';
 
@@ -1791,7 +1790,7 @@ int main(int argc, char **argv)
 	    stdfd = -1;	/* Don't write to STDOUT */
 	    if (!strcmp(argv[opt], "-")) {
 	       /* File name set to '-' */
-	       set_default_file(&loc_time, ofile);
+	       set_default_file(&rectime, ofile);
 	       flags |= S_F_SA_ROTAT;
 	    }
 	    else if (!strncmp(argv[opt], "-", 1))
@@ -1855,8 +1854,8 @@ int main(int argc, char **argv)
 
    /*
     * Open output file then STDOUT. Write header for each of them.
-    * NB: Output file must be opened first because we may change
-    * the activity flag to that of the file, and the activity flag
+    * NB: Output file must be opened first, because we may change
+    * the activity flag to that of the file and the activity flag
     * written on STDOUT must be consistent.
     */
    open_ofile(&ofd, ofile, &file_stats_size, &flags);
@@ -1874,7 +1873,7 @@ int main(int argc, char **argv)
    alarm_handler(0);
 
    /* Main loop */
-   rw_sa_stat_loop(&flags, count, &loc_time, stdfd, ofd,
+   rw_sa_stat_loop(&flags, count, &rectime, stdfd, ofd,
 		   file_stats_size, ofile, new_ofile);
 
    return 0;

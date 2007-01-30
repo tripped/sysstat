@@ -399,7 +399,6 @@ struct stats_serial {
 
 #define STATS_SERIAL_SIZE	(sizeof(struct stats_serial))
 
-/* See linux source file linux/include/linux/netdevice.h */
 struct stats_net_dev {
    unsigned long rx_packets			__attribute__ ((aligned (8)));
    unsigned long tx_packets			__attribute__ ((aligned (8)));
@@ -509,12 +508,15 @@ struct tstamp {
 #define SREALLOC(S, TYPE, SIZE)	do {							\
    				   TYPE *p;						\
 				   p = S;						\
-   				   if ((S = (TYPE *) realloc(S, (SIZE))) == NULL) {	\
-				      perror("realloc");				\
-				      exit(4);						\
+   				   if (SIZE) {						\
+   				      if ((S = (TYPE *) realloc(S, (SIZE))) == NULL) {	\
+				         perror("realloc");				\
+				         exit(4);					\
+				      }							\
+				      /* If the ptr was null, then it's a malloc() */	\
+   				      if (!p)						\
+      				         memset(S, 0, (SIZE));				\
 				   }							\
-   				   if (!p)						\
-      				      memset(S, 0, (SIZE));				\
 				} while (0)
 
 /* Functions */
@@ -532,13 +534,13 @@ extern void	    init_stats(struct file_stats [], unsigned int [][NR_IRQS]);
 extern int	    next_slice(unsigned long long, unsigned long long,
 			       struct file_hdr *, int, long);
 extern int	    parse_sar_opt(char * [], int, unsigned int *,
-				  unsigned int *, short *, int,
+				  unsigned int *, int,
 				  unsigned char [], unsigned char []);
-extern int	    parse_sar_I_opt(char * [], int *, unsigned int *, short *,
+extern int	    parse_sar_I_opt(char * [], int *, unsigned int *,
 				    unsigned char []);
-extern int	    parse_sa_P_opt(char * [], int *, unsigned int *, short *,
+extern int	    parse_sa_P_opt(char * [], int *, unsigned int *,
 				   unsigned char []);
-extern int	    parse_sar_n_opt(char * [], int *, unsigned int *, short *);
+extern int	    parse_sar_n_opt(char * [], int *, unsigned int *);
 extern int	    parse_timestamp(char * [], int *, struct tstamp *,
 				    const char *);
 extern void	    prep_file_for_reading(int *, char *, struct file_hdr *,
@@ -557,7 +559,7 @@ extern void	    salloc_net_dev_array(struct stats_net_dev * [],
 					 unsigned int);
 extern void	    salloc_serial_array(struct stats_serial * [], int);
 extern void	    set_default_file(struct tm *, char *);
-extern void	    set_hdr_loc_time(unsigned int, struct tm *,
-				     struct file_hdr *);
+extern void	    set_hdr_rectime(unsigned int, struct tm *,
+				    struct file_hdr *);
 
 #endif  /* _SA_H */

@@ -1,7 +1,7 @@
 Begin4
 Title:		sysstat - the sar, sadf, mpstat and iostat commands for Linux
-Version:	7.0.0
-Entered-date:	2006-07-09
+Version:	7.0.3
+Entered-date:	2006-12-03
 Description:	The sysstat package contains the sar, sadf, mpstat, iostat
 		and sa tools for Linux.
 		The sar command collects and reports system activity
@@ -24,10 +24,10 @@ Keywords:	system administration, sar, sadf, iostat, mpstat, system accounting, p
 Author:		sebastien.godard@wanadoo.fr (Sebastien Godard)
 Maintained-by:	sebastien.godard@wanadoo.fr (Sebastien Godard)
 Primary-site:	http://perso.orange.fr/sebastien.godard/
-		149kB sysstat-7.0.0.tar.gz
-		118kB sysstat-7.0.0.tar.bz2
-		153kB sysstat-7.0.0-1.src.rpm
-		142kB sysstat-7.0.0-1.i586.rpm
+		153kB sysstat-7.0.3.tar.gz
+		121kB sysstat-7.0.3.tar.bz2
+		157kB sysstat-7.0.3-1.src.rpm
+		147kB sysstat-7.0.3-1.i586.rpm
 Alternate-site:	ibiblio.org /pub/linux/system/status
 Copying-policy:	GPL
 End

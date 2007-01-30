@@ -1,5 +1,41 @@
 Changes:
 
+2006/12/03: Version 7.0.3 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* iostat NFS statistics added.
+	* iostat manual page updated.
+	* Columns "r/s" and "w/s" enlarged for iostat -x.
+	* Minor change so that sar -u may fit in 80 columns.
+	* NLS updated.
+	* CREDITS file updated.
+
+2006/10/22: Version 7.0.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* Hotplug CPU support added to sar and mpstat 
+	* Use /sys to count the number of available processors.
+	  /proc/stat is used for that only if /sys is not found.
+	* sysstat DTD updated.
+	* sysstat spec file updated (gettext is now required).
+	* NLS updated: Swedish translation added.
+	* Manual pages updated.
+	* Makefile updated.
+	* CREDITS file updated.
+
+2006/09/17: Version 7.0.1 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* Use now sysconf() function to get the size of a memory page
+	  instead of using header file <asm/page.h>.
+	* The time specified with sadf options -s and -e is now always
+	  considered as given in local time. sadf output is now	really
+	  consistent with that of sar.
+	* Fixed a bug in the SREALLOC() macro which was causing sar to
+	  exit unexpectedly with this message: "realloc: Success".
+	* Try to better guess when a stats title line has to be displayed
+	  by sar.
+	* Makefile updated (SMP_RACE definition was no longer taken into
+	  account when compiling sadc).
+	* sysstat spec file updated.
+	* sar and sadf manual pages updated.
+	* FAQ updated.
+	* CREDITS file updated.
+
 2006/07/09: Version 7.0.0 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* S_TIME_DEF_TIME environment variable added for sar, sadc and
 	  sadf.

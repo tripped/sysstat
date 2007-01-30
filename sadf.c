@@ -47,7 +47,6 @@ unsigned int flags = 0;
 unsigned short format = 0;	/* Output format */
 unsigned char irq_bitmap[(NR_IRQS / 8) + 1];
 unsigned char cpu_bitmap[(NR_CPUS / 8) + 1];
-int kb_shift = 0;
 
 struct file_hdr file_hdr;
 struct file_stats file_stats[DIM];
@@ -60,7 +59,7 @@ struct disk_stats *st_disk[DIM];
 /* Array members of common types are always packed */
 unsigned int interrupts[DIM][NR_IRQS];
 
-struct tm loc_time;
+struct tm rectime, loctime;
 /* Contain the date specified by -s and -e options */
 struct tstamp tm_start, tm_end;
 char *args[MAX_ARGV_NR];
@@ -117,24 +116,25 @@ void xprintf(short nr_tab, const char *fmt, ...)
 
 /*
  ***************************************************************************
- * Fill loc_time structure according to time data saved in file.
+ * Fill rectime structure according to time data saved in file.
  * NB: Option -t is ignored when option -p is used, since option -p
  * displays its timestamp as a long integer. This is type 'time_t',
  * which is the number of seconds since 1970 _always_ expressed in UTC.
  ***************************************************************************
 */
-void set_loc_time(short curr)
+void set_rectime(short curr)
 {
    struct tm *ltm;
 
-   if (PRINT_TRUE_TIME(flags) &&
-       ((format == S_O_DB_OPTION) || (format == S_O_XML_OPTION)))
+   ltm = localtime(&file_stats[curr].ust_time);
+   loctime = *ltm;
+
+   if (!PRINT_TRUE_TIME(flags) ||
+       ((format != S_O_DB_OPTION) && (format != S_O_XML_OPTION)))
       /* Option -t is valid only with options -d and -x */
-      ltm = localtime(&file_stats[curr].ust_time);
-   else
       ltm = gmtime(&file_stats[curr].ust_time);
 
-   loc_time = *ltm;
+   rectime = *ltm;
 }
 
 
@@ -145,14 +145,14 @@ void set_loc_time(short curr)
 */
 void set_timestamp(short curr, char *cur_time, int len)
 {
-   set_loc_time(curr);
+   set_rectime(curr);
 	
    /* Set cur_time date value */
    if (format == S_O_DB_OPTION) {
       if (PRINT_TRUE_TIME(flags))
-	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S", &loc_time);
+	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S", &rectime);
       else
-	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S UTC", &loc_time);
+	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S UTC", &rectime);
    }
    else if ((format == S_O_PPC_OPTION) || (format == S_O_DBD_OPTION))
       sprintf(cur_time, "%ld", file_stats[curr].ust_time);
@@ -289,7 +289,6 @@ void write_mech_stats(short curr, unsigned int act,
    snprintf(pre, 80, "%s%s%ld%s%s",
 	    file_hdr.sa_nodename, seps[isdb], dt, seps[isdb], cur_time);
 
-
    if (GET_PROC(act)) {
       /* The first one as an example */
       render(isdb,		/* db/ppc flag */
@@ -309,7 +308,6 @@ void write_mech_stats(short curr, unsigned int act,
 	     NOVAL,
 	     ll_s_value(fsj->context_swtch, fsi->context_swtch, itv));
    }
-
 
    if (GET_CPU(act) && wantproc) {
       render(isdb, pre,
@@ -343,11 +341,10 @@ void write_mech_stats(short curr, unsigned int act,
       render(isdb, pre, PT_NEWLIN,
 	     "all\t%%idle", NULL, NULL,
 	     NOVAL,
-	     (fsi->cpu_idle < fsj->cpu_idle)
-	     ? 0.0
-	     : ll_sp_value(fsj->cpu_idle, fsi->cpu_idle, g_itv));
+	     (fsi->cpu_idle < fsj->cpu_idle) ?
+	     0.0 :
+	     ll_sp_value(fsj->cpu_idle, fsi->cpu_idle, g_itv));
    }
-
 
    if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc) {
       int i;
@@ -367,34 +364,51 @@ void write_mech_stats(short curr, unsigned int act,
 		   "%d",		/* db text with format char */
 		   cons(iv, i, NOVAL),	/* how we pass format args */
 		   NOVAL,
+		   !pc_itv ?
+		   0.0 :		/* CPU is offline */
 		   ll_sp_value(scj->per_cpu_user, sci->per_cpu_user, pc_itv));
 
 	    render(isdb, pre, PT_NOFLAG,
 		   "cpu%d\t%%nice", NULL, cons(iv, i, NOVAL),
 		   NOVAL,
+		   !pc_itv ?
+		   0.0 :
 		   ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice, pc_itv));
 
 	    render(isdb, pre, PT_NOFLAG,
 		   "cpu%d\t%%system", NULL, cons(iv, i, NOVAL),
 		   NOVAL,
+		   !pc_itv ?
+		   0.0 :
 		   ll_sp_value(scj->per_cpu_system, sci->per_cpu_system, pc_itv));
 
 	    render(isdb, pre, PT_NOFLAG,
 		   "cpu%d\t%%iowait", NULL, cons(iv, i, NOVAL),
 		   NOVAL,
+		   !pc_itv ?
+		   0.0 :
 		   ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait, pc_itv));
 
 	    render(isdb, pre, PT_NOFLAG,
 		   "cpu%d\t%%steal", NULL, cons(iv, i, NOVAL),
 		   NOVAL,
+		   !pc_itv ?
+		   0.0 :
 		   ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal, pc_itv));
 
-	    render(isdb, pre, PT_NEWLIN,
-		   "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
-		   NOVAL,
-		   (sci->per_cpu_idle < scj->per_cpu_idle)
-		   ? 0.0
-		   : ll_sp_value(scj->per_cpu_idle, sci->per_cpu_idle, pc_itv));
+	    if (!pc_itv)
+	       /* CPU is offline */
+	       render(isdb, pre, PT_NEWLIN,
+		      "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
+		      NOVAL,
+		      0.0);
+	    else
+	       render(isdb, pre, PT_NEWLIN,
+		      "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
+		      NOVAL,
+		      (sci->per_cpu_idle < scj->per_cpu_idle) ?
+		      0.0 :
+		      ll_sp_value(scj->per_cpu_idle, sci->per_cpu_idle, pc_itv));
 	 }
       }
    }
@@ -617,7 +631,6 @@ void write_mech_stats(short curr, unsigned int act,
       }
    }
 
-
    /* Print values of some kernel tables */
    if (GET_KTABLES(act)) {
       render(isdb, pre, PT_USEINT,
@@ -788,7 +801,6 @@ void write_mech_stats(short curr, unsigned int act,
       render(isdb, pre, PT_USEINT | PT_NEWLIN,
 	     "-\tip-frag", NULL, NULL, fsi->frag_inuse, DNOVAL);
    }
-
 
    /* Print load averages and queue length */
    if (GET_QUEUE(act)) {
@@ -963,7 +975,7 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
    set_timestamp(curr, cur_time, 26);
 
    /* Check time (2) */
-   if (use_tm_start && (datecmp(&loc_time, &tm_start) < 0))
+   if (use_tm_start && (datecmp(&loctime, &tm_start) < 0))
      /* it's too soon... */
      return 0;
 
@@ -972,7 +984,7 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
 		 file_hdr.sa_proc, &itv, &g_itv);
 
    /* Check time (3) */
-   if (use_tm_end && (datecmp(&loc_time, &tm_end) > 0)) {
+   if (use_tm_end && (datecmp(&loctime, &tm_end) > 0)) {
       /* It's too late... */
       *cnt = 0;
       return 0;
@@ -1004,7 +1016,7 @@ void write_xml_stats(short curr, short *tab)
       *fsj = &file_stats[!curr];
 
    /* Set timestamp for current data */
-   set_loc_time(curr);
+   set_rectime(curr);
 
    /* Get interval values */
    get_itv_value(&file_stats[curr], &file_stats[!curr],
@@ -1015,7 +1027,7 @@ void write_xml_stats(short curr, short *tab)
    if ((itv % HZ) >= (HZ / 2))
       dt++;
 
-   strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &loc_time);
+   strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
    xprintf(*tab, "<timestamp %s interval=\"%llu\">", cur_time, dt);
    (*tab)++;
 
@@ -1051,17 +1063,24 @@ void write_xml_stats(short curr, short *tab)
 	 /* Recalculate itv for current proc */
 	 pc_itv = get_per_cpu_interval(sci, scj);
 	
-	 xprintf(*tab, "<cpu number=\"%d\" user=\"%.2f\" nice=\"%.2f\" "
-		       "system=\"%.2f\" iowait=\"%.2f\" steal=\"%.2f\" idle=\"%.2f\"/>",
-		 i,
-		 ll_sp_value(scj->per_cpu_user, sci->per_cpu_user, pc_itv),
-		 ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice, pc_itv),
-		 ll_sp_value(scj->per_cpu_system, sci->per_cpu_system, pc_itv),
-		 ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait, pc_itv),
-		 ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal, pc_itv),
-		 (sci->per_cpu_idle < scj->per_cpu_idle)
-		 ? 0.0
-		 : ll_sp_value(scj->per_cpu_idle, sci->per_cpu_idle, pc_itv));
+	 if (!pc_itv)
+	    /* Current proc is offlined */
+	    xprintf(*tab, "<cpu number=\"%d\" user=\"0.00\" nice=\"0.00\" "
+		    "system=\"0.00\" iowait=\"0.00\" steal=\"0.00\" idle=\"0.00\"/>",
+		    i);
+	 else {
+	    xprintf(*tab, "<cpu number=\"%d\" user=\"%.2f\" nice=\"%.2f\" "
+		    "system=\"%.2f\" iowait=\"%.2f\" steal=\"%.2f\" idle=\"%.2f\"/>",
+		    i,
+		    ll_sp_value(scj->per_cpu_user, sci->per_cpu_user, pc_itv),
+		    ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice, pc_itv),
+		    ll_sp_value(scj->per_cpu_system, sci->per_cpu_system, pc_itv),
+		    ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait, pc_itv),
+		    ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal, pc_itv),
+		    (sci->per_cpu_idle < scj->per_cpu_idle)
+		    ? 0.0
+		    : ll_sp_value(scj->per_cpu_idle, sci->per_cpu_idle, pc_itv));
+	 }
       }
    }
    xprintf(--(*tab), "</cpu-load>");
@@ -1373,9 +1392,9 @@ void write_xml_restarts(short curr, short *tab)
    char cur_time[64];
 
    /* Set timestamp for current data */
-   set_loc_time(curr);
+   set_rectime(curr);
 
-   strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &loc_time);
+   strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
    xprintf(*tab, "<boot %s/>", cur_time);
 }
 
@@ -1392,8 +1411,8 @@ void write_dummy(short curr, int use_tm_start, int use_tm_end)
    set_timestamp(curr, cur_time, 26);
 
    /* The RESTART message must be in the interval specified by -s/-e options */
-   if ((use_tm_start && (datecmp(&loc_time, &tm_start) < 0)) ||
-       (use_tm_end && (datecmp(&loc_time, &tm_end) > 0)))
+   if ((use_tm_start && (datecmp(&loctime, &tm_start) < 0)) ||
+       (use_tm_end && (datecmp(&loctime, &tm_end) > 0)))
       return;
 
    if (format == S_O_PPC_OPTION)
@@ -1703,12 +1722,12 @@ void main_display_loop(int ifd)
 	    /*
 	     Ok: previous record was not a DUMMY one. So read now the extra fields. */
 	    read_extra_stats(0, ifd);
-	    set_loc_time(0);
+	    set_rectime(0);
 	 }
       }
       while ((file_stats[0].record_type == R_DUMMY) ||
-	     (tm_start.use && (datecmp(&loc_time, &tm_start) < 0)) ||
-	     (tm_end.use && (datecmp(&loc_time, &tm_end) >=0)));
+	     (tm_start.use && (datecmp(&loctime, &tm_start) < 0)) ||
+	     (tm_end.use && (datecmp(&loctime, &tm_end) >=0)));
 
       /* Save the first stats collected. Will be used to compute the average */
       copy_structures(2, 0);
@@ -1781,7 +1800,7 @@ void read_stats_from_file(char dfile[])
    /* Perform required allocations */
    allocate_structures(USE_SA_FILE);
 
-   set_hdr_loc_time(flags, &loc_time, &file_hdr);
+   set_hdr_rectime(flags, &rectime, &file_hdr);
 
    if (format == S_O_XML_OPTION)
      xml_display_loop(ifd);
@@ -1802,13 +1821,12 @@ int main(int argc, char **argv)
    int opt = 1, sar_options = 0;
    int i;
    char dfile[MAX_FILE_LEN];
-   short dum;
 
    /* Get HZ */
    get_HZ();
 
    /* Compute page shift in kB */
-   kb_shift = get_kb_shift();
+   get_kb_shift();
 
    dfile[0] = '\0';
 
@@ -1827,7 +1845,7 @@ int main(int argc, char **argv)
 
       if (!strcmp(argv[opt], "-I")) {
 	 if (argv[++opt] && sar_options) {
-	    if (parse_sar_I_opt(argv, &opt, &sadf_actflag, &dum,
+	    if (parse_sar_I_opt(argv, &opt, &sadf_actflag,
 				irq_bitmap))
 	       usage(argv[0]);
 	 }
@@ -1836,7 +1854,7 @@ int main(int argc, char **argv)
       }
 
       else if (!strcmp(argv[opt], "-P")) {
-	 if (parse_sa_P_opt(argv, &opt, &flags, &dum, cpu_bitmap))
+	 if (parse_sa_P_opt(argv, &opt, &flags, cpu_bitmap))
 	    usage(argv[0]);
       }
 
@@ -1860,7 +1878,7 @@ int main(int argc, char **argv)
       else if (!strcmp(argv[opt], "-n")) {
 	 if (argv[++opt] && sar_options) {
 	    /* Parse sar's option -n */
-	    if (parse_sar_n_opt(argv, &opt, &sadf_actflag, &dum))
+	    if (parse_sar_n_opt(argv, &opt, &sadf_actflag))
 	       usage(argv[0]);
 	 }
 	 else
@@ -1870,7 +1888,7 @@ int main(int argc, char **argv)
       else if (!strncmp(argv[opt], "-", 1)) {
 	 /* Other options not previously tested */
 	 if (sar_options) {
-	    if (parse_sar_opt(argv, opt, &sadf_actflag, &flags, &dum, C_SADF,
+	    if (parse_sar_opt(argv, opt, &sadf_actflag, &flags, C_SADF,
 			      irq_bitmap, cpu_bitmap))
 	       usage(argv[0]);
 	 }
@@ -1924,7 +1942,7 @@ int main(int argc, char **argv)
 	 if (!dfile[0]) {
 	    if (!strcmp(argv[opt], "-")) {
 	       /* File name set to '-' */
-	       set_default_file(&loc_time, dfile);
+	       set_default_file(&rectime, dfile);
 	       opt++;
 	    }
 	    else if (!strncmp(argv[opt], "-", 1))
@@ -1965,7 +1983,7 @@ int main(int argc, char **argv)
 
    /* sadf reads current daily data file by default */
    if (!dfile[0])
-      set_default_file(&loc_time, dfile);
+      set_default_file(&rectime, dfile);
 
    /*
     * Display all the contents of the daily data file if the count parameter

@@ -14,11 +14,9 @@ msgstr ""
 "POT-Creation-Date: \n"
 
 #: common.c
-msgid ""
-"sysstat version %s\n"
+msgid "sysstat version %s\n"
 "(C) Sebastien Godard\n"
-msgstr ""
-"sysstat version %s\n"
+msgstr "sysstat version %s\n"
 "(C) Sebastien Godard\n"
 
 #: mpstat.c:62
@@ -35,12 +33,12 @@ msgstr ""
 msgid ""
 "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
-"[ -c | -d ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+"[ -c ] [ -d ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
 "[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"
 msgstr ""
 "Användning: %s [ flaggor... ] [ <intervall> [ <antal> ] ]\n"
 "Flaggor:\n"
-"[ -c | -d ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+"[ -c ] [ -d ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
 "[ <enhet> [ ... ] | ALL ] [ -p [ <enhet> | ALL ] ]\n"
 
 #: iostat.c:555
@@ -97,6 +95,7 @@ msgstr "Kan inte öppna %s: %s\n"
 msgid "Invalid system activity file: %s (%#x)\n"
 msgstr "Ogiltig systemaktivitetsfil: %s (%#x)\n"
 
+#:
 msgid "Invalid data format\n"
 msgstr "Ogiltigt dataformat\n"
 
@@ -163,4 +162,3 @@ msgstr ""
 "[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
 "[ -P { <processor> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_flaggor...> ]\n"
-

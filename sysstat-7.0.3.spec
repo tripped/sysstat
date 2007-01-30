@@ -1,13 +1,14 @@
 Summary: 	SAR, SADF, MPSTAT and IOSTAT for Linux
 Name: 		sysstat
-Version: 	7.0.0
+Version: 	7.0.3
 Release: 	1
-Copyright: 	GPL
+License: 	GPL
 Group: 		Applications/System
 Source0: 	%{name}-%{version}.tar.gz
 URL:		http://perso.orange.fr/sebastien.godard
 Packager:	Damien Faure <damien-jn.faure@bull.net>
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root-%(id -u -n)
+Requires:	gettext
 
 %description
 The sysstat package contains the sar, sadf, mpstat, iostat and sa 

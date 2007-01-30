@@ -1,4 +1,4 @@
-.TH SADF 1 "JUNE 2006" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "JULY 2006" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
@@ -25,6 +25,8 @@ command is used for displaying the contents of data files created by the
 command. But unlike sar,
 .B sadf
 can write its data in many different formats.
+The default format is one that can
+easily be handled by pattern processing commands like awk (see option -p).
 
 The
 .B sadf
@@ -84,11 +86,9 @@ Note that the timestamp is displayed in UTC (Coordinated Universal Time)
 unless option -t is used. In this latter case, the timestamp is displayed
 in local time.
 .IP "-e [ hh:mm:ss ]"
-Set the ending time of the report. The default ending time is
-18:00:00. Hours must be given in 24-hour format.
-Note that if you also use
-.B -p
-option, ending time will have to be given in UTC (Coordinated Universal Time).
+Set the ending time of the report, given in local time. The default ending
+time is 18:00:00. Hours must be given in 24-hour format.
+This option is ignored when option -x is used.
 .IP -H
 Display the header of the data file.
 .IP "-P { cpu | ALL }"
@@ -108,14 +108,12 @@ hostname of the host where the file was created, the interval value
 Time) in seconds from the epoch, the device name (or - if not applicable),
 the field name and its value.
 .IP "-s [ hh:mm:ss ]"
-Set the starting time of the data, causing the
+Set the starting time of the data (given in local time), causing the
 .B sadf
 command to extract records time-tagged at, or following, the time
 specified. The default starting time is 08:00.
-Hours must be given in 24-hour format.
-Note that if you also use
-.B -p
-option, starting time will have to be given in UTC (Coordinated Universal Time).
+Hours must be given in 24-hour format. This option is ignored when
+option -x is used.
 .IP -t
 When this option is used together with options -d or -x, the timestamp
 is displayed in local time instead of UTC (Coordinated Universal Time).

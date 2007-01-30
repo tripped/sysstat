@@ -1,4 +1,4 @@
-.TH SAR 1 "JUNE 2006" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "OCTOBER 2006" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -747,10 +747,11 @@ or CPUs while the hypervisor was servicing another virtual processor.
 .B %idle
 .RS
 Percentage of time that the CPU or CPUs were idle and the system
-did not have an outstanding disk I/O request. Note: In virtualized hardware
-environment, this also includes the time spent in involuntary wait by the virtual CPU
-or CPUs while the hypervisor was servicing another virtual processor.
+did not have an outstanding disk I/O request.
 .RE
+
+Note: On SMP machines a processor that does not have any activity at all
+(0.00 for every field) is a disabled (offline) processor.
 .RE
 .IP -v
 Report status of inode, file and other kernel tables.
@@ -999,7 +1000,8 @@ will save its data in UTC time (data will still be displayed in local time).
 will also use UTC time instead of local time to determine the current daily
 data file located in the
 .IR /var/log/sa
-directory.
+directory. This variable may be useful for servers with users located across
+several timezones.
 .SH EXAMPLES
 .B sar -u 2 5
 .RS
@@ -1026,6 +1028,12 @@ Display all the statistics saved in current daily data file.
 filesystem must be mounted for the
 .B sar
 command to work.
+
+On SMP machines
+.B sar
+assumes that CPU #0 is never disabled. Indeed
+.B sar
+uses it to calculate the time interval.
 
 All the statistics are not necessarily available, depending on the kernel version used.
 .SH FILES

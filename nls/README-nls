@@ -18,18 +18,19 @@ OK, BUT HOW DO I USE IT NOW?
 ------------------------------
 You have to set your LANG environment variable to the proper value.
 E.g.:
-	France: fr_FR
+	South Africa: af_ZA
 	Germany: de_DE
 	Spain: es_ES
-	Brazil: pt_BR
-	South Africa: af_ZA
-	Norway: nb_NO or nn_NO
+	France: fr_FR
 	Italy: it_IT
-	Russia: ru_RU
-	Romania: ro_RO
-	Poland: pl_PL
-	Slovakia: sk_SK
 	Japan: ja_JP
+	Norway: nb_NO or nn_NO
+	Poland: pl_PL
+	Brazil: pt_BR
+	Romania: ro_RO
+	Russia: ru_RU
+	Slovakia: sk_SK
+	Sweden: sv_SE
 
 although other possibilities exist.
 If you use bash and you want to configure your system for a french environment,
@@ -68,7 +69,7 @@ HOW CAN I ADD A NEW LANGUAGE TO SYSSTAT?
 ----------------------------------------
 At the present time, sysstat is translated into English, French, German,
 Spanish, Portuguese, Afrikaans, Norwegian, Italian, Russian, Romanian,
-Polish, Slovak and Japanese.
+Polish, Slovak, Japanese and Swedish.
 To add another language, copy an existing Portable Object file (LANG.po) in
 one of your directories (you can copy the file named fr.po for instance).
 Update the header of that file to give your name and email address.

@@ -2,7 +2,7 @@
 # (C) 1999-2006 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 7.0.0
+VERSION = 7.0.3
 
 include build/CONFIG
 
@@ -39,6 +39,7 @@ SYSCONFIG_DIR = /etc/sysstat
 # Compiler flags
 CFLAGS = -Wall -Wstrict-prototypes -pipe -g -fno-strength-reduce
 LFLAGS = -s
+# SAS_DFLAGS may also contain SMP_RACE definition
 SAS_DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
@@ -99,7 +100,7 @@ all: sa1 sa2 crontab sysstat sysstat.sysconfig sysstat.crond \
 common.o: common.c version.h common.h ioconf.h
 
 sa_common.o: sa_common.c sa.h common.h ioconf.h
-	 $(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 ioconf.o: ioconf.c ioconf.h
 
@@ -111,6 +112,7 @@ version.h: version.in
 	$(SED) s+VERSION_NUMBER+$(VERSION)+g $< > $@
 
 sadc.o: sadc.c sa.h common.h ioconf.h
+	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sadc: sadc.o libsyscom.a libsyssa.a
 

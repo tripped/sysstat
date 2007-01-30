@@ -27,6 +27,7 @@
 #include <unistd.h>	/* For STDOUT_FILENO, among others */
 #include <dirent.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/ioctl.h>
 
 #include "version.h"
@@ -41,8 +42,10 @@
 #define _(string) (string)
 #endif
 
-/* Get HZ from the kernel */
+/* Number of ticks per second */
 unsigned int hz;
+/* Number of bit shifts to convert pages to kB */
+unsigned int kb_shift;
 
 /*
  ***************************************************************************
@@ -62,7 +65,7 @@ void print_version(void)
  * Get date and time and take into account <ENV_TIME_DEFTM> variable
  ***************************************************************************
  */
-time_t get_time(struct tm *loc_time)
+time_t get_time(struct tm *rectime)
 {
    time_t timer;
    struct tm *ltm;
@@ -82,7 +85,7 @@ time_t get_time(struct tm *loc_time)
    else
       ltm = localtime(&timer);
 
-   *loc_time = *ltm;
+   *rectime = *ltm;
    return timer;
 }
 
@@ -92,7 +95,7 @@ time_t get_time(struct tm *loc_time)
  * Get local date and time
  ***************************************************************************
  */
-time_t get_localtime(struct tm *loc_time)
+time_t get_localtime(struct tm *rectime)
 {
    time_t timer;
    struct tm *ltm;
@@ -100,27 +103,57 @@ time_t get_localtime(struct tm *loc_time)
    time(&timer);
    ltm = localtime(&timer);
 
-   *loc_time = *ltm;
+   *rectime = *ltm;
    return timer;
 }
 
 
 /*
  ***************************************************************************
- * Return the number of processors used on the machine:
- * 0: one proc and non SMP kernel
- * 1: one proc and SMP kernel, or SMP machine with all but one offlined CPU
- * 2: two proc...
- * As far as I know, there are two possibilities for this:
- * 1) Use /proc/stat (this is what we are doing here) or
- * 2) Use /proc/cpuinfo
+ * Count number of processors in /sys
  ***************************************************************************
  */
-int get_cpu_nr(unsigned int max_nr_cpus)
+int get_sys_cpu_nr(void)
+{
+   DIR *dir;
+   struct dirent *drd;
+   struct stat buf;
+   char line[MAX_PF_NAME];
+   int proc_nr = 0;
+
+   /* Open relevant /sys directory */
+   if ((dir = opendir(SYSFS_DEVCPU)) == NULL)
+      return 0;
+
+   /* Get current file entry */
+   while ((drd = readdir(dir)) != NULL) {
+
+      if (!strncmp(drd->d_name, "cpu", 3)) {
+	 sprintf(line, "%s/%s", SYSFS_DEVCPU, drd->d_name);
+	 if (stat(line, &buf) < 0)
+	    continue;
+	 if (S_ISDIR(buf.st_mode))
+	    proc_nr++;
+      }
+   }
+
+   /* Close directory */
+   closedir(dir);
+
+   return proc_nr;
+}
+
+
+/*
+ ***************************************************************************
+ * Count number of processors in /proc/stat
+ ***************************************************************************
+ */
+int get_proc_cpu_nr(void)
 {
    FILE *fp;
    char line[16];
-   int proc_nb, cpu_nr = -1;
+   int num_proc, proc_nr = -1;
 
    if ((fp = fopen(STAT, "r")) == NULL) {
       fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
@@ -130,20 +163,41 @@ int get_cpu_nr(unsigned int max_nr_cpus)
    while (fgets(line, 16, fp) != NULL) {
 
       if (strncmp(line, "cpu ", 4) && !strncmp(line, "cpu", 3)) {
-	 sscanf(line + 3, "%d", &proc_nb);
-	 if (proc_nb > cpu_nr)
-	    cpu_nr = proc_nb;
+	 sscanf(line + 3, "%d", &num_proc);
+	 if (num_proc > proc_nr)
+	    proc_nr = num_proc;
       }
-   }
-
-   if ((cpu_nr + 1) > max_nr_cpus) {
-      fprintf(stderr, _("Cannot handle so many processors!\n"));
-      exit(1);
    }
 
    fclose(fp);
 
-   return (cpu_nr + 1);
+   return (proc_nr + 1);
+}
+
+
+/*
+ ***************************************************************************
+ * Return the number of processors used on the machine:
+ * 0: one proc and non SMP kernel
+ * 1: one proc and SMP kernel, or SMP machine with all but one offlined CPU
+ * 2: two proc...
+ * Try to use /sys for that, or /proc/stat if /sys doesn't exist.
+ ***************************************************************************
+ */
+int get_cpu_nr(unsigned int max_nr_cpus)
+{
+   int cpu_nr;
+
+   if ((cpu_nr = get_sys_cpu_nr()) == 0)
+      /* /sys may be not mounted. Use /proc/stat instead */
+      cpu_nr = get_proc_cpu_nr();
+
+   if (cpu_nr > max_nr_cpus) {
+      fprintf(stderr, _("Cannot handle so many processors!\n"));
+      exit(1);
+   }
+
+   return cpu_nr;
 }
 
 
@@ -233,7 +287,7 @@ int get_sysfs_dev_nr(int display_partitions)
  * Args: count_part : set to TRUE if devices _and_ partitions are to be
  *		counted.
  *       only_used_dev : when counting devices, set to TRUE if only devices
- 		with non zero stats are to be counted.
+ *		with non zero stats are to be counted.
  ***************************************************************************
  */
 int get_diskstats_dev_nr(int count_part, int only_used_dev)
@@ -342,18 +396,53 @@ unsigned int get_disk_io_nr(void)
 
 /*
  ***************************************************************************
+ * Find number of NFS-mounted points that are registered in
+ * /proc/self/mountstats.
+ ***************************************************************************
+ */
+int get_nfs_mount_nr(void)
+{
+   FILE *fp;
+   char line[8192];
+   char type_name[10];
+   unsigned int nfs = 0;
+
+   if ((fp = fopen(NFSMOUNTSTATS, "r")) == NULL)
+      /* File non-existent */
+      return 0;
+
+   while (fgets(line, 8192, fp) != NULL) {
+
+      if ((strstr(line, "mounted")) && (strstr(line, "on")) && (strstr(line, "with")) &&
+	  (strstr(line, "fstype"))) {
+	
+	 sscanf(strstr(line, "fstype") + 6, "%10s", type_name);
+	 if ((!strncmp(type_name, "nfs", 3)) && (strncmp(type_name, "nfsd", 4))) {
+	    nfs ++;
+	 }
+      }
+   }
+
+   fclose(fp);
+
+   return nfs;
+}
+
+
+/*
+ ***************************************************************************
  * Print banner
  ***************************************************************************
  */
-inline void print_gal_header(struct tm *loc_time, char *sysname, char *release, char *nodename)
+inline void print_gal_header(struct tm *rectime, char *sysname, char *release, char *nodename)
 {
    char cur_date[64];
    char *e;
 
    if (((e = getenv(ENV_TIME_FMT)) != NULL) && !strcmp(e, K_ISO))
-      strftime(cur_date, sizeof(cur_date), "%Y-%m-%d", loc_time);
+      strftime(cur_date, sizeof(cur_date), "%Y-%m-%d", rectime);
    else
-      strftime(cur_date, sizeof(cur_date), "%x", loc_time);
+      strftime(cur_date, sizeof(cur_date), "%x", rectime);
 
    printf("%s %s (%s) \t%s\n", sysname, release, nodename, cur_date);
 }
@@ -419,18 +508,23 @@ char *device_name(char *name)
  * Get page shift in kB
  ***************************************************************************
  */
-int get_kb_shift(void)
+void get_kb_shift(void)
 {
    int shift = 0;
-   int size;
+   long size;
 
-   size = sysconf(_SC_PAGE_SIZE) >> 10; /* Assume that a page has a minimum size of 1 kB */
+   /* One can also use getpagesize() to get the size of a page */
+   if ((size = sysconf(_SC_PAGESIZE)) == -1)
+      perror("sysconf");
+
+   size >>= 10;	/* Assume that a page has a minimum size of 1 kB */
+
    while (size > 1) {
       shift++;
       size >>= 1;
    }
 
-   return shift;
+   kb_shift = (unsigned int) shift;
 }
 
 
@@ -443,7 +537,7 @@ void get_HZ(void)
 {
    long ticks;
 
-   if ((ticks = sysconf(_SC_CLK_TCK)) < 0)
+   if ((ticks = sysconf(_SC_CLK_TCK)) == -1)
       perror("sysconf");
 
    hz = (unsigned int) ticks;

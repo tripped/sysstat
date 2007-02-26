@@ -1,3 +1,13 @@
+sysstat (7.0.0-4) unstable; urgency=low
+
+  * Initial translations of debconf templates:
+    + Portuguese (closes: #411747),
+    + Galician   (closes: #412230).
+  * Make isag depend on gnuplot-x11 rather than on transitional gnuplot
+    package (closes: #410228).
+
+ -- Robert Luberda <robert@debian.org>  Mon, 26 Feb 2007 21:40:18 +0100
+
 sysstat (7.0.0-3) unstable; urgency=low
 
   * systat.config: don't overwrite systat/enable debconf variable unless

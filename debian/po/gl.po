@@ -1,0 +1,91 @@
+# Galician translation of sysstat's debconf templates
+# This file is distributed under the same license as the sysstat package.
+# Jacobo Tarrio <jtarrio@debian.org>, 2007.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: sysstat\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-01-16 04:33+0100\n"
+"PO-Revision-Date: 2007-02-24 18:40+0100\n"
+"Last-Translator: Jacobo Tarrio <jtarrio@debian.org>\n"
+"Language-Team: Galician <proxecto@trasno.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:1001
+msgid "Do you want post-installation script to remove these data files?"
+msgstr ""
+"¿Quere que o script de post-instalación elimine eses ficheiros de datos?"
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:1001
+msgid ""
+"Format of daily data statistics files has changed in version ${s_version} of "
+"sysstat and is *not* compatible with the previous one!"
+msgstr ""
+"O formato dos ficheiros de estatísticas diarias cambiou na versión "
+"${s_version} de sysstat e *non* é compatible co anterior."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:1001
+msgid ""
+"If you activate this option, any existing data files in /var/log/sysstat/ "
+"directory will be deleted."
+msgstr ""
+"Se activa esta opción hanse borrar os ficheiros de datos que existan no "
+"directorio /var/log/sysstat ."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:1001
+msgid ""
+"If you don't want to remove them automatically, please remove them by hand "
+"later, in order for the sar command to work properly."
+msgstr ""
+"Se non quere eliminalos automaticamente, elimíneos despois á man para que a "
+"orde sar funcione correctamente."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:2001
+msgid "Do you want to activate sysstat's cron job?"
+msgstr "¿Quere activar a tarefa de cron de sysstat?"
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:2001
+msgid ""
+"If this option is enabled the sysstat package will collect (using the cron "
+"daemon and init.d script) binary data concerning system activities and store "
+"them in log files within /var/log/sysstat/ directory."
+msgstr ""
+"Se esta opción se activa, o paquete sysstat ha colleitar (mediante o servizo "
+"cron e o script de init.d) datos binarios relacionados coas actividades do "
+"sistema e armacenalos en ficheiros de rexistro dentro do directorio /var/log/"
+"sysstat ."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:2001
+msgid ""
+"With this data the sar(1) command will be able to display day-long system "
+"statistics."
+msgstr ""
+"Con estes datos, a orde sar(1) ha poder amosar estatísticas diarias do "
+"sistema."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:2001
+msgid ""
+"If you don't enable this option, the sar(1) command will show only the "
+"current statistics."
+msgstr ""
+"Se non activa esta opción, a orde sar(1) só ha amosar as estatísticas "
+"actuais."

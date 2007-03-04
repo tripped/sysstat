@@ -941,7 +941,7 @@ void write_disk_stat_header(int flags, int *fctr)
  */
 void write_nfs_stat_header(int flags, int *fctr)
 {
-   printf("Device:               ");
+   printf("Filesystem:           ");
    if (DISPLAY_KILOBYTES(flags)) {
       printf("    rkB_nor/s    wkB_nor/s    rkB_dir/s    wkB_dir/s    rkB_svr/s    wkB_svr/s\n");
       *fctr = 1024;

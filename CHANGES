@@ -1,5 +1,25 @@
 Changes:
 
+2007/02/04: Version 7.0.4 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* Removed linux/major.h from list of files included in ioconf.c.
+	  It was actually not used and also prevented sysstat from being
+	  compiled on GNU/kFreeBSD.
+	* Sysstat scripts (sa1, sa2, sysstat) modified to enable the user
+	  to keep sar data for more than one month.
+	* New parameter (COMPRESSAFTER) added to /etc/sysconfig/sysstat.
+	  It gives the number of days after which sar datafiles must be
+	  compressed to save disk space.
+	* Replaced the word "Device" with "Filesystem" for iostat
+	  NFS report.
+	* iostat manual page updated.
+	* Makefile updated: don't use a static list of languages to
+	  compile NLS files.
+	* "make install" now always install sysstat configuration file
+	  (default location is /etc/sysconfig).
+	* FAQ updated.
+	* Added my email address when displaying sysstat version.
+	* NLS updated.
+
 2006/12/03: Version 7.0.3 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* iostat NFS statistics added.
 	* iostat manual page updated.

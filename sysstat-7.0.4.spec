@@ -1,6 +1,6 @@
 Summary: 	SAR, SADF, MPSTAT and IOSTAT for Linux
 Name: 		sysstat
-Version: 	7.0.3
+Version: 	7.0.4
 Release: 	1
 License: 	GPL
 Group: 		Applications/System

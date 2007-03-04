@@ -1,38 +1,49 @@
 #!/bin/sh
 #
 # chkconfig: 235 03 97
-# description: sysstat utilities for \
-#              system monitoring.
-#
-# Author: Klaus.Franken@fth2.siemens.de
-# Die Okt 12 10:05:41 EDT 1999
-#
-# Modified by:
-# 1999/11/07 - Sebastien Godard <sebastien.godard@wanadoo.fr>
-#	Now use '-d' option when starting sar.
+# INIT_DIR/sysstat
 # 2000/01/22 - Sebastien Godard <sebastien.godard@wanadoo.fr>
-#	Rewritten from scratch. Call sadc instead of sar.
+#
+# Description: Insert a dummy record in current daily data file.
+#	       This indicates that the counters have restarted from 0.
+#
 # 2004/10/10 - Sebastien Godard (sysstat <at> wanadoo.fr)
 #	Now returns real exit code.
 # 2006/07/05 - Sebastien Godard (sysstat <at> wanadoo.fr)
-#	Added support for chkconfig
-#
-# INIT_DIR/sysstat
+#	Added support for chkconfig.
+# 2007/01/21 - Sebastien Godard (sysstat <at> wanadoo.fr)
+#	Added support for multiple months history.
 #
 
 RETVAL=0
+HISTORY=0
 # Remove flag indicating that sadc was successfully launched
 rm -f /tmp/sysstat.run
 
 # See how we were called.
 case "$1" in
   start)
+	[ -r /etc/sysconfig/sysstat ] && . /etc/sysconfig/sysstat
+	if [ ${HISTORY} -gt 28 ]
+	then
+		CURRENTDIR=`date +%Y%m`
+		CURRENTFILE=sa`date +%d`
+		DDIR=SA_DIR
+		cd ${DDIR} || exit 1
+		[ -d ${CURRENTDIR} ] || mkdir -p ${CURRENTDIR}
+		touch ${CURRENTDIR}/${CURRENTFILE}
+	        # Remove the "compatibility" link and recreate it to
+	        # point to the (new) current file
+	        rm -f ${CURRENTFILE}
+	        ln -s ${CURRENTDIR}/${CURRENTFILE} ${CURRENTFILE}
+		CHOWN ${CURRENTDIR} ${CURRENTFILE} ${CURRENTDIR}/${CURRENTFILE}
+	fi
         echo -n "Calling the system activity data collector (sadc): "
         SU SA_LIB_DIR/sadc -F -L - && touch /tmp/sysstat.run QUOTE
 
-# Try to guess if sadc was successfully launched. The difficulty
-# here is that the exit code is lost when the above command is
-# run via "su foo -c ..."
+	# Try to guess if sadc was successfully launched. The difficulty
+	# here is that the exit code is lost when the above command is
+	# run via "su foo -c ..."
 	if [ ! -f /tmp/sysstat.run ]; then
 		RETVAL=1
 	else

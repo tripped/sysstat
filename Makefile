@@ -2,7 +2,7 @@
 # (C) 1999-2006 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
 # Version
-VERSION = 7.0.3
+VERSION = 7.0.4
 
 include build/CONFIG
 
@@ -72,7 +72,8 @@ ifndef INITD_DIR
 INITD_DIR = init.d
 endif
 
-.SUFFIXES: .po .gmo
+NLSPO= $(wildcard nls/*.po)
+NLSGMO= $(NLSPO:.po=.gmo)
 
 %.gmo: %.po
 	$(MSGFMT) -o $@ $<
@@ -124,7 +125,7 @@ mpstat.o: mpstat.c mpstat.h common.h
 mpstat: mpstat.o libsyscom.a
 
 sa1: sa1.in
-	$(SED) s+SA_LIB_DIR+$(SA_LIB_DIR)+g $< > $@
+	$(SED) -e s+SA_LIB_DIR+$(SA_LIB_DIR)+g -e s+SA_DIR+$(SA_DIR)+g $< > $@
 	$(CHMOD) 755 $@
 
 sa2: sa2.in
@@ -140,14 +141,18 @@ sysstat: sysstat.in
 ifeq ($(INSTALL_CRON),y)
 ifeq ($(CRON_OWNER),root)
 	$(SED) -e 's+SU ++g' -e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
-		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > $@
+		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g \
+		-e s+SA_DIR+$(SA_DIR)+g -e 's+CHOWN+# CHOWN+g' $< > $@
 else
 	$(SED) -e 's+SU SA_LIB_DIR/+su $(CRON_OWNER) -c "$(SA_LIB_DIR)/+g' \
-		-e 's+ QUOTE+"+g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > $@
+		-e 's+ QUOTE+"+g' -e s+INIT_DIR/+$(INIT_DIR)/+g \
+		-e s+SA_DIR+$(SA_DIR)+g -e 's+CHOWN+chown $(CRON_OWNER)+g' \
+		$< > $@
 endif
 else
 	$(SED) -e 's+SU ++g' -e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
-		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g $< > $@
+		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g \
+		-e s+SA_DIR+$(SA_DIR)+g -e 's+CHOWN+# CHOWN+g' $< > $@
 endif
 	$(CHMOD) 755 $@
 	
@@ -170,7 +175,7 @@ sysstat.cron.hourly: sysstat.cron.hourly.in
 	$(SED) s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
 
 ifdef REQUIRE_NLS
-locales: nls/af.gmo nls/de.gmo nls/es.gmo nls/fr.gmo nls/it.gmo nls/ja.gmo nls/nb.gmo nls/nn.gmo nls/pl.gmo nls/pt.gmo nls/ro.gmo nls/ru.gmo nls/sk.gmo nls/sv.gmo
+locales: $(NLSGMO)
 else
 locales:
 endif
@@ -185,7 +190,9 @@ install_base: all man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/iostat
 	mkdir -p $(DESTDIR)$(MAN8_DIR)
 	mkdir -p $(DESTDIR)$(SA_DIR)
 ifeq ($(CLEAN_SA_DIR),y)
-	rm -f $(DESTDIR)$(SA_DIR)/sa??
+	find $(DESTDIR)$(SA_DIR) \( -name 'sar??' -o -name 'sa??' -o -name 'sar??.gz' -o -name 'sa??.gz' \) \
+		-exec rm -f {} \;
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
 endif
 	mkdir -p $(DESTDIR)$(BIN_DIR)
 	mkdir -p $(DESTDIR)$(DOC_DIR)
@@ -204,7 +211,8 @@ endif
 	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
 	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 644 sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR);
+	install -m 644 sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
+	install -m 644 sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
 	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
 	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
 	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)
@@ -277,7 +285,6 @@ install_all: install_base
 	      cd $(DESTDIR)$(RC5_DIR) && ln -sf ../rc.sysstat S03sysstat; \
 	   fi \
 	fi
-	install -m 644 sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
 
 uninstall_base:
 	rm -f $(DESTDIR)$(SA_LIB_DIR)/sadc
@@ -295,6 +302,7 @@ uninstall_base:
 	rm -f $(DESTDIR)$(BIN_DIR)/mpstat
 	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_LIB_DIR)
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)
 #	No need to keep sysstat script, config file and links since
 #	the binaries have been deleted.

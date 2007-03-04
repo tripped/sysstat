@@ -1,22 +1,46 @@
 #!/bin/sh
-# SA_LIB_DIR/sa2.sh
-# (C) 1999-2006 Sebastien Godard (sysstat <at> wanadoo.fr)
+# SA_LIB_DIR/sa2
+# (C) 1999-2007 Sebastien Godard (sysstat <at> wanadoo.fr)
 #
 # Changes:
 # - 2004-01-22 Nils Philippsen <nphilipp@redhat.com>
 #   make history configurable
+# - 2007-01-21 Sebastien Godard (sysstat <at> wanadoo.fr)
+#   Support for multiple months history.
 #
-HISTORY=7
-[ -r /etc/sysconfig/sysstat ] && . /etc/sysconfig/sysstat
-[ ${HISTORY} -gt 28 ] && HISTORY=28
 S_TIME_FORMAT=ISO ; export S_TIME_FORMAT
 umask 0022
+DDIR=SA_DIR
 DATE=`date YESTERDAY +%d`
-RPT=SA_DIR/sar${DATE}
+CURRENTFILE=sa${DATE}
+CURRENTRPT=sar${DATE}
+HISTORY=7
+COMPRESSAFTER=10
+[ -r /etc/sysconfig/sysstat ] && . /etc/sysconfig/sysstat
+if [ ${HISTORY} -gt 28 ]
+then
+	CURRENTDIR=`date +%Y%m`
+	cd ${DDIR} || exit 1
+	[ -d ${CURRENTDIR} ] || exit 0
+	touch ${CURRENTDIR}/${CURRENTRPT}
+	# Remove the "compatibility" link and recreate it to point to
+	# the (new) current file
+	rm -f ${CURRENTRPT}
+	ln -s ${CURRENTDIR}/${CURRENTRPT} ${CURRENTRPT}
+	CURRENTDIR=${DDIR}/${CURRENTDIR}
+else
+	CURRENTDIR=${DDIR}
+fi
+RPT=${CURRENTDIR}/${CURRENTRPT}
 ENDIR=BIN_DIR
-DFILE=SA_DIR/sa${DATE}
+DFILE=${CURRENTDIR}/${CURRENTFILE}
 [ -f "$DFILE" ] || exit 0
 cd ${ENDIR}
 ${ENDIR}/sar $* -f ${DFILE} > ${RPT}
-find SA_DIR \( -name 'sar??' -o -name 'sa??' \) -mtime +"${HISTORY}" -exec rm -f {} \;
+find ${DDIR} \( -name 'sar??' -o -name 'sa??' -o -name 'sar??.gz' -o -name 'sa??.gz' \) \
+	-mtime +"${HISTORY}" -exec rm -f {} \;
+find ${DDIR} \( -name 'sar??' -o -name 'sa??' \) -type f -mtime +"${COMPRESSAFTER}" \
+	-exec gzip {} \; > /dev/null 2>&1
+cd ${DDIR}
+rmdir [0-9]????? > /dev/null 2>&1
 

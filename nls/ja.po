@@ -15,9 +15,7 @@ msgstr ""
 
 #:common.c
 msgid "sysstat version %s\n"
-"(C) Sebastien Godard\n"
 msgstr "sysstat バージョン %s\n"
-"(C) Sebastien Godard\n"
 
 #: mpstat.c:62
 msgid ""

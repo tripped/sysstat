@@ -222,7 +222,7 @@ endif
 	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
 	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
 	install -m 644 sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
-	install -m 644 sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
+	install -m 644 sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/config
 #	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
 #	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
 #	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)

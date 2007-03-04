@@ -1,3 +1,10 @@
+sysstat (7.0.4-1) unstable; urgency=low
+
+  * New upstream version.
+  * Merge changes done in sysstat 7.0.0-4.
+
+ -- Robert Luberda <robert@debian.org>  Sun,  4 Mar 2007 20:23:44 +0100
+
 sysstat (7.0.3-1) experimental; urgency=low
 
   * New upstream version.

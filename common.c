@@ -179,7 +179,9 @@ int get_proc_cpu_nr(void)
  ***************************************************************************
  * Return the number of processors used on the machine:
  * 0: one proc and non SMP kernel
- * 1: one proc and SMP kernel, or SMP machine with all but one offlined CPU
+ * 1: one proc and SMP kernel (NB: on SMP machines where all the CPU's but
+ *    one have been disabled, we get the total number of proc since we use
+ *    /sys to count them).
  * 2: two proc...
  * Try to use /sys for that, or /proc/stat if /sys doesn't exist.
  ***************************************************************************
@@ -576,4 +578,25 @@ double ll_s_value(unsigned long long value1, unsigned long long value2,
       return ((double) ((value2 - value1) & 0xffffffff)) / itv * HZ;
    else
       return S_VALUE(value1, value2, itv);
+}
+
+/*
+ ***************************************************************************
+ * Read machine uptime, independently of the number of processors
+ ***************************************************************************
+ */
+void readp_uptime(unsigned long long *uptime)
+{
+   FILE *fp;
+   char line[128];
+   unsigned long up_sec, up_cent;
+
+   if ((fp = fopen(UPTIME, "r")) == NULL)
+      return;
+
+   if (fgets(line, 128, fp) == NULL)
+      return;
+
+   sscanf(line, "%lu.%lu", &up_sec, &up_cent);
+   *uptime = up_sec * HZ + up_cent * HZ / 100;
 }

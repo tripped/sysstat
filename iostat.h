@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1999-2006 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _IOSTAT_H
@@ -80,7 +80,7 @@ struct comm_stats {
  */
 struct io_stats {
    /* # of sectors read */
-   unsigned long long rd_sectors		__attribute__ ((aligned (16)));
+   unsigned long long rd_sectors		__attribute__ ((aligned (8)));
    /* # of sectors written */
    unsigned long long wr_sectors		__attribute__ ((packed));
    /* # of read operations issued to the device */
@@ -112,7 +112,7 @@ struct io_stats {
 #define IO_STATS_SIZE	(sizeof(struct io_stats))
 
 struct io_nfs_stats {
-   unsigned long long rd_normal_bytes		__attribute__ ((aligned (16)));
+   unsigned long long rd_normal_bytes		__attribute__ ((aligned (8)));
    unsigned long long wr_normal_bytes		__attribute__ ((packed));
    unsigned long long rd_direct_bytes		__attribute__ ((packed));
    unsigned long long wr_direct_bytes		__attribute__ ((packed));
@@ -123,7 +123,7 @@ struct io_nfs_stats {
 #define IO_NFS_STATS_SIZE	(sizeof(struct io_nfs_stats))
 
 struct io_hdr_stats {
-   unsigned int active				__attribute__ ((aligned (8)));
+   unsigned int active				__attribute__ ((aligned (4)));
    unsigned int used				__attribute__ ((packed));
    char name[MAX_NAME_LEN]			__attribute__ ((packed));
 };
@@ -133,7 +133,7 @@ struct io_hdr_stats {
 /* List of devices entered on the command line */
 struct io_dlist {
    /* Indicate whether its partitions are to be displayed or not */
-   int disp_part				__attribute__ ((aligned (8)));
+   int disp_part				__attribute__ ((aligned (4)));
    /* Device name */
    char dev_name[MAX_NAME_LEN]			__attribute__ ((packed));
 };

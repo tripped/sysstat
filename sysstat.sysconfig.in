@@ -2,8 +2,8 @@
 # Used by sa2(8) script
 # If value is greater than 28, then log files are kept in
 # multiple directories, one for each month.
-HISTORY=CONFIG_HISTORY
+HISTORY=@HISTORY@
 
 # Compress (using gzip) sa and sar files older than (in days):
-COMPRESSAFTER=10
+COMPRESSAFTER=@COMPRESSAFTER@
 

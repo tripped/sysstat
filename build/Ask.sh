@@ -3,16 +3,15 @@
 # Ask a question and return the answer
 
 QUESTION=$1
-DEFAULT=$2
+PARM=$2
 TEXT_FILE=$3
 while :; do
-	echo -n "${QUESTION} [${DEFAULT}] " >/dev/tty
+	echo -n "${QUESTION} [${PARM}] " >/dev/tty
 	read ANSWER
 	if [ "${ANSWER}" = "" ]; then
-		echo ${DEFAULT}
 		break
 	elif [ "${ANSWER}" = "?" ]; then
-		cat build/.text/${TEXT_FILE} >/dev/tty
+		cat build/${TEXT_FILE} >/dev/tty
 	else
 		echo ${ANSWER}
 		break

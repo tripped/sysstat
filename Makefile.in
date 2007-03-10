@@ -1,72 +1,90 @@
 # Makefile to build sysstat commands
-# (C) 1999-2006 Sebastien GODARD (sysstat <at> wanadoo.fr)
+# # (C) 1999-2007 Sebastien GODARD (sysstat <at> wanadoo.fr)
 
-# Version
-VERSION = 7.0.4
-
-include build/CONFIG
+# Version and package name
+VERSION = @PACKAGE_VERSION@
+PACKAGE = @PACKAGE_NAME@
 
 # Compiler to use
-CC = gcc
-# Other commands
-SED = sed
-CHMOD = chmod
-CHOWN = chown
-# Full path to prevent from using aliases
-CP = /bin/cp
+CC = @CC@
 
-CHKCONFIG = /sbin/chkconfig
+# Other commands
+CHMOD = @CHMOD@
+CHOWN = @CHOWN@
+LN_S = @LN_S@
+# Full path to prevent from using aliases
+CP = @PATH_CP@
+
+CHKCONFIG = @PATH_CHKCONFIG@
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_BIN = @INSTALL_BIN@
 
 # Directories
 ifndef PREFIX
-PREFIX = /usr
+PREFIX = @prefix@
 endif
-ifndef SA_LIB_DIR
-SA_LIB_DIR = /usr/lib/sa
-endif
+ifndef DESTDIR
 DESTDIR = $(RPM_BUILD_ROOT)
-BIN_DIR = $(PREFIX)/bin
+endif
+# These two variables are needed by other ones (eg bindir)
+prefix=$(PREFIX)
+exec_prefix=@exec_prefix@
+ifndef SA_LIB_DIR
+SA_LIB_DIR = @SA_LIB_DIR@
+endif
+SADC_PATH = $(SA_LIB_DIR)/sadc
+ifndef SA_DIR
+SA_DIR = @SA_DIR@
+endif
+BIN_DIR = @bindir@
 ifndef MAN_DIR
 # Don't use $(PREFIX)/share/man by default: not necessarily in man path!
-MAN_DIR = $(PREFIX)/man
+MAN_DIR = @mandir@
 endif
 MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
-DOC_DIR = $(PREFIX)/doc/sysstat-$(VERSION)
+DOC_DIR = $(PREFIX)/doc/$(PACKAGE)-$(VERSION)
 NLS_DIR = $(PREFIX)/share/locale
-SYSCONFIG_DIR = /etc/sysstat
+SYSCONFIG_DIR = /etc/sysconfig
 
 # Compiler flags
-CFLAGS = -Wall -Wstrict-prototypes -pipe -g -fno-strength-reduce
-LFLAGS = -s
-# SAS_DFLAGS may also contain SMP_RACE definition
-SAS_DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
+CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe -O2 -fno-strength-reduce
+DFLAGS = @DFLAGS@
+LFLAGS =  -s
+# DFLAGS may already contain SMP_RACE definition
+DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
 
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-  CFLAGS += -O0
-else
-  CFLAGS += -O2
-endif
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-  LFLAGS += -s
-endif
-
-
-# NLS (National Language Support)
-# Package name
-PACKAGE = sysstat
 # The msgfmt command
-MSGFMT = msgfmt
+MSGFMT = @MSGFMT@
 
+# Settings 
+NLS = @NLS@
+ifeq ($(NLS),y)
+REQUIRE_NLS = -DUSE_NLS -DPACKAGE=\"$(PACKAGE)\" -DLOCALEDIR=\"$(NLS_DIR)\"
+endif
+ifdef REQUIRE_NLS
+   DFLAGS += $(REQUIRE_NLS)
+endif
+INSTALL_CRON = @INSTALL_CRON@
+CRON_OWNER = @CRON_OWNER@
+
+MAN_GROUP = @MAN_GROUP@
 ifndef IGNORE_MAN_GROUP
-MANGRPARG = -g $(MAN_GROUP)
-else
+IGNORE_MAN_GROUP = @IGNORE_MAN_GROUP@
+endif
+ifeq ($(IGNORE_MAN_GROUP),y)
 MANGRPARG =
+else
+MANGRPARG = -g $(MAN_GROUP)
+endif
+ifndef CLEAN_SA_DIR
+CLEAN_SA_DIR = @CLEAN_SA_DIR@
 endif
 
 # Run-command directories
 ifndef RC_DIR
-RC_DIR = /etc/rc.d
+RC_DIR = @RC_DIR@
 endif
 RC0_DIR = $(RC_DIR)/rc0.d
 RC1_DIR = $(RC_DIR)/rc1.d
@@ -76,10 +94,10 @@ RC4_DIR = $(RC_DIR)/rc4.d
 RC5_DIR = $(RC_DIR)/rc5.d
 RC6_DIR = $(RC_DIR)/rc6.d
 ifndef INIT_DIR
-INIT_DIR = /etc/rc.d/init.d
+INIT_DIR = @INIT_DIR@
 endif
 ifndef INITD_DIR
-INITD_DIR = init.d
+INITD_DIR = @INITD_DIR@
 endif
 
 NLSPO= $(wildcard nls/*.po)
@@ -94,31 +112,23 @@ NLSGMO= $(NLSPO:.po=.gmo)
 % : %.o
 	$(CC) -o $@ $(CFLAGS) $^ $(LFLAGS)
 
-all: sa1 sa2 crontab sysstat sysstat.sysconfig sysstat.crond \
-	sysstat.cron.daily sysstat.cron.hourly sysstat.crond.sample \
-	sadc sar sadf iostat mpstat locales
+all: sadc sar sadf iostat mpstat locales
 
 common.o: common.c version.h common.h ioconf.h
 
 sa_common.o: sa_common.c sa.h common.h ioconf.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 ioconf.o: ioconf.c ioconf.h
 
-libsyscom.a: libsyscom.a(common.o) libsyscom.a(ioconf.o)
+libsyscom.a: libsyscom.a(common.o ioconf.o)
 
 libsyssa.a: libsyssa.a(sa_common.o)
 
-version.h: version.in
-	$(SED) s+VERSION_NUMBER+$(VERSION)+g $< > $@
-
 sadc.o: sadc.c sa.h common.h ioconf.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sadc: sadc.o libsyscom.a libsyssa.a
 
 sar.o: sar.c sa.h common.h
-	$(CC) -o $@ -c $(CFLAGS) $(DFLAGS) $(SAS_DFLAGS) $<
 
 sar: sar.o libsyscom.a libsyssa.a
 
@@ -134,56 +144,6 @@ mpstat.o: mpstat.c mpstat.h common.h
 
 mpstat: mpstat.o libsyscom.a
 
-sa1: sa1.in
-	$(SED) -e s+SA_LIB_DIR+$(SA_LIB_DIR)+g -e s+SA_DIR+$(SA_DIR)+g $< > $@
-	$(CHMOD) 755 $@
-
-sa2: sa2.in
-	$(SED) -e s+BIN_DIR+$(BIN_DIR)+g -e s+SA_DIR+$(SA_DIR)+g \
-		-e s+SA_LIB_DIR+$(SA_LIB_DIR)+g \
-		-e s+YESTERDAY+$(YESTERDAY)+g $< > $@
-	$(CHMOD) 755 $@
-
-sysstat.sysconfig: sysstat.sysconfig.in
-	$(SED) s+CONFIG_HISTORY+$(HISTORY)+g $< > $@
-
-sysstat: sysstat.in
-ifeq ($(INSTALL_CRON),y)
-ifeq ($(CRON_OWNER),root)
-	$(SED) -e 's+SU ++g' -e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
-		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g \
-		-e s+SA_DIR+$(SA_DIR)+g -e 's+CHOWN+# CHOWN+g' $< > $@
-else
-	$(SED) -e 's+SU SA_LIB_DIR/+su $(CRON_OWNER) -c "$(SA_LIB_DIR)/+g' \
-		-e 's+ QUOTE+"+g' -e s+INIT_DIR/+$(INIT_DIR)/+g \
-		-e s+SA_DIR+$(SA_DIR)+g -e 's+CHOWN+chown $(CRON_OWNER)+g' \
-		$< > $@
-endif
-else
-	$(SED) -e 's+SU ++g' -e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
-		-e 's+ QUOTE++g' -e s+INIT_DIR/+$(INIT_DIR)/+g \
-		-e s+SA_DIR+$(SA_DIR)+g -e 's+CHOWN+# CHOWN+g' $< > $@
-endif
-	$(CHMOD) 755 $@
-	
-crontab: crontab.sample
-	$(SED) s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
-
-sysstat.crond: sysstat.crond.in
-	$(SED) -e s+USER+$(CRON_OWNER)+g \
-		-e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
-
-sysstat.crond.sample: sysstat.crond.in
-	$(SED) -e s+USER+$(CRON_OWNER)+g \
-		-e s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g \
-		-e s/^/#/ $< > $@
-
-sysstat.cron.daily: sysstat.cron.daily.in
-	$(SED) s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
-
-sysstat.cron.hourly: sysstat.cron.hourly.in
-	$(SED) s+SA_LIB_DIR/+$(SA_LIB_DIR)/+g $< > $@
-
 ifdef REQUIRE_NLS
 locales: $(NLSGMO)
 else
@@ -191,10 +151,11 @@ locales:
 endif
 
 # Phony targets
-.PHONY: clean distclean config install install_base install_all uninstall \
+.PHONY: clean distclean install install_base install_all uninstall \
 	uninstall_base uninstall_all dist bdist
 
-install_base: all man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/iostat.1
+install_base: all sa1 sa2 sysstat.sysconfig \
+	man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/iostat.1
 	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
 	mkdir -p $(DESTDIR)$(MAN1_DIR)
 	mkdir -p $(DESTDIR)$(MAN8_DIR)
@@ -207,30 +168,31 @@ endif
 	mkdir -p $(DESTDIR)$(BIN_DIR)
 	mkdir -p $(DESTDIR)$(DOC_DIR)
 	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
-	install -m 755 sa1 $(DESTDIR)$(SA_LIB_DIR)
-	install -m 644 $(MANGRPARG) man/sa1.8 $(DESTDIR)$(MAN8_DIR)
-	install -m 755 sa2 $(DESTDIR)$(SA_LIB_DIR)
-	install -m 644 $(MANGRPARG) man/sa2.8 $(DESTDIR)$(MAN8_DIR)
-	install -m 755 sadc $(DESTDIR)$(SA_LIB_DIR)
-	install -m 644 $(MANGRPARG) man/sadc.8 $(DESTDIR)$(MAN8_DIR)
-	install -m 755 sar $(DESTDIR)$(BIN_DIR)
-	install -m 644 $(MANGRPARG) man/sar.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 755 sadf $(DESTDIR)$(BIN_DIR)
-	install -m 644 $(MANGRPARG) man/sadf.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 755 iostat $(DESTDIR)$(BIN_DIR)
-	install -m 644 $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 755 mpstat $(DESTDIR)$(BIN_DIR)
-	install -m 644 $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
-	install -m 644 sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
-	install -m 644 sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/config
-#	install -m 644 CHANGES $(DESTDIR)$(DOC_DIR)
-#	install -m 644 COPYING $(DESTDIR)$(DOC_DIR)
-#	install -m 644 CREDITS $(DESTDIR)$(DOC_DIR)
-#	install -m 644 README  $(DESTDIR)$(DOC_DIR)
-#	install -m 644 FAQ     $(DESTDIR)$(DOC_DIR)
-#	install -m 644 *.lsm   $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
+	$(INSTALL_DATA) $(MANGRPARG) man/sa1.8 $(DESTDIR)$(MAN8_DIR)
+	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
+	$(INSTALL_DATA) $(MANGRPARG) man/sa2.8 $(DESTDIR)$(MAN8_DIR)
+	$(INSTALL_BIN) sadc $(DESTDIR)$(SA_LIB_DIR)
+	$(INSTALL_DATA) $(MANGRPARG) man/sadc.8 $(DESTDIR)$(MAN8_DIR)
+	$(INSTALL_BIN) sar $(DESTDIR)$(BIN_DIR)
+	$(INSTALL_DATA) $(MANGRPARG) man/sar.1 $(DESTDIR)$(MAN1_DIR)
+	$(INSTALL_BIN) sadf $(DESTDIR)$(BIN_DIR)
+	$(INSTALL_DATA) $(MANGRPARG) man/sadf.1 $(DESTDIR)$(MAN1_DIR)
+	$(INSTALL_BIN) iostat $(DESTDIR)$(BIN_DIR)
+	$(INSTALL_DATA) $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
+	$(INSTALL_BIN) mpstat $(DESTDIR)$(BIN_DIR)
+	$(INSTALL_DATA) $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
+	$(INSTALL_DATA) sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
+	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
+	$(INSTALL_DATA) CHANGES $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) COPYING $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) CREDITS $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) README $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) FAQ $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) *.lsm $(DESTDIR)$(DOC_DIR)
 ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/da/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES
@@ -244,55 +206,57 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/sv/LC_MESSAGES
-	install -m 644 nls/af.gmo $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/de.gmo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/es.gmo $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/fr.gmo $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/it.gmo $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/ja.gmo $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/nb.gmo $(DESTDIR)$(NLS_DIR)/nb/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/nn.gmo $(DESTDIR)$(NLS_DIR)/nn/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/pl.gmo $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/pt.gmo $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/ro.gmo $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/ru.gmo $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/sk.gmo $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES/$(PACKAGE).mo
-	install -m 644 nls/sv.gmo $(DESTDIR)$(NLS_DIR)/sv/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/af.gmo $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/da.gmo $(DESTDIR)$(NLS_DIR)/da/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/de.gmo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/es.gmo $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/fr.gmo $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/it.gmo $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/ja.gmo $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/nb.gmo $(DESTDIR)$(NLS_DIR)/nb/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/nn.gmo $(DESTDIR)$(NLS_DIR)/nn/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/pl.gmo $(DESTDIR)$(NLS_DIR)/pl/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/pt.gmo $(DESTDIR)$(NLS_DIR)/pt/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/ro.gmo $(DESTDIR)$(NLS_DIR)/ro/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/ru.gmo $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/sk.gmo $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/sv.gmo $(DESTDIR)$(NLS_DIR)/sv/LC_MESSAGES/$(PACKAGE).mo
 endif
 
-install_all: install_base
+install_all: install_base crontab sysstat \
+	sysstat.crond sysstat.cron.daily sysstat.cron.hourly
 	$(CHOWN) $(CRON_OWNER) $(DESTDIR)$(SA_DIR)
 	if [ -d $(DESTDIR)/etc/cron.d ]; then \
-	   install -m 644 sysstat.crond $(DESTDIR)/etc/cron.d/sysstat; \
+	   $(INSTALL_DATA) sysstat.crond $(DESTDIR)/etc/cron.d/sysstat; \
 	elif [ -d $(DESTDIR)/etc/cron.hourly -a -d $(DESTDIR)/etc/cron.daily ]; then \
-	   install -m 755 sysstat.cron.hourly $(DESTDIR)/etc/cron.hourly/sysstat; \
-	   install -m 755 sysstat.cron.daily $(DESTDIR)/etc/cron.daily/sysstat; \
+	   $(INSTALL_BIN) sysstat.cron.hourly $(DESTDIR)/etc/cron.hourly/sysstat; \
+	   $(INSTALL_BIN) sysstat.cron.daily $(DESTDIR)/etc/cron.daily/sysstat; \
 	else \
 	   su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).save"; \
 	   $(CP) -a /tmp/crontab-$(CRON_OWNER).save ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.save; \
-	   echo "USER PREVIOUS CRONTAB SAVED IN CURRENT DIRECTORY (USING .save SUFFIX)."; \
+	   echo "USER'S PREVIOUS CRONTAB SAVED IN CURRENT DIRECTORY (USING .save SUFFIX)."; \
 	   su $(CRON_OWNER) -c "crontab crontab"; \
 	fi
 	if [ -d $(DESTDIR)$(INIT_DIR) ]; then \
-	   install -m 755 sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
+	   $(INSTALL_BIN) sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
 	   if [ -x $(CHKCONFIG) ]; then \
 	      cd $(DESTDIR)$(INIT_DIR) && $(CHKCONFIG) --add sysstat; \
 	   else \
-	      cd $(DESTDIR)$(RC2_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
-	      cd $(DESTDIR)$(RC3_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
-	      cd $(DESTDIR)$(RC5_DIR) && ln -sf ../$(INITD_DIR)/sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC2_DIR) && $(LN_S) -f ../$(INITD_DIR)/sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC3_DIR) && $(LN_S) -f ../$(INITD_DIR)/sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC5_DIR) && $(LN_S) -f ../$(INITD_DIR)/sysstat S03sysstat; \
 	   fi \
 	elif [ -d $(DESTDIR)$(RC_DIR) ]; then \
-	   install -m 755 sysstat $(DESTDIR)$(RC_DIR)/rc.sysstat; \
+	   $(INSTALL_BIN) sysstat $(DESTDIR)$(RC_DIR)/rc.sysstat; \
 	   if [ -x $(CHKCONFIG) ]; then \
 	      cd $(DESTDIR)$(RC_DIR) && $(CHKCONFIG) --add sysstat; \
 	   else \
 	      [ -d $(DESTDIR)$(RC2_DIR) ] || mkdir -p $(DESTDIR)$(RC2_DIR); \
 	      [ -d $(DESTDIR)$(RC3_DIR) ] || mkdir -p $(DESTDIR)$(RC3_DIR); \
 	      [ -d $(DESTDIR)$(RC5_DIR) ] || mkdir -p $(DESTDIR)$(RC5_DIR); \
-	      cd $(DESTDIR)$(RC2_DIR) && ln -sf ../rc.sysstat S03sysstat; \
-	      cd $(DESTDIR)$(RC3_DIR) && ln -sf ../rc.sysstat S03sysstat; \
-	      cd $(DESTDIR)$(RC5_DIR) && ln -sf ../rc.sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC2_DIR) && $(LN_S) -f ../rc.sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC3_DIR) && $(LN_S) -f ../rc.sysstat S03sysstat; \
+	      cd $(DESTDIR)$(RC5_DIR) && $(LN_S) -f ../rc.sysstat S03sysstat; \
 	   fi \
 	fi
 
@@ -314,8 +278,8 @@ uninstall_base:
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_LIB_DIR)
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)
-#	No need to keep sysstat script, config file and links since
-#	the binaries have been deleted.
+#       No need to keep sysstat script, config file and links since
+#       the binaries have been deleted.
 	rm -f $(DESTDIR)$(INIT_DIR)/sysstat
 	rm -f $(DESTDIR)$(RC_DIR)/rc.sysstat
 	rm -f $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
@@ -323,18 +287,19 @@ uninstall_base:
 	rm -f $(DESTDIR)$(RC2_DIR)/S??sysstat
 	rm -f $(DESTDIR)$(RC3_DIR)/S??sysstat
 	rm -f $(DESTDIR)$(RC5_DIR)/S??sysstat
-#	Delete possible kill entries installed by chkconfig
+#       Delete possible kill entries installed by chkconfig
 	rm -f $(DESTDIR)$(RC0_DIR)/K??sysstat
 	rm -f $(DESTDIR)$(RC1_DIR)/K??sysstat
 	rm -f $(DESTDIR)$(RC4_DIR)/K??sysstat
 	rm -f $(DESTDIR)$(RC6_DIR)/K??sysstat
-#	Vixie cron entries also can be safely deleted here
+#       Vixie cron entries also can be safely deleted here
 	rm -f $(DESTDIR)/etc/cron.d/sysstat
-#	Id. for Slackware cron entries
+#       Id. for Slackware cron entries
 	rm -f $(DESTDIR)/etc/cron.hourly/sysstat
 	rm -f $(DESTDIR)/etc/cron.daily/sysstat
-#	Remove locale files
+#       Remove locale files
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/da/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES/$(PACKAGE).mo
@@ -349,6 +314,7 @@ uninstall_base:
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/sk/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/sv/LC_MESSAGES/$(PACKAGE).mo
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/da/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES
@@ -363,6 +329,7 @@ uninstall_base:
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sk/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sv/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/da
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr
@@ -380,7 +347,6 @@ uninstall_base:
 	-rmdir $(DESTDIR)$(DOC_DIR)
 	@echo "Please ignore the errors above, if any."
 
-# NB: Leading minus sign tells make to ignore errors...
 uninstall_all: uninstall_base
 	-su $(CRON_OWNER) -c "crontab -l > /tmp/crontab-$(CRON_OWNER).old"
 	-$(CP) -a /tmp/crontab-$(CRON_OWNER).old ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.old
@@ -400,24 +366,29 @@ install: install_base
 endif
 
 clean:
-	rm -f sadc sa1 sa2 sysstat sar sadf iostat mpstat *.o *.a core TAGS crontab
-	rm -f version.h sysstat.sysconfig sysstat.crond sysstat.cron.daily
-	rm -f sysstat.cron.hourly sysstat.crond.sample
+	rm -f sadc sar sadf iostat mpstat *.o *.a core TAGS
 	find nls -name "*.gmo" -exec rm -f {} \;
 
-distclean: clean
-	$(CP) build/CONFIG.def build/CONFIG
+almost-distclean: clean
+	rm -f sa1 sa2 sysstat crontab version.h
+	rm -f sysstat.sysconfig sysstat.crond sysstat.cron.daily
+	rm -f sysstat.cron.hourly sysstat.crond.sample
+	rm -f *.log config.status
+	rm -rf autom4te.cache
 	rm -f *.save *.old .*.swp data
 	find . -name "*~" -exec rm -f {} \;
 
-dist: distclean
-	cd .. && (tar -cvf - sysstat-$(VERSION) | gzip -v9 > sysstat-$(VERSION).tar.gz)
+distclean: almost-distclean
+	rm -f Makefile
 
-bdist: distclean
-	cd .. && (tar -cvf - sysstat-$(VERSION) | bzip2 > sysstat-$(VERSION).tar.bz2)
+maintainer-clean: distclean
+	rm -f configure
 
-config: clean
-	@sh build/Configure.sh
+dist: almost-distclean
+	cd .. && (tar --exclude=Makefile -cvf - sysstat-$(VERSION) | gzip -v9 > sysstat-$(VERSION).tar.gz)
+
+bdist: almost-distclean
+	cd .. && (tar --exclude=Makefile -cvf - sysstat-$(VERSION) | bzip2 > sysstat-$(VERSION).tar.bz2)
 
 tags:
 	etags ./*.[hc]

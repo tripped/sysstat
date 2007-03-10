@@ -1,41 +1,33 @@
 #!/bin/sh
-# SA_LIB_DIR/sa2
+# @SA_LIB_DIR@/sa2
 # (C) 1999-2007 Sebastien Godard (sysstat <at> wanadoo.fr)
 #
 # Changes:
-# - 2004-01-22 Nils Philippsen <nphilipp@redhat.com>
-#   make history configurable
-# - 2007-01-21 Sebastien Godard (sysstat <at> wanadoo.fr)
-#   Support for multiple months history.
+# 2004-01-22i: Nils Philippsen <nphilipp@redhat.com>
+#	Make history configurable.
+# 2007-01-21: Sebastien Godard (sysstat <at> wanadoo.fr)
+#	Support for multiple months history.
+# 2007-02-07: Ivana Varekova <varekova@redhat.com>
+#	Autoconf support added.
 #
 S_TIME_FORMAT=ISO ; export S_TIME_FORMAT
 umask 0022
-DDIR=SA_DIR
-DATE=`date YESTERDAY +%d`
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+DDIR=@SA_DIR@
+YESTERDAY=@YESTERDAY@
+DATE=`date ${YESTERDAY} +%d`
 CURRENTFILE=sa${DATE}
 CURRENTRPT=sar${DATE}
-HISTORY=7
-COMPRESSAFTER=10
+HISTORY=@HISTORY@
+COMPRESSAFTER=@COMPRESSAFTER@
 # [ -r /etc/sysconfig/sysstat ] && . /etc/sysconfig/sysstat
 [ -r /etc/sysstat/config ] && . /etc/sysstat/config
 if [ ${HISTORY} -gt 28 ]
 then
-	CURRENTDIR=`date YESTERDAY +%Y%m`
+	CURRENTDIR=`date +%Y%m`
 	cd ${DDIR} || exit 1
-	[ -d ${CURRENTDIR} ] || mkdir -p ${CURRENTDIR}
-
-	# Check if CURRENTFILE is the correct file created at $DATE
-	# Note: using `-ge' instead of `=' since the file could have
-	# the next day time stamp because of the file rotating feature of sadc
-	[ -f ${CURRENTFILE} ] &&
-		[ "`date +%Y%m%d -r ${CURRENTFILE}`" -ge "${CURRENTDIR}${DATE}" ] || exit 0
-		
-	# If the file is a regular file, then move it to $CURRENTDIR
-	[ ! -L ${CURRENTFILE} ] && 
-		mv -f ${CURRENTFILE} ${CURRENTDIR}/${CURRENTFILE} &&
-		ln -s ${CURRENTDIR}/${CURRENTFILE} ${CURRENTFILE} 
-
-
+	[ -d ${CURRENTDIR} ] || exit 0
 	touch ${CURRENTDIR}/${CURRENTRPT}
 	# Remove the "compatibility" link and recreate it to point to
 	# the (new) current file
@@ -46,19 +38,15 @@ else
 	CURRENTDIR=${DDIR}
 fi
 RPT=${CURRENTDIR}/${CURRENTRPT}
-ENDIR=BIN_DIR
+ENDIR=@bindir@
 DFILE=${CURRENTDIR}/${CURRENTFILE}
 [ -f "$DFILE" ] || exit 0
 cd ${ENDIR}
-[ -L ${RPT} ] && rm -f ${RPT}
 ${ENDIR}/sar.sysstat $* -f ${DFILE} > ${RPT}
 find ${DDIR} \( -name 'sar??' -o -name 'sa??' -o -name 'sar??.gz' -o -name 'sa??.gz' \) \
 	-mtime +"${HISTORY}" -exec rm -f {} \;
 find ${DDIR} \( -name 'sar??' -o -name 'sa??' \) -type f -mtime +"${COMPRESSAFTER}" \
-	-exec gzip {} \; > /dev/null 2>&1
-# remove broken links	
-find -L ${DDIR} \( -name 'sar??' -o -name 'sa??' \) -type l \
-	-exec rm -f {} \; > /dev/null 2>&1
+	-exec gzip -9 {} \; > /dev/null 2>&1
 cd ${DDIR}
 rmdir [0-9]????? > /dev/null 2>&1
-exit 0
+

@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2006 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 2000-2007 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _MPSTAT_H
@@ -17,8 +17,6 @@ struct mp_stats {
    unsigned long long cpu_softirq		__attribute__ ((packed));
    unsigned long long cpu_steal			__attribute__ ((packed));
    unsigned long long irq			__attribute__ ((packed));
-   /* Structure must be a multiple of 8 bytes, since we use an array of structures.
-    * Each structure is *aligned*, and we want the structures to be packed together. */
 };
 
 #define MP_STATS_SIZE	(sizeof(struct mp_stats))

@@ -23,15 +23,17 @@ Linux. These include mpstat, iostat, sar, sadc, sadf and sa tools.
 
 The first stage is to configure sysstat for your system:
 
-	make config
+	./configure
 
-This is useful to change some configuration variables, for instance if you
-want to choose installation directories.
-Answer the questions or enter Return to accept the default values.
-For yes/no questions, please answer 'y' or 'n' (without the quotes): It is
-case sensitive! You can also enter '?' to get a help message.
-Configuring your system is not compulsory. If not done, sysstat will use
-a default configuration file...
+You can set several variables and parameters on the command line.
+Please enter "./configure --help" to display them.
+There is another way to configure sysstat instead of entering "./configure":
+this is the Interactive Configuration script (iconfig) which will ask you
+for the value of the main sysstat variables and parameters.
+Enter "./iconfig" then answer the questions or enter Return to accept
+the (sane) default values. For yes/no questions, please answer 'y' or 'n'
+(without the quotes): It is case sensitive! You can also enter '?' to get
+a help message that will explain the meaning of each variable or parameter.
 
 The next stage is to build the various binary files. Enter:
 
@@ -47,8 +49,8 @@ That's all!
 Of course tell me if there are any problems. This is the only way I can improve
 'sysstat'. Please also remember to read the FAQ included in this package.
 
-With regard to sysstat, patches and suggestions for improvements are always
-welcome! Send them to (sysstat <at> wanadoo.fr).
+Patches and suggestions for improvements are always welcome!
+Send them to (sysstat <at> wanadoo.fr).
 
 
 FILES THAT ARE INSTALLED
@@ -76,6 +78,7 @@ ${PREFIX}(/share)/man/man1/sadf.1
 ${PREFIX}(/share)/man/man1/iostat.1
 ${PREFIX}(/share)/man/man1/mpstat.1
 ${PREFIX}/share/locale/af/LC_MESSAGES/sysstat.mo
+${PREFIX}/share/locale/da/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/de/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/es/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/fr/LC_MESSAGES/sysstat.mo

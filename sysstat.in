@@ -1,8 +1,8 @@
 #!/bin/sh
 #
 # chkconfig: 235 03 97
-# INIT_DIR/sysstat
-# 2000/01/22 - Sebastien Godard <sebastien.godard@wanadoo.fr>
+# @INIT_DIR@/sysstat
+# (C) 2000-2007 Sebastien Godard <sebastien.godard@wanadoo.fr>
 #
 # Description: Insert a dummy record in current daily data file.
 #	       This indicates that the counters have restarted from 0.
@@ -13,6 +13,8 @@
 #	Added support for chkconfig.
 # 2007/01/21 - Sebastien Godard (sysstat <at> wanadoo.fr)
 #	Added support for multiple months history.
+# 2007/02/07 - Ivana Varekova <varekova@redhat.com>
+#	Autoconf support added.
 #
 
 RETVAL=0
@@ -28,7 +30,7 @@ case "$1" in
 	then
 		CURRENTDIR=`date +%Y%m`
 		CURRENTFILE=sa`date +%d`
-		DDIR=SA_DIR
+		DDIR=@SA_DIR@
 		cd ${DDIR} || exit 1
 		[ -d ${CURRENTDIR} ] || mkdir -p ${CURRENTDIR}
 		touch ${CURRENTDIR}/${CURRENTFILE}
@@ -36,10 +38,10 @@ case "$1" in
 	        # point to the (new) current file
 	        rm -f ${CURRENTFILE}
 	        ln -s ${CURRENTDIR}/${CURRENTFILE} ${CURRENTFILE}
-		CHOWN ${CURRENTDIR} ${CURRENTFILE} ${CURRENTDIR}/${CURRENTFILE}
+		@REM_CHOWN@ @CRON_OWNER@ ${CURRENTDIR} ${CURRENTFILE} ${CURRENTDIR}/${CURRENTFILE}
 	fi
         echo -n "Calling the system activity data collector (sadc): "
-        SU SA_LIB_DIR/sadc -F -L - && touch /tmp/sysstat.run QUOTE
+        @SU_C_OWNER@ @QUOTE@ @SA_LIB_DIR@/sadc -F -L - && touch /tmp/sysstat.run @QUOTE@
 
 	# Try to guess if sadc was successfully launched. The difficulty
 	# here is that the exit code is lost when the above command is

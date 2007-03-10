@@ -48,6 +48,8 @@ Also tell me what version your kernel is).
 2.18. The sar command complains with the following message:
       "Requested activities not available".
 2.19. How can I keep sar data for more than one month?
+2.20. How can I load sar data into an Oracle database for performance
+      analysis and capacity planning?
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -70,11 +72,15 @@ make: msgfmt: Command not found
 make: ***[locales] Error 127
 
 The msgfmt command belongs to the GNU gettext package.
-If you don't have it on your system, just answer 'n' (for "no") at the
-question
-"Enable National Language Support (NLS)? [y]"
-during config stage (make config), then compile sysstat as usual (make ;
-make install).
+If you don't have it on your system, just configure sysstat with
+NLS disabled like this:
+
+$ ./configure --disable-nls
+
+or answer 'y' (for "yes") to the question
+"Disable National Language Support (NLS)? (y/n) [--disable-nls]"
+if you use the Interactive Configuration script (iconfig),
+then compile sysstat as usual (make ; make install).
 Please read the README-nls file included in sysstat source package to learn
 some more about National Language Support.
 
@@ -95,8 +101,10 @@ make: *** [common.o] Error 1
 Make sure that you have the Linux kernel sources installed in
 /usr/src/linux. Also make sure that the symbolic link exists in the
 /usr/src/linux/include directory and points to the right architecture, e.g.:
+
 # ll /usr/src/linux/include/asm
 lrwxrwxrwx   1 root     root            8 May  5 18:31 /usr/src/linux/include/asm -> asm-i386
+
 In fact, only the Linux kernel headers should be necessary to be able
 to compile sysstat.
 
@@ -108,6 +116,7 @@ and sometimes as HH:MM:SS AM/PM...
 The time format used by sysstat tools depends on the locale of your system.
 The locale is defined by several environment variables, among which the LANG
 variable is perhaps the most widely used. See the following example:
+
 $ export LANG=en_US
 $ sar
 Linux 2.4.9 (brooks.seringas.fr)        07/20/04
@@ -144,6 +153,7 @@ now using is not compatible with the format of the files created by a
 previous version of sar.
 The solution is easy: just log in as root and remove by hand all the files
 located in the /var/log/sa directory:
+
 # rm /var/log/sa/sa??
 
 ~~~
@@ -181,6 +191,7 @@ But sar can also display statistics collected "on the fly": just enter
 the proper option on the command line to indicate which statistics are
 to be displayed, and also specify an <interval> and <count> number.
 E.g.:
+
 # sar 2 5  --> will report CPU utilization every two seconds, five times.
 # sar -n DEV 3 0  --> will report network device utilization every
 3 seconds, in an infinite loop.
@@ -212,12 +223,17 @@ Feb 17 04:05:00 bolums1 kernel: EIP:
 The trouble you have is triggered by a *Linux* kernel bug, not a sysstat
 one... The best solution is to upgrade your kernel to the latest stable
 release.
-Also, if you cannot upgrade your box, try to compile sysstat after
-answering 'y' to the question:
-"Linux SMP race in serial driver workaround?"
-at the config stage (make config). Indeed, we found that 2.2.x kernels
-(with x <= 15) have an SMP race condition, which the sar command
-may trigger when it reads the /proc/tty/driver/serial file.
+Also, if you cannot upgrade your box, try to configure sysstat with the
+SMP race workaround:
+
+$ ./configure --enable-smp-race
+
+or answer 'y' to the question:
+"Linux SMP race in serial driver workaround? (y/n) [--enable-smp-race]"
+if you use the Interactive Configuration script (iconfig).
+Indeed, we found that 2.2.x kernels (with x <= 15) have an SMP race
+condition, which the sar command may trigger when it reads the
+/proc/tty/driver/serial file.
 
 ~~~
 
@@ -243,10 +259,15 @@ the 'sysstat' shell script must be called by the system, so that the
 LINUX RESTART message can be inserted into the daily data file, indicating
 that the relevant kernel counters have been reinitialized...
 You can install the 'sysstat' script by hand in the relevant startup
-directory, or you can ask sysstat to do it for you: answer 'y' to the
-question "Set crontab to start sar automatically" during config stage
-('make config'), then compile sysstat as usual and run 'make install'
-as the last stage.
+directory, or you can ask sysstat to do it for you during configuration
+stage by entering:
+
+$ ./configure --enable-install-cron
+
+Or you can answer 'y' to the question:
+"Set crontab to start sar automatically? (y/n) [--enable-install-cron]"
+if you use the Interactive Configuration script (iconfig).
+Then compile sysstat as usual and run 'make install' as the last stage.
 
 ~~~
 
@@ -322,7 +343,8 @@ at the end of the previous daily data file (/var/log/sa/sa<DD>) *and* at the
 beginning of the new one (/var/log/sa/sa<DD+1>). Please note that '-' must be
 used to specify the output file for sadc to be able to detect such a file
 rotation. So a crontab like the following one should enable you to get the
-data for midnight at the end of each daily data file :
+data for midnight at the end of each daily data file:
+
 # Activity reports every 10 minutes from 01:00:00 to 22:50:00
 0 1-22 * * * /usr/local/lib/sa/sa1 600 6 &
 # Activity reports every 10 minutes from 23:00:00 to 00:00:00
@@ -331,6 +353,13 @@ data for midnight at the end of each daily data file :
 0 23 * * * /usr/local/lib/sa/sa1 600 7 &
 # Activity reports every 10 minutes from 00:10:00 to 00:50:00
 10 0 * * * /usr/local/lib/sa/sa1 600 5 &
+
+Another possible crontab would be:
+
+*/10 1-22 * * * /usr/lib/sa/sa1 -d 1 1
+0,10,20,30,40 23 * * * /usr/lib/sa/sa1 -d 1 1
+50 23 * * * /usr/lib/sa/sa1 -d 600 2
+10,20,30,40,50 0 * * * /usr/lib/sa/sa1 -d 1 1
 
 ~~~
 
@@ -361,12 +390,17 @@ No, sar doesn't need a lot of CPU to run, nor does it make your system slow,
 contrary to what some people think. In the first place, it only runs every ten
 minutes by default. Secondly, when it does run, it is over and done very
 quickly. Try:
-time /usr/lib/sa/sa1
+
+$ time /usr/lib/sa/sa1
+
 to verify that for yourself.
 Nor do you have to be concerned about using up all your disk space.
-sar will use about 220 kB for a whole day's worth of data, and it normally only
-stores one week worth, and won't keep more than a month. It is entirely self
-limiting. 
+sar will use a few hundred kilobytes for a whole day's worth of data, and it
+normally only stores one week worth (this can be configured via the HISTORY
+variable in the /etc/sysconfig/sysstat file). It is entirely self limiting.
+Moreover, you can ask sar to compress its datafiles older than a certain
+number of days: see the COMPRESSAFTER parameter in the /etc/sysconfig/sysstat
+configuration file.
 
 ~~~
 
@@ -412,6 +446,17 @@ and the script maintains links to these datafiles to mimic the standard
 sar datafile structure.
 However please note that pre-existing datafiles will be deleted as links
 will be created and replace them.
+
+~~~
+
+2.20. How can I load sar data into an Oracle database for performance
+analysis and capacity planning?
+
+The simplest way for that is to use sadf (a command included in sysstat
+package) with its option -d. It displays sar data in a format that can
+easily be ingested by a relational database system (fields are separated
+by a semicolon). It should then be easy for a tool like SQL*Loader to
+load the data into the Oracle database.
 
 
 3. QUESTIONS RELATING TO IOSTAT

@@ -1,5 +1,28 @@
 Changes:
 
+2007/03/04: Version 7.1.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x216a]
+	* Better hotplug CPU support. Now sysstat no longer assumes that
+	  CPU#0 can never be disabled. It uses /proc/uptime file to
+	  compute time interval.
+	* Various structures realignment to save memory (and disk space).
+	* Make sar -n display network traffic in kilobytes instead of bytes.
+	* Make sysstat compile cleanly with gcc 4.0.2.
+	* sysstat DTD file updated.
+	* NLS updated: Danish translation added.
+	* Manual pages updated.
+	* CREDITS file updated.
+
+2007/02/21: Version 7.1.1 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* Autoconf support added.
+	* iconfig (Interactive Configuration script) added. iconfig is
+	  a front-end to ./configure.
+	* spec file updated.
+	* FAQ updated.
+	* sadf manual page updated.
+	* CREDITS file updated.
+
 2007/02/04: Version 7.0.4 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* Removed linux/major.h from list of files included in ioconf.c.
 	  It was actually not used and also prevented sysstat from being

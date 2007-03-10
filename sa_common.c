@@ -367,7 +367,7 @@ void set_hdr_rectime(unsigned int flags, struct tm *rectime,
       mktime(rectime);
    }
    else {
-      loc_t = localtime(&(file_hdr->sa_ust_time));
+      loc_t = localtime((const time_t *) &(file_hdr->sa_ust_time));
       *rectime = *loc_t;
    }
 }

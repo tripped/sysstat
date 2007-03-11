@@ -13,7 +13,7 @@
 ### END INIT INFO
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/lib/sysstat/sadc
+DAEMON=/usr/lib/sysstat/sa1
 NAME=sadc
 DESC="the system activity data collector"
 
@@ -25,7 +25,7 @@ DEFAULT=/etc/default/sysstat
 
 # default settings...
 ENABLED="false"
-OPTIONS="-F -L -"
+SA1_OPTIONS=""
 
 # ...overriden in the configuration file
 test -r "$DEFAULT" && . "$DEFAULT"
@@ -39,7 +39,7 @@ case "$1" in
   start|restart|reload|force-reload)
         if [ "$ENABLED" = "true" ] ; then
                 log_daemon_msg "Starting $DESC" "$NAME"
-                start-stop-daemon --start --quiet --exec $DAEMON -- $OPTIONS || status=$?
+                start-stop-daemon --start --quiet --exec $DAEMON -- --boot $SA1_OPTIONS || status=$?
                 log_end_msg $status
         else
                 log_warning_msg "$NAME not enabled in ${DEFAULT}, not starting."

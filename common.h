@@ -16,7 +16,7 @@
 #define NR_CPUS		1024
 
 /*
- * Size of /proc/interrupts line (at NR_CPUS # of cpus)
+ * Size of /proc/interrupts line (at most NR_CPUS # of cpus)
  * 4 spaces for interrupt # field ; 11 spaces for each interrupt field.
  */
 #define INTERRUPTS_LINE	(4 + 11 * NR_CPUS)
@@ -28,6 +28,7 @@
 
 /* Files */
 #define STAT		"/proc/stat"
+#define UPTIME		"/proc/uptime"
 #define PPARTITIONS	"/proc/partitions"
 #define DISKSTATS	"/proc/diskstats"
 #define INTERRUPTS	"/proc/interrupts"
@@ -99,5 +100,6 @@ extern double	    ll_sp_value(unsigned long long, unsigned long long,
 				unsigned long long);
 extern void	    print_gal_header(struct tm *, char *, char *, char *);
 extern void	    print_version(void);
+extern void	    readp_uptime(unsigned long long *);
 
 #endif  /* _COMMON_H */

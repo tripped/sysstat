@@ -126,13 +126,13 @@ void set_rectime(short curr)
 {
    struct tm *ltm;
 
-   ltm = localtime(&file_stats[curr].ust_time);
+   ltm = localtime((const time_t *) &file_stats[curr].ust_time);
    loctime = *ltm;
 
    if (!PRINT_TRUE_TIME(flags) ||
        ((format != S_O_DB_OPTION) && (format != S_O_XML_OPTION)))
       /* Option -t is valid only with options -d and -x */
-      ltm = gmtime(&file_stats[curr].ust_time);
+      ltm = gmtime((const time_t *) &file_stats[curr].ust_time);
 
    rectime = *ltm;
 }
@@ -705,12 +705,12 @@ void write_mech_stats(short curr, unsigned int act,
 		NOVAL, S_VALUE(sndj->tx_packets, sndi->tx_packets, itv));
 
 	 render(isdb, pre, PT_NOFLAG,
-		"%s\trxbyt/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv));
+		"%s\trxkB/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv) / 1024);
 
 	 render(isdb, pre, PT_NOFLAG,
-		"%s\ttxbyt/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv));
+		"%s\ttxkB/s", NULL, cons(sv, ifc, NULL),
+		NOVAL, S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv) / 1024);
 
 	 render(isdb, pre, PT_NOFLAG,
 		"%s\trxcmp/s", NULL, cons(sv, ifc, NULL),
@@ -1260,12 +1260,12 @@ void write_xml_stats(short curr, short *tab)
 	
 	 xprintf((*tab)++, "<net-device iface=\"%s\">",
 		 sndi->interface);
-	 xprintf(*tab, "<net-dev rxpck=\"%.2f\" txpck=\"%.2f\" rxbyt=\"%.2f\" "
-		       "txbyt=\"%.2f\" rxcmp=\"%.2f\" txcmp=\"%.2f\" rxmcst=\"%.2f\"/>",
+	 xprintf(*tab, "<net-dev rxpck=\"%.2f\" txpck=\"%.2f\" rxkB=\"%.2f\" "
+		       "txkB=\"%.2f\" rxcmp=\"%.2f\" txcmp=\"%.2f\" rxmcst=\"%.2f\"/>",
 		 S_VALUE(sndj->rx_packets, sndi->rx_packets, itv),
 		 S_VALUE(sndj->tx_packets, sndi->tx_packets, itv),
-		 S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv),
-		 S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv),
+		 S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv) / 1024,
+		 S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv) / 1024,
 		 S_VALUE(sndj->rx_compressed, sndi->rx_compressed, itv),
 		 S_VALUE(sndj->tx_compressed, sndi->tx_compressed, itv),
 		 S_VALUE(sndj->multicast, sndi->multicast, itv));
@@ -1433,8 +1433,9 @@ void display_file_header(char *dfile, struct file_hdr *file_hdr)
 {
    printf("File: %s (%#x)\n", dfile, file_hdr->sa_magic);
 
-   print_gal_header(localtime(&(file_hdr->sa_ust_time)), file_hdr->sa_sysname,
-		    file_hdr->sa_release, file_hdr->sa_nodename);
+   print_gal_header(localtime((const time_t *) &(file_hdr->sa_ust_time)),
+		    file_hdr->sa_sysname, file_hdr->sa_release,
+		    file_hdr->sa_nodename);
 
    printf("Activity flag: %#x\n", file_hdr->sa_actflag);
    printf("Sizeof(long): %d\n", file_hdr->sa_sizeof_long);

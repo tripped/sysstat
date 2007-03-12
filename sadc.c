@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -142,8 +142,8 @@ void p_write_error(void)
 void init_dk_drive_stat(void)
 {
    file_stats.dk_drive = 0;
-   file_stats.dk_drive_rio  = file_stats.dk_drive_wio  = 0;
-   file_stats.dk_drive_rblk = file_stats.dk_drive_wblk = 0;
+   file_stats.dk_drive_rio = file_stats.dk_drive_rblk = 0;
+   file_stats.dk_drive_wio = file_stats.dk_drive_wblk = 0;
 }
 
 
@@ -323,7 +323,7 @@ unsigned int get_irqcpu_nb(unsigned int max_nr_irqcpu)
  */
 void sa_sys_init(unsigned int *flags)
 {
-   /* How many processors on this machine ? */
+   /* How many processors on this machine? */
    if ((cpu_nr = get_cpu_nr(NR_CPUS)) > 0)
       SREALLOC(st_cpu, struct stats_one_cpu, STATS_ONE_CPU_SIZE * cpu_nr);
 
@@ -738,11 +738,6 @@ void read_proc_stat(unsigned int flags)
 	  * Compute the uptime of the system in jiffies (1/100ths of a second
 	  * if HZ=100).
 	  * Machine uptime is multiplied by the number of processors here.
-	  * Note that overflow is not so far away: ULONG_MAX is 4294967295 on
-	  * 32 bit systems. Overflow happens when machine uptime is:
-	  * 497 days on a monoprocessor machine,
-	  * 248 days on a bi processor,
-	  * 124 days on a quad processor...
 	  */
 	 file_stats.uptime = file_stats.cpu_user   + file_stats.cpu_nice +
 	                     file_stats.cpu_system + file_stats.cpu_idle +
@@ -775,10 +770,10 @@ void read_proc_stat(unsigned int flags)
 	    }
 	    /* else additional CPUs have been dynamically registered in /proc/stat */
 	
-	    if (!proc_nb)
+	    if (!proc_nb && !file_stats.uptime0)
 	       /*
 		* Compute uptime reduced to one proc using proc#0.
-		* Assume that proc#0 can never be offlined.
+		* Done if /proc/uptime was unavailable.
 		*/
 	       file_stats.uptime0 = cc_user + cc_nice + cc_system +
 	       			    cc_idle + cc_iowait + cc_steal;
@@ -880,9 +875,9 @@ void read_proc_stat(unsigned int flags)
 
 	       if (dsk < disk_nr) {
 		  st_disk_i = st_disk + dsk++;
-		  st_disk_i->major = v_major;
-		  st_disk_i->minor = v_index;
-		  st_disk_i->nr_ios = v_tmp[0];
+		  st_disk_i->major   = v_major;
+		  st_disk_i->minor   = v_index;
+		  st_disk_i->nr_ios  = v_tmp[0];
 		  st_disk_i->rd_sect = v_tmp[2];
 		  st_disk_i->wr_sect = v_tmp[4];
 	       }
@@ -1468,20 +1463,20 @@ void read_diskstats_stat(void)
 	       /* Unused device: ignore it */
 	       continue;
 	    st_disk_i = st_disk + dsk++;
-	    st_disk_i->major = major;
-	    st_disk_i->minor = minor;
-	    st_disk_i->nr_ios = rd_ios + wr_ios;
-	    st_disk_i->rd_sect = rd_sec;
-	    st_disk_i->wr_sect = wr_sec;
-	    st_disk_i->rd_ticks = rd_ticks;
-	    st_disk_i->wr_ticks = wr_ticks;
+	    st_disk_i->major     = major;
+	    st_disk_i->minor     = minor;
+	    st_disk_i->nr_ios    = rd_ios + wr_ios;
+	    st_disk_i->rd_sect   = rd_sec;
+	    st_disk_i->wr_sect   = wr_sec;
+	    st_disk_i->rd_ticks  = rd_ticks;
+	    st_disk_i->wr_ticks  = wr_ticks;
 	    st_disk_i->tot_ticks = tot_ticks;
-	    st_disk_i->rq_ticks = rq_ticks;
+	    st_disk_i->rq_ticks  = rq_ticks;
 	
-	    file_stats.dk_drive += rd_ios + wr_ios;
-	    file_stats.dk_drive_rio += rd_ios;
+	    file_stats.dk_drive      += rd_ios + wr_ios;
+	    file_stats.dk_drive_rio  += rd_ios;
 	    file_stats.dk_drive_rblk += (unsigned int) rd_sec;
-	    file_stats.dk_drive_wio += wr_ios;
+	    file_stats.dk_drive_wio  += wr_ios;
 	    file_stats.dk_drive_wblk += (unsigned int) wr_sec;
 	 }
       }
@@ -1529,20 +1524,20 @@ void read_ppartitions_stat(void)
 	    if (ioc_iswhole(major, minor)) {
 	       /* OK: it's a device and not a partition */
 	       st_disk_i = st_disk + dsk++;
-	       st_disk_i->major = major;
-	       st_disk_i->minor = minor;
-	       st_disk_i->nr_ios = rd_ios + wr_ios;
-	       st_disk_i->rd_sect = rd_sec;
-	       st_disk_i->wr_sect = wr_sec;
-	       st_disk_i->rd_ticks = rd_ticks;
-	       st_disk_i->wr_ticks = wr_ticks;
+	       st_disk_i->major     = major;
+	       st_disk_i->minor     = minor;
+	       st_disk_i->nr_ios    = rd_ios + wr_ios;
+	       st_disk_i->rd_sect   = rd_sec;
+	       st_disk_i->wr_sect   = wr_sec;
+	       st_disk_i->rd_ticks  = rd_ticks;
+	       st_disk_i->wr_ticks  = wr_ticks;
 	       st_disk_i->tot_ticks = tot_ticks;
-	       st_disk_i->rq_ticks = rq_ticks;
+	       st_disk_i->rq_ticks  = rq_ticks;
 	
-	       file_stats.dk_drive += rd_ios + wr_ios;
-	       file_stats.dk_drive_rio += rd_ios;
+	       file_stats.dk_drive      += rd_ios + wr_ios;
+	       file_stats.dk_drive_rio  += rd_ios;
 	       file_stats.dk_drive_rblk += (unsigned int) rd_sec;
-	       file_stats.dk_drive_wio += wr_ios;
+	       file_stats.dk_drive_wio  += wr_ios;
 	       file_stats.dk_drive_wblk += (unsigned int) wr_sec;
 	    }
 	 }
@@ -1569,6 +1564,14 @@ void read_ppartitions_stat(void)
  */
 void read_stats(unsigned int *flags)
 {
+   /*
+    * Init uptime0. So if /proc/uptime cannot fill it,
+    * this will be done by /proc/stat.
+    * If cpu_nr = 1, force /proc/stat to fill it.
+    */
+   file_stats.uptime0 = 0;
+   if (cpu_nr > 1)
+      readp_uptime(&(file_stats.uptime0));
    read_proc_stat(*flags);
    read_proc_meminfo();
    read_proc_loadavg();

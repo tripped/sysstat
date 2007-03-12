@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--DTD v1.1 for sysstat-->
+<!--DTD v1.2 for sysstat-->
 <!ELEMENT boot EMPTY>
 <!ATTLIST boot
 	date CDATA #REQUIRED
@@ -131,8 +131,8 @@
 <!ATTLIST net-dev
 	rxpck CDATA #REQUIRED
 	txpck CDATA #REQUIRED
-	rxbyt CDATA #REQUIRED
-	txbyt CDATA #REQUIRED
+	rxkB CDATA #REQUIRED
+	txkB CDATA #REQUIRED
 	rxcmp CDATA #REQUIRED
 	txcmp CDATA #REQUIRED
 	rxmcst CDATA #REQUIRED

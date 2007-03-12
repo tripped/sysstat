@@ -18,7 +18,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x2169
+#define SA_MAGIC	0x216a
 
 
 /* Define activities */
@@ -357,7 +357,6 @@ struct stats_one_cpu {
    unsigned long long per_cpu_nice		__attribute__ ((aligned (16)));
    unsigned long long per_cpu_system		__attribute__ ((aligned (16)));
    unsigned long long per_cpu_steal		__attribute__ ((aligned (16)));
-   unsigned long long pad			__attribute__ ((aligned (16)));
 };
 
 #define STATS_ONE_CPU_SIZE	(sizeof(struct stats_one_cpu))
@@ -387,14 +386,13 @@ struct pid_stats {
 #define PID_STATS_SIZE	(sizeof(struct pid_stats))
 
 struct stats_serial {
-   unsigned int  rx				__attribute__ ((aligned (8)));
-   unsigned int  tx				__attribute__ ((packed));
-   unsigned int  frame				__attribute__ ((packed));
-   unsigned int  parity				__attribute__ ((packed));
-   unsigned int  brk				__attribute__ ((packed));
-   unsigned int  overrun			__attribute__ ((packed));
-   unsigned int  line				__attribute__ ((packed));
-   unsigned char pad[4]				__attribute__ ((packed));
+   unsigned int rx				__attribute__ ((aligned (4)));
+   unsigned int tx				__attribute__ ((packed));
+   unsigned int frame				__attribute__ ((packed));
+   unsigned int parity				__attribute__ ((packed));
+   unsigned int brk				__attribute__ ((packed));
+   unsigned int overrun				__attribute__ ((packed));
+   unsigned int line				__attribute__ ((packed));
 };
 
 #define STATS_SERIAL_SIZE	(sizeof(struct stats_serial))
@@ -435,7 +433,7 @@ struct stats_net_dev {
  * ...
  */
 struct stats_irq_cpu {
-   unsigned int interrupt			__attribute__ ((aligned (8)));
+   unsigned int interrupt			__attribute__ ((aligned (4)));
    unsigned int irq				__attribute__ ((packed));
 };
 
@@ -457,29 +455,29 @@ struct disk_stats {
 #define DISK_STATS_SIZE		(sizeof(struct disk_stats))
 
 struct stats_sum {
-   unsigned long count				__attribute__ ((aligned (8)));
-   unsigned long frmkb				__attribute__ ((packed));
-   unsigned long bufkb				__attribute__ ((packed));
-   unsigned long camkb				__attribute__ ((packed));
-   unsigned long frskb				__attribute__ ((packed));
-   unsigned long tlskb				__attribute__ ((packed));
-   unsigned long caskb				__attribute__ ((packed));
-   unsigned long dentry_stat			__attribute__ ((packed));
-   unsigned long file_used			__attribute__ ((packed));
-   unsigned long inode_used			__attribute__ ((packed));
-   unsigned long super_used			__attribute__ ((packed));
-   unsigned long dquot_used			__attribute__ ((packed));
-   unsigned long rtsig_queued			__attribute__ ((packed));
-   unsigned long sock_inuse			__attribute__ ((packed));
-   unsigned long tcp_inuse			__attribute__ ((packed));
-   unsigned long udp_inuse			__attribute__ ((packed));
-   unsigned long raw_inuse			__attribute__ ((packed));
-   unsigned long frag_inuse			__attribute__ ((packed));
-   unsigned long nr_running			__attribute__ ((packed));
-   unsigned long nr_threads			__attribute__ ((packed));
-   unsigned long load_avg_1			__attribute__ ((packed));
-   unsigned long load_avg_5			__attribute__ ((packed));
-   unsigned long load_avg_15			__attribute__ ((packed));
+   unsigned long count;
+   unsigned long frmkb;
+   unsigned long bufkb;
+   unsigned long camkb;
+   unsigned long frskb;
+   unsigned long tlskb;
+   unsigned long caskb;
+   unsigned long dentry_stat;
+   unsigned long file_used;
+   unsigned long inode_used;
+   unsigned long super_used;
+   unsigned long dquot_used;
+   unsigned long rtsig_queued;
+   unsigned long sock_inuse;
+   unsigned long tcp_inuse;
+   unsigned long udp_inuse;
+   unsigned long raw_inuse;
+   unsigned long frag_inuse;
+   unsigned long nr_running;
+   unsigned long nr_threads;
+   unsigned long load_avg_1;
+   unsigned long load_avg_5;
+   unsigned long load_avg_15;
 };
 
 #define STATS_SUM_SIZE	(sizeof(struct stats_sum))
@@ -520,46 +518,46 @@ struct tstamp {
 				} while (0)
 
 /* Functions */
-extern int	    check_disk_reg(struct file_hdr *, struct disk_stats * [],
-				   short, short, int);
+extern int   check_disk_reg(struct file_hdr *, struct disk_stats * [],
+			    short, short, int);
 extern unsigned int check_iface_reg(struct file_hdr *,
 				    struct stats_net_dev * [],
 				    short, short, unsigned int);
-extern int	    datecmp(struct tm *, struct tstamp *);
+extern int   datecmp(struct tm *, struct tstamp *);
 unsigned long long  get_per_cpu_interval(struct stats_one_cpu *,
 					 struct stats_one_cpu *);
-extern char	   *get_devname(unsigned int, unsigned int, int);
-extern void	    init_bitmap(unsigned char [], unsigned char, unsigned int);
-extern void	    init_stats(struct file_stats [], unsigned int [][NR_IRQS]);
-extern int	    next_slice(unsigned long long, unsigned long long,
-			       struct file_hdr *, int, long);
-extern int	    parse_sar_opt(char * [], int, unsigned int *,
-				  unsigned int *, int,
-				  unsigned char [], unsigned char []);
-extern int	    parse_sar_I_opt(char * [], int *, unsigned int *,
-				    unsigned char []);
-extern int	    parse_sa_P_opt(char * [], int *, unsigned int *,
-				   unsigned char []);
-extern int	    parse_sar_n_opt(char * [], int *, unsigned int *);
-extern int	    parse_timestamp(char * [], int *, struct tstamp *,
-				    const char *);
-extern void	    prep_file_for_reading(int *, char *, struct file_hdr *,
-					  unsigned int *, unsigned int);
-extern void	    get_itv_value(struct file_stats *, struct file_stats *,
-				  unsigned int, unsigned long long *,
-				  unsigned long long *);
-extern void	    print_report_hdr(unsigned int, struct tm *,
-				     struct file_hdr *);
-extern int	    sa_fread(int, void *, int, int);
-extern void	    salloc_cpu_array(struct stats_one_cpu * [], unsigned int);
-extern void	    salloc_disk_array(struct disk_stats * [], int);
-extern void	    salloc_irqcpu_array(struct stats_irq_cpu * [],
-					unsigned int, unsigned int);
-extern void	    salloc_net_dev_array(struct stats_net_dev * [],
-					 unsigned int);
-extern void	    salloc_serial_array(struct stats_serial * [], int);
-extern void	    set_default_file(struct tm *, char *);
-extern void	    set_hdr_rectime(unsigned int, struct tm *,
-				    struct file_hdr *);
+extern char *get_devname(unsigned int, unsigned int, int);
+extern void  init_bitmap(unsigned char [], unsigned char, unsigned int);
+extern void  init_stats(struct file_stats [], unsigned int [][NR_IRQS]);
+extern int   next_slice(unsigned long long, unsigned long long,
+			struct file_hdr *, int, long);
+extern int   parse_sar_opt(char * [], int, unsigned int *,
+			   unsigned int *, int,
+			   unsigned char [], unsigned char []);
+extern int   parse_sar_I_opt(char * [], int *, unsigned int *,
+			     unsigned char []);
+extern int   parse_sa_P_opt(char * [], int *, unsigned int *,
+			    unsigned char []);
+extern int   parse_sar_n_opt(char * [], int *, unsigned int *);
+extern int   parse_timestamp(char * [], int *, struct tstamp *,
+			     const char *);
+extern void  prep_file_for_reading(int *, char *, struct file_hdr *,
+				   unsigned int *, unsigned int);
+extern void  get_itv_value(struct file_stats *, struct file_stats *,
+			   unsigned int, unsigned long long *,
+			   unsigned long long *);
+extern void  print_report_hdr(unsigned int, struct tm *,
+			      struct file_hdr *);
+extern int   sa_fread(int, void *, int, int);
+extern void  salloc_cpu_array(struct stats_one_cpu * [], unsigned int);
+extern void  salloc_disk_array(struct disk_stats * [], int);
+extern void  salloc_irqcpu_array(struct stats_irq_cpu * [],
+				 unsigned int, unsigned int);
+extern void  salloc_net_dev_array(struct stats_net_dev * [],
+				  unsigned int);
+extern void  salloc_serial_array(struct stats_serial * [], int);
+extern void  set_default_file(struct tm *, char *);
+extern void  set_hdr_rectime(unsigned int, struct tm *,
+			     struct file_hdr *);
 
 #endif  /* _SA_H */

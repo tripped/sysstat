@@ -360,10 +360,10 @@ void read_proc_stat(short curr)
 	 }
 	 /* else additional CPUs have been dynamically registered in /proc/stat */
 	
-	 if (!proc_nb)
+	 if (!proc_nb && !st_mp_tstamp[curr].uptime0)
 	    /*
 	     * Compute uptime reduced for one proc using proc#0.
-	     * NB: Assume that proc#0 can never be offline.
+	     * Done only if /proc/uptime was unavailable.
 	     */
 	    st_mp_tstamp[curr].uptime0 = cc_user + cc_nice + cc_system +
 	       				 cc_idle + cc_iowait + cc_hardirq +
@@ -437,6 +437,14 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
    st_mp_tstamp[0].second = rectime->tm_sec;
 
    /* Read stats */
+   if (cpu_nr > 1) {
+      /*
+       * Init uptime0. So if /proc/uptime cannot fill it,
+       * this will be done by /proc/stat.
+       */
+      st_mp_tstamp[0].uptime0 = 0;
+      readp_uptime(&(st_mp_tstamp[0].uptime0));
+   }
    read_proc_stat(0);
    read_interrupts_stat(0);
 
@@ -477,6 +485,10 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
       st_mp_tstamp[curr].second = rectime->tm_sec;
 
       /* Read stats */
+      if (cpu_nr > 1) {
+	 st_mp_tstamp[curr].uptime0 = 0;
+	 readp_uptime(&(st_mp_tstamp[curr].uptime0));
+      }
       read_proc_stat(curr);
       read_interrupts_stat(curr);
 

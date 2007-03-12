@@ -55,7 +55,6 @@ struct disk_stats *st_disk[DIM] = {NULL, NULL, NULL};
 
 /* Array members of common types are always packed */
 unsigned int interrupts[DIM][NR_IRQS];
-/* Structures are aligned but also padded. Thus array members are packed */
 struct pid_stats *pid_stats[DIM][MAX_PID_NR];
 
 struct tm rectime;
@@ -236,7 +235,7 @@ void set_rectime(short curr)
       rectime.tm_sec  = file_stats[curr].second;
    }
    else {
-      ltm = localtime(&file_stats[curr].ust_time);
+      ltm = localtime((const time_t *) &file_stats[curr].ust_time);
       rectime = *ltm;
    }
 }
@@ -624,7 +623,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 *sndj;
 
       if (dis)
-	 printf("\n%-11s     IFACE   rxpck/s   txpck/s   rxbyt/s   txbyt/s   "
+	 printf("\n%-11s     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   "
 		"rxcmp/s   txcmp/s  rxmcst/s\n",
 		prev_string);
 
@@ -639,8 +638,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	 printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
 		S_VALUE(sndj->rx_packets, sndi->rx_packets, itv),
 		S_VALUE(sndj->tx_packets, sndi->tx_packets, itv),
-		S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv),
-		S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv),
+		S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv) / 1024,
+		S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv) / 1024,
 		S_VALUE(sndj->rx_compressed, sndi->rx_compressed, itv),
 		S_VALUE(sndj->tx_compressed, sndi->tx_compressed, itv),
 		S_VALUE(sndj->multicast, sndi->multicast, itv));

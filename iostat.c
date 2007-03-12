@@ -62,7 +62,7 @@ int ionfs_nr = 0;
 int dlist_idx = 0;
 
 long interval = 0;
-unsigned char timestamp[64];
+char timestamp[64];
 
 /* Nb of processors on the machine */
 int cpu_nr = 0;
@@ -395,7 +395,6 @@ void read_proc_stat(int curr, int flags)
    unsigned long long cc_idle, cc_iowait, cc_steal;
    unsigned long long cc_user, cc_nice, cc_system, cc_hardirq, cc_softirq;
 
-
    /*
     * Prepare pointers on the 4 disk structures in case we have a
     * /proc/stat file with "disk_rblk", etc. entries.
@@ -445,12 +444,11 @@ void read_proc_stat(int curr, int flags)
 	    			   comm_stats[curr].cpu_steal;
       }
 
-      else if ((!strncmp(line, "cpu0", 4)) && (cpu_nr > 1)) {
+      else if ((!strncmp(line, "cpu0", 4)) && !comm_stats[curr].uptime0
+	       && (cpu_nr > 1)) {
 	 /*
 	  * Read CPU line for proc#0 (if available).
-	  * This is necessary to compute time interval since
-	  * processors may be disabled (offline) sometimes.
-	  * (Assume that proc#0 can never be offline).
+	  * Done only if /proc/uptime was unavailable.
 	  */
 	 cc_iowait = cc_hardirq = cc_softirq = cc_steal = 0;
 	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu",
@@ -1243,6 +1241,16 @@ void rw_io_stat_loop(int flags, long int count, struct tm *rectime)
    int next;
 
    do {
+      if (cpu_nr > 1) {
+	 /*
+	  * Read system uptime (only for SMP machines).
+	  * Init uptime0. So if /proc/uptime cannot fill it, this will be
+	  * done by /proc/stat.
+	  */
+	 comm_stats[curr].uptime0 = 0;
+	 readp_uptime(&(comm_stats[curr].uptime0));
+      }
+
       /* Read kernel statistics (CPU, and possibly disks for old kernels) */
       read_proc_stat(curr, flags);
 

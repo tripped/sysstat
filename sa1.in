@@ -1,10 +1,12 @@
 #!/bin/sh
-# SA_LIB_DIR/sa1
+# @SA_LIB_DIR@/sa1
 # (C) 1999-2007 Sebastien Godard (sysstat <at> wanadoo.fr)
 #
 # 2007-01-21: Sebastien Godard (sysstat <at> wanadoo.fr)
 #	Modified to handle multiple months history.
 #	Original idea from John Caruso <caruso@paradiso.umuc.edu>
+# 2007/02/07: Ivana Varekova <varekova@redhat.com>
+#	Autoconf support added.
 #
 HISTORY=0
 [ -r /etc/sysconfig/sysstat ] && . /etc/sysconfig/sysstat
@@ -12,7 +14,7 @@ if [ ${HISTORY} -gt 28 ]
 then
 	CURRENTDIR=`date +%Y%m`
 	CURRENTFILE=sa`date +%d`
-	DDIR=SA_DIR
+	DDIR=@SA_DIR@
 	cd ${DDIR} || exit 1
 	[ -d ${CURRENTDIR} ] || mkdir -p ${CURRENTDIR}
 	touch ${CURRENTDIR}/${CURRENTFILE}
@@ -22,7 +24,7 @@ then
 	ln -s ${CURRENTDIR}/${CURRENTFILE} ${CURRENTFILE}
 fi
 umask 0022
-ENDIR=SA_LIB_DIR
+ENDIR=@SA_LIB_DIR@
 cd ${ENDIR}
 if [ $# = 0 ]
 then

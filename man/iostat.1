@@ -1,4 +1,4 @@
-.TH IOSTAT 1 "JANUARY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "FEBRUARY 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices, partitions and network filesystems (NFS).
@@ -493,16 +493,13 @@ filesystem must be mounted for
 .B iostat
 to work.
 
-On SMP machines
-.B iostat
-assumes that CPU #0 is never disabled. Indeed
-.B iostat
-uses it to calculate the time interval.
-
 Extended statistics are available only with post 2.5 kernels.
 .SH FILES
 .I /proc/stat
 contains system statistics.
+
+.I /proc/uptime
+contains system uptime.
 
 .I /proc/partitions
 contains disk statistics (for pre 2.5 kernels that have been patched).

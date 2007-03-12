@@ -1,4 +1,4 @@
-.TH SAR 1 "OCTOBER 2006" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "MARCH 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -346,14 +346,14 @@ Total number of packets received per second.
 Total number of packets transmitted per second.
 .RE
 
-.B rxbyt/s
+.B rxkB/s
 .RS
-Total number of bytes received per second.
+Total number of kilobytes received per second.
 .RE
 
-.B txbyt/s
+.B txkB/s
 .RS
-Total number of bytes transmitted per second.
+Total number of kilobytes transmitted per second.
 .RE
 
 .B rxcmp/s
@@ -1028,12 +1028,6 @@ Display all the statistics saved in current daily data file.
 filesystem must be mounted for the
 .B sar
 command to work.
-
-On SMP machines
-.B sar
-assumes that CPU #0 is never disabled. Indeed
-.B sar
-uses it to calculate the time interval.
 
 All the statistics are not necessarily available, depending on the kernel version used.
 .SH FILES

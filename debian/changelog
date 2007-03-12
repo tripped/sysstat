@@ -1,3 +1,9 @@
+sysstat (7.0.4-3) unstable; urgency=low
+
+  * Add 'exit 0' at the end of sa2.in (closes: #414491).
+
+ -- Robert Luberda <robert@debian.org>  Mon, 12 Mar 2007 21:56:29 +0100
+
 sysstat (7.0.4-2) unstable; urgency=low
 
   * Test and improve support for keeping sar logs for more then one month.

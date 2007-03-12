@@ -61,4 +61,4 @@ find -L ${DDIR} \( -name 'sar??' -o -name 'sa??' \) -type l \
 	-exec rm -f {} \; > /dev/null 2>&1
 cd ${DDIR}
 rmdir [0-9]????? > /dev/null 2>&1
-
+exit 0

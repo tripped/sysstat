@@ -46,12 +46,12 @@ MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
 DOC_DIR = $(PREFIX)/doc/$(PACKAGE)-$(VERSION)
 NLS_DIR = $(PREFIX)/share/locale
-SYSCONFIG_DIR = /etc/sysconfig
+SYSCONFIG_DIR = /etc/sysstat
 
 # Compiler flags
-CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe -O2 -fno-strength-reduce
+CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe  -fno-strength-reduce
 DFLAGS = @DFLAGS@
-LFLAGS =  -s
+LFLAGS = @LDFLAGS@
 # DFLAGS may already contain SMP_RACE definition
 DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
 
@@ -183,13 +183,13 @@ endif
 	$(INSTALL_BIN) mpstat $(DESTDIR)$(BIN_DIR)
 	$(INSTALL_DATA) $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
 	$(INSTALL_DATA) sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
-	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
-	$(INSTALL_DATA) CHANGES $(DESTDIR)$(DOC_DIR)
-	$(INSTALL_DATA) COPYING $(DESTDIR)$(DOC_DIR)
-	$(INSTALL_DATA) CREDITS $(DESTDIR)$(DOC_DIR)
-	$(INSTALL_DATA) README $(DESTDIR)$(DOC_DIR)
-	$(INSTALL_DATA) FAQ $(DESTDIR)$(DOC_DIR)
-	$(INSTALL_DATA) *.lsm $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/config
+#	$(INSTALL_DATA) CHANGES $(DESTDIR)$(DOC_DIR)
+#	$(INSTALL_DATA) COPYING $(DESTDIR)$(DOC_DIR)
+#	$(INSTALL_DATA) CREDITS $(DESTDIR)$(DOC_DIR)
+#	$(INSTALL_DATA) README $(DESTDIR)$(DOC_DIR)
+#	$(INSTALL_DATA) FAQ $(DESTDIR)$(DOC_DIR)
+#	$(INSTALL_DATA) *.lsm $(DESTDIR)$(DOC_DIR)
 ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/da/LC_MESSAGES

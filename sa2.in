@@ -21,13 +21,25 @@ CURRENTFILE=sa${DATE}
 CURRENTRPT=sar${DATE}
 HISTORY=@HISTORY@
 COMPRESSAFTER=@COMPRESSAFTER@
-# [ -r /etc/sysconfig/sysstat ] && . /etc/sysconfig/sysstat
 [ -r /etc/sysstat/config ] && . /etc/sysstat/config
 if [ ${HISTORY} -gt 28 ]
 then
-	CURRENTDIR=`date +%Y%m`
+	CURRENTDIR=`date YESTERDAY +%Y%m`
 	cd ${DDIR} || exit 1
-	[ -d ${CURRENTDIR} ] || exit 0
+	[ -d ${CURRENTDIR} ] || mkdir -p ${CURRENTDIR}
+
+	# Check if CURRENTFILE is the correct file created at $DATE
+	# Note: using `-ge' instead of `=' since the file could have
+	# the next day time stamp because of the file rotating feature of sadc
+	[ -f ${CURRENTFILE} ] &&
+		[ "`date +%Y%m%d -r ${CURRENTFILE}`" -ge "${CURRENTDIR}${DATE}" ] || exit 0
+		
+	# If the file is a regular file, then move it to $CURRENTDIR
+	[ ! -L ${CURRENTFILE} ] && 
+		mv -f ${CURRENTFILE} ${CURRENTDIR}/${CURRENTFILE} &&
+		ln -s ${CURRENTDIR}/${CURRENTFILE} ${CURRENTFILE} 
+
+
 	touch ${CURRENTDIR}/${CURRENTRPT}
 	# Remove the "compatibility" link and recreate it to point to
 	# the (new) current file
@@ -42,11 +54,14 @@ ENDIR=@bindir@
 DFILE=${CURRENTDIR}/${CURRENTFILE}
 [ -f "$DFILE" ] || exit 0
 cd ${ENDIR}
+[ -L ${RPT} ] && rm -f ${RPT}
 ${ENDIR}/sar.sysstat $* -f ${DFILE} > ${RPT}
 find ${DDIR} \( -name 'sar??' -o -name 'sa??' -o -name 'sar??.gz' -o -name 'sa??.gz' \) \
 	-mtime +"${HISTORY}" -exec rm -f {} \;
 find ${DDIR} \( -name 'sar??' -o -name 'sa??' \) -type f -mtime +"${COMPRESSAFTER}" \
 	-exec gzip -9 {} \; > /dev/null 2>&1
+find -L ${DDIR} \( -name 'sar??' -o -name 'sa??' \) -type l \
+	-exec rm -f {} \; > /dev/null 2>&1
 cd ${DDIR}
 rmdir [0-9]????? > /dev/null 2>&1
-
+exit 0

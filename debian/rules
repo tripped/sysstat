@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules,v 1.9 2005-11-16 22:20:10 robert Exp $
+# $Id: rules,v 1.10 2007-03-17 12:14:17 robert Exp $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -13,11 +13,33 @@
 export DH_OPTIONS
 
 
-TMPDIR=$(CURDIR)/debian/tmp
+DESTDIR=$(CURDIR)/debian/tmp
+
+ifeq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS 		:= -g -O2
+else
+	CFLAGS 		:= -g -O0
+endif
+
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	 LDFLAGS 	:= -s
+endif
+
 
 build: build-stamp
 build-stamp:
 	dh_testdir
+
+
+	./configure --prefix=/usr 			\
+		    --mandir=/usr/share/man		\
+		    --enable-smp-race			\
+		    --enable-yesterday			\
+		    --disable-man-group			\
+		    sa_lib_dir=/usr/lib/sysstat		\
+		    sa_dir=/var/log/sysstat		\
+		    CFLAGS="$(CFLAGS)"			\
+		    LDFLAGS="$(LDFLAGS)"		
 
 	# Add here commands to compile the package.
 	$(MAKE)
@@ -43,12 +65,12 @@ install: build
 	dh_installdirs
 
 	# Add here commands to install the package into debian/tmp.
-	$(MAKE) install_base DESTDIR=$(TMPDIR)
+	$(MAKE) install_base DESTDIR="$(DESTDIR)"
 
-	mkdir -p -m 755 $(TMPDIR)/usr/lib/sysstat
-	mv $(TMPDIR)/usr/bin/sar $(TMPDIR)/usr/bin/sar.sysstat
-	mv $(TMPDIR)/usr/share/man/man1/sar.1 $(TMPDIR)/usr/share/man/man1/sar.sysstat.1
-	rm -rf $(TMPDIR)/usr/doc
+	mkdir -p -m 755 $(DESTDIR)/usr/lib/sysstat
+	mv $(DESTDIR)/usr/bin/sar $(DESTDIR)/usr/bin/sar.sysstat
+	mv $(DESTDIR)/usr/share/man/man1/sar.1 $(DESTDIR)/usr/share/man/man1/sar.sysstat.1
+	rm -rf $(DESTDIR)/usr/doc
 
 	dh_install
 

@@ -1,3 +1,18 @@
+sysstat (7.1.2-1) experimental; urgency=low
+
+  * New upstream version (development):
+    + daily data files format has changed again.
+  * debian/rules: Adjust for the new autoconf stuff introduced by upstream.
+  * Small isag enhacements:
+    + add support for log subdirectiories and compressed log files,
+    + auto load the latest log file,
+    + use standard tk_messageBox to display error messages,
+    + "save picture" prompts user for choosing path.
+   Patch sent upstream, so it eventually gets included in they tarballs.
+
+
+ -- Robert Luberda <robert@debian.org>  Sat, 17 Mar 2007 13:06:07 +0100
+
 sysstat (7.0.4-3) unstable; urgency=low
 
   * Add 'exit 0' at the end of sa2.in (closes: #414491).

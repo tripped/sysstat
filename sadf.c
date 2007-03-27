@@ -1,6 +1,6 @@
 /*
  * sadf: system activity data formatter
- * (C) 1999-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -966,7 +966,7 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
    char cur_time[26];
 
    /* Check time (1) */
-   if (!next_slice(file_stats[2].uptime, file_stats[curr].uptime, &file_hdr,
+   if (!next_slice(file_stats[2].uptime0, file_stats[curr].uptime0,
 		   reset, interval))
       /* Not close enough to desired interval */
       return 0;

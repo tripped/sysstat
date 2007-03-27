@@ -99,6 +99,11 @@ The following people have contributed to 'sysstat' in one way or another:
 	Ivana Varekova <varekova [at] redhat.com> added support for iostat
 	NFS statistics. Ivana also added support for autoconf.
 
+	Nils Philippsen <nphilipp [at] redhat.com> made history configurable.
+
+	Robert Luberda <robert [at] debian.org> brought a few improvements
+	to sysstat's code, and also reported several bugs.
+
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
@@ -125,7 +130,6 @@ I would also thank the following people for their hints or bug reports
 	Ilya Katsnelson <ilya.katsnelson@mot[...].com>
 	Byeong-taek Lee <btlee@psy[...].kr>
 	Ivo Letzas <letzas@for[...].nu>	
-	Robert Luberda <robert@deb[...].org>
 	Neculai Macarie <macarie.neculai@nex[...].com>
 	Robert Macaulay <Robert_Macaulay@Del[...].com>
 	Pierre Machard <pmachard@deb[...].org>
@@ -158,6 +162,7 @@ I would also thank the following people for their hints or bug reports
 	Stephen Tweedie <sct@red[...].com>
 	Thomas Weber <TWEBER@de.[...].com>
 	Yongjun Wei <yjwei@nan[...].com>
+	Stefan Wild <SWILD@de.[...].com>
 	Holger Wolf <Holger.Wolf@de.[...].com>
 	Urban Widmark <urban@sve[...].se>
 	Peter Zaitsev <pz@spy[...].ru>

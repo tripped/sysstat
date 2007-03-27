@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1998-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1998-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -981,7 +981,7 @@ void write_ext_stat(int curr, unsigned long long itv, int flags, int fctr,
    util = S_VALUE(ioj->tot_ticks, ioi->tot_ticks, itv);
    svctm = tput ? util / tput : 0.0;
    /*
-    * kernel gives ticks already in milliseconds for all platforms
+    * Kernel gives ticks already in milliseconds for all platforms
     * => no need for further scaling.
     */
    await = nr_ios ?
@@ -1011,7 +1011,7 @@ void write_ext_stat(int curr, unsigned long long itv, int flags, int fctr,
 	  await,
 	  /* The ticks output is biased to output 1000 ticks per second */
 	  svctm,
-	  /* Again: ticks in milliseconds */
+	  /* Again: Ticks in milliseconds */
 	  util / 10.0);
 }
 
@@ -1163,7 +1163,7 @@ int write_stat(int curr, int flags, struct tm *rectime)
 	    if (dlist_idx && !HAS_SYSFS(flags)) {
 	       /*
 		* With sysfs, only stats for the requested devices are read.
-		* With /proc/{diskstats,partitions}, stats for every devices
+		* With /proc/{diskstats,partitions}, stats for every device
 		* are read. Thus we need to check if stats for current device
 		* are to be displayed.
 		*/
@@ -1173,7 +1173,7 @@ int write_stat(int curr, int flags, struct tm *rectime)
 		     break;
 	       }
 	       if (dev == dlist_idx)
-		  /* Device not found in list: don't display it */
+		  /* Device not found in list: Don't display it */
 		  continue;
 	    }
 	
@@ -1231,8 +1231,7 @@ int write_stat(int curr, int flags, struct tm *rectime)
 
 /*
  ***************************************************************************
- * Main loop: read I/O stats from the relevant sources,
- * and display them.
+ * Main loop: Read I/O stats from the relevant sources and display them.
  ***************************************************************************
  */
 void rw_io_stat_loop(int flags, long int count, struct tm *rectime)

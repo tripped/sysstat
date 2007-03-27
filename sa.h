@@ -1,6 +1,6 @@
 /*
  * sar/sadc: report system activity
- * (C) 1999-2006 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien Godard (sysstat <at> wanadoo.fr)
  */
 
 #ifndef _SA_H
@@ -18,7 +18,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x216a
+#define SA_MAGIC	0x216b
 
 
 /* Define activities */
@@ -244,20 +244,20 @@ struct file_hdr {
     * No need to save DST (daylight saving time) flag, since it is not taken
     * into account by the strftime() function used to print the timestamp.
     */
-   unsigned char  sa_day			__attribute__ ((packed));
-   unsigned char  sa_month			__attribute__ ((packed));
-   unsigned char  sa_year			__attribute__ ((packed));
+   unsigned char  sa_day;
+   unsigned char  sa_month;
+   unsigned char  sa_year;
    /*
     * Size of a long integer. Useful to know the architecture on which
     * the datafile was created.
     */
-   char		  sa_sizeof_long		__attribute__ ((packed));
+   char		  sa_sizeof_long;
    /* Operating system name */
-   char           sa_sysname[UTSNAME_LEN]	__attribute__ ((packed));
+   char           sa_sysname[UTSNAME_LEN];
    /* Machine hostname */
-   char           sa_nodename[UTSNAME_LEN]	__attribute__ ((packed));
+   char           sa_nodename[UTSNAME_LEN];
    /* Operating system release number */
-   char           sa_release[UTSNAME_LEN]	__attribute__ ((packed));
+   char           sa_release[UTSNAME_LEN];
 };
 
 #define FILE_HDR_SIZE	(sizeof(struct file_hdr))
@@ -266,7 +266,7 @@ struct file_stats {
    /* --- LONG LONG --- */
    /* Machine uptime (multiplied by the # of proc) */
    unsigned long long uptime			__attribute__ ((aligned (16)));
-   /* Uptime reduced to one processor. Set *only* on SMP machines */
+   /* Uptime reduced to one processor. Always set, even on UP machines */
    unsigned long long uptime0			__attribute__ ((aligned (16)));
    unsigned long long context_swtch		__attribute__ ((aligned (16)));
    unsigned long long cpu_user			__attribute__ ((aligned (16)));
@@ -338,14 +338,14 @@ struct file_stats {
    unsigned int  nfsd_getattcnt			__attribute__ ((packed));
    /* --- CHAR --- */
    /* Record type: R_STATS or R_DUMMY */
-   unsigned char record_type			__attribute__ ((packed));
+   unsigned char record_type;
    /*
     * Time stamp: hour, minute and second.
     * Used to determine TRUE time (immutable, non locale dependent time).
     */
-   unsigned char hour		/* (0-23) */	__attribute__ ((packed));
-   unsigned char minute		/* (0-59) */	__attribute__ ((packed));
-   unsigned char second		/* (0-59) */	__attribute__ ((packed));
+   unsigned char hour;		/* (0-23) */
+   unsigned char minute;	/* (0-59) */
+   unsigned char second;	/* (0-59) */
 };
 
 #define FILE_STATS_SIZE	(sizeof(struct file_stats))
@@ -379,8 +379,8 @@ struct pid_stats {
    unsigned long cstime				__attribute__ ((packed));
    unsigned long cnswap				__attribute__ ((packed));
    unsigned int  processor			__attribute__ ((packed));
-   unsigned char flag				__attribute__ ((packed));
-   unsigned char pad[3]				__attribute__ ((packed));
+   unsigned char flag;
+   unsigned char pad[3];
 };
 
 #define PID_STATS_SIZE	(sizeof(struct pid_stats))
@@ -530,7 +530,7 @@ extern char *get_devname(unsigned int, unsigned int, int);
 extern void  init_bitmap(unsigned char [], unsigned char, unsigned int);
 extern void  init_stats(struct file_stats [], unsigned int [][NR_IRQS]);
 extern int   next_slice(unsigned long long, unsigned long long,
-			struct file_hdr *, int, long);
+			int, long);
 extern int   parse_sar_opt(char * [], int, unsigned int *,
 			   unsigned int *, int,
 			   unsigned char [], unsigned char []);

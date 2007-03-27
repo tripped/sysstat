@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -177,22 +177,19 @@ char *get_devname(unsigned int major, unsigned int minor, int pretty)
  ***************************************************************************
 */
 int next_slice(unsigned long long uptime_ref, unsigned long long uptime,
-	       struct file_hdr *file_hdr, int reset, long interval)
+	       int reset, long interval)
 {
    unsigned long file_interval, entry;
    static unsigned long long last_uptime = 0;
-   int min, max, pt1, pt2, cpu_nr;
+   int min, max, pt1, pt2;
    double f;
 
+   /* uptime is expressed in jiffies (basis of 1 processor) */
    if (!last_uptime || reset)
       last_uptime = uptime_ref;
 
-   cpu_nr = file_hdr->sa_proc;
-   if (!cpu_nr)
-      cpu_nr = 1;
-
    /* Interval cannot be greater than 0xffffffff here */
-   f = (((double) ((uptime - last_uptime) & 0xffffffff)) / cpu_nr) / HZ;
+   f = ((double) ((uptime - last_uptime) & 0xffffffff)) / HZ;
    file_interval = (unsigned long) f;
    if ((f * 10) - (file_interval * 10) >= 5)
       file_interval++; /* Rounding to correct value */
@@ -212,7 +209,7 @@ int next_slice(unsigned long long uptime_ref, unsigned long long uptime,
     *       (Pn * Iu) or (P'n * Iu) belongs to In
     * with  Pn = En / Iu and P'n = En / Iu + 1
     */
-   f = (((double) ((uptime - uptime_ref) & 0xffffffff)) / cpu_nr) / HZ;
+   f = ((double) ((uptime - uptime_ref) & 0xffffffff)) / HZ;
    entry = (unsigned long) f;
    if ((f * 10) - (entry * 10) >= 5)
       entry++;

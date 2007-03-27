@@ -248,6 +248,10 @@ proc msg_box_btn {w} {
 	destroy $w
 }
 
+proc err_msg {title text} {
+	tk_messageBox -icon error -type ok  -message $text -title $title
+}	
+
 proc out_msg {title text} {
 	toplevel .msg_box
 	
@@ -276,7 +280,7 @@ set sar "/usr/bin/sar"
 
 # following check added: Thu Mar 18 21:44:52 GMT+1 2004
 if { 1 != [file executable $sar]} {
-	out_msg "Error" "File: $sar does not exist"
+	err_msg "Error" "File: $sar does not exist"
 	exit 
 }
 
@@ -377,8 +381,17 @@ unset t
 # this variable is set thru: data Chooser (see: Concept Guide)
 set sag_if_archive ""
 
+# full path to archive file for sa data: either $sar_data_path/sa?? or
+# $fgnr_tmpdir/sa_data (if the former file was compressed)
+set sag_if_archive_uncompressed ""
+
 # last_graph contains last drawing function as letter
 set last_graph ""
+
+
+# path to the newest sa data file. Set by fill_file_menu, used by the main
+# procedure to autoload the file on program's startup
+set sag_latest_file ""
 
 # sar switches as names for object-instances (final and curent)
 #set prog_swtch [list b B c n q r R u v w W y]
@@ -490,24 +503,92 @@ set sar_elim(W) "pswpin"
 # Functions which are responsible for data source selection and processing
 # funcs are referred from GUI
 proc fill_file_menu {} {
-	global sar_data_path sar_data_mask
+	global sar_data_path sar_data_mask sag_latest_file
 
-			set fp [open "| sh -c \"ls $sar_data_path/$sar_data_mask\""]
+	set max_timestamp 0
+	set directories [lsort -decreasing [glob -nocomplain -directory $sar_data_path -type d \[0-9\]\[0-9\]\[0-9\]\[0-9\]\[0-9\]\[0-9\]]]
+
 	menu .file.menu.m -tearoff false
-	while {[gets $fp line] != -1} {
-		set l [string last "/" $line]
-		set line [string range $line [expr $l + 1] end]
-				.file.menu.m add command -label "$line" -command "set_file $line"
-		
+
+	foreach directory [concat $directories $sar_data_path ] {		
+		set files [glob -nocomplain -directory $directory -type f $sar_data_mask ]
+		# add compressed files too
+		set files [concat $files [glob -nocomplain -directory $directory -type f $sar_data_mask.gz ]]
+
+		if { 0 == [llength $files] } {
+			continue
+		}
+
+		if { $directory == $sar_data_path } {
+			set menudir ".file.menu.m"
+			
+			# Sort files according to theirs modification times descending
+
+			# i) create temporary list of items in form `timestamp:file'
+			set tmpfiles [list]
+			foreach file $files {
+				# skip symbolic links
+				if { "link" == [ file type $file]} { continue }
+				set timestamp [file mtime $file]
+				set tmpfiles [linsert $tmpfiles end "$timestamp:$file"]
+			}
+			
+			# ii) sort the temporary list 
+			set tmpfiles [lsort -decreasing $tmpfiles]
+			# iii) remove timestamps to get back the file list
+			set files [list]
+			foreach file $tmpfiles {
+				set l [string first ":" $file]
+				set files [linsert $files end [string range $file [expr $l+1] end]]
+			}
+		} else {
+			# sort file list by file name, descending 
+			set files [ lsort -decreasing $files ]
+			set l [string last "/" $directory]
+			set dir [string range  $directory  [expr $l + 1] end]
+
+			# create submenu for the $dir directory
+			set menudir ".file.menu.m.dir$dir"
+			menu $menudir -tearoff 0
+			.file.menu.m add cascade -label $dir -menu $menudir
+		}
+
+
+		# Fill menu with files
+		foreach file $files {
+			set l [string length $sar_data_path]
+			set basefile [string range $file [expr $l + 1] end]
+			set l [string last "/" $basefile]
+			set label [string range  $basefile  [expr $l + 1] end]
+			set label [string map { .gz "" } $label]
+
+			$menudir add command -label "$label" -command "set_file $basefile"
+			set timestamp [file mtime $file]
+			# ignore files small then 4kB to avoid "No data found" error
+			if { ($timestamp > $max_timestamp) && ([file size $file] > 4096) } {
+				set sag_latest_file  $basefile
+				set max_timestamp  $timestamp
+			}			
+		}
 	}
-	catch {close $fp}
-	}
+}	
+	
 
 proc set_file {name} {
-	global sag_if_archive last_graph
+	global sar_data_path sag_if_archive sag_if_archive_uncompressed last_graph fngr_tmpdir
 
 	set sag_if_archive $name
 	.file.lbl configure -text "Data Source: $name"
+
+	set l [string last "." $sag_if_archive]
+	if { [string range $sag_if_archive $l end] == ".gz" } {
+		# uncompress file to sa_data located in the temporary dir
+		set sag_if_archive_uncompressed "$fngr_tmpdir/sa_data"
+		exec zcat "$sar_data_path/$sag_if_archive" > $sag_if_archive_uncompressed
+	} else {
+		set sag_if_archive_uncompressed "$sar_data_path/$sag_if_archive"
+	}		
+
 
 	if {"" != $last_graph} {
 		new_chart $last_graph
@@ -617,6 +698,11 @@ pack .graph.canv -side right -expand true -fill both
 
 bind all <Alt-x> "exit_program"
 bind all <F5> "set isag_gr_scale_old 0;redraw_graph"
+
+
+# acction to do when user closes isag with the window managers's close button
+wm protocol . WM_DELETE_WINDOW exit_program
+
 
 ###############################################################################
 #
@@ -891,6 +977,8 @@ proc create_gnuplot_file {gp_term ext fn title xlabel ylabel y2label yrange plot
 	close $fp
 }
 
+set fngr_tmpdir  [exec mktemp -d "/tmp/isag.XXXXXX"]
+
 # $Source: /var/CVSROOT/cvs/i-sag/isag/isag.Other.Funcs.m4,v $
 
 ###############################################################################
@@ -1143,14 +1231,14 @@ proc sag_if_proc_line_generic {l fp line} {
 ###############################################################################
 
 proc sag_prepare_datafile {l} {
-	global sar sar_data_path sag_if_archive sag_if_out_tokens \
-		sag_opt_whole_day sag_if_last_time sar_elim
+	global sar sar_data_path sag_if_archive_uncompressed sag_if_out_tokens \
+		sag_opt_whole_day sag_if_last_time sar_elim fngr_tmpdir
 
 		
 	set sag_if_last_time ""
-		set fp [open "|$sar -$l -f $sar_data_path/$sag_if_archive" "r"]
+		set fp [open "|$sar -$l -f $sag_if_archive_uncompressed" "r"]
 
-	set fgrname [exec mktemp "/tmp/isag.XXXXXX"]
+	set fgrname "$fngr_tmpdir/data.$l"
 
 	set fpgr [open $fgrname w]
 
@@ -1211,11 +1299,10 @@ proc sag_draw {l} {
 	global sag_if_archive isag_title sh sar grep sar_data_path gnuplot \
 		sag_gr_scale val_cur val_max view_n sag_if_cmd xlabel sag_if_out_tokens \
 		ylabel y2label plotstr has_negative \
-		sag_if_last_time sag_opt_grid sag_opt_whole_day
+		sag_if_last_time sag_opt_grid sag_opt_whole_day fngr_tmpdir last_graph
 
-	
 	if {$sag_if_archive == ""} {
-		out_msg "Error" "No data source selected for: $view_n($l)"
+		err_msg "Error" "No data source selected for: $view_n($l)"
 		return
 	}
 
@@ -1234,7 +1321,7 @@ proc sag_draw {l} {
 		} else {
 			set yrange "\[0:$val_cur($l)\]"
 		}
-		set fngr [exec mktemp "/tmp/isag.XXXXXX"]
+		set fngr "$fngr_tmpdir/draw.$l"
 		create_gnuplot_file tkcanvas tk $fngr "$view_n($l)" \
 			"$xlabel" \
 			"$ylabel($l)" $y2label($l) \
@@ -1251,7 +1338,8 @@ proc sag_draw {l} {
 		file delete $fngr
 	} else {
 		.graph.canv delete all
-		out_msg "Datafile: sag_if_archive" "No data to show"
+		err_msg "Datafile: $sag_if_archive" "No data to show"
+		.graph.canv delete all
 	}
 	file delete $fgrname
 
@@ -1300,7 +1388,7 @@ proc sag_save_graph {} {
 	global sag_if_archive isag_title sh sar grep sar_data_path gnuplot \
 		sag_gr_scale val_cur val_max view_n sag_if_cmd xlabel sag_if_out_tokens \
 		ylabel y2label plotstr has_negative \
-		sag_if_last_time sag_opt_grid sag_opt_whole_day last_graph
+		sag_if_last_time sag_opt_grid sag_opt_whole_day last_graph fngr_tmpdir
 
 		
 	set l $last_graph
@@ -1328,7 +1416,7 @@ proc sag_save_graph {} {
 			set yrange ""
 		}
 
-		set fngr [exec mktemp "/tmp/isag.XXXXXX"]
+		set fngr "$fngr_tmpdir/jpeg.$l"
 		create_gnuplot_file jpeg jpg $fngr "$view_n($l)" \
 			"$xlabel" \
 			"$ylabel($l)" $y2label($l) \
@@ -1339,11 +1427,18 @@ proc sag_save_graph {} {
 
 		file delete $fngr.gp
 		file delete $fngr
-		file rename -force $fngr.jpg $sag_if_archive.$l.jpg
+		set filename [tk_getSaveFile -title "Save Picture" \
+		   		-initialfile [string map { / _ } $sag_if_archive].$l.jpg \
+				-filetypes {{{JPEG Images} {.jpg}} {{All files} *}} ]
+		if { "" != $filename } {
+			file rename -force $fngr.jpg $filename
+		} else {
+			file delete $fngr.jpg
+		}			
 
 	} else {
 		.graph.canv delete all
-		out_msg "Datafile: sag_if_archive" "No data to show"
+		err_msg "Datafile: $sag_if_archive" "No data to show"
 	}
 	file delete "$fgrname"
 
@@ -1395,12 +1490,17 @@ if {[file isfile $isag_cfg_file] == 1} {
 	}
 }
 
+if { "" != $sag_latest_file } {
+	catch { set_file $sag_latest_file }
+}	
+
 #
 # Finishing a program and writting of config file
 #
 proc exit_program {} {
 	global isag_cfg_file prog_swtch val_max val_cur last_graph \
-		sag_opt_whole_day sag_opt_grid
+		sag_opt_whole_day sag_opt_grid \
+		fngr_tmpdir
 
 	
 	set fp [open $isag_cfg_file w]
@@ -1419,6 +1519,7 @@ proc exit_program {} {
 	
 	close $fp
 
+	file delete -force -- "$fngr_tmpdir"
 	destroy .
 	exit
 }

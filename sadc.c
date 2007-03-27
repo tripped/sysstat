@@ -1568,11 +1568,15 @@ void read_stats(unsigned int *flags)
     * Init uptime0. So if /proc/uptime cannot fill it,
     * this will be done by /proc/stat.
     * If cpu_nr = 1, force /proc/stat to fill it.
+    * If cpu_nr = 0, uptime0 and uptime are equal.
+    * NB: uptime0 is always filled.
     */
    file_stats.uptime0 = 0;
    if (cpu_nr > 1)
       readp_uptime(&(file_stats.uptime0));
    read_proc_stat(*flags);
+   if (!cpu_nr)
+      file_stats.uptime0 = file_stats.uptime;
    read_proc_meminfo();
    read_proc_loadavg();
    read_proc_vmstat();
@@ -1619,6 +1623,8 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *rectime,
        * Init file_stats structure. Every record of other structures
        * is set when reading corresponding stat file (records are set
        * to 0 if there are not enough data to fill the structure).
+       * Exception for individual CPU's structures which must not be
+       * init'ed to keep values for CPU before they were disabled.
        */
       memset(&file_stats, 0, FILE_STATS_SIZE);
 

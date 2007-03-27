@@ -2,21 +2,26 @@
 # @SA_LIB_DIR@/sa1
 # (C) 1999-2007 Sebastien Godard (sysstat <at> wanadoo.fr)
 #
-# 2007-01-21: Sebastien Godard (sysstat <at> wanadoo.fr)
-#	Modified to handle multiple months history.
-#	Original idea from John Caruso <caruso@paradiso.umuc.edu>
-# 2007/02/07: Ivana Varekova <varekova@redhat.com>
-#	Autoconf support added.
+# sa1: Collect and store binary data in system activity data file.
 #
 HISTORY=0
-[ -r /etc/sysconfig/sysstat ] && . /etc/sysconfig/sysstat
+SYSCONFIG_DIR=@SYSCONFIG_DIR@
+[ -r ${SYSCONFIG_DIR}/sysstat ] && . ${SYSCONFIG_DIR}/sysstat
 if [ ${HISTORY} -gt 28 ]
 then
 	CURRENTDIR=`date +%Y%m`
-	CURRENTFILE=sa`date +%d`
+	DATE=`date +%d`
+	CURRENTFILE=sa${DATE}
 	DDIR=@SA_DIR@
 	cd ${DDIR} || exit 1
 	[ -d ${CURRENTDIR} ] || mkdir -p ${CURRENTDIR}
+	# If ${CURRENTFILE} exists and is a regular file, then make sure
+       	# the file was modified this day (and not e.g. month ago)
+	# and move it to ${CURRENTDIR}
+	[ ! -L ${CURRENTFILE} ] &&
+		[ -f ${CURRENTFILE} ] &&
+		[ "`date +%Y%m%d -r ${CURRENTFILE}`" = "${CURRENTDIR}${DATE}" ] &&
+		mv -f ${CURRENTFILE} ${CURRENTDIR}/${CURRENTFILE}
 	touch ${CURRENTDIR}/${CURRENTFILE}
 	# Remove the "compatibility" link and recreate it to point to
 	# the (new) current file
@@ -26,7 +31,8 @@ fi
 umask 0022
 ENDIR=@SA_LIB_DIR@
 cd ${ENDIR}
-if [ $# = 0 ]
+[ "$1" = "--boot" ] && shift && BOOT=y || BOOT=n
+if [ $# = 0 ] && [ "$BOOT" = "n" ]
 then
 # Note: Stats are written at the end of previous file *and* at the
 # beginning of the new one (when there is a file rotation) only if

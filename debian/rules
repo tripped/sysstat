@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules,v 1.10 2007-03-17 12:14:17 robert Exp $
+# $Id: rules,v 1.12 2007-03-28 21:43:25 robert Exp $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -36,8 +36,10 @@ build-stamp:
 		    --enable-smp-race			\
 		    --enable-yesterday			\
 		    --disable-man-group			\
+		    --disable-compress-manpg		\
 		    sa_lib_dir=/usr/lib/sysstat		\
 		    sa_dir=/var/log/sysstat		\
+		    conf_dir=/etc/sysstat		\
 		    CFLAGS="$(CFLAGS)"			\
 		    LDFLAGS="$(LDFLAGS)"		
 

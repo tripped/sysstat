@@ -1,6 +1,9 @@
 build-stamp
+config.log
+config.status
 crontab
 iostat
+Makefile
 mpstat
 sa1
 sa2
@@ -8,10 +11,11 @@ sadc
 sadf
 sapath.h
 sar
+sysconfig.h
 sysstat
 sysstat.crond
-sysstat.sysconfig
 sysstat.cron.daily
-sysstat.cron.hourly
 sysstat.crond.sample
+sysstat.cron.hourly
+sysstat.sysconfig
 version.h

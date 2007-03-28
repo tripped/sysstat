@@ -125,7 +125,7 @@ struct io_nfs_stats {
 struct io_hdr_stats {
    unsigned int active				__attribute__ ((aligned (4)));
    unsigned int used				__attribute__ ((packed));
-   char name[MAX_NAME_LEN]			__attribute__ ((packed));
+   char name[MAX_NAME_LEN];
 };
 
 #define IO_HDR_STATS_SIZE	(sizeof(struct io_hdr_stats))
@@ -135,7 +135,7 @@ struct io_dlist {
    /* Indicate whether its partitions are to be displayed or not */
    int disp_part				__attribute__ ((aligned (4)));
    /* Device name */
-   char dev_name[MAX_NAME_LEN]			__attribute__ ((packed));
+   char dev_name[MAX_NAME_LEN];
 };
 
 #define IO_DLIST_SIZE	(sizeof(struct io_dlist))

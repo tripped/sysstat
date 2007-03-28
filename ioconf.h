@@ -8,6 +8,8 @@
 #ifndef _IOCONF_H
 #define _IOCONF_H
 
+#include "sysconfig.h"
+
 #define IOC_NAMELEN	31
 #define IOC_DESCLEN	63
 #define IOC_DEVLEN	47
@@ -19,8 +21,6 @@
 #ifndef MAX_BLKDEV
 #define MAX_BLKDEV	255
 #endif
-
-#define IOCONF	"/etc/sysstat/sysstat.ioconf"
 
 #define K_NODEV	"nodev"
 

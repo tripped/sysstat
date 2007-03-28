@@ -46,7 +46,7 @@ MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
 DOC_DIR = $(PREFIX)/doc/$(PACKAGE)-$(VERSION)
 NLS_DIR = $(PREFIX)/share/locale
-SYSCONFIG_DIR = /etc/sysstat
+SYSCONFIG_DIR = @SYSCONFIG_DIR@
 
 # Compiler flags
 CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe  -fno-strength-reduce
@@ -55,8 +55,13 @@ LFLAGS = @LDFLAGS@
 # DFLAGS may already contain SMP_RACE definition
 DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
 
-# The msgfmt command
+# Commands
+ifndef MSGFMT
 MSGFMT = @MSGFMT@
+endif
+ifndef ZIP
+ZIP = @ZIP@
+endif
 
 # Settings 
 NLS = @NLS@
@@ -80,6 +85,9 @@ MANGRPARG = -g $(MAN_GROUP)
 endif
 ifndef CLEAN_SA_DIR
 CLEAN_SA_DIR = @CLEAN_SA_DIR@
+endif
+ifndef COMPRESS_MANPG
+COMPRESS_MANPG = @COMPRESS_MANPG@
 endif
 
 # Run-command directories
@@ -114,17 +122,17 @@ NLSGMO= $(NLSPO:.po=.gmo)
 
 all: sadc sar sadf iostat mpstat locales
 
-common.o: common.c version.h common.h ioconf.h
+common.o: common.c version.h common.h ioconf.h sysconfig.h
 
-sa_common.o: sa_common.c sa.h common.h ioconf.h
+sa_common.o: sa_common.c sa.h common.h ioconf.h sysconfig.h
 
-ioconf.o: ioconf.c ioconf.h
+ioconf.o: ioconf.c ioconf.h sysconfig.h
 
 libsyscom.a: libsyscom.a(common.o ioconf.o)
 
 libsyssa.a: libsyssa.a(sa_common.o)
 
-sadc.o: sadc.c sa.h common.h ioconf.h
+sadc.o: sadc.c sa.h common.h ioconf.h sysconfig.h
 
 sadc: sadc.o libsyscom.a libsyssa.a
 
@@ -136,7 +144,7 @@ sadf.o: sadf.c sadf.h sa.h common.h
 
 sadf: sadf.o libsyscom.a libsyssa.a
 
-iostat.o: iostat.c iostat.h common.h ioconf.h
+iostat.o: iostat.c iostat.h common.h ioconf.h sysconfig.h
 
 iostat: iostat.o libsyscom.a
 
@@ -182,8 +190,17 @@ endif
 	$(INSTALL_DATA) $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
 	$(INSTALL_BIN) mpstat $(DESTDIR)$(BIN_DIR)
 	$(INSTALL_DATA) $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
+ifeq ($(COMPRESS_MANPG),y)
+	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
+	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
+	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sadc.8
+	$(ZIP) $(DESTDIR)$(MAN1_DIR)/sar.1
+	$(ZIP) $(DESTDIR)$(MAN1_DIR)/sadf.1
+	$(ZIP) $(DESTDIR)$(MAN1_DIR)/iostat.1
+	$(ZIP) $(DESTDIR)$(MAN1_DIR)/mpstat.1
+endif
 	$(INSTALL_DATA) sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
-	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/config
+	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
 #	$(INSTALL_DATA) CHANGES $(DESTDIR)$(DOC_DIR)
 #	$(INSTALL_DATA) COPYING $(DESTDIR)$(DOC_DIR)
 #	$(INSTALL_DATA) CREDITS $(DESTDIR)$(DOC_DIR)
@@ -262,23 +279,23 @@ install_all: install_base crontab sysstat \
 
 uninstall_base:
 	rm -f $(DESTDIR)$(SA_LIB_DIR)/sadc
-	rm -f $(DESTDIR)$(MAN8_DIR)/sadc.8
+	rm -f $(DESTDIR)$(MAN8_DIR)/sadc.8*
 	rm -f $(DESTDIR)$(SA_LIB_DIR)/sa1
-	rm -f $(DESTDIR)$(MAN8_DIR)/sa1.8
+	rm -f $(DESTDIR)$(MAN8_DIR)/sa1.8*
 	rm -f $(DESTDIR)$(SA_LIB_DIR)/sa2
-	rm -f $(DESTDIR)$(MAN8_DIR)/sa2.8
+	rm -f $(DESTDIR)$(MAN8_DIR)/sa2.8*
 	rm -f $(DESTDIR)$(BIN_DIR)/sar
-	rm -f $(DESTDIR)$(MAN1_DIR)/sar.1
+	rm -f $(DESTDIR)$(MAN1_DIR)/sar.1*
 	rm -f $(DESTDIR)$(BIN_DIR)/sadf
-	rm -f $(DESTDIR)$(MAN1_DIR)/sadf.1
+	rm -f $(DESTDIR)$(MAN1_DIR)/sadf.1*
 	rm -f $(DESTDIR)$(BIN_DIR)/iostat
-	rm -f $(DESTDIR)$(MAN1_DIR)/iostat.1
+	rm -f $(DESTDIR)$(MAN1_DIR)/iostat.1*
 	rm -f $(DESTDIR)$(BIN_DIR)/mpstat
-	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1
+	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1*
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_LIB_DIR)
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)
-#       No need to keep sysstat script, config file and links since
+#       No need to keep sysstat scripts, config files and links since
 #       the binaries have been deleted.
 	rm -f $(DESTDIR)$(INIT_DIR)/sysstat
 	rm -f $(DESTDIR)$(RC_DIR)/rc.sysstat
@@ -370,7 +387,7 @@ clean:
 	find nls -name "*.gmo" -exec rm -f {} \;
 
 almost-distclean: clean
-	rm -f sa1 sa2 sysstat crontab version.h
+	rm -f sa1 sa2 sysstat crontab version.h sysconfig.h
 	rm -f sysstat.sysconfig sysstat.crond sysstat.cron.daily
 	rm -f sysstat.cron.hourly sysstat.crond.sample
 	rm -f *.log config.status

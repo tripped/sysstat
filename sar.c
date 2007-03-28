@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2006 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -263,6 +263,33 @@ int count_bits(void *ptr, int size)
    }
 
    return nr;
+}
+
+
+/*
+ ***************************************************************************
+ * Determine if a stat line header has to be displayed
+ ***************************************************************************
+*/
+void check_line_hdr(int *dis_hdr)
+{
+   int nr_opt;
+
+   /* Get number of options entered on the command line */
+   nr_opt = count_bits(&sar_actflag, sizeof(unsigned int));
+
+   if ((nr_opt > 1) ||
+       ((GET_NET_DEV(sar_actflag) || GET_NET_EDEV(sar_actflag)) && (file_hdr.sa_iface > 1)) ||
+       (GET_DISK(sar_actflag) && (file_hdr.sa_nr_disk > 1)))
+      *dis_hdr = 1;
+   else if (GET_ONE_IRQ(sar_actflag)) {
+      if (count_bits(irq_bitmap, sizeof(irq_bitmap)) > 1)
+	 *dis_hdr = 1;
+   }
+   else if ((GET_IRQ(sar_actflag) || GET_CPU(sar_actflag)) && WANT_PER_PROC(flags)) {
+      if (count_bits(cpu_bitmap, sizeof(cpu_bitmap)) > 1)
+	 *dis_hdr = 1;
+   }
 }
 
 
@@ -891,8 +918,8 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file,
 
    /* Check time (1) */
    if (read_from_file) {
-      if (!next_slice(file_stats[2].uptime, file_stats[curr].uptime,
-		      &file_hdr, reset, interval))
+      if (!next_slice(file_stats[2].uptime0, file_stats[curr].uptime0,
+		      reset, interval))
 	 /* Not close enough to desired interval */
 	 return 0;
    }
@@ -1440,7 +1467,7 @@ void read_stats(void)
    short curr = 1, dis = 1;
    unsigned long lines = 0;
    unsigned int rows = 23;
-   int nr_opt, dis_hdr = 0;
+   int dis_hdr = 0;
 
    /* Read stats header */
    read_header_data();
@@ -1469,28 +1496,8 @@ void read_stats(void)
       exit(1);
    }
 
-   /* Get number of options entered on the command line */
-   nr_opt = count_bits(&sar_actflag, sizeof(unsigned int));
-
-   /* Determine if stats line header has to be displayed */
-   if ((nr_opt > 1) ||
-       ((GET_NET_DEV(sar_actflag) || GET_NET_EDEV(sar_actflag)) && (file_hdr.sa_iface > 1)) ||
-       (GET_DISK(sar_actflag) && (file_hdr.sa_nr_disk > 1)))
-      dis_hdr = 1;
-   else if (GET_ONE_IRQ(sar_actflag)) {
-      int nr_irq;
-	
-      nr_irq = count_bits(irq_bitmap, sizeof(irq_bitmap));
-      if (nr_irq > 1)
-	 dis_hdr = 1;
-   }
-   else if ((GET_IRQ(sar_actflag) || GET_CPU(sar_actflag)) && WANT_PER_PROC(flags)) {
-      int nr_cpu;
-
-      nr_cpu = count_bits(cpu_bitmap, sizeof(cpu_bitmap));
-      if (nr_cpu > 1)
-	 dis_hdr = 1;
-   }
+   /* Determine if a stat line header has to be displayed */
+   check_line_hdr(&dis_hdr);
 
    lines = rows = get_win_height();
 

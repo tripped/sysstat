@@ -2,46 +2,22 @@
 #
 # chkconfig: 235 03 97
 # @INIT_DIR@/sysstat
-# (C) 2000-2007 Sebastien Godard <sebastien.godard@wanadoo.fr>
+# (C) 2000-2007 Sebastien Godard (sysstat <at> wanadoo.fr)
 #
 # Description: Insert a dummy record in current daily data file.
 #	       This indicates that the counters have restarted from 0.
 #
-# 2004/10/10 - Sebastien Godard (sysstat <at> wanadoo.fr)
-#	Now returns real exit code.
-# 2006/07/05 - Sebastien Godard (sysstat <at> wanadoo.fr)
-#	Added support for chkconfig.
-# 2007/01/21 - Sebastien Godard (sysstat <at> wanadoo.fr)
-#	Added support for multiple months history.
-# 2007/02/07 - Ivana Varekova <varekova@redhat.com>
-#	Autoconf support added.
-#
 
 RETVAL=0
-HISTORY=0
+SYSCONFIG_DIR=@SYSCONFIG_DIR@
 # Remove flag indicating that sadc was successfully launched
 rm -f /tmp/sysstat.run
 
 # See how we were called.
 case "$1" in
   start)
-	[ -r /etc/sysconfig/sysstat ] && . /etc/sysconfig/sysstat
-	if [ ${HISTORY} -gt 28 ]
-	then
-		CURRENTDIR=`date +%Y%m`
-		CURRENTFILE=sa`date +%d`
-		DDIR=@SA_DIR@
-		cd ${DDIR} || exit 1
-		[ -d ${CURRENTDIR} ] || mkdir -p ${CURRENTDIR}
-		touch ${CURRENTDIR}/${CURRENTFILE}
-	        # Remove the "compatibility" link and recreate it to
-	        # point to the (new) current file
-	        rm -f ${CURRENTFILE}
-	        ln -s ${CURRENTDIR}/${CURRENTFILE} ${CURRENTFILE}
-		@REM_CHOWN@ @CRON_OWNER@ ${CURRENTDIR} ${CURRENTFILE} ${CURRENTDIR}/${CURRENTFILE}
-	fi
         echo -n "Calling the system activity data collector (sadc): "
-        @SU_C_OWNER@ @QUOTE@ @SA_LIB_DIR@/sadc -F -L - && touch /tmp/sysstat.run @QUOTE@
+        @SU_C_OWNER@ @QUOTE@ @SA_LIB_DIR@/sa1 --boot && touch /tmp/sysstat.run @QUOTE@
 
 	# Try to guess if sadc was successfully launched. The difficulty
 	# here is that the exit code is lost when the above command is

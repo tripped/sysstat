@@ -13,6 +13,8 @@ echo "Defaut value for yes/no questions is no (parameter is NOT set)."
 echo You can enter a ? to display a help message at any time...
 echo
 
+# Syntax: Ask <QUESTION> <PARM> <TEXT_FILE>
+
 # Installation directory
 PREFIX=`${ASK} 'Installation directory:' "--prefix" "prefix"`
 if [ "${PREFIX}" != "" ]; then
@@ -29,6 +31,12 @@ fi
 SA_DIR=`${ASK} 'System activity directory:' "sa_dir" "sa_dir"`
 if [ "${SA_DIR}" != "" ]; then
 	SA_DIR="sa_dir=${SA_DIR} "
+fi
+
+# sysstat configuration directory
+SYSCONFIG_DIR=`${ASK} 'sysstat configuration directory:' "conf_dir" "conf_dir"`
+if [ "${SYSCONFIG_DIR}" != "" ]; then
+	SYSCONFIG_DIR="conf_dir=${SYSCONFIG_DIR} "
 fi
 
 # Clean sa directory
@@ -112,9 +120,20 @@ then
 	fi
 fi
 
-echo "./configure ${PREFIX}${SA_LIB_DIR}${SA_DIR}${CLEAN_SA_DIR}${NLS}${SMPRACE} \
-${YESTERDAY}${HISTORY}${COMPRESSAFTER}${MAN}${IGNORE_MAN}${CRON}"
+# Compress manual pages
+COMPRESSMANPG=`${ASK} 'Compress manual pages? (y/n)' "--enable-compress-manpg" "compress-manpg"`
+if [ "${COMPRESSMANPG}" = "y" ]; then
+	COMPRESSMANPG="--enable-compress-manpg "
+else
+	COMPRESSMANPG=""
+	echo "Parameter --enable-compress-manpg is NOT set"
+fi
 
-./configure ${PREFIX}${SA_LIB_DIR}${SA_DIR}${CLEAN_SA_DIR}${NLS}${SMPRACE} \
-${YESTERDAY}${HISTORY}${COMPRESSAFTER}${MAN}${IGNORE_MAN}${CRON}
+echo
+echo "./configure ${PREFIX}${SA_LIB_DIR}${SA_DIR}${SYSCONFIG_DIR}${CLEAN_SA_DIR}${NLS} \
+${SMPRACE}${YESTERDAY}${HISTORY}${COMPRESSAFTER}${MAN}${IGNORE_MAN}${CRON}${COMPRESSMANPG}"
+echo
+
+./configure ${PREFIX}${SA_LIB_DIR}${SA_DIR}${SYSCONFIG_DIR}${CLEAN_SA_DIR}${NLS} \
+${SMPRACE}${YESTERDAY}${HISTORY}${COMPRESSAFTER}${MAN}${IGNORE_MAN}${CRON}${COMPRESSMANPG}
 

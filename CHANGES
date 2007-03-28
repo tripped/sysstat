@@ -1,5 +1,26 @@
 Changes:
 
+2007/03/27: Version 7.1.3 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x216b]
+	* Hotplug CPU support: Fixed a bug that happened when sar tried
+	  to read a datafile created while a least one processor was
+	  disabled.
+	* Better support for keeping sar logfiles for more than one month
+	  (several bugs fixed in sa1 and sa2 scripts).
+	* Fixed a small bug in sa2 script, where obsolete log files would not
+	  be deleted if system activity directory was a symbolic link to
+	  some other directory.
+	* The new variable "conf_dir" now enables the user to specify sysstat
+	  configuration directory. This variable is used by "configure".
+	* Added option "--enable-compress-manpg" to "configure" to enable the
+	  user to compress manual pages during installation.
+	* Removed some 'packed' attributes in sa.h and iostat.h that
+	  generated warnings with gcc 4.1.1.
+	* isag (Interactive System Activity Grapher) improved.
+	* CREDITS file updated.
+	* Code cleaned.
+
 2007/03/04: Version 7.1.2 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x216a]

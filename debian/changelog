@@ -5,8 +5,9 @@ sysstat (7.0.4-4) unstable; urgency=low
     + auto load the latest log file,
     + use standard tk_messageBox to display error messages,
     + "save picture" prompts user for choosing path.
+  * Register FAQ with doc-base.
 
- -- Robert Luberda <robert@debian.org>  Sat, 17 Mar 2007 13:06:07 +0100
+ -- Robert Luberda <robert@debian.org>  Thu, 29 Mar 2007 20:47:12 +0200
 
 sysstat (7.0.4-3) unstable; urgency=low
 

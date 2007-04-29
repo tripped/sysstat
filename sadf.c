@@ -30,6 +30,7 @@
 #include "sadf.h"
 #include "sa.h"
 #include "common.h"
+#include "ioconf.h"
 
 
 #ifdef USE_NLS
@@ -44,20 +45,20 @@
 long interval = -1, count = 0;
 unsigned int sadf_actflag = 0;
 unsigned int flags = 0;
-unsigned short format = 0;	/* Output format */
+unsigned int format = 0;	/* Output format */
 unsigned char irq_bitmap[(NR_IRQS / 8) + 1];
 unsigned char cpu_bitmap[(NR_CPUS / 8) + 1];
 
 struct file_hdr file_hdr;
-struct file_stats file_stats[DIM];
-struct stats_one_cpu *st_cpu[DIM];
-struct stats_serial *st_serial[DIM];
-struct stats_irq_cpu *st_irq_cpu[DIM];
-struct stats_net_dev *st_net_dev[DIM];
-struct disk_stats *st_disk[DIM];
+struct file_stats file_stats[3];
+struct stats_one_cpu *st_cpu[3];
+struct stats_serial *st_serial[3];
+struct stats_irq_cpu *st_irq_cpu[3];
+struct stats_net_dev *st_net_dev[3];
+struct disk_stats *st_disk[3];
 
 /* Array members of common types are always packed */
-unsigned int interrupts[DIM][NR_IRQS];
+unsigned int interrupts[3][NR_IRQS];
 
 struct tm rectime, loctime;
 /* Contain the date specified by -s and -e options */
@@ -100,7 +101,7 @@ void prtab(int nr_tab)
  * printf() function modified for XML display
  ***************************************************************************
  */
-void xprintf(short nr_tab, const char *fmt, ...)
+void xprintf(int nr_tab, const char *fmt, ...)
 {
    static char buf[1024];
    va_list args;
@@ -122,7 +123,7 @@ void xprintf(short nr_tab, const char *fmt, ...)
  * which is the number of seconds since 1970 _always_ expressed in UTC.
  ***************************************************************************
 */
-void set_rectime(short curr)
+void set_rectime(int curr)
 {
    struct tm *ltm;
 
@@ -143,7 +144,7 @@ void set_rectime(short curr)
  * Set timestamp string
  ***************************************************************************
 */
-void set_timestamp(short curr, char *cur_time, int len)
+void set_timestamp(int curr, char *cur_time, int len)
 {
    set_rectime(curr);
 	
@@ -271,7 +272,7 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
  * making it easier for them to remain in sync and print the same data.
  ***************************************************************************
  */
-void write_mech_stats(short curr, unsigned int act,
+void write_mech_stats(int curr, unsigned int act,
 		      unsigned long dt, unsigned long long itv,
 		      unsigned long long g_itv, char *cur_time)
 {
@@ -826,7 +827,7 @@ void write_mech_stats(short curr, unsigned int act,
    /* Print disk statistics */
    if (GET_DISK(act)) {
       int i, j;
-      char *name;
+      char *name = NULL;
       double tput, util, await, svctm, arqsz;
       struct disk_stats
 	 *sdi = st_disk[curr],
@@ -839,7 +840,12 @@ void write_mech_stats(short curr, unsigned int act,
 
 	 j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
 	 sdj = st_disk[!curr] + j;
-	 name = get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags));
+	 
+	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
+	    name = transform_devmapname(sdi->major, sdi->minor);
+	 
+	 if (!name)
+	    name = get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags));
 
 	 tput = ((double) (sdi->nr_ios - sdj->nr_ios)) * HZ / itv;
 	 util = S_VALUE(sdj->tot_ticks, sdi->tot_ticks, itv);
@@ -959,7 +965,7 @@ void write_mech_stats(short curr, unsigned int act,
  * Write system statistics
  ***************************************************************************
  */
-int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
+int write_parsable_stats(int curr, unsigned int act, int reset, long *cnt,
 			 int use_tm_start, int use_tm_end)
 {
    unsigned long long dt, itv, g_itv;
@@ -1006,7 +1012,7 @@ int write_parsable_stats(short curr, unsigned int act, int reset, long *cnt,
  * Display XML activity records
  ***************************************************************************
  */
-void write_xml_stats(short curr, short *tab)
+void write_xml_stats(int curr, int *tab)
 {
    int i, j, k;
    unsigned long long dt, itv, g_itv;
@@ -1173,6 +1179,7 @@ void write_xml_stats(short curr, short *tab)
       struct disk_stats
 	 *sdi = st_disk[curr],
 	 *sdj;
+      char *name = NULL;
 
       xprintf(*tab, "<disk per=\"second\">");
       (*tab)++;
@@ -1195,11 +1202,16 @@ void write_xml_stats(short curr, short *tab)
 	    ((sdi->rd_sect - sdj->rd_sect) + (sdi->wr_sect - sdj->wr_sect)) /
 	    ((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
 
+	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
+	    name = transform_devmapname(sdi->major, sdi->minor);
+	 
+	 if (!name)
+	    name = get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags));
+
 	 xprintf(*tab, "<disk-device dev=\"%s\" tps=\"%.2f\" rd_sec=\"%.2f\" "
 		       "wr_sec=\"%.2f\" avgrq-sz=\"%.2f\" avgqu-sz=\"%.2f\" "
 		       "await=\"%.2f\" svctm=\"%.2f\" util-percent=\"%.2f\"/>",
-		 /* Confusion possible here between index and minor numbers */
-		 get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags)),
+		 name,
 		 S_VALUE(sdj->nr_ios,  sdi->nr_ios,  itv),
 		 ll_s_value(sdj->rd_sect, sdi->rd_sect, itv),
 		 ll_s_value(sdj->wr_sect, sdi->wr_sect, itv),
@@ -1387,7 +1399,7 @@ void write_xml_stats(short curr, short *tab)
  * Display XML restart records
  ***************************************************************************
  */
-void write_xml_restarts(short curr, short *tab)
+void write_xml_restarts(int curr, int *tab)
 {
    char cur_time[64];
 
@@ -1404,7 +1416,7 @@ void write_xml_restarts(short curr, short *tab)
  * Print a Linux restart message (contents of a DUMMY record)
  ***************************************************************************
  */
-void write_dummy(short curr, int use_tm_start, int use_tm_end)
+void write_dummy(int curr, int use_tm_start, int use_tm_end)
 {
    char cur_time[26];
 
@@ -1452,7 +1464,7 @@ void display_file_header(char *dfile, struct file_hdr *file_hdr)
  * Display XML header and host data
  ***************************************************************************
  */
-void display_xml_header(short *tab)
+void display_xml_header(int *tab)
 {
    printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
    printf("<!DOCTYPE Configure PUBLIC \"DTD v%s sysstat //EN\"\n", XML_DTD_VERSION);
@@ -1522,7 +1534,7 @@ void copy_structures(int dest, int src)
  * Read varying part of the statistics from a daily data file
  ***************************************************************************
  */
-void read_extra_stats(short curr, int ifd)
+void read_extra_stats(int curr, int ifd)
 {
    if (file_hdr.sa_proc)
       sa_fread(ifd, st_cpu[curr],
@@ -1551,7 +1563,7 @@ void read_extra_stats(short curr, int ifd)
  * Read stats for current activity from file
  ***************************************************************************
  */
-void read_curr_act_stats(int ifd, off_t fpos, short *curr, long *cnt, int *eosaf,
+void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 			 unsigned int act, int *reset)
 {
    unsigned char rtype;
@@ -1611,7 +1623,7 @@ void read_curr_act_stats(int ifd, off_t fpos, short *curr, long *cnt, int *eosaf
 void xml_display_loop(int ifd)
 {
    unsigned char rtype;
-   short curr, tab = 0;
+   int curr, tab = 0;
    int eosaf = TRUE;
    off_t fpos;
 
@@ -1700,7 +1712,7 @@ void xml_display_loop(int ifd)
  */
 void main_display_loop(int ifd)
 {
-   short curr = 1;
+   int curr = 1;
    unsigned int act;
    int eosaf = TRUE, reset = FALSE;
    long cnt = 1;

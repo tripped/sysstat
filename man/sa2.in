@@ -1,15 +1,15 @@
-.TH SA2 8 "JUNE 2006" Linux "Linux User's Manual" -*- nroff -*-
+.TH SA2 8 "APRIL 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
-sa2 \- Write a daily report in the /var/log/sa directory.
+sa2 \- Write a daily report in the @SA_DIR@ directory.
 .SH SYNOPSIS
-.B /usr/lib/sa/sa2
+.B @SA_LIB_DIR@/sa2
 .SH DESCRIPTION
 The
 .B sa2
 command is a shell procedure variant of the
 .B sar
 command which writes a daily report in the
-.IR /var/log/sa/sar dd
+.IR @SA_DIR@/sar dd
 file, where the dd parameter indicates the current day. The
 .B sa2
 command handles all of the flags and parameters of the
@@ -25,13 +25,13 @@ To run the
 .B sa2
 command daily, place the following entry in your root or adm crontab file:
 
-.B 5 19 * * 1-5 /usr/lib/sa/sa2 -A &
+.B 5 19 * * 1-5 @SA_LIB_DIR@/sa2 -A &
 
 This will generate a daily report called
-.IR /var/log/sa/sar dd
+.IR @SA_DIR@/sar dd
 It will also remove reports more than one week old.
 .SH FILES
-.IR /var/log/sa/sar dd
+.IR @SA_DIR@/sar dd
 .RS
 Indicate the daily report file, where the
 .B dd
@@ -43,8 +43,6 @@ Sebastien Godard (sysstat <at> wanadoo.fr)
 .BR sadc (8),
 .BR sa1 (8),
 .BR sadf (1),
-.BR mpstat (1),
-.BR iostat (1),
-.BR vmstat (8)
+.BR isag (1)
 
 .I http://perso.orange.fr/sebastien.godard/

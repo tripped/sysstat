@@ -42,10 +42,12 @@
 #endif
 
 
-struct mp_stats *st_mp_cpu[DIM];
+unsigned long long uptime[3] = {0, 0, 0};
+unsigned long long uptime0[3] = {0, 0, 0};
+struct mp_stats *st_mp_cpu[3];
 /* NOTE: Use array of _char_ for bitmaps to avoid endianness problems...*/
 unsigned char *cpu_bitmap;	/* Bit 0: Global; Bit 1: 1st proc; etc. */
-struct mp_timestamp st_mp_tstamp[DIM];
+struct tm mp_tstamp[3];
 long interval = -1, count = 0;
 
 /* Nb of processors on the machine */
@@ -87,7 +89,7 @@ void salloc_mp_cpu(int nr_cpus)
 {
    int i;
 
-   for (i = 0; i < DIM; i++) {
+   for (i = 0; i < 3; i++) {
       if ((st_mp_cpu[i] = (struct mp_stats *) malloc(MP_STATS_SIZE * nr_cpus)) == NULL) {
 	 perror("malloc");
 	 exit(4);
@@ -129,7 +131,7 @@ unsigned long long mget_per_cpu_interval(struct mp_stats *st_mp_cpu_i,
  * Core function used to display statistics
  ***************************************************************************
  */
-void write_stats_core(short prev, short curr, short dis,
+void write_stats_core(int prev, int curr, int dis,
 		      char *prev_string, char *curr_string)
 {
    struct mp_stats
@@ -138,31 +140,11 @@ void write_stats_core(short prev, short curr, short dis,
    unsigned long long itv, pc_itv;
    int cpu;
 
-   /*
-    * Under very special circumstances, STDOUT may become unavailable,
-    * This is what we try to guess here
-    */
-   if (write(STDOUT_FILENO, "", 0) == -1) {
-      perror("stdout");
-      exit(6);
-   }
+   /* Test stdout */
+   TEST_STDOUT(STDOUT_FILENO);
 
-   /*
-    * Interval value in jiffies, multiplied by the number of proc.
-    * The interval should always be smaller than 0xffffffff (ULONG_MAX on
-    * 32-bit architectures), except perhaps if it is the interval since
-    * system startup (we want stats since boot time).
-    * Interval is and'ed with mask 0xffffffff to handle overflow conditions
-    * that may happen since uptime values are unsigned long long but are
-    * calculated as a sum of values that _may_ be unsigned long only...
-    */
-   if (!interval)
-      itv = st_mp_tstamp[curr].uptime;
-   else
-      itv = (st_mp_tstamp[curr].uptime - st_mp_tstamp[prev].uptime) & 0xffffffff;
-
-   if (!itv)	/* Paranoia checking */
-      itv = 1;
+   /* Compute time interval */
+   itv = get_interval(uptime[prev], uptime[curr]);
 
    /* Print stats */
    if (dis)
@@ -188,18 +170,9 @@ void write_stats_core(short prev, short curr, short dis,
 	     ll_sp_value(st_mp_cpu[prev]->cpu_idle, st_mp_cpu[curr]->cpu_idle, itv));
    }
 
-   /*
-    * Here, we reduce the interval value to one processor,
-    * using the uptime computed for proc#0.
-    */
-   if (cpu_nr > 1) {
-      if (!interval)
-	 itv = st_mp_tstamp[curr].uptime0;
-      else
-	 itv = (st_mp_tstamp[curr].uptime0 - st_mp_tstamp[prev].uptime0) & 0xffffffff;
-      if (!itv)
-	 itv = 1;
-   }
+   /* Reduce interval value to one processor */
+   if (cpu_nr > 1)
+      itv = get_interval(uptime0[prev], uptime0[curr]);
 
    if (*cpu_bitmap & 1) {
        printf(" %9.2f\n",
@@ -243,7 +216,7 @@ void write_stats_core(short prev, short curr, short dis,
  * Print statistics average
  ***************************************************************************
  */
-void write_stats_avg(short curr, short dis)
+void write_stats_avg(int curr, int dis)
 {
    char string[16];
 
@@ -257,24 +230,15 @@ void write_stats_avg(short curr, short dis)
  * Print statistics
  ***************************************************************************
  */
-void write_stats(short curr, short dis, struct tm *rectime)
+void write_stats(int curr, int dis)
 {
    char cur_time[2][16];
 
-   /*
-    * Get previous timestamp
-    * NOTE: rectime structure must have been init'ed before!
-    */
-   rectime->tm_hour = st_mp_tstamp[!curr].hour;
-   rectime->tm_min  = st_mp_tstamp[!curr].minute;
-   rectime->tm_sec  = st_mp_tstamp[!curr].second;
-   strftime(cur_time[!curr], 16, "%X", rectime);
+   /* Get previous timestamp */
+   strftime(cur_time[!curr], 16, "%X", &(mp_tstamp[!curr]));
 
    /* Get current timestamp */
-   rectime->tm_hour = st_mp_tstamp[curr].hour;
-   rectime->tm_min  = st_mp_tstamp[curr].minute;
-   rectime->tm_sec  = st_mp_tstamp[curr].second;
-   strftime(cur_time[curr], 16, "%X", rectime);
+   strftime(cur_time[curr], 16, "%X", &(mp_tstamp[curr]));
 
    write_stats_core(!curr, curr, dis, cur_time[!curr], cur_time[curr]);
 }
@@ -285,7 +249,7 @@ void write_stats(short curr, short dis, struct tm *rectime)
  * Read stats from /proc/stat
  ***************************************************************************
  */
-void read_proc_stat(short curr)
+void read_proc_stat(int curr)
 {
    FILE *fp;
    struct mp_stats *st_mp_cpu_i;
@@ -325,14 +289,14 @@ void read_proc_stat(short curr)
 	  * if HZ=100).
 	  * Machine uptime is multiplied by the number of processors here.
 	  */
-	 st_mp_tstamp[curr].uptime = st_mp_cpu[curr]->cpu_user +
-	                             st_mp_cpu[curr]->cpu_nice +
-	                             st_mp_cpu[curr]->cpu_system +
-	                             st_mp_cpu[curr]->cpu_idle +
-	                             st_mp_cpu[curr]->cpu_iowait +
-	    			     st_mp_cpu[curr]->cpu_hardirq +
-	    			     st_mp_cpu[curr]->cpu_softirq +
-	    			     st_mp_cpu[curr]->cpu_steal;
+	 uptime[curr] = st_mp_cpu[curr]->cpu_user +
+	                st_mp_cpu[curr]->cpu_nice +
+	                st_mp_cpu[curr]->cpu_system +
+	                st_mp_cpu[curr]->cpu_idle +
+	                st_mp_cpu[curr]->cpu_iowait +
+	    		st_mp_cpu[curr]->cpu_hardirq +
+	    		st_mp_cpu[curr]->cpu_softirq +
+	    		st_mp_cpu[curr]->cpu_steal;
       }
 
       else if (!strncmp(line, "cpu", 3)) {
@@ -360,14 +324,13 @@ void read_proc_stat(short curr)
 	 }
 	 /* else additional CPUs have been dynamically registered in /proc/stat */
 	
-	 if (!proc_nb && !st_mp_tstamp[curr].uptime0)
+	 if (!proc_nb && !uptime0[curr])
 	    /*
 	     * Compute uptime reduced for one proc using proc#0.
 	     * Done only if /proc/uptime was unavailable.
 	     */
-	    st_mp_tstamp[curr].uptime0 = cc_user + cc_nice + cc_system +
-	       				 cc_idle + cc_iowait + cc_hardirq +
-	    				 cc_softirq + cc_steal;
+	    uptime0[curr] = cc_user + cc_nice + cc_system + cc_idle +
+	                    cc_iowait + cc_hardirq + cc_softirq + cc_steal;
       }
 
       else if (!strncmp(line, "intr ", 5))
@@ -387,7 +350,7 @@ void read_proc_stat(short curr)
  * Read stats from /proc/interrupts
  ***************************************************************************
  */
-void read_interrupts_stat(short curr)
+void read_interrupts_stat(int curr)
 {
    FILE *fp;
    struct mp_stats *st_mp_cpu_i;
@@ -425,16 +388,11 @@ void read_interrupts_stat(short curr)
  * and display them.
  ***************************************************************************
  */
-void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
-		     struct tm *rectime)
+void rw_mpstat_loop(int dis_hdr, unsigned long lines, int rows)
 {
    struct mp_stats *st_mp_cpu_i, *st_mp_cpu_j;
    int cpu;
-   short curr = 1, dis = 1;
-
-   st_mp_tstamp[0].hour   = rectime->tm_hour;
-   st_mp_tstamp[0].minute = rectime->tm_min;
-   st_mp_tstamp[0].second = rectime->tm_sec;
+   int curr = 1, dis = 1;
 
    /* Read stats */
    if (cpu_nr > 1) {
@@ -442,17 +400,17 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
        * Init uptime0. So if /proc/uptime cannot fill it,
        * this will be done by /proc/stat.
        */
-      st_mp_tstamp[0].uptime0 = 0;
-      readp_uptime(&(st_mp_tstamp[0].uptime0));
+      uptime0[0] = 0;
+      readp_uptime(&(uptime0[0]));
    }
    read_proc_stat(0);
    read_interrupts_stat(0);
 
    if (!interval) {
       /* Display since boot time */
-      st_mp_tstamp[1] = st_mp_tstamp[0];
+      mp_tstamp[1] = mp_tstamp[0];
       memset(st_mp_cpu[1], 0, MP_STATS_SIZE * (cpu_nr + 1));
-      write_stats(0, DISP_HDR, rectime);
+      write_stats(0, DISP_HDR);
       exit(0);
    }
 
@@ -460,7 +418,9 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
    alarm_handler(0);
 
    /* Save the first stats collected. Will be used to compute the average */
-   st_mp_tstamp[2] = st_mp_tstamp[0];
+   mp_tstamp[2] = mp_tstamp[0];
+   uptime[2] = uptime[0];
+   uptime0[2] = uptime0[0];
    memcpy(st_mp_cpu[2], st_mp_cpu[0], MP_STATS_SIZE * (cpu_nr + 1));
 
    pause();
@@ -477,17 +437,13 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
 	 *st_mp_cpu_i = *st_mp_cpu_j;
       }
 
-      /* Save time */
-      get_localtime(rectime);
-
-      st_mp_tstamp[curr].hour   = rectime->tm_hour;
-      st_mp_tstamp[curr].minute = rectime->tm_min;
-      st_mp_tstamp[curr].second = rectime->tm_sec;
+      /* Get time */
+      get_localtime(&(mp_tstamp[curr]));
 
       /* Read stats */
       if (cpu_nr > 1) {
-	 st_mp_tstamp[curr].uptime0 = 0;
-	 readp_uptime(&(st_mp_tstamp[curr].uptime0));
+	 uptime0[curr] = 0;
+	 readp_uptime(&(uptime0[curr]));
       }
       read_proc_stat(curr);
       read_interrupts_stat(curr);
@@ -499,7 +455,7 @@ void rw_mp_stat_loop(short dis_hdr, unsigned long lines, int rows,
 	    lines %= rows;
 	 lines++;
       }
-      write_stats(curr, dis, rectime);
+      write_stats(curr, dis);
 
       /* Flush data */
       fflush(stdout);
@@ -527,10 +483,9 @@ int main(int argc, char **argv)
 {
    int opt = 0, i;
    struct utsname header;
-   short dis_hdr = -1, opt_used = 0;
+   int dis_hdr = -1, opt_used = 0;
    unsigned long lines = 0;
    int rows = 23;
-   struct tm rectime;
 
 #ifdef USE_NLS
    /* Init National Language Support */
@@ -621,14 +576,15 @@ int main(int argc, char **argv)
       interval = 0;
 
    /* Get time */
-   get_localtime(&rectime);
+   get_localtime(&(mp_tstamp[0]));
 
    /* Get system name, release number and hostname */
    uname(&header);
-   print_gal_header(&rectime, header.sysname, header.release, header.nodename);
+   print_gal_header(&(mp_tstamp[0]), header.sysname, header.release,
+		    header.nodename);
 
    /* Main loop */
-   rw_mp_stat_loop(dis_hdr, lines, rows, &rectime);
+   rw_mpstat_loop(dis_hdr, lines, rows);
 
    return 0;
 }

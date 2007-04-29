@@ -67,7 +67,7 @@ void init_stats(struct file_stats file_stats[],
 {
    int i;
 
-   for (i = 0; i < DIM; i++) {
+   for (i = 0; i < 3; i++) {
       memset(&file_stats[i], 0, FILE_STATS_SIZE);
       memset(interrupts[i], 0, STATS_ONE_IRQ_SIZE);
    }
@@ -84,7 +84,7 @@ void salloc_cpu_array(struct stats_one_cpu *st_cpu[], unsigned int nr_cpu)
 {
    int i;
 
-   for (i = 0; i < DIM; i++)
+   for (i = 0; i < 3; i++)
       SREALLOC(st_cpu[i], struct stats_one_cpu, STATS_ONE_CPU_SIZE * nr_cpu);
 }
 
@@ -98,7 +98,7 @@ void salloc_serial_array(struct stats_serial *st_serial[], int nr_serial)
 {
    int i;
 
-   for (i = 0; i < DIM; i++)
+   for (i = 0; i < 3; i++)
       SREALLOC(st_serial[i], struct stats_serial, STATS_SERIAL_SIZE * nr_serial);
 }
 
@@ -113,7 +113,7 @@ void salloc_irqcpu_array(struct stats_irq_cpu *st_irq_cpu[],
 {
    int i;
 
-   for (i = 0; i < DIM; i++)
+   for (i = 0; i < 3; i++)
       SREALLOC(st_irq_cpu[i], struct stats_irq_cpu,
 	       STATS_IRQ_CPU_SIZE * nr_cpus * nr_irqcpu);
 }
@@ -129,7 +129,7 @@ void salloc_net_dev_array(struct stats_net_dev *st_net_dev[],
 {
    int i;
 
-   for (i = 0; i < DIM; i++)
+   for (i = 0; i < 3; i++)
       SREALLOC(st_net_dev[i], struct stats_net_dev, STATS_NET_DEV_SIZE * nr_iface);
 }
 
@@ -143,7 +143,7 @@ void salloc_disk_array(struct disk_stats *st_disk[], int nr_disk)
 {
    int i;
 
-   for (i = 0; i < DIM; i++)
+   for (i = 0; i < 3; i++)
       SREALLOC(st_disk[i], struct disk_stats, DISK_STATS_SIZE * nr_disk);
 }
 
@@ -164,7 +164,9 @@ char *get_devname(unsigned int major, unsigned int minor, int pretty)
 
    if (!pretty)
       return (buf);
-   if ((name = ioc_name(major, minor)) == NULL)
+
+   name = ioc_name(major, minor);
+   if ((name == NULL) || !strcmp(name, K_NODEV))
       return (buf);
 
    return (name);
@@ -310,30 +312,12 @@ void get_itv_value(struct file_stats *file_stats_curr,
 		   unsigned long long *itv, unsigned long long *g_itv)
 {
    /* Interval value in jiffies */
-   if (!file_stats_prev->uptime)
-      /*
-       * Stats from boot time to be displayed: only in this case we admit
-       * that the interval (which is unsigned long long) may be greater
-       * than 0xffffffff, else it was an overflow.
-       */
-      *g_itv = file_stats_curr->uptime;
-   else
-      *g_itv = (file_stats_curr->uptime - file_stats_prev->uptime)
-	 & 0xffffffff;
+   *g_itv = get_interval(file_stats_prev->uptime,
+			 file_stats_curr->uptime);
 
-   if (!(*g_itv))	/* Paranoia checking */
-      *g_itv = 1;
-
-   if (nr_proc > 1) {
-      if (!file_stats_prev->uptime0)
-	 *itv = file_stats_curr->uptime0;
-      else
-	 *itv = (file_stats_curr->uptime0 - file_stats_prev->uptime0)
-	    & 0xffffffff;
-
-      if (!(*itv))
-	 *itv = 1;
-   }
+   if (nr_proc > 1)
+      *itv = get_interval(file_stats_prev->uptime0,
+			  file_stats_curr->uptime0);
    else
       *itv = *g_itv;
 }
@@ -393,8 +377,8 @@ void print_report_hdr(unsigned int flags, struct tm *rectime,
  ***************************************************************************
  */
 unsigned int check_iface_reg(struct file_hdr *file_hdr,
-			     struct stats_net_dev *st_net_dev[], short curr,
-			     short ref, unsigned int pos)
+			     struct stats_net_dev *st_net_dev[], int curr,
+			     int ref, unsigned int pos)
 {
    struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
    unsigned int index = 0;
@@ -499,7 +483,7 @@ unsigned int check_iface_reg(struct file_hdr *file_hdr,
  ***************************************************************************
  */
 int check_disk_reg(struct file_hdr *file_hdr, struct disk_stats *st_disk[],
-		   short curr, short ref, int pos)
+		   int curr, int ref, int pos)
 {
    struct disk_stats *st_disk_i, *st_disk_j;
    int index = 0;

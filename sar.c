@@ -28,6 +28,7 @@
 
 #include "sa.h"
 #include "common.h"
+#include "ioconf.h"
 
 
 #ifdef USE_NLS
@@ -46,16 +47,16 @@ unsigned char cpu_bitmap[(NR_CPUS / 8) + 1];
 
 struct stats_sum asum;
 struct file_hdr file_hdr;
-struct file_stats file_stats[DIM];
-struct stats_one_cpu *st_cpu[DIM] = {NULL, NULL, NULL};
-struct stats_serial *st_serial[DIM] = {NULL, NULL, NULL};
-struct stats_irq_cpu *st_irq_cpu[DIM] = {NULL, NULL, NULL};
-struct stats_net_dev *st_net_dev[DIM] = {NULL, NULL, NULL};
-struct disk_stats *st_disk[DIM] = {NULL, NULL, NULL};
+struct file_stats file_stats[3];
+struct stats_one_cpu *st_cpu[3] = {NULL, NULL, NULL};
+struct stats_serial *st_serial[3] = {NULL, NULL, NULL};
+struct stats_irq_cpu *st_irq_cpu[3] = {NULL, NULL, NULL};
+struct stats_net_dev *st_net_dev[3] = {NULL, NULL, NULL};
+struct disk_stats *st_disk[3] = {NULL, NULL, NULL};
 
 /* Array members of common types are always packed */
-unsigned int interrupts[DIM][NR_IRQS];
-struct pid_stats *pid_stats[DIM][MAX_PID_NR];
+unsigned int interrupts[3][NR_IRQS];
+struct pid_stats *pid_stats[3][MAX_PID_NR];
 
 struct tm rectime;
 /* Contain the date specified by -s and -e options */
@@ -96,7 +97,7 @@ void init_all_stats(void)
    init_stats(file_stats, interrupts);
    memset(&asum, 0, STATS_SUM_SIZE);
 
-   for (i = 0; i < DIM; i++)
+   for (i = 0; i < 3; i++)
       pid_stats[i][0] = NULL;
 }
 
@@ -125,7 +126,7 @@ void salloc_pid(int nr_pid)
 {
    int i, pid;
 
-   for (i = 0; i < DIM; i++) {
+   for (i = 0; i < 3; i++) {
       if (pid_stats[i][0])
 	 free(pid_stats[i][0]);
       if ((pid_stats[i][0] = (struct pid_stats *) malloc(PID_STATS_SIZE * nr_pid)) == NULL) {
@@ -223,7 +224,7 @@ void prep_smp_option(unsigned int cpu_nr)
  * structure.
  ***************************************************************************
 */
-void set_rectime(short curr)
+void set_rectime(int curr)
 {
    struct tm *ltm;
 
@@ -298,7 +299,7 @@ void check_line_hdr(int *dis_hdr)
  * Set timestamp string
  ***************************************************************************
 */
-void set_timestamp(short curr, char *cur_time, int len)
+void set_timestamp(int curr, char *cur_time, int len)
 {
    set_rectime(curr);
 
@@ -312,7 +313,7 @@ void set_timestamp(short curr, char *cur_time, int len)
  * Core function used to display statistics
  ***************************************************************************
  */
-void write_stats_core(short prev, short curr, short dis, char *prev_string,
+void write_stats_core(int prev, int curr, int dis, char *prev_string,
 		      char *curr_string, unsigned int act,
 		      unsigned long long itv, unsigned long long g_itv,
 		      int disp_avg, int want_since_boot)
@@ -322,14 +323,8 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
       *fsi = &file_stats[curr],
       *fsj = &file_stats[prev];
 
-   /*
-    * Under very special circumstances, STDOUT may become unavailable,
-    * This is what we try to guess here
-    */
-   if (write(STDOUT_FILENO, "", 0) == -1) {
-      perror("stdout");
-      exit(6);
-   }
+   /* Test stdout */
+   TEST_STDOUT(STDOUT_FILENO);
 
    /* Print number of processes created per second */
    if (GET_PROC(act)) {
@@ -712,6 +707,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
       struct disk_stats
 	 *sdi = st_disk[curr],
 	 *sdj;
+      char *dev_name = NULL;
 
       if (dis)
 	 printf("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz  "
@@ -736,10 +732,16 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
 	    ((sdi->rd_sect - sdj->rd_sect) + (sdi->wr_sect - sdj->wr_sect)) /
 	    ((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
 
+	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
+	    dev_name = transform_devmapname(sdi->major, sdi->minor);
+	 
+	 if (!dev_name)
+	    dev_name = get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags));
+	 
 	 printf("%-11s %9s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
 		curr_string,
 		/* Confusion possible here between index and minor numbers */
-		get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags)),
+		dev_name,
 		S_VALUE(sdj->nr_ios, sdi->nr_ios,  itv),
 		ll_s_value(sdj->rd_sect, sdi->rd_sect, itv),
 		ll_s_value(sdj->wr_sect, sdi->wr_sect, itv),
@@ -796,7 +798,7 @@ void write_stats_core(short prev, short curr, short dis, char *prev_string,
  * Print statistics average
  ***************************************************************************
  */
-void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
+void write_stats_avg(int curr, int dis, unsigned int act, int read_from_file)
 {
    unsigned long long itv, g_itv;
    char string[16];
@@ -804,20 +806,12 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
      *fsi = &file_stats[curr];
 
    /* Interval value in jiffies */
-   g_itv = (file_stats[curr].uptime - file_stats[2].uptime) & 0xffffffff;
+   g_itv = get_interval(file_stats[2].uptime, file_stats[curr].uptime);
+
    if (file_hdr.sa_proc)
-      itv = (file_stats[curr].uptime0 - file_stats[2].uptime0) & 0xffffffff;
+      itv = get_interval(file_stats[2].uptime0, file_stats[curr].uptime0);
    else
       itv = g_itv;
-
-   if (!itv || !g_itv) { /* Should no longer happen with recent versions */
-      /*
-       * Aiee: null interval... This should only happen when reading stats
-       * from a system activity file with a far too big interval value...
-       */
-      fprintf(stderr, _("Please give a smaller interval value\n"));
-      exit(1);
-   }
 
    strcpy(string, _("Average:"));
    write_stats_core(2, curr, dis, string, string, act, itv, g_itv, TRUE, FALSE);
@@ -907,7 +901,7 @@ void write_stats_avg(int curr, short dis, unsigned int act, int read_from_file)
  * Print system statistics
  ***************************************************************************
  */
-int write_stats(short curr, short dis, unsigned int act, int read_from_file,
+int write_stats(int curr, int dis, unsigned int act, int read_from_file,
 		long *cnt, int use_tm_start, int use_tm_end, int reset,
 		int want_since_boot)
 {
@@ -1068,7 +1062,7 @@ int write_stats(short curr, short dis, unsigned int act, int read_from_file,
  * Display stats since system startup
  ***************************************************************************
  */
-void write_stats_startup(short curr)
+void write_stats_startup(int curr)
 {
    /* Set to 0 previous structures corresponding to boot time */
    memset(&file_stats[!curr], 0, FILE_STATS_SIZE);
@@ -1130,7 +1124,7 @@ int sa_read(void *buffer, int size)
  * Print a Linux restart message (contents of a DUMMY record)
  ***************************************************************************
  */
-void write_dummy(short curr, int use_tm_start, int use_tm_end)
+void write_dummy(int curr, int use_tm_start, int use_tm_end)
 {
    char cur_time[26];
 
@@ -1182,7 +1176,7 @@ void copy_structures(int dest, int src, int stype)
  * Read varying part of the statistics from a daily data file
  ***************************************************************************
  */
-void read_extra_stats(short curr, int ifd)
+void read_extra_stats(int curr, int ifd)
 {
    if (file_hdr.sa_proc)
       sa_fread(ifd, st_cpu[curr],
@@ -1211,7 +1205,7 @@ void read_extra_stats(short curr, int ifd)
  * Read a bunch of statistics sent by the data collector (sadc)
  ***************************************************************************
  */
-void read_stat_bunch(short curr)
+void read_stat_bunch(int curr)
 {
    if (sa_read(&file_stats[curr], file_hdr.sa_st_size))
       exit(0);
@@ -1244,10 +1238,10 @@ void read_stat_bunch(short curr)
  * Read stats for current activity from file and display them.
  ***************************************************************************
  */
-void handle_curr_act_stats(int ifd, off_t fpos, short *curr, long *cnt, int *eosaf,
+void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 			   int rows, unsigned int act, int *reset, int nr_cpu, int nr_irq)
 {
-   short dis = 1;
+   int dis = 1;
    unsigned long lines;
    unsigned char rtype;
    int davg, next, inc = 1;
@@ -1351,7 +1345,7 @@ void read_header_data(void)
  */
 void read_stats_from_file(char from_file[])
 {
-   short curr = 1;
+   int curr = 1;
    unsigned int act;
    int ifd, nr_cpu, nr_irq;
    int rows, eosaf = TRUE, reset = FALSE;
@@ -1464,7 +1458,7 @@ void read_stats_from_file(char from_file[])
  */
 void read_stats(void)
 {
-   short curr = 1, dis = 1;
+   int curr = 1, dis = 1;
    unsigned long lines = 0;
    unsigned int rows = 23;
    int dis_hdr = 0;

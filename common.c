@@ -434,19 +434,25 @@ int get_nfs_mount_nr(void)
 /*
  ***************************************************************************
  * Print banner
+ * Return code: 1 if S_TIME_FORMAT is set to ISO, or 0 otherwise.
  ***************************************************************************
  */
-inline void print_gal_header(struct tm *rectime, char *sysname, char *release, char *nodename)
+int print_gal_header(struct tm *rectime, char *sysname, char *release, char *nodename)
 {
    char cur_date[64];
    char *e;
+   int rc = 0;
 
-   if (((e = getenv(ENV_TIME_FMT)) != NULL) && !strcmp(e, K_ISO))
+   if (((e = getenv(ENV_TIME_FMT)) != NULL) && !strcmp(e, K_ISO)) {
       strftime(cur_date, sizeof(cur_date), "%Y-%m-%d", rectime);
+      rc = 1;
+   }
    else
       strftime(cur_date, sizeof(cur_date), "%x", rectime);
 
    printf("%s %s (%s) \t%s\n", sysname, release, nodename, cur_date);
+   
+   return rc;
 }
 
 
@@ -471,7 +477,7 @@ void init_nls(void)
 
 /*
  ***************************************************************************
- * Get window height (number of lines)
+ * Get nb of rows and columns of current window
  ***************************************************************************
  */
 int get_win_height(void)
@@ -483,10 +489,10 @@ int get_win_height(void)
     */
    int rows = 3600 * 24;
 
-
-   if ((ioctl(STDOUT_FILENO, TIOCGWINSZ, &win) != -1) && (win.ws_row > 2))
-      rows = win.ws_row - 2;
-
+   if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &win) != -1) {
+      if (win.ws_row > 2)
+	 rows = win.ws_row - 2;
+   }
    return rows;
 }
 
@@ -580,6 +586,34 @@ double ll_s_value(unsigned long long value1, unsigned long long value2,
       return S_VALUE(value1, value2, itv);
 }
 
+
+/*
+ ***************************************************************************
+ * Compute time interval.
+ * The interval should always be smaller than 0xffffffff (ULONG_MAX on
+ * 32-bit architectures), except perhaps if it is the interval since
+ * system startup (we want stats since boot time).
+ * Interval is and'ed with mask 0xffffffff to handle overflow conditions
+ * that may happen since uptime values are unsigned long long but are
+ * calculated as a sum of values that _may_ be unsigned long only...
+ ***************************************************************************
+ */
+unsigned long long get_interval(unsigned long long prev_uptime,
+				unsigned long long curr_uptime)
+{
+   unsigned long long itv;
+   
+   if (!prev_uptime)
+      itv = curr_uptime;
+   else
+      itv = (curr_uptime - prev_uptime) & 0xffffffff;
+   if (!itv)	/* Paranoia checking */
+      itv = 1;
+
+   return itv;
+}
+
+
 /*
  ***************************************************************************
  * Read machine uptime, independently of the number of processors
@@ -598,5 +632,58 @@ void readp_uptime(unsigned long long *uptime)
       return;
 
    sscanf(line, "%lu.%lu", &up_sec, &up_cent);
+   
+   fclose(fp);
+   
    *uptime = up_sec * HZ + up_cent * HZ / 100;
 }
+
+
+/*
+ ***************************************************************************
+ * Read stats from /proc/meminfo
+ ***************************************************************************
+ */
+int readp_meminfo(struct meminf *st_mem)
+{
+   FILE *fp;
+   static char line[128];
+
+   if ((fp = fopen(MEMINFO, "r")) == NULL)
+      return 1;
+
+   while (fgets(line, 128, fp) != NULL) {
+
+      if (!strncmp(line, "MemTotal:", 9))
+	 /* Read the total amount of memory in kB */
+	 sscanf(line + 9, "%lu", &(st_mem->tlmkb));
+      else if (!strncmp(line, "MemFree:", 8))
+	 /* Read the amount of free memory in kB */
+	 sscanf(line + 8, "%lu", &(st_mem->frmkb));
+
+      else if (!strncmp(line, "Buffers:", 8))
+	 /* Read the amount of buffered memory in kB */
+	 sscanf(line + 8, "%lu", &(st_mem->bufkb));
+
+      else if (!strncmp(line, "Cached:", 7))
+	 /* Read the amount of cached memory in kB */
+	 sscanf(line + 7, "%lu", &(st_mem->camkb));
+
+      else if (!strncmp(line, "SwapCached:", 11))
+	 /* Read the amount of cached swap in kB */
+	 sscanf(line + 11, "%lu", &(st_mem->caskb));
+
+      else if (!strncmp(line, "SwapTotal:", 10))
+	 /* Read the total amount of swap memory in kB */
+	 sscanf(line + 10, "%lu", &(st_mem->tlskb));
+
+      else if (!strncmp(line, "SwapFree:", 9))
+	 /* Read the amount of free swap memory in kB */
+	 sscanf(line + 9, "%lu", &(st_mem->frskb));
+   }
+
+   fclose(fp);
+   
+   return 0;
+}
+

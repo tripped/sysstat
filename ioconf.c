@@ -25,8 +25,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include "ioconf.h"
+#include "common.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -434,4 +437,47 @@ int ioc_iswhole(unsigned int major, unsigned int minor)
       return 0 ;
 
   return (IS_WHOLE(major, minor));
+}
+
+
+/*
+ ***************************************************************************
+ * Transform device mapper name: Get the user assigned name of the logical
+ * device instead of the internal device mapper numbering.
+ ***************************************************************************
+ */
+char *transform_devmapname(unsigned int major, unsigned int minor)
+{
+   DIR *dm_dir;
+   struct dirent *dp;
+   char filen[MAX_NAME_LEN];
+   char *dm_name = NULL;
+   struct stat aux;
+   unsigned int dm_major, dm_minor;
+   
+   if ((dm_dir = opendir(DEVMAP_DIR)) == NULL) {
+      fprintf(stderr, _("Cannot open %s: %s\n"), DEVMAP_DIR, strerror(errno));
+      exit(4);
+   }
+   
+   while ((dp = readdir(dm_dir)) != NULL) {
+      /* For each file in DEVMAP_DIR */
+      
+      snprintf(filen, MAX_FILE_LEN, "%s/%s", DEVMAP_DIR, dp->d_name);
+            
+      if (stat(filen, &aux) == 0) {
+	 /* Get its minor and major numbers */
+
+	 dm_major = ((aux.st_rdev >> 8) & 0xff);
+	 dm_minor = (aux.st_rdev & 0xff);
+	 
+	 if ((dm_minor == minor) && (dm_major == major)) {
+	    dm_name = dp->d_name;
+	    break;
+	 }
+      }
+   }
+   closedir(dm_dir);
+   
+   return dm_name;
 }

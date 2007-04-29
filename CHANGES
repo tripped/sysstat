@@ -1,5 +1,33 @@
 Changes:
 
+2007/04/29: Version 7.1.4 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	* Addition of a new command "pidstat" aimed at displaying
+	  per-process statistics.
+	* Option -N added to iostat. This option enables the user to
+	  query any device-mapper devices for their registered device name
+	  [bugzilla #177540].
+	* Fixed a small memory leak in readp_uptime() function.
+	* Typo fixed in configure.in file
+	  (s+INIT_DIR/etc/rc.d/init.d+INIT_DIR=/etc/rc.d/init.d+).
+	* Stricter syntax checking for iostat.
+	* sar -dp now displays the device as "devM-N" (instead of "nodev")
+	  when it can't find its real name in sysstat.ioconf file.
+	* iostat -t now also takes into account the value of environment
+	  variable S_TIME_FORMAT.
+	* Manual pages now take into account variables defined by
+	  "configure".
+	* isag now takes into account variables defined by "configure".
+	* "configure" now determines automatically whether workaround for
+	  SMP race is needed. This workaround is for SMP kernels 2.2.x with
+	  x <= 15 only.
+	* pidstat manual page added. Other manual pages updated.
+	* Makefile updated.
+	* NLS updated.
+	* FAQ updated.
+	* Code cleaned again and again...
+	* Removed sargon from contrib directory since its features are
+	  now included in sysstat by default.
+
 2007/03/27: Version 7.1.3 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x216b]

@@ -938,43 +938,20 @@ void read_proc_loadavg(void)
  */
 void read_proc_meminfo(void)
 {
-   FILE *fp;
-   static char line[128];
-
-   if ((fp = fopen(MEMINFO, "r")) == NULL)
+   struct meminf st_mem;
+   
+   memset(&st_mem, 0, sizeof(struct meminf));
+   
+   if (readp_meminfo(&st_mem))
       return;
-
-   while (fgets(line, 128, fp) != NULL) {
-
-      if (!strncmp(line, "MemTotal:", 9))
-	 /* Read the total amount of memory in kB */
-	 sscanf(line + 9, "%lu", &(file_stats.tlmkb));
-      else if (!strncmp(line, "MemFree:", 8))
-	 /* Read the amount of free memory in kB */
-	 sscanf(line + 8, "%lu", &(file_stats.frmkb));
-
-      else if (!strncmp(line, "Buffers:", 8))
-	 /* Read the amount of buffered memory in kB */
-	 sscanf(line + 8, "%lu", &(file_stats.bufkb));
-
-      else if (!strncmp(line, "Cached:", 7))
-	 /* Read the amount of cached memory in kB */
-	 sscanf(line + 7, "%lu", &(file_stats.camkb));
-
-      else if (!strncmp(line, "SwapCached:", 11))
-	 /* Read the amount of cached swap in kB */
-	 sscanf(line + 11, "%lu", &(file_stats.caskb));
-
-      else if (!strncmp(line, "SwapTotal:", 10))
-	 /* Read the total amount of swap memory in kB */
-	 sscanf(line + 10, "%lu", &(file_stats.tlskb));
-
-      else if (!strncmp(line, "SwapFree:", 9))
-	 /* Read the amount of free swap memory in kB */
-	 sscanf(line + 9, "%lu", &(file_stats.frskb));
-   }
-
-   fclose(fp);
+   
+   file_stats.tlmkb = st_mem.tlmkb;
+   file_stats.frmkb = st_mem.frmkb;
+   file_stats.bufkb = st_mem.bufkb;
+   file_stats.camkb = st_mem.camkb;
+   file_stats.caskb = st_mem.caskb;
+   file_stats.tlskb = st_mem.tlskb;
+   file_stats.frskb = st_mem.frskb;
 }
 
 

@@ -19,7 +19,7 @@ INSTALLATION
 ------------
 
 The sysstat utilities are a collection of performance monitoring tools for
-Linux. These include mpstat, iostat, sar, sadc, sadf and sa tools. 
+Linux. These include mpstat, iostat, pidstat, sar, sadc, sadf and sa tools. 
 
 The first stage is to configure sysstat for your system:
 
@@ -70,6 +70,7 @@ ${PREFIX}/bin/sar
 ${PREFIX}/bin/sadf
 ${PREFIX}/bin/iostat
 ${PREFIX}/bin/mpstat
+${PREFIX}/bin/pidstat
 ${PREFIX}(/share)/man/man8/sadc.8
 ${PREFIX}(/share)/man/man8/sa1.8
 ${PREFIX}(/share)/man/man8/sa2.8
@@ -77,6 +78,7 @@ ${PREFIX}(/share)/man/man1/sar.1
 ${PREFIX}(/share)/man/man1/sadf.1
 ${PREFIX}(/share)/man/man1/iostat.1
 ${PREFIX}(/share)/man/man1/mpstat.1
+${PREFIX}(/share)/man/man1/pidstat.1
 ${PREFIX}/share/locale/af/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/da/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/de/LC_MESSAGES/sysstat.mo
@@ -119,8 +121,8 @@ if chkconfig is used.
 MISCELLANEOUS
 -------------
 
-The sar, mpstat and iostat commands are only front-ends to the kernel proc
-filesystem... They cannot display statistics that Linux does not
+The sar, mpstat, iostat and pidstat commands are only front-ends to the kernel
+proc filesystem... They cannot display statistics that Linux does not
 provide, nor can they be more accurate than Linux is.
 The sysstat package has been tested on Linux kernels 2.0.x, 2.2.x, 2.4.x and
 2.6.x, but since new statistics are added in sysstat, they are not necessarily

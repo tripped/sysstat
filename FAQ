@@ -50,6 +50,7 @@ Also tell me what version your kernel is).
 2.19. How can I keep sar data for more than one month?
 2.20. How can I load sar data into an Oracle database for performance
       analysis and capacity planning?
+2.21. The sar command displays some weird output values...
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -457,6 +458,18 @@ package) with its option -d. It displays sar data in a format that can
 easily be ingested by a relational database system (fields are separated
 by a semicolon). It should then be easy for a tool like SQL*Loader to
 load the data into the Oracle database.
+
+~~~
+
+2.21. The sar command displays some weird output values...
+
+Sysstat may have met an overflow condition while reading CPU usage from
+your /proc/stat file. This condition is all the more likely to happen as
+your machine uptime is high and/or there are many processors.
+Sysstat up to version 5.0.6 uses 32-bit integer variables to store CPU usage.
+Then, beginning with version 5.1.1, sysstat has shifted to 64-bit variables,
+which has fixed the problem. So try to upgrade your version of sysstat to
+the latest stable release and check that the problem has gone.
 
 
 3. QUESTIONS RELATING TO IOSTAT

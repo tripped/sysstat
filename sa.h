@@ -127,7 +127,6 @@
 /* Files */
 #define PROC		"/proc"
 #define PSTAT		"stat"
-#define MEMINFO		"/proc/meminfo"
 #define PID_STAT	"/proc/%ld/stat"
 #define SERIAL		"/proc/tty/driver/serial"
 #define FDENTRY_STATE	"/proc/sys/fs/dentry-state"
@@ -519,10 +518,10 @@ struct tstamp {
 
 /* Functions */
 extern int   check_disk_reg(struct file_hdr *, struct disk_stats * [],
-			    short, short, int);
+			    int, int, int);
 extern unsigned int check_iface_reg(struct file_hdr *,
 				    struct stats_net_dev * [],
-				    short, short, unsigned int);
+				    int, int, unsigned int);
 extern int   datecmp(struct tm *, struct tstamp *);
 unsigned long long  get_per_cpu_interval(struct stats_one_cpu *,
 					 struct stats_one_cpu *);

@@ -1,4 +1,4 @@
-.TH SADF 1 "FEBRUARY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "APRIL 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
@@ -41,7 +41,7 @@ If
 is omitted,
 .B sadf
 uses the standard system activity file, the
-.IR /var/log/sa/sa dd
+.IR @SA_DIR@/sa dd
 file, where the dd parameter indicates the current day.
 
 The
@@ -142,10 +142,10 @@ then
 .B sadf
 will use UTC time instead of local time to determine the current daily data
 file located in the
-.IR /var/log/sa
+.IR @SA_DIR@
 directory.
 .SH EXAMPLES
-.B sadf -d /var/log/sa/sa21 -- -r -n DEV
+.B sadf -d @SA_DIR@/sa21 -- -r -n DEV
 .RS
 Extract memory, swap space and network statistics from system activity
 file 'sa21', and display them in a format that can be ingested by a
@@ -160,7 +160,7 @@ by a pattern processing command.
 .RE
 
 .SH FILES
-.IR /var/log/sa/sa dd
+.IR @SA_DIR@/sa dd
 .RS
 Indicate the daily data file, where the
 .B dd
@@ -174,9 +174,6 @@ Sebastien Godard (sysstat <at> wanadoo.fr)
 .BR sadc (8),
 .BR sa1 (8),
 .BR sa2 (8),
-.BR isag (1),
-.BR mpstat (1),
-.BR iostat (1),
-.BR vmstat (8)
+.BR isag (1)
 
 .I http://perso.orange.fr/sebastien.godard/

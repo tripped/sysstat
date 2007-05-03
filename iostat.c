@@ -37,7 +37,6 @@
 #include "common.h"
 #include "ioconf.h"
 
-
 #ifdef USE_NLS
 #include <locale.h>
 #include <libintl.h>
@@ -53,19 +52,14 @@ struct io_nfs_stats *st_ionfs[2];
 struct io_hdr_stats *st_hdr_iodev, *st_hdr_ionfs;
 struct io_dlist *st_dev_list;
 
-/* Nb of devices and partitions found */
-int iodev_nr = 0;
-/* Nb of NFS mounted directories found */
-int ionfs_nr = 0;
 
-/* Nb of devices entered on the command line */
-int dlist_idx = 0;
+int iodev_nr = 0;	/* Nb of devices and partitions found */
+int ionfs_nr = 0;	/* Nb of NFS mounted directories found */
+int cpu_nr = 0;		/* Nb of processors on the machine */
+int dlist_idx = 0;	/* Nb of devices entered on the command line */
 
 long interval = 0;
 char timestamp[64];
-
-/* Nb of processors on the machine */
-int cpu_nr = 0;
 
 
 /*
@@ -77,7 +71,7 @@ void usage(char *progname)
 {
    fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 		   "Options are:\n"
-		   "[ -c ] [ -d ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+		   "[ -c ] [ -d ] [ -N ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
 		   "[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"),
 	   progname);
    exit(1);
@@ -222,7 +216,7 @@ int update_dev_list(int *dlist_idx, char *device_name)
    }
 
    if (i == *dlist_idx) {
-      /* Device not found: store it */
+      /* Device not found: Store it */
       (*dlist_idx)++;
       strncpy(sdli->dev_name, device_name, MAX_NAME_LEN - 1);
    }
@@ -694,6 +688,7 @@ void read_diskstats_stat(int curr, int flags)
 {
    FILE *fp;
    char line[256], dev_name[MAX_NAME_LEN];
+   char *dm_name;
    struct io_stats sdev;
    int i;
    unsigned long rd_ios, rd_merges_or_rd_sec, rd_ticks_or_wr_sec, wr_ios;
@@ -741,7 +736,7 @@ void read_diskstats_stat(int curr, int flags)
 	 sdev.wr_sectors = rd_ticks_or_wr_sec;
       }
       else
-	 /* Unknown entry: ignore it */
+	 /* Unknown entry: Ignore it */
 	 continue;
 
       if ((ioc_dname = ioc_name(major, minor)) != NULL) {
@@ -753,9 +748,18 @@ void read_diskstats_stat(int curr, int flags)
 	    strncpy(dev_name, ioc_dname, MAX_NAME_LEN);
       }
 
+      if ((DISPLAY_DEVMAP_NAME(flags)) && (major == DEVMAP_MAJOR)) {
+	 /*
+	  * If the device is a device mapper device, try to get its
+	  * assigned name of its logical device.
+	  */
+	 dm_name = transform_devmapname(major, minor);
+	 if (dm_name)
+	    strcpy(dev_name, dm_name);
+      }
+
       save_stats(dev_name, curr, &sdev, iodev_nr, st_hdr_iodev);
    }
-
    fclose(fp);
 
    /* Free structures corresponding to unregistered devices */
@@ -776,7 +780,7 @@ void read_ppartitions_stat(int curr, int flags)
    unsigned long rd_ios, rd_merges, rd_ticks, wr_ios, wr_merges, wr_ticks;
    unsigned long ios_pgr, tot_ticks, rq_ticks;
    unsigned long long rd_sec, wr_sec;
-   char *ioc_dname;
+   char *ioc_dname, *dm_name;
    unsigned int major, minor;
 
    /* Every I/O device entry is potentially unregistered */
@@ -801,7 +805,7 @@ void read_ppartitions_stat(int curr, int flags)
 	 sdev.rq_ticks   = rq_ticks;
       }
       else
-	 /* Unknown entry: ignore it */
+	 /* Unknown entry: Ignore it */
 	 continue;
 
       if ((ioc_dname = ioc_name(major, minor)) != NULL) {
@@ -810,9 +814,15 @@ void read_ppartitions_stat(int curr, int flags)
 	    strncpy(dev_name, ioc_dname, MAX_NAME_LEN);
       }
 
+      if ((DISPLAY_DEVMAP_NAME(flags)) && (major == DEVMAP_MAJOR)) {
+	 /* Get device mapper logical name */
+	 dm_name = transform_devmapname(major, minor);
+	 if (dm_name)
+	    strcpy(dev_name, dm_name);
+      }
+
       save_stats(dev_name, curr, &sdev, iodev_nr, st_hdr_iodev);
    }
-
    fclose(fp);
 
    /* Free structures corresponding to unregistered devices */
@@ -1084,63 +1094,35 @@ void write_nfs_stat(int curr, unsigned long long itv, int flags, int fctr,
  * Print everything now (stats and uptime)
  ***************************************************************************
  */
-int write_stat(int curr, int flags, struct tm *rectime)
+int write_stats(int curr, int flags, struct tm *rectime)
 {
    int dev, i, fctr = 1;
    unsigned long long itv;
    struct io_hdr_stats *shi;
    struct io_dlist *st_dev_list_i;
 
-   /*
-    * Under very special circumstances, STDOUT may become unavailable,
-    * This is what we try to guess here
-    */
-   if (write(STDOUT_FILENO, "", 0) == -1) {
-      perror("stdout");
-      exit(6);
-   }
+   /* Test stdout */
+   TEST_STDOUT(STDOUT_FILENO);
 
    /* Print time stamp */
    if (DISPLAY_TIMESTAMP(flags)) {
-      strftime(timestamp, sizeof(timestamp), "%X", rectime);
+      if (DISPLAY_ISO(flags))
+	 strftime(timestamp, sizeof(timestamp), "%FT%T%z", rectime);
+      else
+	 strftime(timestamp, sizeof(timestamp), "%X", rectime);
       printf(_("Time: %s\n"), timestamp);
    }
 
-   /*
-    * itv is multiplied by the number of processors.
-    * This is OK to compute CPU usage since the number of jiffies spent in the
-    * different modes (user, nice, etc.) is the sum of all the processors.
-    * But itv should be reduced to one processor before displaying disk or NFS
-    * utilization.
-    */
-   if (!comm_stats[!curr].uptime)
-      /*
-       * This is the first report displaying stats since system startup.
-       * Only in this case we admit that the interval may be greater
-       * than 0xffffffff, else it was an overflow.
-       */
-      itv = comm_stats[curr].uptime;
-   else
-      /* uptime in jiffies */
-      itv = (comm_stats[curr].uptime - comm_stats[!curr].uptime)
-	 & 0xffffffff;
-   if (!itv)
-      itv = 1;
+   /* Interval is multiplied by the number of processors */
+   itv = get_interval(comm_stats[!curr].uptime, comm_stats[curr].uptime);
 
    if (DISPLAY_CPU(flags))
       /* Display CPU utilization */
       write_cpu_stat(curr, itv);
 
-   if (cpu_nr > 1) {
+   if (cpu_nr > 1)
       /* On SMP machines, reduce itv to one processor (see note above) */
-      if (!comm_stats[!curr].uptime0)
-	 itv = comm_stats[curr].uptime0;
-      else
-	 itv = (comm_stats[curr].uptime0 - comm_stats[!curr].uptime0)
-	    & 0xffffffff;
-      if (!itv)
-	 itv = 1;
-   }
+      itv = get_interval(comm_stats[!curr].uptime0, comm_stats[curr].uptime0);
 
    if (DISPLAY_DISK(flags)) {
       struct io_stats *ioi, *ioj;
@@ -1231,7 +1213,7 @@ int write_stat(int curr, int flags, struct tm *rectime)
 
 /*
  ***************************************************************************
- * Main loop: Read I/O stats from the relevant sources and display them.
+ * Main loop: Read I/O stats from the relevant sources and display them
  ***************************************************************************
  */
 void rw_io_stat_loop(int flags, long int count, struct tm *rectime)
@@ -1282,11 +1264,11 @@ void rw_io_stat_loop(int flags, long int count, struct tm *rectime)
       if (HAS_NFS(flags))
 	 read_nfs_stat(curr, flags);
 
-      /* Save time */
+      /* Get time */
       get_localtime(rectime);
 
       /* Print results */
-      if ((next = write_stat(curr, flags, rectime))
+      if ((next = write_stats(curr, flags, rectime))
 	  && (count > 0))
 	 count--;
       fflush(stdout);
@@ -1377,6 +1359,10 @@ int main(int argc, char **argv)
 	       flags |= I_D_MEGABYTES;	/* Display stats in MB/s */
 	       break;
 	
+	     case 'N':
+	       flags |= I_D_DEVMAP_NAME;	/* Display device mapper logical name */
+	       break;
+	       
 	     case 'n':
 	       flags |= I_D_NFS;	/* Display NFS stats */
 	       break;
@@ -1417,11 +1403,14 @@ int main(int argc, char **argv)
 	 it = 1;
       }
 
-      else {
+      else if (it > 0) {
 	 count = atol(argv[opt++]);
 	 if (count < 1)
 	   usage(argv[0]);
+	 it = -1;
       }
+      else
+	 usage(argv[0]);
    }
 
    /* Default: Display CPU and DISK reports */
@@ -1452,8 +1441,9 @@ int main(int argc, char **argv)
 
    /* Get system name, release number and hostname */
    uname(&header);
-   print_gal_header(&rectime,
-		    header.sysname, header.release, header.nodename);
+   if (print_gal_header(&rectime,
+			header.sysname, header.release, header.nodename))
+      flags |= I_D_ISO;
    printf("\n");
 
    /* Set a handler for SIGALRM */

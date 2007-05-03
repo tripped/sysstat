@@ -1,9 +1,9 @@
-.TH IOSTAT 1 "FEBRUARY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "APRIL 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices, partitions and network filesystems (NFS).
 .SH SYNOPSIS
-.B iostat [ -c ] [ -d ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [
+.B iostat [ -c ] [ -d ] [ -N ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [
 .I device
 .B [ ... ] | ALL ] [ -p [
 .I device
@@ -423,6 +423,9 @@ Data displayed are valid only with kernels 2.4 and later.
 Display statistics in megabytes per second instead of blocks or
 kilobytes per second.
 Data displayed are valid only with kernels 2.4 and later.
+.IP -N
+Display the registered device mapper names for any device mapper devices.
+Useful for viewing LVM2 statistics.
 .IP -n
 Display the network filesystem (NFS) report. This option works only with kernel
 2.6.17 and later.
@@ -437,7 +440,8 @@ devices and partitions defined by the system, including those that have
 never been used.
 Note that this option works only with post 2.5 kernels.
 .IP -t
-Print the time for each report displayed.
+Print the time for each report displayed. The timestamp format may depend
+on the value of the S_TIME_FORMAT environment variable (see below).
 .IP -V
 Print version number then exit.
 .IP -x
@@ -460,6 +464,8 @@ then the current locale will be ignored when printing the date in the report
 header. The
 .B iostat
 command will use the ISO 8601 format (YYYY-MM-DD) instead.
+The timestamp displayed with option -t will also be compliant with ISO 8601
+format.
 
 .SH EXAMPLES
 .B iostat
@@ -516,6 +522,7 @@ contains statistics for network filesystems.
 Sebastien Godard (sysstat <at> wanadoo.fr)
 .SH SEE ALSO
 .BR sar (1),
+.BR pidstat (1),
 .BR mpstat (1),
 .BR vmstat (8)
 

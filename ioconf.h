@@ -78,5 +78,6 @@ struct ioc_entry {
 
 extern int   ioc_iswhole(unsigned int, unsigned int);
 extern char *ioc_name(unsigned int, unsigned int);
+extern char *transform_devmapname(unsigned int, unsigned int);
 
 #endif

@@ -8,25 +8,25 @@
 
 #include "common.h"
 
-#define MAX_NAME_LEN	72
-
 /* I_: iostat - D_: Display - F_: Flag */
-#define I_D_CPU			0x0001
-#define I_D_DISK		0x0002
-#define I_D_TIMESTAMP		0x0004
-#define I_D_EXTENDED		0x0008
-#define I_D_PART_ALL		0x0010
-#define I_D_KILOBYTES		0x0020
-#define I_F_HAS_SYSFS		0x0040
-#define I_F_OLD_KERNEL		0x0080
-#define I_D_UNFILTERED		0x0100
-#define I_D_MEGABYTES		0x0200
-#define I_D_PARTITIONS		0x0400
-#define I_F_HAS_DISKSTATS	0x0800
-#define I_F_HAS_PPARTITIONS	0x1000
-#define I_F_PLAIN_KERNEL24	0x2000
-#define I_D_NFS			0x4000
-#define I_F_HAS_NFS		0x8000
+#define I_D_CPU			0x00001
+#define I_D_DISK		0x00002
+#define I_D_TIMESTAMP		0x00004
+#define I_D_EXTENDED		0x00008
+#define I_D_PART_ALL		0x00010
+#define I_D_KILOBYTES		0x00020
+#define I_F_HAS_SYSFS		0x00040
+#define I_F_OLD_KERNEL		0x00080
+#define I_D_UNFILTERED		0x00100
+#define I_D_MEGABYTES		0x00200
+#define I_D_PARTITIONS		0x00400
+#define I_F_HAS_DISKSTATS	0x00800
+#define I_F_HAS_PPARTITIONS	0x01000
+#define I_F_PLAIN_KERNEL24	0x02000
+#define I_D_NFS			0x04000
+#define I_F_HAS_NFS		0x08000
+#define I_D_DEVMAP_NAME		0x10000
+#define I_D_ISO			0x20000
 
 #define DISPLAY_CPU(m)		(((m) & I_D_CPU) == I_D_CPU)
 #define DISPLAY_DISK(m)		(((m) & I_D_DISK) == I_D_DISK)
@@ -44,6 +44,8 @@
 #define HAS_PLAIN_KERNEL24(m)	(((m) & I_F_PLAIN_KERNEL24) == I_F_PLAIN_KERNEL24)
 #define DISPLAY_NFS(m)		(((m) & I_D_NFS) == I_D_NFS)
 #define HAS_NFS(m)		(((m) & I_F_HAS_NFS) == I_F_HAS_NFS)
+#define DISPLAY_DEVMAP_NAME(m)	(((m) & I_D_DEVMAP_NAME) == I_D_DEVMAP_NAME)
+#define DISPLAY_ISO(m)		(((m) & I_D_ISO) == I_D_ISO)
 
 #define DT_DEVICE	0
 #define DT_PARTITION	1

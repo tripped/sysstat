@@ -1,8 +1,8 @@
-.TH SADC 8 "JUNE 2006" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "APRIL 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
-.B /usr/lib/sa/sadc [ -d ] [ -F ] [ -I ] [ -L ] [ -V ] [
+.B @SA_LIB_DIR@/sadc [ -d ] [ -F ] [ -I ] [ -L ] [ -V ] [
 .I interval
 .B [
 .I count
@@ -23,7 +23,7 @@ or to the standard output. If
 is set to -, then
 .B sadc
 uses the standard system activity daily data file, the
-.IR /var/log/sa/sa dd
+.IR @SA_DIR@/sa dd
 file, where the dd parameter indicates the current day.
 By default
 .B sadc
@@ -47,7 +47,7 @@ the time when the counter restarts from 0, will be written.
 For example, one of the system startup script may write the restart mark to
 the daily data file by the command entry:
 
-.B "/usr/lib/sa/sadc -"
+.B "@SA_LIB_DIR@/sadc -"
 
 The
 .B sadc
@@ -115,10 +115,10 @@ will save its data in UTC time.
 .B sadc
 will also use UTC time instead of local time to determine the current
 daily data file located in the
-.IR /var/log/sa
+.IR @SA_DIR@
 directory.
 .SH EXAMPLES
-.B /usr/lib/sa/sadc 1 10 /tmp/datafile
+.B @SA_LIB_DIR@/sadc 1 10 /tmp/datafile
 .RS
 Write 10 records of one second intervals to the /tmp/datafile binary file.
 .SH BUGS
@@ -129,7 +129,7 @@ command to work.
 
 All the statistics are not necessarily available, depending on the kernel version used.
 .SH FILES
-.IR /var/log/sa/sa dd
+.IR @SA_DIR@/sa dd
 .RS
 Indicate the daily data file, where the
 .B dd
@@ -145,8 +145,6 @@ Sebastien Godard (sysstat <at> wanadoo.fr)
 .BR sa1 (8),
 .BR sa2 (8),
 .BR sadf (1),
-.BR mpstat (1),
-.BR iostat (1),
-.BR vmstat (8)
+.BR isag (1)
 
 .I http://perso.orange.fr/sebastien.godard/

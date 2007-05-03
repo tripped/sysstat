@@ -5,6 +5,7 @@ crontab
 iostat
 Makefile
 mpstat
+pidstat
 sa1
 sa2
 sadc

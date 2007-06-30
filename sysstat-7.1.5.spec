@@ -1,6 +1,6 @@
 Summary: 	SAR, SADF, MPSTAT, IOSTAT and PIDSTAT for Linux
 Name: 		sysstat
-Version: 	7.1.4
+Version: 	7.1.5
 Release: 	1
 License: 	GPL
 Group: 		Applications/System
@@ -24,7 +24,7 @@ The sadf command may  be used to display data collected by sar in
 various formats (CSV, XML, etc.).
 The iostat command reports CPU utilization and I/O statistics for disks.
 The mpstat command reports global and per-processor statistics.
-The pidstat command reports statistics for Linux tasks.
+The pidstat command reports statistics for Linux tasks (processes).
 
 %prep 
 %setup 

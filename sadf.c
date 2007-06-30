@@ -289,6 +289,7 @@ void write_mech_stats(int curr, unsigned int act,
     */
    snprintf(pre, 80, "%s%s%ld%s%s",
 	    file_hdr.sa_nodename, seps[isdb], dt, seps[isdb], cur_time);
+   pre[79] = '\0';
 
    if (GET_PROC(act)) {
       /* The first one as an example */
@@ -1413,26 +1414,60 @@ void write_xml_restarts(int curr, int *tab)
 
 /*
  ***************************************************************************
- * Print a Linux restart message (contents of a DUMMY record)
+ * Display XML COMMENT records
  ***************************************************************************
  */
-void write_dummy(int curr, int use_tm_start, int use_tm_end)
+void write_xml_comments(int curr, int *tab)
+{
+   char cur_time[64];
+   struct file_comment *file_comment;
+      
+   file_comment = (struct file_comment *) &(file_stats[curr]);
+
+   /* Set timestamp for current data */
+   set_rectime(curr);
+
+   strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
+   xprintf(*tab, "<comment %s com=\"%s\"/>", cur_time, file_comment->comment);
+}
+
+
+/*
+ ***************************************************************************
+ * Print contents of a special (RESTART or COMMENT) record
+ ***************************************************************************
+ */
+void write_special(int curr, int use_tm_start, int use_tm_end, int rtype)
 {
    char cur_time[26];
 
    set_timestamp(curr, cur_time, 26);
 
-   /* The RESTART message must be in the interval specified by -s/-e options */
+   /* The record must be in the interval specified by -s/-e options */
    if ((use_tm_start && (datecmp(&loctime, &tm_start) < 0)) ||
        (use_tm_end && (datecmp(&loctime, &tm_end) > 0)))
       return;
 
-   if (format == S_O_PPC_OPTION)
-      printf("%s\t-1\t%ld\tLINUX-RESTART\n",
-	     file_hdr.sa_nodename, file_stats[curr].ust_time);
-   else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
-      printf("%s;-1;%s;LINUX-RESTART\n",
-	     file_hdr.sa_nodename, cur_time);
+   if (rtype == R_RESTART) {
+      if (format == S_O_PPC_OPTION)
+	 printf("%s\t-1\t%ld\tLINUX-RESTART\n",
+		file_hdr.sa_nodename, file_stats[curr].ust_time);
+      else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
+	 printf("%s;-1;%s;LINUX-RESTART\n",
+		file_hdr.sa_nodename, cur_time);
+   }
+   else if ((rtype == R_COMMENT) && DISPLAY_COMMENT(flags)) {
+      struct file_comment *file_comment;
+
+      file_comment = (struct file_comment *) &(file_stats[curr]);
+      if (format == S_O_PPC_OPTION)
+	 printf("%s\t-1\t%ld\tCOM %s\n",
+		file_hdr.sa_nodename, file_stats[curr].ust_time,
+		file_comment->comment);
+      else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
+	 printf("%s;-1;%s;COM %s\n",
+		file_hdr.sa_nodename, cur_time,	file_comment->comment);
+   }
 }
 
 
@@ -1588,9 +1623,16 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 			file_hdr.sa_st_size, SOFT_SIZE);
       rtype = file_stats[*curr].record_type;
 	
-      if (!(*eosaf) && (rtype != R_DUMMY)) {
-	 /* Read the extra fields since it's not a DUMMY record */
+      if (!(*eosaf) && (rtype != R_RESTART) && (rtype != R_COMMENT))
+	 /* Read the extra fields since it's not a RESTART record */
 	 read_extra_stats(*curr, ifd);
+
+      if (!(*eosaf) && (rtype != R_RESTART)) {
+	 
+	 if (rtype == R_COMMENT) {
+	    write_special(*curr, tm_start.use, tm_end.use, R_COMMENT);
+	    continue;
+	 }
 
 	 next = write_parsable_stats(*curr, act, *reset, cnt,
 				     tm_start.use, tm_end.use);
@@ -1609,7 +1651,7 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 	 *reset = FALSE;
       }
    }
-   while ((*cnt) && !(*eosaf) && (rtype != R_DUMMY));
+   while ((*cnt) && !(*eosaf) && (rtype != R_RESTART));
 
    *reset = TRUE;
 }
@@ -1622,8 +1664,7 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
  */
 void xml_display_loop(int ifd)
 {
-   unsigned char rtype;
-   int curr, tab = 0;
+   int curr, tab = 0, rtype;
    int eosaf = TRUE;
    off_t fpos;
 
@@ -1635,25 +1676,27 @@ void xml_display_loop(int ifd)
 
    /* Print XML header */
    display_xml_header(&tab);
-   xprintf(tab, "<statistics>");
 
    /* Process activities */
-   tab++;
+   xprintf(tab++, "<statistics>");
    do {
-      /* If this record is a DUMMY one, try to get another one */
+      /*
+       * If this record is a special (RESTART or COMMENT)  one,
+       * try to get another one.
+       */
       do {
 	 eosaf = sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE);
 	 rtype = file_stats[0].record_type;
 	
-	 if (!eosaf && (rtype != R_DUMMY)) {
+	 if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
 	    /*
-	     * Ok: previous record was not a DUMMY one.
+	     * Ok: previous record was not a special one.
 	     * So read now the extra fields.
 	     */
 	    read_extra_stats(0, ifd);
 	 }
       }
-      while (!eosaf && (rtype == R_DUMMY));
+      while (!eosaf && ((rtype == R_RESTART) || (rtype == R_COMMENT)));
 
       curr = 1;
 
@@ -1663,19 +1706,20 @@ void xml_display_loop(int ifd)
 			     file_hdr.sa_st_size, SOFT_SIZE);
 	    rtype = file_stats[curr].record_type;
 	
-	    if (!eosaf && (rtype != R_DUMMY)) {
-	       /* Read the extra fields since it's not a DUMMY record */
+	    if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
+	       /* Read the extra fields since it's not a special record */
 	       read_extra_stats(curr, ifd);
 
 	       write_xml_stats(curr, &tab);
 	       curr ^= 1;
 	    }
 	 }
-	 while (!eosaf && (rtype != R_DUMMY));
+	 while (!eosaf && (rtype != R_RESTART));
       }
 
    }
    while (!eosaf);
+   xprintf(--tab, "</statistics>");
 
    /* Rewind file */
    if (lseek(ifd, fpos, SEEK_SET) < fpos) {
@@ -1683,23 +1727,42 @@ void xml_display_loop(int ifd)
       exit(2);
    }
 
-   xprintf(--tab, "</statistics>");
-   xprintf(tab, "<restarts>");
-
-   /* Process now DUMMY entries to display restart messages */
-   tab++;
+   /* Process now RESTART entries to display restart messages */
+   xprintf(tab++, "<restarts>");
    do {
       if ((eosaf = sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE)) == 0) {
 
-	 if (file_stats[0].record_type != R_DUMMY)
+	 rtype = file_stats[0].record_type;
+	 if ((rtype != R_RESTART) && (rtype != R_COMMENT))
 	    read_extra_stats(0, ifd);
-	 else
+	 if (rtype == R_RESTART)
 	   write_xml_restarts(0, &tab);
       }
    }
    while (!eosaf);
-
    xprintf(--tab, "</restarts>");
+   
+   /* Rewind file */
+   if (lseek(ifd, fpos, SEEK_SET) < fpos) {
+      perror("lseek");
+      exit(2);
+   }
+
+   /* Last, process COMMENT entries to display comments */
+   xprintf(tab++, "<comments>");
+   do {
+      if ((eosaf = sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE)) == 0) {
+
+	 rtype = file_stats[0].record_type;
+	 if ((rtype != R_RESTART) && (rtype != R_COMMENT))
+	    read_extra_stats(0, ifd);
+	 if (rtype == R_COMMENT)
+	   write_xml_comments(0, &tab);
+      }
+   }
+   while (!eosaf);
+   xprintf(--tab, "</comments>");
+   
    xprintf(--tab, "</host>");
    xprintf(--tab, "</sysstat>");
 }
@@ -1712,7 +1775,7 @@ void xml_display_loop(int ifd)
  */
 void main_display_loop(int ifd)
 {
-   int curr = 1;
+   int curr = 1, rtype;
    unsigned int act;
    int eosaf = TRUE, reset = FALSE;
    long cnt = 1;
@@ -1721,24 +1784,26 @@ void main_display_loop(int ifd)
    /* Read system statistics from file */
    do {
       /*
-       * If this record is a DUMMY one, print it and (try to) get another one.
+       * If this record is a special (RESTART or COMMENT) one, print it and
+       * (try to) get another one.
        * We must be sure that we have real stats in file_stats[2].
        */
       do {
 	 if (sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE))
 	    /* End of sa data file */
 	    return;
-	
-	 if (file_stats[0].record_type == R_DUMMY)
-	    write_dummy(0, tm_start.use, tm_end.use);
+
+	 rtype = file_stats[0].record_type;
+	 if ((rtype == R_RESTART) || (rtype == R_COMMENT))
+	    write_special(0, tm_start.use, tm_end.use, rtype);
 	 else {
 	    /*
-	     Ok: previous record was not a DUMMY one. So read now the extra fields. */
+	     Ok: previous record was not a RESTART one. So read now the extra fields. */
 	    read_extra_stats(0, ifd);
 	    set_rectime(0);
 	 }
       }
-      while ((file_stats[0].record_type == R_DUMMY) ||
+      while ((rtype == R_RESTART) || (rtype == R_COMMENT) ||
 	     (tm_start.use && (datecmp(&loctime, &tm_start) < 0)) ||
 	     (tm_end.use && (datecmp(&loctime, &tm_end) >=0)));
 
@@ -1778,15 +1843,16 @@ void main_display_loop(int ifd)
 	 do {
 	    eosaf = sa_fread(ifd, &file_stats[curr],
 			     file_hdr.sa_st_size, SOFT_SIZE);
-	    if (!eosaf && (file_stats[curr].record_type != R_DUMMY))
+	    rtype = file_stats[curr].record_type;
+	    if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT))
 	       read_extra_stats(curr, ifd);
 	 }
-	 while (!eosaf && (file_stats[curr].record_type != R_DUMMY));
+	 while (!eosaf && (rtype != R_RESTART));
       }
 
-      /* The last record we read was a DUMMY one: print it */
-      if (!eosaf && (file_stats[curr].record_type == R_DUMMY))
-	 write_dummy(curr, tm_start.use, tm_end.use);
+      /* The last record we read was a RESTART one: Print it */
+      if (!eosaf && (file_stats[curr].record_type == R_RESTART))
+	 write_special(curr, tm_start.use, tm_end.use, R_RESTART);
    }
    while (!eosaf);
 }

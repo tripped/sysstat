@@ -1,5 +1,26 @@
 Changes:
 
+2007/06/07: Version 7.1.5 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x216c]
+	* Option -d added to pidstat: This option reports I/O statistics
+	  for individual tasks.
+	* Option -C added to sadc: This option enables the user to insert
+	  a timestamped comment in the binary data file.
+	* Option -C added to sar: This option tells sar to display
+	  comments inserted in the binary data file by sadc.
+	* sadf updated to display comments.
+	* Fixed a bug that could happen while reading /proc/interrupts,
+	  where irq numbers can now be 4 digits long in recent kernels.
+	* Fixed a possible buffer overflow in ioconf.c.
+	* Makefile updated: Remove previous manual pages before installing
+	  new ones.
+	* pidstat, sar and sadc manual pages updated.
+	* Sysstat DTD file updated.
+	* Fixed DTD version in sadf.h.
+	* NLS updated.
+	* CREDITS file updated.
+
 2007/04/29: Version 7.1.4 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	* Addition of a new command "pidstat" aimed at displaying
 	  per-process statistics.

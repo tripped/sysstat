@@ -66,6 +66,7 @@ unsigned long all_pids[MAX_PID_NR];
 unsigned char f_pids[MAX_PID_NR];
 unsigned int interrupts[NR_IRQS];
 unsigned int u_tmp[NR_DISKS - 1];
+char comment[MAX_COMMENT_LEN];
 
 
 /*
@@ -81,7 +82,7 @@ void usage(char *progname)
     */
    fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
 		   "Options are:\n"
-		   "[ -d ] [ -F ] [ -I ] [ -V ]\n"),
+		   "[ -C <comment> ] [ -d ] [ -F ] [ -I ] [ -V ]\n"),
 	   progname);
    exit(1);
 }
@@ -462,12 +463,14 @@ void setup_file_hdr(int fd, size_t *file_stats_size)
 /*
  ***************************************************************************
  * sadc called with interval and count parameters not set:
- * write a dummy record notifying a system restart.
- * This should typically be called this way at boot time,
+ * Write a dummy record notifying a system restart, or insert a comment in
+ * binary data file if option -C has been used.
+ * Writing a dummy record should typically be done at boot time,
  * before the cron daemon is started to avoid conflict with sa1/sa2 scripts.
  ***************************************************************************
  */
-void write_dummy_record(int ofd, size_t file_stats_size, unsigned int *flags)
+void write_special_record(int ofd, size_t file_stats_size, unsigned int *flags,
+			  int rtype)
 {
    int nb;
    struct tm rectime;
@@ -479,7 +482,7 @@ void write_dummy_record(int ofd, size_t file_stats_size, unsigned int *flags)
    /* Reset the structure (not compulsory, but a bit cleaner) */
    memset(&file_stats, 0, FILE_STATS_SIZE);
 
-   file_stats.record_type = R_DUMMY;
+   file_stats.record_type = rtype;
 
    /* Save time */
    file_stats.ust_time = get_time(&rectime);
@@ -487,6 +490,13 @@ void write_dummy_record(int ofd, size_t file_stats_size, unsigned int *flags)
    file_stats.hour   = rectime.tm_hour;
    file_stats.minute = rectime.tm_min;
    file_stats.second = rectime.tm_sec;
+
+   if (rtype == R_COMMENT) {
+      struct file_comment *file_comment;
+      
+      file_comment = (struct file_comment *) &file_stats;
+      strcpy(file_comment->comment, comment);
+   }
 
    /* Write record now */
    if ((nb = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
@@ -1012,7 +1022,7 @@ void read_pid_stat(unsigned int flags)
 {
    FILE *fp;
    int pid;
-   static char filename[24];
+   static char filename[128];
 
    if (WANT_ALL_PIDS(flags))
       get_pid_list();
@@ -1116,6 +1126,7 @@ void read_interrupts_stat(void)
    static char line[INTERRUPTS_LINE];
    unsigned int irq = 0, cpu;
    struct stats_irq_cpu *p;
+   char *cp, *next;
 
    if ((fp = fopen(INTERRUPTS, "r")) != NULL) {
 
@@ -1123,8 +1134,12 @@ void read_interrupts_stat(void)
 
 	 if (isdigit(line[2])) {
 	
+	    if ((cp = strchr(line, ':')) == NULL)
+	       continue;
+	    cp++;
+
 	    p = st_irq_cpu + irq;
-	    sscanf(line, "%3u", &(p->irq));
+	    p->irq = strtol(line, NULL, 10);
 	
 	    for (cpu = 0; cpu < cpu_nr; cpu++) {
 	       p = st_irq_cpu + cpu * irqcpu_nr + irq;
@@ -1132,7 +1147,8 @@ void read_interrupts_stat(void)
 		* No need to set (st_irq_cpu + cpu * irqcpu_nr)->irq:
 		* same as st_irq_cpu->irq.
 		*/
-	       sscanf(line + 4 + 11 * cpu, " %10u", &(p->interrupt));
+	       p->interrupt = strtol(cp, &next, 10);
+	       cp = next;
 	    }
 	    irq++;
 	 }
@@ -1694,8 +1710,7 @@ int main(int argc, char **argv)
 {
    int opt = 0, optz = 0, i;
    unsigned long pid;
-   char ofile[MAX_FILE_LEN];
-   char new_ofile[MAX_FILE_LEN];
+   char ofile[MAX_FILE_LEN], new_ofile[MAX_FILE_LEN];
    unsigned int flags = 0;
    struct tm rectime;
    int stdfd = 0, ofd = -1;
@@ -1712,7 +1727,7 @@ int main(int argc, char **argv)
    /* Compute page shift in kB */
    get_kb_shift();
 
-   ofile[0] = new_ofile[0] = '\0';
+   ofile[0] = new_ofile[0] = comment[0] = '\0';
 
 #ifdef USE_NLS
    /* Init National Language Support */
@@ -1743,6 +1758,17 @@ int main(int argc, char **argv)
 
       else if (!strcmp(argv[opt], "-z"))	/* Set by sar command */
 	 optz = 1;
+      
+      else if (!strcmp(argv[opt], "-C")) {
+	 if (argv[++opt]) {
+	    strncpy(comment, argv[opt], MAX_COMMENT_LEN);
+	    comment[MAX_COMMENT_LEN - 1] = '\0';
+	    if (!strlen(comment))
+	       usage(argv[0]);
+	 }
+	 else
+	    usage(argv[0]);
+      }
 
       else if (!strcmp(argv[opt], "-x") || !strcmp(argv[opt], "-X")) {
 	 if (!GET_PID(sadc_actflag)) {
@@ -1847,8 +1873,13 @@ int main(int argc, char **argv)
    open_stdout(&stdfd, &file_stats_size);
 
    if (!interval) {
-      /* Interval (and count) not set: write a dummy record and exit */
-      write_dummy_record(ofd, file_stats_size, &flags);
+      /* Interval (and count) not set:
+       * Write a dummy record, or insert a comment, then exit.
+       */
+      if (comment[0])
+	 write_special_record(ofd, file_stats_size, &flags, R_COMMENT);
+      else
+	 write_special_record(ofd, file_stats_size, &flags, R_RESTART);
       CLOSE(ofd);
       CLOSE(stdfd);
       exit(0);

@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--DTD v1.2 for sysstat-->
+<!--DTD v1.3 for sysstat-->
 <!ELEMENT boot EMPTY>
 <!ATTLIST boot
 	date CDATA #REQUIRED
 	time CDATA #REQUIRED
+>
+<!ELEMENT comment EMPTY>
+<!ATTLIST comment
+	date CDATA #REQUIRED
+	time CDATA #REQUIRED
+	com CDATA #REQUIRED
 >
 <!ELEMENT buffers (#PCDATA)>
 <!ELEMENT bufpg (#PCDATA)>
@@ -46,7 +52,7 @@
 <!ELEMENT dquot-sz-percent (#PCDATA)>
 <!ELEMENT file-sz (#PCDATA)>
 <!ELEMENT frmpg (#PCDATA)>
-<!ELEMENT host (sysname, release, statistics, restarts)>
+<!ELEMENT host (sysname, release, statistics, restarts, comments)>
 <!ATTLIST host
 	nodename CDATA #REQUIRED
 >
@@ -127,6 +133,7 @@
 	ldavg-15 CDATA #REQUIRED
 >
 <!ELEMENT restarts (boot+)>
+<!ELEMENT comments (comment+)>
 <!ELEMENT net-dev EMPTY>
 <!ATTLIST net-dev
 	rxpck CDATA #REQUIRED

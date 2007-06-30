@@ -62,7 +62,7 @@ void usage(char *progname)
 {
    fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 		   "Options are:\n"
-		   "[ -C <comm> ] [ -I ] [ -r ] [ -u ] [ -V ]\n"
+		   "[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -u ] [ -V ]\n"
 		   "[ -p { <pid> | SELF | ALL } ]\n"),
 	   progname);
    exit(1);
@@ -258,7 +258,7 @@ int read_proc_pid_stat(unsigned long pid, unsigned int flags,
 		       struct pid_stats *pst)
 {
    FILE *fp;
-   char filename[64], format[256], comm[MAX_COMM_LEN + 1];
+   char filename[128], format[256], comm[MAX_COMM_LEN + 1];
    size_t len;
 
    sprintf(filename, PID_STAT, pid);
@@ -300,7 +300,7 @@ int read_proc_pid_status(unsigned long pid, unsigned int flags,
 			 struct pid_stats *pst)
 {
    FILE *fp;
-   char filename[64], line[256];
+   char filename[128], line[256];
 
    sprintf(filename, PID_STATUS, pid);
    if ((fp = fopen(filename, "r")) == NULL)
@@ -324,6 +324,39 @@ int read_proc_pid_status(unsigned long pid, unsigned int flags,
 
 /*
  ***************************************************************************
+ * Read stats from /proc/<pid>/io
+ ***************************************************************************
+ */
+int read_proc_pid_io(unsigned long pid, unsigned int flags,
+		     struct pid_stats *pst)
+{
+   FILE *fp;
+   char filename[128], line[256];
+
+   sprintf(filename, PID_IO, pid);
+   if ((fp = fopen(filename, "r")) == NULL)
+      /* No such process */
+      return 1;
+
+   while (fgets(line, 256, fp) != NULL) {
+
+      if (!strncmp(line, "read_bytes:", 11))
+	 sscanf(line + 12, "%llu", &(pst->read_bytes));
+      else if (!strncmp(line, "write_bytes:", 12))
+	 sscanf(line + 13, "%llu", &(pst->write_bytes));
+      else if (!strncmp(line, "cancelled_write_bytes:", 22))
+	 sscanf(line + 23, "%llu", &(pst->cancelled_write_bytes));
+   }
+
+   fclose(fp);
+
+   pst->pid = pid;
+   return 0;
+}
+
+
+/*
+ ***************************************************************************
  * Read various stats for given PID
  ***************************************************************************
  */
@@ -333,8 +366,12 @@ int read_pid_stats(unsigned long pid, unsigned int flags,
    if (read_proc_pid_stat(pid, flags, pst))
       return 1;
 
-   if (DISPLAY_MEM(flags))
-      return (read_proc_pid_status(pid, flags, pst));
+   if (DISPLAY_MEM(flags)) {
+      if (read_proc_pid_status(pid, flags, pst))
+	 return 1;
+   }
+   if (DISPLAY_IO(flags))
+      return (read_proc_pid_io(pid, flags, pst));
    
    return 0;
 }
@@ -484,6 +521,13 @@ int get_pid_to_display(int prev, int curr, int flags, int p, int activity,
 		((*psti)->rss == (*pstj)->rss))
 	       return -1;
 	 }
+	 else if (DISPLAY_IO(activity)) {
+	    if (((*psti)->read_bytes == (*pstj)->read_bytes) &&
+		((*psti)->write_bytes == (*pstj)->write_bytes) &&
+		((*psti)->cancelled_write_bytes ==
+		 (*pstj)->cancelled_write_bytes))
+	       return -1;
+	 }
       }
    }
 	 
@@ -604,6 +648,28 @@ int write_stats_core(int prev, int curr, int flags, int dis, int disp_avg,
       }
    }
    
+   if (DISPLAY_IO(flags)) {
+      if (dis)
+	 printf("\n%-11s       PID   kB_rd/s   kB_wr/s kB_ccwr/s  Command\n",
+		prev_string);
+      
+      for (p = 0; p < pid_nr; p++) {
+	 
+	 if (get_pid_to_display(prev, curr, flags, p, P_D_CPU,
+				&psti, &pstj) <= 0)
+	    continue;
+	 
+	 printf("%-11s %9ld", curr_string, psti->pid);
+	 printf(" %9.2f %9.2f %9.2f",
+		S_VALUE(pstj->read_bytes, psti->read_bytes, itv) / 1024,
+		S_VALUE(pstj->write_bytes, psti->write_bytes, itv) / 1024,
+		S_VALUE(pstj->cancelled_write_bytes,
+			psti->cancelled_write_bytes, itv) / 1024);
+	 printf("  %s\n", psti->comm);
+	 again = 1;
+      }
+   }
+
    if (DISPLAY_ALL_PID(flags))
       again = 1;
    
@@ -808,6 +874,11 @@ int main(int argc, char **argv)
 
 	    switch (*(argv[opt] + i)) {
 
+	     case 'd':
+	       flags |= P_D_IO;		/* Display I/O usage */
+	       dis_hdr++;
+	       break;
+
 	     case 'I':
 	       flags |= P_F_IRIX_MODE;	/* IRIX mode off */
 	       break;
@@ -859,7 +930,7 @@ int main(int argc, char **argv)
       interval = 0;
 
    /* Display CPU usage by default */
-   if (!DISPLAY_CPU(flags) && !DISPLAY_MEM(flags))
+   if (!DISPLAY_CPU(flags) && !DISPLAY_MEM(flags) && !DISPLAY_IO(flags))
       flags |= P_D_CPU;
 
    if (!DISPLAY_PID(flags))

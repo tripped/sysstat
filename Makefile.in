@@ -181,20 +181,28 @@ endif
 	mkdir -p $(DESTDIR)$(DOC_DIR)
 	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
 	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
+	rm -f $(DESTDIR)$(MAN8_DIR)/sa1.8*
 	$(INSTALL_DATA) $(MANGRPARG) man/sa1.8 $(DESTDIR)$(MAN8_DIR)
 	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
+	rm -f $(DESTDIR)$(MAN8_DIR)/sa2.8*
 	$(INSTALL_DATA) $(MANGRPARG) man/sa2.8 $(DESTDIR)$(MAN8_DIR)
 	$(INSTALL_BIN) sadc $(DESTDIR)$(SA_LIB_DIR)
+	rm -f $(DESTDIR)$(MAN8_DIR)/sadc.8*
 	$(INSTALL_DATA) $(MANGRPARG) man/sadc.8 $(DESTDIR)$(MAN8_DIR)
 	$(INSTALL_BIN) sar $(DESTDIR)$(BIN_DIR)
+	rm -f $(DESTDIR)$(MAN1_DIR)/sar.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/sar.1 $(DESTDIR)$(MAN1_DIR)
 	$(INSTALL_BIN) sadf $(DESTDIR)$(BIN_DIR)
+	rm -f $(DESTDIR)$(MAN1_DIR)/sadf.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/sadf.1 $(DESTDIR)$(MAN1_DIR)
 	$(INSTALL_BIN) iostat $(DESTDIR)$(BIN_DIR)
+	rm -f $(DESTDIR)$(MAN1_DIR)/iostat.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/iostat.1 $(DESTDIR)$(MAN1_DIR)
 	$(INSTALL_BIN) mpstat $(DESTDIR)$(BIN_DIR)
+	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
 	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
+	rm -f $(DESTDIR)$(MAN1_DIR)/pidstat.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/pidstat.1 $(DESTDIR)$(MAN1_DIR)
 ifeq ($(COMPRESS_MANPG),y)
 	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8

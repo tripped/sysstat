@@ -15,8 +15,7 @@
 #define DNOVAL     0.0		/* Wilma!  */
 
 /* DTD version for XML output */
-#define XML_DTD_VERSION	"1.0"
-
+#define XML_DTD_VERSION	"1.3"
 
 static char *seps[] =  {"\t", ";"};
 
@@ -34,6 +33,5 @@ typedef struct {
       char *s;
    } a, b;			/* Value pair, either ints or char *s */
 } Cons;
-
 
 #endif  /* _SADF_H */

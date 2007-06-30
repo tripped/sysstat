@@ -580,7 +580,8 @@ void read_sysfs_dlist_part_stat(int curr, char *dev_name)
    struct dirent *drd;
    char dfile[MAX_PF_NAME], filename[MAX_PF_NAME];
 
-   sprintf(dfile, "%s/%s", SYSFS_BLOCK, dev_name);
+   snprintf(dfile, MAX_PF_NAME, "%s/%s", SYSFS_BLOCK, dev_name);
+   dfile[MAX_PF_NAME - 1] = '\0';
 
    /* Open current device directory in /sys/block */
    if ((dir = opendir(dfile)) == NULL)
@@ -590,7 +591,8 @@ void read_sysfs_dlist_part_stat(int curr, char *dev_name)
    while ((drd = readdir(dir)) != NULL) {
       if (!strcmp(drd->d_name, ".") || !strcmp(drd->d_name, ".."))
 	 continue;
-      sprintf(filename, "%s/%s/%s", dfile, drd->d_name, S_STAT);
+      snprintf(filename, MAX_PF_NAME, "%s/%s/%s", dfile, drd->d_name, S_STAT);
+      filename[MAX_PF_NAME - 1] = '\0';
 
       /* Read current partition stats */
       read_sysfs_file_stat(curr, filename, drd->d_name, DT_PARTITION);
@@ -618,8 +620,9 @@ void read_sysfs_dlist_stat(int curr, int flags)
 
    for (dev = 0; dev < dlist_idx; dev++) {
       st_dev_list_i = st_dev_list + dev;
-      sprintf(filename, "%s/%s/%s",
+      snprintf(filename, MAX_PF_NAME, "%s/%s/%s",
 	      SYSFS_BLOCK, st_dev_list_i->dev_name, S_STAT);
+      filename[MAX_PF_NAME - 1] = '\0';
 
       /* Read device stats */
       ok = read_sysfs_file_stat(curr, filename, st_dev_list_i->dev_name, DT_DEVICE);
@@ -657,7 +660,8 @@ void read_sysfs_stat(int curr, int flags)
       while ((drd = readdir(dir)) != NULL) {
 	 if (!strcmp(drd->d_name, ".") || !strcmp(drd->d_name, ".."))
 	    continue;
-	 sprintf(filename, "%s/%s/%s", SYSFS_BLOCK, drd->d_name, S_STAT);
+	 snprintf(filename, MAX_PF_NAME, "%s/%s/%s", SYSFS_BLOCK, drd->d_name, S_STAT);
+	 filename[MAX_PF_NAME - 1] = '\0';
 	
 	 /* If current entry is a directory, try to read its stat file */
 	 ok = read_sysfs_file_stat(curr, filename, drd->d_name, DT_DEVICE);

@@ -357,9 +357,10 @@ void read_interrupts_stat(int curr)
    static char line[INTERRUPTS_LINE];
    unsigned long irq = 0;
    unsigned int cpu;
+   char *cp, *next;
 
    for (cpu = 0; cpu < cpu_nr; cpu++) {
-      st_mp_cpu_i = st_mp_cpu[curr] + cpu +1;
+      st_mp_cpu_i = st_mp_cpu[curr] + cpu + 1;
       st_mp_cpu_i->irq = 0;
    }
 
@@ -368,11 +369,17 @@ void read_interrupts_stat(int curr)
       while (fgets(line, INTERRUPTS_LINE, fp) != NULL) {
 
 	 if (isdigit(line[2])) {
+	    
+	    /* Skip over "<irq>:" */
+	    if ((cp = strchr(line, ':')) == NULL)
+	       continue;
+	    cp++;
 	
 	    for (cpu = 0; cpu < cpu_nr; cpu++) {
 	       st_mp_cpu_i = st_mp_cpu[curr] + cpu + 1;
-	       sscanf(line + 4 + 11 * cpu, " %10lu", &irq);
+	       irq = strtol(cp, &next, 10);
 	       st_mp_cpu_i->irq += irq;
+	       cp = next;
 	    }
 	 }
       }

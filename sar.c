@@ -73,7 +73,7 @@ void usage(char *progname)
 {
    fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 	           "Options are:\n"
-	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
+	           "[ -A ] [ -b ] [ -B ] [ -c ] [ -C ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 		   "[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
 		   "[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
@@ -1121,21 +1121,34 @@ int sa_read(void *buffer, int size)
 
 /*
  ***************************************************************************
- * Print a Linux restart message (contents of a DUMMY record)
+ * Print a Linux restart message (contents of a RESTART record) or a
+ * comment (contents of a COMMENT record).
  ***************************************************************************
  */
-void write_dummy(int curr, int use_tm_start, int use_tm_end)
+int write_special(int curr, int use_tm_start, int use_tm_end, int rtype)
 {
    char cur_time[26];
 
    set_timestamp(curr, cur_time, 26);
 
-   /* The RESTART message must be in the interval specified by -s/-e options */
+   /* The record must be in the interval specified by -s/-e options */
    if ((use_tm_start && (datecmp(&rectime, &tm_start) < 0)) ||
        (use_tm_end && (datecmp(&rectime, &tm_end) > 0)))
-      return;
+      return 0;
 
-   printf("\n%-11s       LINUX RESTART\n", cur_time);
+   if (rtype == R_RESTART) {
+      printf("\n%-11s       LINUX RESTART\n", cur_time);
+      return 1;
+   }
+   else if ((rtype == R_COMMENT) && DISPLAY_COMMENT(flags)) {
+      struct file_comment *file_comment;
+      
+      file_comment = (struct file_comment *) &(file_stats[curr]);
+      printf("%-11s  COM %s\n", cur_time, file_comment->comment);
+      return 1;
+   }
+   
+   return 0;
 }
 
 
@@ -1281,8 +1294,8 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 			file_hdr.sa_st_size, SOFT_SIZE);
       rtype = file_stats[*curr].record_type;
 	
-      if (!(*eosaf) && (rtype != R_DUMMY))
-	 /* Read the extra fields since it's not a DUMMY record */
+      if (!(*eosaf) && (rtype != R_RESTART) && (rtype != R_COMMENT))
+	 /* Read the extra fields since it's not a special record */
 	 read_extra_stats(*curr, ifd);
 
       if ((lines >= rows) || !lines) {
@@ -1292,9 +1305,16 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
       else
 	 dis = 0;
 
-      lines += inc;
-
-      if (!(*eosaf) && (rtype != R_DUMMY)) {
+      if (!(*eosaf) && (rtype != R_RESTART)) {
+	 
+	 if (rtype == R_COMMENT) {
+	    /* Display comment */
+	    next = write_special(*curr, tm_start.use, tm_end.use, R_COMMENT);
+	    if (next)
+	       /* A line of comment was actually displayed */
+	       lines++;
+	    continue;
+	 }
 
 	 /* next is set to 1 when we were close enough to desired interval */
 	 next = write_stats(*curr, dis, act, USE_SA_FILE, cnt,
@@ -1304,13 +1324,12 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 	 if (next) {
 	    davg++;
 	    *curr ^=1;
+	    lines += inc;
 	 }
-	 else
-	    lines -= inc;;
-	 *reset = 0;
+	 *reset = FALSE;
       }
    }
-   while ((*cnt) && !(*eosaf) && (rtype != R_DUMMY));
+   while ((*cnt) && !(*eosaf) && (rtype != R_RESTART));
 
    if (davg)
       write_stats_avg(!(*curr), dis, act, USE_SA_FILE);
@@ -1347,7 +1366,7 @@ void read_stats_from_file(char from_file[])
 {
    int curr = 1;
    unsigned int act;
-   int ifd, nr_cpu, nr_irq;
+   int ifd, nr_cpu, nr_irq, rtype;
    int rows, eosaf = TRUE, reset = FALSE;
    long cnt = 1;
    off_t fpos;
@@ -1373,26 +1392,28 @@ void read_stats_from_file(char from_file[])
    /* Read system statistics from file */
    do {
       /*
-       * If this record is a DUMMY one, print it and (try to) get another one.
+       * If this record is a special (RESTART or COMMENT) one, print it and
+       * (try to) get another one.
        * We must be sure that we have real stats in file_stats[2].
        */
       do {
 	 if (sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE))
 	    /* End of sa data file */
 	    return;
-	
-	 if (file_stats[0].record_type == R_DUMMY)
-	    write_dummy(0, tm_start.use, tm_end.use);
+
+	 rtype = file_stats[0].record_type;
+	 if ((rtype == R_RESTART) || (rtype == R_COMMENT))
+	    write_special(0, tm_start.use, tm_end.use, rtype);
 	 else {
 	    /*
-	     * Ok: previous record was not a DUMMY one.
+	     * Ok: previous record was not a special one.
 	     * So read now the extra fields.
 	     */
 	    read_extra_stats(0, ifd);
 	    set_rectime(0);
 	 }
       }
-      while ((file_stats[0].record_type == R_DUMMY) ||
+      while ((rtype == R_RESTART) || (rtype == R_COMMENT) ||
 	     (tm_start.use && (datecmp(&rectime, &tm_start) < 0)) ||
 	     (tm_end.use && (datecmp(&rectime, &tm_end) >=0)));
 
@@ -1435,15 +1456,16 @@ void read_stats_from_file(char from_file[])
 	 do {
 	    eosaf = sa_fread(ifd, &file_stats[curr],
 			     file_hdr.sa_st_size, SOFT_SIZE);
-	    if (!eosaf && (file_stats[curr].record_type != R_DUMMY))
+	    rtype = file_stats[curr].record_type;
+	    if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT))
 	       read_extra_stats(curr, ifd);
 	 }
-	 while (!eosaf && (file_stats[curr].record_type != R_DUMMY));
+	 while (!eosaf && (rtype != R_RESTART));
       }
 
-      /* The last record we read was a DUMMY one: print it */
-      if (!eosaf && (file_stats[curr].record_type == R_DUMMY))
-	 write_dummy(curr, tm_start.use, tm_end.use);
+      /* The last record we read was a RESTART one: Print it */
+      if (!eosaf && (file_stats[curr].record_type == R_RESTART))
+	 write_special(curr, tm_start.use, tm_end.use, R_RESTART);
    }
    while (!eosaf);
 

@@ -21,6 +21,7 @@
 #define P_F_IRIX_MODE	0x10
 #define P_F_COMMSTR	0x20
 #define P_D_ACTIVE_PID	0x40
+#define P_D_IO		0x80
 
 #define DISPLAY_CPU(m)		(((m) & P_D_CPU) == P_D_CPU)
 #define DISPLAY_MEM(m)		(((m) & P_D_MEM) == P_D_MEM)
@@ -29,29 +30,35 @@
 #define IRIX_MODE_OFF(m)	(((m) & P_F_IRIX_MODE) == P_F_IRIX_MODE)
 #define COMMAND_STRING(m)	(((m) & P_F_COMMSTR) == P_F_COMMSTR)
 #define DISPLAY_ACTIVE_PID(m)	(((m) & P_D_ACTIVE_PID) == P_D_ACTIVE_PID)
+#define DISPLAY_IO(m)		(((m) & P_D_IO) == P_D_IO)
+
 
 #define PROC		"/proc"
 #define PID_STAT	"/proc/%lu/stat"
 #define PID_STATUS	"/proc/%lu/status"
+#define PID_IO		"/proc/%lu/io"
 
 struct pid_stats {
+   unsigned long long read_bytes		__attribute__ ((aligned (8)));
+   unsigned long long write_bytes		__attribute__ ((packed));
+   unsigned long long cancelled_write_bytes	__attribute__ ((packed));
    /* If pid is null, the process has been killed */
-   unsigned long pid				__attribute__ ((aligned (8)));
-   unsigned long minflt				__attribute__ ((packed));
-   unsigned long cminflt			__attribute__ ((packed));
-   unsigned long majflt				__attribute__ ((packed));
-   unsigned long cmajflt			__attribute__ ((packed));
-   unsigned long utime				__attribute__ ((packed));
-   unsigned long cutime				__attribute__ ((packed));
-   unsigned long stime				__attribute__ ((packed));
-   unsigned long cstime				__attribute__ ((packed));
-   unsigned long vsz				__attribute__ ((packed));
-   unsigned long rss				__attribute__ ((packed));
-   unsigned long total_vsz			__attribute__ ((packed));
-   unsigned long total_rss			__attribute__ ((packed));
-   unsigned int  asum_count			__attribute__ ((packed));
-   unsigned int  processor			__attribute__ ((packed));
-   char          comm[MAX_COMM_LEN];
+   unsigned long      pid			__attribute__ ((packed));
+   unsigned long      minflt			__attribute__ ((packed));
+   unsigned long      cminflt			__attribute__ ((packed));
+   unsigned long      majflt			__attribute__ ((packed));
+   unsigned long      cmajflt			__attribute__ ((packed));
+   unsigned long      utime			__attribute__ ((packed));
+   unsigned long      cutime			__attribute__ ((packed));
+   unsigned long      stime			__attribute__ ((packed));
+   unsigned long      cstime			__attribute__ ((packed));
+   unsigned long      vsz			__attribute__ ((packed));
+   unsigned long      rss			__attribute__ ((packed));
+   unsigned long      total_vsz			__attribute__ ((packed));
+   unsigned long      total_rss			__attribute__ ((packed));
+   unsigned int       asum_count		__attribute__ ((packed));
+   unsigned int       processor			__attribute__ ((packed));
+   char               comm[MAX_COMM_LEN];
 };
 
 #define PID_STATS_SIZE	(sizeof(struct pid_stats))

@@ -18,7 +18,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x216b
+#define SA_MAGIC	0x216c
 
 
 /* Define activities */
@@ -102,6 +102,7 @@
 #define S_F_FILE_LCK		0X0400
 #define S_F_PER_PROC		0x0800
 #define S_F_X_ALL		0x1000
+#define S_F_COMMENT		0x2000
 
 #define WANT_ALL_PROC(m)	(((m) & S_F_ALL_PROC) == S_F_ALL_PROC)
 #define WANT_SA_ROTAT(m)	(((m) & S_F_SA_ROTAT) == S_F_SA_ROTAT)
@@ -116,6 +117,7 @@
 #define FILE_LOCKED(m)		(((m) & S_F_FILE_LCK) == S_F_FILE_LCK)
 #define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC) == S_F_PER_PROC)
 #define WANT_ALL_PIDS(m)	(((m) & S_F_X_ALL) == S_F_X_ALL)
+#define DISPLAY_COMMENT(m)	(((m) & S_F_COMMENT) == S_F_COMMENT)
 
 /* Output formats (O_= Output)  */
 #define S_O_HDR_OPTION		1
@@ -157,6 +159,10 @@
 
 /* Maximum length of network interface name */
 #define MAX_IFACE_LEN	IFNAMSIZ
+
+/* Maximum length of a comment */
+#define MAX_COMMENT_LEN	64
+
 /*
  * Maximum number of args that can be passed to sadc:
  * sadc -x <pid> [-x <pid> ...] -X <pid> [-X <pid> ...]
@@ -181,8 +187,9 @@
 
 /* Record type */
 #define R_STATS		1
-#define R_DUMMY		2
+#define R_RESTART	2	/* Special record */
 #define R_LAST_STATS	3
+#define R_COMMENT	4	/* Special record */
 
 #define SOFT_SIZE	0
 #define HARD_SIZE	1
@@ -336,7 +343,7 @@ struct file_stats {
    unsigned int  nfsd_accesscnt			__attribute__ ((packed));
    unsigned int  nfsd_getattcnt			__attribute__ ((packed));
    /* --- CHAR --- */
-   /* Record type: R_STATS or R_DUMMY */
+   /* Record type: R_STATS, R_RESTART,... */
    unsigned char record_type;
    /*
     * Time stamp: hour, minute and second.
@@ -348,6 +355,26 @@ struct file_stats {
 };
 
 #define FILE_STATS_SIZE	(sizeof(struct file_stats))
+
+/* Ugly hack: This structure must remain consistent with file_stats structure */
+struct file_comment {
+   /* --- LONG LONG --- */
+   unsigned long long pad_uptime		__attribute__ ((aligned (16)));
+   unsigned long long pad_uptime0		__attribute__ ((aligned (16)));
+   unsigned long long pad_context_swtch		__attribute__ ((aligned (16)));
+   unsigned long long pad_cpu_user		__attribute__ ((aligned (16)));
+   unsigned long long pad_cpu_nice		__attribute__ ((aligned (16)));
+   unsigned long long pad_cpu_system		__attribute__ ((aligned (16)));
+   unsigned long long pad_cpu_idle		__attribute__ ((aligned (16)));
+   unsigned long long pad_cpu_iowait		__attribute__ ((aligned (16)));
+   unsigned long long pad_cpu_steal		__attribute__ ((aligned (16)));
+   unsigned long long pad_irq_sum		__attribute__ ((aligned (16)));
+   /* --- LONG --- */
+   unsigned long pad_ust_time			__attribute__ ((aligned (16)));
+   /* Here is the real field... */
+   char comment[MAX_COMMENT_LEN];
+};
+
 
 struct stats_one_cpu {
    unsigned long long per_cpu_idle		__attribute__ ((aligned (16)));

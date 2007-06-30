@@ -1,8 +1,10 @@
-.TH SADC 8 "APRIL 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "MAY 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
-.B @SA_LIB_DIR@/sadc [ -d ] [ -F ] [ -I ] [ -L ] [ -V ] [
+.B @SA_LIB_DIR@/sadc [ -C
+.I comment
+.B ] [ -d ] [ -F ] [ -I ] [ -L ] [ -V ] [
 .I interval
 .B [
 .I count
@@ -42,7 +44,8 @@ When both
 .I interval
 and
 .I count
-are not specified, a dummy record, which is used at system startup to mark
+are not specified, and option -C is not used,
+a dummy record, which is used at system startup to mark
 the time when the counter restarts from 0, will be written.
 For example, one of the system startup script may write the restart mark to
 the daily data file by the command entry:
@@ -60,6 +63,14 @@ Note: The
 command only reports on local activities.
 
 .SH OPTIONS
+.IP "-C comment"
+When both the
+.I interval
+and
+.I count
+parameters are not specified, tell sadc to write a dummy record containing
+a comment specified by the string
+.IR comment .
 .IP -d
 Tell
 .B sadc
@@ -93,7 +104,7 @@ would fail would be if another
 .B sadc
 process were also writing to the file. This can happen when cron is used
 to launch
-.B sadc .
+.BR sadc .
 If the system is under heavy load, an old
 .B sadc
 might still be running when cron starts a new one. Without locking,
@@ -121,6 +132,12 @@ directory.
 .B @SA_LIB_DIR@/sadc 1 10 /tmp/datafile
 .RS
 Write 10 records of one second intervals to the /tmp/datafile binary file.
+.RE
+
+.B @SA_LIB_DIR@/sadc -C Backup_Start /tmp/datafile
+.RS
+Insert the comment Backup_Start into the file /tmp/datafile.
+.RE
 .SH BUGS
 .I /proc
 filesystem must be mounted for the

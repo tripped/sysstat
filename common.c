@@ -129,7 +129,8 @@ int get_sys_cpu_nr(void)
    while ((drd = readdir(dir)) != NULL) {
 
       if (!strncmp(drd->d_name, "cpu", 3)) {
-	 sprintf(line, "%s/%s", SYSFS_DEVCPU, drd->d_name);
+	 snprintf(line, MAX_PF_NAME, "%s/%s", SYSFS_DEVCPU, drd->d_name);
+	 line[MAX_PF_NAME - 1] = '\0';
 	 if (stat(line, &buf) < 0)
 	    continue;
 	 if (S_ISDIR(buf.st_mode))
@@ -215,7 +216,8 @@ int get_dev_part_nr(char *dev_name)
    char dfile[MAX_PF_NAME], line[MAX_PF_NAME];
    int part = 0;
 
-   sprintf(dfile, "%s/%s", SYSFS_BLOCK, dev_name);
+   snprintf(dfile, MAX_PF_NAME, "%s/%s", SYSFS_BLOCK, dev_name);
+   dfile[MAX_PF_NAME - 1] = '\0';
 
    /* Open current device directory in /sys/block */
    if ((dir = opendir(dfile)) == NULL)
@@ -225,7 +227,8 @@ int get_dev_part_nr(char *dev_name)
    while ((drd = readdir(dir)) != NULL) {
       if (!strcmp(drd->d_name, ".") || !strcmp(drd->d_name, ".."))
 	 continue;
-      sprintf(line, "%s/%s/%s", dfile, drd->d_name, S_STAT);
+      snprintf(line, MAX_PF_NAME, "%s/%s/%s", dfile, drd->d_name, S_STAT);
+      line[MAX_PF_NAME - 1] = '\0';
 
       /* Try to guess if current entry is a directory containing a stat file */
       if (!access(line, R_OK))
@@ -263,7 +266,8 @@ int get_sysfs_dev_nr(int display_partitions)
    while ((drd = readdir(dir)) != NULL) {
       if (!strcmp(drd->d_name, ".") || !strcmp(drd->d_name, ".."))
 	 continue;
-      sprintf(line, "%s/%s/%s", SYSFS_BLOCK, drd->d_name, S_STAT);
+      snprintf(line, MAX_PF_NAME, "%s/%s/%s", SYSFS_BLOCK, drd->d_name, S_STAT);
+      line[MAX_PF_NAME - 1] = '\0';
 
       /* Try to guess if current entry is a directory containing a stat file */
       if (!access(line, R_OK)) {

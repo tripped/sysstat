@@ -15,11 +15,8 @@
 
 #define NR_CPUS		1024
 
-/*
- * Size of /proc/interrupts line (at most NR_CPUS # of cpus)
- * 4 spaces for interrupt # field ; 11 spaces for each interrupt field.
- */
-#define INTERRUPTS_LINE	(4 + 11 * NR_CPUS)
+/* Size of /proc/interrupts line (at most NR_CPUS # of cpus) */
+#define INTERRUPTS_LINE	(128 + 11 * NR_CPUS)
 
 /* Keywords */
 #define K_ISO	"ISO"

@@ -450,7 +450,7 @@ char *transform_devmapname(unsigned int major, unsigned int minor)
 {
    DIR *dm_dir;
    struct dirent *dp;
-   char filen[MAX_NAME_LEN];
+   char filen[MAX_FILE_LEN];
    char *dm_name = NULL;
    struct stat aux;
    unsigned int dm_major, dm_minor;
@@ -464,6 +464,7 @@ char *transform_devmapname(unsigned int major, unsigned int minor)
       /* For each file in DEVMAP_DIR */
       
       snprintf(filen, MAX_FILE_LEN, "%s/%s", DEVMAP_DIR, dp->d_name);
+      filen[MAX_FILE_LEN - 1] = '\0';
             
       if (stat(filen, &aux) == 0) {
 	 /* Get its minor and major numbers */

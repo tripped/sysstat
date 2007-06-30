@@ -1,8 +1,8 @@
-.TH SAR 1 "APRIL 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "MAY 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
-.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -d ] [ -i
+.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -C ] [ -d ] [ -i
 .I interval
 .B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
 .B [ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]
@@ -218,6 +218,11 @@ Report process creation activity.
 Total number of processes created per second.
 .RE
 .RE
+.IP -C
+When reading data from a file, tell
+.B sar
+to display comments that have been inserted by
+.BR sadc .
 .IP -d
 Report activity for each block device (kernels 2.4 and newer only).
 When data is displayed, the device specification
@@ -849,6 +854,10 @@ parameters on the command line will look at multiple independent processes.
 At the present time, no more than 256 processes can be monitored
 simultaneously.
 
+Note: This option is now obsolete and will soon be removed. Use
+.BR pidstat (1)
+instead.
+
 The following values are displayed:
 
 .B minflt/s
@@ -905,6 +914,11 @@ Specifying multiple
 parameters on the command line will look at multiple independent processes.
 At the present time, no more than 256 processes can be monitored
 simultaneously.
+
+Note: This option is now obsolete and will soon be removed. Use
+.BR pidstat (1)
+instead.
+
 The following values are displayed:
 
 .B cminflt/s

@@ -668,6 +668,9 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
        case 'b':
 	 *actflag |= A_IO;
 	 break;
+       case 'C':
+	 *flags |= S_F_COMMENT;
+	 break;
        case 'c':
 	 *actflag |= A_PROC;
 	 break;

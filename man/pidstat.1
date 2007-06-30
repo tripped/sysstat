@@ -1,10 +1,10 @@
-.TH PIDSTAT 1 "APRIL 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH PIDSTAT 1 "MAY 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 pidstat \- Report statistics for Linux tasks.
 .SH SYNOPSIS
 .B pidstat [ -C
 .I comm
-.B ] [ -I ] [ -p {
+.B ] [ -d ] [ -I ] [ -p {
 .I pid
 .B | SELF | ALL } ] [ -r ] [ -u ] [ -V ] [
 .I interval
@@ -53,6 +53,41 @@ Not specifying any flags selects only CPU activity.
 .IP "-C comm"
 Display only tasks whose command name includes the string
 .IR comm .
+.IP -d
+Report I/O statistics (kernels 2.6.20 and later only).
+The following values are displayed:
+
+.B PID
+.RS
+.RS
+The identification number of the task being monitored.
+.RE
+
+.B kB_rd/s
+.RS
+Number of kilobytes the task has caused to be read from disk
+per second.
+.RE
+
+.B kB_wr/s
+.RS
+Number of kilobytes the task has caused, or shall cause to be
+written to disk per second.
+.RE
+
+.B kB_ccwr/s
+.RS
+Number of kilobytes whose writing to disk has been cancelled by
+the task. This may occur when the task truncates some
+dirty pagecache. In this case, some IO which another task has
+been accounted for will not be happening.
+.RE
+
+.B Command
+.RS
+The command name of the task.
+.RE
+.RE
 .IP -I
 In an SMP environment, indicate that tasks CPU usage (as displayed by option
 .B -u

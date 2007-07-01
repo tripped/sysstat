@@ -1,3 +1,13 @@
+sysstat (7.1.5-1) unstable; urgency=low
+
+  * New upstream version:
+    + daily data files format has changed again.
+  * Fix and reformat package description (closes: #427929).
+  * Use ${source:Version} instead of ${Source-Version} (lintian).
+  * Do not ignore clean errors in debian/rules (lintian).
+
+ -- Robert Luberda <robert@debian.org>  Sun, 01 Jul 2007 12:07:12 +0200
+
 sysstat (7.1.4-1) unstable; urgency=low
 
   * New upstream version.

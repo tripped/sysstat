@@ -452,10 +452,38 @@ void write_mech_stats(int curr, unsigned int act,
 	     NOVAL,
 	     S_VALUE(fsj->pgfault, fsi->pgfault, itv));
 
-      render(isdb, pre, PT_NEWLIN,
+      render(isdb, pre, PT_NOFLAG,
 	     "-\tmajflt/s", NULL, NULL,
 	     NOVAL,
 	     S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tpgfree/s", NULL, NULL,
+	     NOVAL,
+	     S_VALUE(fsj->pgfree, fsi->pgfree, itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tpgscank/s", NULL, NULL,
+	     NOVAL,
+	     S_VALUE(fsj->pgscan_kswapd, fsi->pgscan_kswapd, itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tpgscand/s", NULL, NULL,
+	     NOVAL,
+	     S_VALUE(fsj->pgscan_direct, fsi->pgscan_direct, itv));
+
+      render(isdb, pre, PT_NOFLAG,
+	     "-\tpgsteal/s", NULL, NULL,
+	     NOVAL,
+	     S_VALUE(fsj->pgsteal, fsi->pgsteal, itv));
+
+      render(isdb, pre, PT_NEWLIN,
+	     "-\t%%vmeff", NULL, NULL,
+	     NOVAL,
+	     (fsi->pgscan_kswapd + fsi->pgscan_direct - fsj->pgscan_kswapd - fsj->pgscan_direct) ?
+	     SP_VALUE(fsj->pgsteal, fsi->pgsteal,
+		      fsi->pgscan_kswapd + fsi->pgscan_direct -
+		      fsj->pgscan_kswapd - fsj->pgscan_direct) : 0.0);
    }
 
    /* Print number of swap pages brought in and out */
@@ -841,10 +869,10 @@ void write_mech_stats(int curr, unsigned int act,
 
 	 j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
 	 sdj = st_disk[!curr] + j;
-	 
+	
 	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
 	    name = transform_devmapname(sdi->major, sdi->minor);
-	 
+	
 	 if (!name)
 	    name = get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags));
 
@@ -1205,7 +1233,7 @@ void write_xml_stats(int curr, int *tab)
 
 	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
 	    name = transform_devmapname(sdi->major, sdi->minor);
-	 
+	
 	 if (!name)
 	    name = get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags));
 
@@ -1330,11 +1358,21 @@ void write_xml_stats(int curr, int *tab)
 
    /* paging */
    xprintf(*tab, "<paging per=\"second\" pgpgin=\"%.2f\" pgpgout=\"%.2f\" "
-	         "fault=\"%.2f\" majflt=\"%.2f\"/>",
+	         "fault=\"%.2f\" majflt=\"%.2f\" pgfree=\"%.2f\" "
+	         "pgscank=\"%.2f\" pgscand=\"%.2f\" pgsteal=\"%.2f\" "
+	         "vmeff-percent=\"%.2f\"/>",
 	   S_VALUE(fsj->pgpgin, fsi->pgpgin, itv),
 	   S_VALUE(fsj->pgpgout, fsi->pgpgout, itv),
 	   S_VALUE(fsj->pgfault, fsi->pgfault, itv),
-	   S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv));
+	   S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv),
+	   S_VALUE(fsj->pgfree, fsi->pgfree, itv),
+	   S_VALUE(fsj->pgscan_kswapd, fsi->pgscan_kswapd, itv),
+	   S_VALUE(fsj->pgscan_direct, fsi->pgscan_direct, itv),
+	   S_VALUE(fsj->pgsteal, fsi->pgsteal, itv),
+	   (fsi->pgscan_kswapd + fsi->pgscan_direct - fsj->pgscan_kswapd - fsj->pgscan_direct) ?
+	   SP_VALUE(fsj->pgsteal, fsi->pgsteal,
+		    fsi->pgscan_kswapd + fsi->pgscan_direct -
+		    fsj->pgscan_kswapd - fsj->pgscan_direct) : 0.0);
 
    /* memory */
    xprintf(*tab, "<memory per=\"second\" unit=\"kB\">");
@@ -1421,7 +1459,7 @@ void write_xml_comments(int curr, int *tab)
 {
    char cur_time[64];
    struct file_comment *file_comment;
-      
+
    file_comment = (struct file_comment *) &(file_stats[curr]);
 
    /* Set timestamp for current data */
@@ -1519,7 +1557,7 @@ void display_xml_header(int *tab)
  * Allocate structures
  ***************************************************************************
  */
-void allocate_structures(int stype)
+void allocate_structures(void)
 {
    if (file_hdr.sa_proc)
       salloc_cpu_array(st_cpu, file_hdr.sa_proc);
@@ -1589,7 +1627,6 @@ void read_extra_stats(int curr, int ifd)
    if (file_hdr.sa_nr_disk)
       sa_fread(ifd, st_disk[curr],
 	       DISK_STATS_SIZE * file_hdr.sa_nr_disk, HARD_SIZE);
-   /* PID stats cannot be saved in file. So we don't read them */
 }
 
 
@@ -1628,7 +1665,7 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 	 read_extra_stats(*curr, ifd);
 
       if (!(*eosaf) && (rtype != R_RESTART)) {
-	 
+	
 	 if (rtype == R_COMMENT) {
 	    write_special(*curr, tm_start.use, tm_end.use, R_COMMENT);
 	    continue;
@@ -1741,7 +1778,7 @@ void xml_display_loop(int ifd)
    }
    while (!eosaf);
    xprintf(--tab, "</restarts>");
-   
+
    /* Rewind file */
    if (lseek(ifd, fpos, SEEK_SET) < fpos) {
       perror("lseek");
@@ -1762,7 +1799,7 @@ void xml_display_loop(int ifd)
    }
    while (!eosaf);
    xprintf(--tab, "</comments>");
-   
+
    xprintf(--tab, "</host>");
    xprintf(--tab, "</sysstat>");
 }
@@ -1877,7 +1914,7 @@ void read_stats_from_file(char dfile[])
    }
 
    /* Perform required allocations */
-   allocate_structures(USE_SA_FILE);
+   allocate_structures();
 
    set_hdr_rectime(flags, &rectime, &file_hdr);
 

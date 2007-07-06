@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--DTD v1.3 for sysstat-->
+<!--DTD v1.4 for sysstat-->
 <!ELEMENT boot EMPTY>
 <!ATTLIST boot
 	date CDATA #REQUIRED
@@ -118,6 +118,11 @@
 	pgpgout CDATA #REQUIRED
 	fault CDATA #REQUIRED
 	majflt CDATA #REQUIRED
+	pgfree CDATA #REQUIRED
+	pgscank CDATA #REQUIRED
+	pgscand CDATA #REQUIRED
+	pgsteal CDATA #REQUIRED
+	vmeff-percent CDATA #REQUIRED
 >
 <!ELEMENT processes EMPTY>
 <!ATTLIST processes

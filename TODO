@@ -6,7 +6,7 @@ Here are the things I would like (or I should) do for the next releases:
   example), but I am rather reluctant to display them: There are too many of
   them and sar becomes bigger and bigger...
 
-* Try to add new fields to sar -B and sar -W (pgscan, pgfree, pgsteal, etc.).
+* Add a real web-based graphical front-end to sar. I need help for this!
 
 * Add support for hotplug memory?
 

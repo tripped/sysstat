@@ -1,5 +1,22 @@
 Changes:
 
+2007/07/08: Version 7.1.6 - Sebastien Godard (sysstat <at> wanadoo.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x216d]
+	* New VM paging metrics added to sar (option -B).
+	* Options -x and -X have been removed from sar. Use pidstat(1)
+	  command instead.
+	* NR_CPUS increased to 16384 so that sysstat can be used on
+	  very large systems.
+	* Fixed a bug in sadc.c where it was using a hardcoded 256 char
+	  buffer to store lines read from /proc/interrupts.
+	* sar updated to avoid overflow when computing some average values.
+	* sar and mpstat manual pages updated.
+	* Sysstat DTD file updated.
+	* FAQ updated.
+	* NLS updated.
+	* CREDITS file updated.
+
 2007/06/07: Version 7.1.5 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x216c]

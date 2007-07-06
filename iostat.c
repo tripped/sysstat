@@ -1366,7 +1366,7 @@ int main(int argc, char **argv)
 	     case 'N':
 	       flags |= I_D_DEVMAP_NAME;	/* Display device mapper logical name */
 	       break;
-	       
+	
 	     case 'n':
 	       flags |= I_D_NFS;	/* Display NFS stats */
 	       break;

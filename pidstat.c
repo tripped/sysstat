@@ -100,12 +100,12 @@ void init_stats(void)
 void salloc_pid(unsigned int len)
 {
    int i;
-   
+
    for (i = 0; i < 3; i++) {
       if (st_pid_list[i] != NULL)
 	 /* Free list if previously allocated */
 	 free(st_pid_list[i]);
-   
+
       if ((st_pid_list[i] = (struct pid_stats *) malloc(PID_STATS_SIZE * len)) == NULL) {
 	 perror("malloc");
 	 exit(4);
@@ -167,7 +167,7 @@ unsigned int count_pid(void)
 
    /* Close /proc directory */
    closedir(dir);
-   
+
    return pid;
 }
 
@@ -180,7 +180,7 @@ unsigned int count_pid(void)
 void read_proc_meminfo(void)
 {
    struct meminf st_mem;
-   
+
    if (readp_meminfo(&st_mem))
       tlmkb = 0;
    else
@@ -205,7 +205,7 @@ void read_proc_stat(int curr)
       perror("fopen");
       exit(2);
    }
-   
+
    /* Some fields are only present in 2.6 kernels */
    cc_iowait = cc_hardirq = cc_softirq = cc_steal = 0;
 
@@ -239,7 +239,7 @@ void read_proc_stat(int curr)
 	 sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu",
 		&cc_user, &cc_nice, &cc_system, &cc_idle, &cc_iowait,
 		&cc_hardirq, &cc_softirq, &cc_steal);
-	 
+	
 	 uptime0[curr] = cc_user + cc_nice + cc_system +
 	                 cc_idle + cc_iowait + cc_hardirq +
 	                 cc_softirq + cc_steal;
@@ -277,15 +277,15 @@ int read_proc_pid_stat(unsigned long pid, unsigned int flags,
 	  &(pst->processor));
 
    fclose(fp);
-   
+
    strncpy(pst->comm, comm, MAX_COMM_LEN);
    pst->comm[MAX_COMM_LEN - 1] = '\0';
-   
+
    /* Remove trailing ')' */
    len = strlen(pst->comm);
    if (len && (pst->comm[len - 1] == ')'))
       pst->comm[len - 1] = '\0';
-   
+
    pst->pid = pid;
    return 0;
 }
@@ -372,7 +372,7 @@ int read_pid_stats(unsigned long pid, unsigned int flags,
    }
    if (DISPLAY_IO(flags))
       return (read_proc_pid_io(pid, flags, pst));
-   
+
    return 0;
 }
 
@@ -386,7 +386,7 @@ void pid_sys_init(int *flags)
 {
    /* Init stat common counters */
    init_stats();
-   
+
    /* Count nb of proc */
    cpu_nr = get_cpu_nr(~0);
 
@@ -412,7 +412,7 @@ void read_stats(int flags, int curr)
 
    /* Read CPU statistics */
    read_proc_stat(curr);
-      
+
    if (DISPLAY_ALL_PID(flags)) {
 
       /* Open /proc directory */
@@ -448,13 +448,13 @@ void read_stats(int flags, int curr)
    }
 
    else if (DISPLAY_PID(flags)) {
-   
+
       /* Read stats for each PID in the list */
       for (p = 0; p < pid_nr; p++) {
-	 
+	
 	 pst0 = st_pid_list[2] + p;
 	 psti = st_pid_list[curr] + p;
-	 
+	
 	 if (pst0->pid) {
 	    /* PID should still exist. So read its stats */
 	    if (read_pid_stats(pst0->pid, flags, psti))
@@ -482,17 +482,17 @@ int get_pid_to_display(int prev, int curr, int flags, int p, int activity,
 {
    int q;
    struct pid_stats *pst0;
-   
+
    *psti = st_pid_list[curr] + p;
-   
+
    if (DISPLAY_ALL_PID(flags)) {
-     
+
       if (!(*psti)->pid)
 	 return 0;	/* Next PID */
 
       /* Look for previous stats for same PID */
       q = p;
-	    
+	
       do {
 	 *pstj = st_pid_list[prev] + q;
 	 if ((*pstj)->pid == (*psti)->pid)
@@ -506,7 +506,7 @@ int get_pid_to_display(int prev, int curr, int flags, int p, int activity,
       if ((*pstj)->pid != (*psti)->pid)
 	 /* PID not found (no data previously read) */
 	 *pstj = &st_pid_null;
-    
+
       if (DISPLAY_ACTIVE_PID(flags)) {
 	 /* Check that it's an "active" process */
 	 if (DISPLAY_CPU(activity)) {
@@ -530,7 +530,7 @@ int get_pid_to_display(int prev, int curr, int flags, int p, int activity,
 	 }
       }
    }
-	 
+	
    else if (DISPLAY_PID(flags)) {
 
       pst0 = st_pid_list[2] + p;
@@ -539,7 +539,7 @@ int get_pid_to_display(int prev, int curr, int flags, int p, int activity,
 
       *pstj = st_pid_list[prev] + p;
    }
-   
+
    if (COMMAND_STRING(flags) && !(strstr((*psti)->comm, commstr)))
       return -1;	/* String not found in command name */
 
@@ -572,18 +572,18 @@ int write_stats_core(int prev, int curr, int flags, int dis, int disp_avg,
    else
       /* UP machines */
       itv = g_itv;
-   
+
    if (DISPLAY_CPU(flags)) {
       if (dis)
 	 printf("\n%-11s       PID   %%user %%system    %%CPU   CPU  Command\n",
 		prev_string);
-      
+
       for (p = 0; p < pid_nr; p++) {
-	 
+	
 	 if (get_pid_to_display(prev, curr, flags, p, P_D_CPU,
 				&psti, &pstj) <= 0)
 	    continue;
-	 
+	
 	 printf("%-11s %9ld", curr_string, psti->pid);
 	 printf(" %7.2f %7.2f %7.2f",
 		SP_VALUE(pstj->utime, psti->utime, itv),
@@ -601,26 +601,26 @@ int write_stats_core(int prev, int curr, int flags, int dis, int disp_avg,
 	 again = 1;
       }
    }
-   
+
    if (DISPLAY_MEM(flags)) {
       if (dis)
 	 printf("\n%-11s       PID  minflt/s  majflt/s     VSZ    RSS   %%MEM  Command\n",
 		prev_string);
-      
+
       for (p = 0; p < pid_nr; p++) {
-	 
+	
 	 if ((rc = get_pid_to_display(prev, curr, flags, p, P_D_MEM,
 				      &psti, &pstj)) == 0)
 	    /* PID no longer exists */
 	    continue;
-	 
+	
 	 /* This will be used to compute average */
 	 if (!disp_avg) {
 	    psti->total_vsz = pstj->total_vsz + psti->vsz;
 	    psti->total_rss = pstj->total_rss + psti->rss;
 	    psti->asum_count = pstj->asum_count + 1;
 	 }
-	 
+	
 	 if (rc < 0)
 	    /* PID should not be displayed */
 	    continue;
@@ -647,18 +647,18 @@ int write_stats_core(int prev, int curr, int flags, int dis, int disp_avg,
 	 again = 1;
       }
    }
-   
+
    if (DISPLAY_IO(flags)) {
       if (dis)
 	 printf("\n%-11s       PID   kB_rd/s   kB_wr/s kB_ccwr/s  Command\n",
 		prev_string);
-      
+
       for (p = 0; p < pid_nr; p++) {
-	 
+	
 	 if (get_pid_to_display(prev, curr, flags, p, P_D_CPU,
 				&psti, &pstj) <= 0)
 	    continue;
-	 
+	
 	 printf("%-11s %9ld", curr_string, psti->pid);
 	 printf(" %9.2f %9.2f %9.2f",
 		S_VALUE(pstj->read_bytes, psti->read_bytes, itv) / 1024,
@@ -672,7 +672,7 @@ int write_stats_core(int prev, int curr, int flags, int dis, int disp_avg,
 
    if (DISPLAY_ALL_PID(flags))
       again = 1;
-   
+
    return again;
 }
 
@@ -721,7 +721,7 @@ void rw_pidstat_loop(int dis_hdr, int flags, long int count,
 {
    int curr = 1, dis = 1;
    int again;
-   
+
    if (cpu_nr > 1) {
       /*
        * Read system uptime (only for SMP machines).
@@ -736,7 +736,7 @@ void rw_pidstat_loop(int dis_hdr, int flags, long int count,
    if (DISPLAY_MEM(flags))
       /* Get total memory */
       read_proc_meminfo();
-   
+
    if (!interval) {
       /* Display since boot time */
       ps_tstamp[1] = ps_tstamp[0];
@@ -744,7 +744,7 @@ void rw_pidstat_loop(int dis_hdr, int flags, long int count,
       write_stats(0, DISP_HDR, flags);
       exit(0);
    }
-   
+
    /* Set a handler for SIGALRM */
    alarm_handler(0);
 
@@ -783,10 +783,10 @@ void rw_pidstat_loop(int dis_hdr, int flags, long int count,
       /* Print results */
       again = write_stats(curr, dis, flags);
       fflush(stdout);
-      
+
       if (!again)
 	 return;
-      
+
       if (count > 0)
 	 count--;
 
@@ -856,7 +856,7 @@ int main(int argc, char **argv)
 	 else
 	    usage(argv[0]);
       }
-      
+
       else if (!strcmp(argv[opt], "-C")) {
 	 if (argv[++opt]) {
 	    strncpy(commstr, argv[opt++], MAX_COMM_LEN);
@@ -868,7 +868,7 @@ int main(int argc, char **argv)
 	 else
 	    usage(argv[0]);
       }
-	    
+	
       else if (!strncmp(argv[opt], "-", 1)) {
 	 for (i = 1; *(argv[opt] + i); i++) {
 
@@ -882,7 +882,7 @@ int main(int argc, char **argv)
 	     case 'I':
 	       flags |= P_F_IRIX_MODE;	/* IRIX mode off */
 	       break;
-	       
+	
 	     case 'r':
 	       flags |= P_D_MEM;	/* Display memory usage */
 	       dis_hdr++;
@@ -935,7 +935,7 @@ int main(int argc, char **argv)
 
    if (!DISPLAY_PID(flags))
       flags |= P_D_ACTIVE_PID + P_D_PID + P_D_ALL_PID;
-      
+
    /* Init structures */
    pid_sys_init(&flags);
 
@@ -949,7 +949,7 @@ int main(int argc, char **argv)
 	 lines = rows;
       }
    }
-   
+
    /* Get time */
    get_localtime(&(ps_tstamp[0]));
 
@@ -960,6 +960,6 @@ int main(int argc, char **argv)
 
    /* Main loop */
    rw_pidstat_loop(dis_hdr, flags, count, lines, rows);
-   
+
    return 0;
 }

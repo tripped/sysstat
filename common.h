@@ -13,10 +13,10 @@
 
 #define MINIMUM(a,b)	((a) < (b) ? (a) : (b))
 
-#define NR_CPUS		1024
+#define NR_CPUS		16384
 
-/* Size of /proc/interrupts line (at most NR_CPUS # of cpus) */
-#define INTERRUPTS_LINE	(128 + 11 * NR_CPUS)
+/* Size of /proc/interrupts line, CPU data excluded */
+#define INTERRUPTS_LINE	128
 
 /* Keywords */
 #define K_ISO	"ISO"
@@ -84,7 +84,7 @@ struct meminf {
    unsigned long tlskb;
    unsigned long caskb;
 };
-   
+
 
 /*
  * Under very special circumstances, STDOUT may become unavailable,

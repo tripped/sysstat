@@ -454,24 +454,24 @@ char *transform_devmapname(unsigned int major, unsigned int minor)
    char *dm_name = NULL;
    struct stat aux;
    unsigned int dm_major, dm_minor;
-   
+
    if ((dm_dir = opendir(DEVMAP_DIR)) == NULL) {
       fprintf(stderr, _("Cannot open %s: %s\n"), DEVMAP_DIR, strerror(errno));
       exit(4);
    }
-   
+
    while ((dp = readdir(dm_dir)) != NULL) {
       /* For each file in DEVMAP_DIR */
-      
+
       snprintf(filen, MAX_FILE_LEN, "%s/%s", DEVMAP_DIR, dp->d_name);
       filen[MAX_FILE_LEN - 1] = '\0';
-            
+
       if (stat(filen, &aux) == 0) {
 	 /* Get its minor and major numbers */
 
 	 dm_major = ((aux.st_rdev >> 8) & 0xff);
 	 dm_minor = (aux.st_rdev & 0xff);
-	 
+	
 	 if ((dm_minor == minor) && (dm_major == major)) {
 	    dm_name = dp->d_name;
 	    break;
@@ -479,6 +479,6 @@ char *transform_devmapname(unsigned int major, unsigned int minor)
       }
    }
    closedir(dm_dir);
-   
+
    return dm_name;
 }

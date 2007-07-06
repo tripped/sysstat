@@ -51,6 +51,7 @@ Also tell me what version your kernel is).
 2.20. How can I load sar data into an Oracle database for performance
       analysis and capacity planning?
 2.21. The sar command displays some weird output values...
+2.22. What happened to sar's options -h, -H, -x and -X?
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -470,6 +471,15 @@ Sysstat up to version 5.0.6 uses 32-bit integer variables to store CPU usage.
 Then, beginning with version 5.1.1, sysstat has shifted to 64-bit variables,
 which has fixed the problem. So try to upgrade your version of sysstat to
 the latest stable release and check that the problem has gone.
+
+~~
+
+2.22. What happened to sar's options -h, -H, -x and -X?
+
+These old options have been removed from sar because new commands have been
+made available. You should now use the sadf command instead of sar -h or
+sar -H, and the pidstat command instead of sar -x or sar -X. Please read
+their manual page to learn some more about their respective options.
 
 
 3. QUESTIONS RELATING TO IOSTAT

@@ -49,7 +49,6 @@
 /* Nb of processors on the machine */
 int cpu_nr = 0;
 unsigned int serial_nr = 0, iface_nr = 0, irqcpu_nr = 0, disk_nr = 0;
-int pid_idx = 0, pid_nr = 0;
 unsigned int sadc_actflag;
 long interval = 0;
 
@@ -60,10 +59,7 @@ struct stats_serial *st_serial = NULL;
 struct stats_net_dev *st_net_dev = NULL;
 struct stats_irq_cpu *st_irq_cpu = NULL;
 struct disk_stats *st_disk = NULL;
-struct pid_stats *pid_stats[MAX_PID_NR];
 
-unsigned long all_pids[MAX_PID_NR];
-unsigned char f_pids[MAX_PID_NR];
 unsigned int interrupts[NR_IRQS];
 unsigned int u_tmp[NR_DISKS - 1];
 char comment[MAX_COMMENT_LEN];
@@ -102,28 +98,6 @@ void alarm_handler(int sig)
 
 /*
  ***************************************************************************
- * Allocate pid_stats structures
- ***************************************************************************
- */
-void salloc_pid(int nb_pid)
-{
-   int pid;
-
-   if ((pid_stats[0] = (struct pid_stats *) malloc(PID_STATS_SIZE * nb_pid)) == NULL) {
-      perror("malloc");
-      exit(4);
-   }
-
-   memset(pid_stats[0], 0, PID_STATS_SIZE * nb_pid);
-
-   for (pid = 1; pid < nb_pid; pid++)
-      /* Structures are aligned but also padded. Thus array members are packed */
-      pid_stats[pid] = pid_stats[0] + pid;	/* Assume nb_pid <= MAX_PID_NR */
-}
-
-
-/*
- ***************************************************************************
  * Display an error message
  ***************************************************************************
  */
@@ -147,81 +121,6 @@ void init_dk_drive_stat(void)
    file_stats.dk_drive_wio = file_stats.dk_drive_wblk = 0;
 }
 
-
-
-/*
- ***************************************************************************
- * Insert PID number into the list if not already there and if possible.
- * Return the index in the list, or MAX_PID_NR if PID could not be inserted.
- ***************************************************************************
- */
-int save_pid(unsigned long pid)
-{
-   int i = 0;
-
-   while ((i < pid_idx) && (all_pids[i] != pid))
-      i++;
-   /* PID not found: insert it if possible */
-   if ((i == pid_idx) && (pid_idx < MAX_PID_NR))
-      all_pids[pid_idx++] = pid;
-
-   return i;
-}
-
-
-/*
- ***************************************************************************
- * Set PID flag value (bit 0 set: -x, bit 1 set: -X)
- ***************************************************************************
- */
-void set_pflag(int child, unsigned long pid)
-{
-   int i = 0, flag;
-
-   if (child)
-      flag = X_PPID_SET;
-   else
-      flag = X_PID_SET;
-
-   if (!pid) {
-      for (i = 0; i < MAX_PID_NR; i++)
-	 f_pids[i] |= flag;
-   }
-   else {
-      if ((i = save_pid(pid)) < MAX_PID_NR)
-	 f_pids[i] |= flag;
-   }
-}
-
-
-/*
- ***************************************************************************
- * Look for all the PIDs
- ***************************************************************************
- */
-void get_pid_list(void)
-{
-   DIR *dir;
-   struct dirent *drp;
-
-   /* Open /proc directory */
-   if ((dir = opendir(PROC)) == NULL) {
-      perror("opendir");
-      exit(4);
-   }
-
-   /* Get directory entries */
-   while ((drp = readdir(dir)) != NULL) {
-      if (isdigit(drp->d_name[0])) {
-	 /* Save PID in the list */
-	 if (save_pid(atol(drp->d_name)) == MAX_PID_NR)
-	    break;
-      }
-   }
-
-   /* Close /proc directory */
-   closedir(dir);
-}
 
 
 /*
@@ -300,13 +199,16 @@ unsigned int get_net_dev(void)
 unsigned int get_irqcpu_nb(unsigned int max_nr_irqcpu)
 {
    FILE *fp;
-   char line[256];
+   static char *line;
    unsigned int irq = 0;
 
    if ((fp = fopen(INTERRUPTS, "r")) == NULL)
       return 0;	/* No interrupts file */
 
-   while ((fgets(line, 256, fp) != NULL) && (irq < max_nr_irqcpu)) {
+   SREALLOC(line, char, INTERRUPTS_LINE + 11 * cpu_nr);
+
+   while ((fgets(line, INTERRUPTS_LINE + 11 * cpu_nr , fp) != NULL) &&
+	  (irq < max_nr_irqcpu)) {
       if (isdigit(line[2]))
 	 irq++;
    }
@@ -431,7 +333,6 @@ void setup_file_hdr(int fd, size_t *file_stats_size)
    file_hdr.sa_year = rectime.tm_year;
    file_hdr.sa_sizeof_long = sizeof(long);
    file_hdr.sa_proc = cpu_nr;
-   file_hdr.sa_nr_pid = pid_nr;
    file_hdr.sa_serial = serial_nr;
    file_hdr.sa_irqcpu = irqcpu_nr;
    file_hdr.sa_iface = iface_nr;
@@ -493,7 +394,7 @@ void write_special_record(int ofd, size_t file_stats_size, unsigned int *flags,
 
    if (rtype == R_COMMENT) {
       struct file_comment *file_comment;
-      
+
       file_comment = (struct file_comment *) &file_stats;
       strcpy(file_comment->comment, comment);
    }
@@ -535,11 +436,6 @@ void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
    }
    if (GET_ONE_IRQ(sadc_actflag)) {
       if ((nb = write(ofd, interrupts, STATS_ONE_IRQ_SIZE)) != STATS_ONE_IRQ_SIZE)
-	 p_write_error();
-   }
-   if (pid_nr) {
-      /* Structures are packed together! */
-      if ((nb = write(ofd, pid_stats[0], PID_STATS_SIZE * pid_nr)) != (PID_STATS_SIZE * pid_nr))
 	 p_write_error();
    }
    if (serial_nr) {
@@ -950,12 +846,12 @@ void read_proc_loadavg(void)
 void read_proc_meminfo(void)
 {
    struct meminf st_mem;
-   
+
    memset(&st_mem, 0, sizeof(struct meminf));
-   
+
    if (readp_meminfo(&st_mem))
       return;
-   
+
    file_stats.tlmkb = st_mem.tlmkb;
    file_stats.frmkb = st_mem.frmkb;
    file_stats.bufkb = st_mem.bufkb;
@@ -974,10 +870,14 @@ void read_proc_meminfo(void)
 void read_proc_vmstat(void)
 {
    FILE *fp;
-   static char line[128];
+   char line[128];
+   unsigned long pgtmp;
 
    if ((fp = fopen(VMSTAT, "r")) == NULL)
       return;
+
+   file_stats.pgsteal = 0;
+   file_stats.pgscan_kswapd = file_stats.pgscan_direct = 0;
 
    while (fgets(line, 128, fp) != NULL) {
       /*
@@ -1008,54 +908,55 @@ void read_proc_vmstat(void)
       else if (!strncmp(line, "pgmajfault", 10))
 	 /* Read number of faults (major only) made by the system */
 	 sscanf(line + 10, "%lu", &(file_stats.pgmajfault));
+
+      else if (!strncmp(line, "pgfree", 6))
+	 /* Read number of pages freed by the system */
+	 sscanf(line + 6, "%lu", &(file_stats.pgfree));
+
+      else if (!strncmp(line, "pgsteal_high", 12)) {
+	 /* Read number of pages stolen by the system */
+	 sscanf(line + 12, "%lu", &pgtmp);
+	 file_stats.pgsteal += pgtmp;
+      }
+      else if (!strncmp(line, "pgsteal_normal", 14)) {
+	 sscanf(line + 14, "%lu", &pgtmp);
+	 file_stats.pgsteal += pgtmp;
+      }
+      else if (!strncmp(line, "pgsteal_dma", 11)) {
+	 sscanf(line + 11, "%lu", &pgtmp);
+	 file_stats.pgsteal += pgtmp;
+      }
+
+      else if (!strncmp(line, "pgscan_kswapd_high", 18)) {
+	 /* Read number of pages scanned by the kswapd daemon */
+	 sscanf(line + 18, "%lu", &pgtmp);
+	 file_stats.pgscan_kswapd += pgtmp;
+      }
+      else if (!strncmp(line, "pgscan_kswapd_normal", 20)) {
+	 sscanf(line + 20, "%lu", &pgtmp);
+	 file_stats.pgscan_kswapd += pgtmp;
+      }
+      else if (!strncmp(line, "pgscan_kswapd_dma", 17)) {
+	 sscanf(line + 17, "%lu", &pgtmp);
+	 file_stats.pgscan_kswapd += pgtmp;
+      }
+
+      else if (!strncmp(line, "pgscan_direct_high", 18)) {
+	 /* Read number of pages scanned directly */
+	 sscanf(line + 18, "%lu", &pgtmp);
+	 file_stats.pgscan_direct += pgtmp;
+      }
+      else if (!strncmp(line, "pgscan_direct_normal", 20)) {
+	 sscanf(line + 20, "%lu", &pgtmp);
+	 file_stats.pgscan_direct += pgtmp;
+      }
+      else if (!strncmp(line, "pgscan_direct_dma", 17)) {
+	 sscanf(line + 17, "%lu", &pgtmp);
+	 file_stats.pgscan_direct += pgtmp;
+      }
    }
 
    fclose(fp);
-}
-
-
-/*
- ***************************************************************************
- * Read stats from /proc/<pid>/stat
- ***************************************************************************
- */
-void read_pid_stat(unsigned int flags)
-{
-   FILE *fp;
-   int pid;
-   static char filename[128];
-
-   if (WANT_ALL_PIDS(flags))
-      get_pid_list();
-
-   for (pid = 0; pid < pid_idx; pid++) {
-
-      if (!all_pids[pid])
-	 continue;
-
-      sprintf(filename, PID_STAT, all_pids[pid]);
-      if ((fp = fopen(filename, "r")) == NULL) {
-	 /* No such process */
-	 all_pids[pid] = 0;
-	 pid_stats[pid]->pid = 0;
-	 continue;
-      }
-
-      fscanf(fp, "%*d %*s %*s %*d %*d %*d %*d %*d %*u %lu %lu %lu %lu %lu %lu %lu "
-	         "%lu %*d %*d %*u %*u %*d %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u "
-	         "%*u %*u %*u %lu %lu %*u %u\n",
-	     &(pid_stats[pid]->minflt), &(pid_stats[pid]->cminflt),
-	     &(pid_stats[pid]->majflt), &(pid_stats[pid]->cmajflt),
-	     &(pid_stats[pid]->utime),  &(pid_stats[pid]->stime),
-	     &(pid_stats[pid]->cutime), &(pid_stats[pid]->cstime),
-	     &(pid_stats[pid]->nswap),  &(pid_stats[pid]->cnswap),
-	     &(pid_stats[pid]->processor));
-
-      pid_stats[pid]->pid  = all_pids[pid];
-      pid_stats[pid]->flag = f_pids[pid];
-
-      fclose(fp);
-   }
 }
 
 
@@ -1124,14 +1025,17 @@ void read_serial_stat(void)
 void read_interrupts_stat(void)
 {
    FILE *fp;
-   static char line[INTERRUPTS_LINE];
+   static char *line;
    unsigned int irq = 0, cpu;
    struct stats_irq_cpu *p;
    char *cp, *next;
 
    if ((fp = fopen(INTERRUPTS, "r")) != NULL) {
 
-      while ((fgets(line, INTERRUPTS_LINE, fp) != NULL) && (irq < irqcpu_nr)) {
+      SREALLOC(line, char, INTERRUPTS_LINE + 11 * cpu_nr);
+
+      while ((fgets(line, INTERRUPTS_LINE + 11 * cpu_nr, fp) != NULL) &&
+	     (irq < irqcpu_nr)) {
 
 	 if (isdigit(line[2])) {
 	
@@ -1586,8 +1490,6 @@ void read_stats(unsigned int *flags)
       read_ppartitions_stat();
    /* else disks are in /proc/stat */
 
-   if (pid_nr)
-       read_pid_stat(*flags);
     if (serial_nr)
       read_serial_stat();
    if (irqcpu_nr)
@@ -1709,8 +1611,7 @@ void rw_sa_stat_loop(unsigned int *flags, long count, struct tm *rectime,
  */
 int main(int argc, char **argv)
 {
-   int opt = 0, optz = 0, i;
-   unsigned long pid;
+   int opt = 0, optz = 0;
    char ofile[MAX_FILE_LEN], new_ofile[MAX_FILE_LEN];
    unsigned int flags = 0;
    struct tm rectime;
@@ -1759,7 +1660,7 @@ int main(int argc, char **argv)
 
       else if (!strcmp(argv[opt], "-z"))	/* Set by sar command */
 	 optz = 1;
-      
+
       else if (!strcmp(argv[opt], "-C")) {
 	 if (argv[++opt]) {
 	    strncpy(comment, argv[opt], MAX_COMMENT_LEN);
@@ -1769,32 +1670,6 @@ int main(int argc, char **argv)
 	 }
 	 else
 	    usage(argv[0]);
-      }
-
-      else if (!strcmp(argv[opt], "-x") || !strcmp(argv[opt], "-X")) {
-	 if (!GET_PID(sadc_actflag)) {
-	    /* Init PID flag the first time */
-	    for (i = 0; i < MAX_PID_NR; i++)
-	       f_pids[i] = 0;
-	 }
-	 sadc_actflag |= A_PID;
-	 if (argv[++opt]) {
-	    if (!strcmp(argv[opt], K_ALL)) {
-	       flags |= S_F_X_ALL;
-	       set_pflag(strcmp(argv[opt - 1], "-x"), 0);
-	       continue;	/* Next option */
-	    }
-	    else if (!strcmp(argv[opt], K_SELF))
-	       pid = getpid();
-	    else {
-	       if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
-		  usage(argv[0]);
-	       pid = atol(argv[opt]);
-	       if (pid < 1)
-		  usage(argv[0]);
-	    }
-	    set_pflag(strcmp(argv[opt - 1], "-x"), pid);
-	 }
       }
 
       else if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
@@ -1843,26 +1718,12 @@ int main(int argc, char **argv)
    if (optz)
       stdfd = 0;
 
-   /* -x and -X options ignored when writing to a file */
-   if (ofile[0]) {
-      pid_idx = 0;
-      flags &= ~S_F_X_ALL;
-      sadc_actflag &= ~A_PID;
-   }
-   else
+   if (!ofile[0])
       /* -L option ignored when writing to STDOUT */
       flags &= ~S_F_L_OPTION;
 
-   if (WANT_ALL_PIDS(flags))
-      pid_nr = MAX_PID_NR;
-   else
-      pid_nr = pid_idx;
-
    /* Init structures according to machine architecture */
    sa_sys_init(&flags);
-
-   if (GET_PID(sadc_actflag))
-      salloc_pid(pid_nr);
 
    /*
     * Open output file then STDOUT. Write header for each of them.

@@ -18,7 +18,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x216c
+#define SA_MAGIC	0x216d
 
 
 /* Define activities */
@@ -34,8 +34,8 @@
 #define A_NET_DEV	0x000200
 #define A_NET_EDEV	0x000400
 #define A_DISK		0x000800
-#define A_PID		0x001000
-#define A_CPID		0x002000
+/* Unused		0x001000 */
+/* Unused		0x002000 */
 #define A_NET_NFS	0x004000
 #define A_NET_NFSD	0x008000
 #define A_PAGE		0x010000
@@ -55,10 +55,6 @@
 #define GET_IO(m)	(((m) & A_IO) == A_IO)
 #define GET_ONE_IRQ(m)	(((m) & A_ONE_IRQ) == A_ONE_IRQ)
 #define GET_MEMORY(m)	(((m) & A_MEMORY) == A_MEMORY)
-#define GET_PID(m)	(((m) & A_PID) == A_PID)
-#define GET_CPID(m)	(((m) & A_CPID) == A_CPID)
-#define GET_CPID(m)	(((m) & A_CPID) == A_CPID)
-#define GET_ALL_PID(m)	(((m) & A_ALL_PID) == A_ALL_PID)
 #define GET_SERIAL(m)	(((m) & A_SERIAL) == A_SERIAL)
 #define GET_MEM_AMT(m)	(((m) & A_MEM_AMT) == A_MEM_AMT)
 #define GET_KTABLES(m)	(((m) & A_KTABLES) == A_KTABLES)
@@ -80,7 +76,6 @@
 /* Keywords */
 #define K_XALL	"XALL"
 #define K_SUM	"SUM"
-#define K_SELF	"SELF"
 #define K_SADC	"SADC"
 #define K_DEV	"DEV"
 #define K_EDEV	"EDEV"
@@ -101,7 +96,7 @@
 #define S_F_HAS_DISKSTATS	0x0200
 #define S_F_FILE_LCK		0X0400
 #define S_F_PER_PROC		0x0800
-#define S_F_X_ALL		0x1000
+/* Unused			0x1000 */
 #define S_F_COMMENT		0x2000
 
 #define WANT_ALL_PROC(m)	(((m) & S_F_ALL_PROC) == S_F_ALL_PROC)
@@ -116,7 +111,6 @@
 #define HAS_DISKSTATS(m)	(((m) & S_F_HAS_DISKSTATS) == S_F_HAS_DISKSTATS)
 #define FILE_LOCKED(m)		(((m) & S_F_FILE_LCK) == S_F_FILE_LCK)
 #define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC) == S_F_PER_PROC)
-#define WANT_ALL_PIDS(m)	(((m) & S_F_X_ALL) == S_F_X_ALL)
 #define DISPLAY_COMMENT(m)	(((m) & S_F_COMMENT) == S_F_COMMENT)
 
 /* Output formats (O_= Output)  */
@@ -129,7 +123,6 @@
 /* Files */
 #define PROC		"/proc"
 #define PSTAT		"stat"
-#define PID_STAT	"/proc/%ld/stat"
 #define SERIAL		"/proc/tty/driver/serial"
 #define FDENTRY_STATE	"/proc/sys/fs/dentry-state"
 #define FFILE_NR	"/proc/sys/fs/file-nr"
@@ -154,21 +147,14 @@
 
 #define NR_IRQS			256
 
-/* Maximum number of processes that can be monitored simultaneously */
-#define MAX_PID_NR	256
-
 /* Maximum length of network interface name */
 #define MAX_IFACE_LEN	IFNAMSIZ
 
 /* Maximum length of a comment */
 #define MAX_COMMENT_LEN	64
 
-/*
- * Maximum number of args that can be passed to sadc:
- * sadc -x <pid> [-x <pid> ...] -X <pid> [-X <pid> ...]
- *	-I <interval> <count> <outfile> NULL
- */
-#define MAX_ARGV_NR	(64 * 2) + 6
+/* Maximum number of args that can be passed to sadc */
+#define MAX_ARGV_NR	32
 
 #define USE_SADC	0
 #define USE_SA_FILE	1
@@ -181,9 +167,6 @@
 #define FATAL		1
 #define C_SAR		0
 #define C_SADF		1
-
-#define X_PID_SET	0x01
-#define X_PPID_SET	0x02
 
 /* Record type */
 #define R_STATS		1
@@ -223,8 +206,6 @@ struct file_hdr {
    /* --- INT --- */
    /* Activity flag */
    unsigned int	  sa_actflag			__attribute__ ((aligned (8)));
-   /* Number of processes to monitor ( {-x | -X } ALL) */
-   unsigned int   sa_nr_pid			__attribute__ ((packed));
    /* Number of interrupts per processor: 2 means two interrupts */
    unsigned int   sa_irqcpu			__attribute__ ((packed));
    /* Number of disks */
@@ -269,6 +250,7 @@ struct file_hdr {
 #define FILE_HDR_SIZE	(sizeof(struct file_hdr))
 
 struct file_stats {
+   /* ALSO SEE FILE_COMMENT STRUCTURE BELOW */
    /* --- LONG LONG --- */
    /* Machine uptime (multiplied by the # of proc) */
    unsigned long long uptime			__attribute__ ((aligned (16)));
@@ -301,6 +283,10 @@ struct file_stats {
    unsigned long nr_running			__attribute__ ((aligned (8)));
    unsigned long pgfault			__attribute__ ((aligned (8)));
    unsigned long pgmajfault			__attribute__ ((aligned (8)));
+   unsigned long pgfree				__attribute__ ((aligned (8)));
+   unsigned long pgscan_kswapd			__attribute__ ((aligned (8)));
+   unsigned long pgscan_direct			__attribute__ ((aligned (8)));
+   unsigned long pgsteal			__attribute__ ((aligned (8)));
    /* --- INT --- */
    unsigned int  dk_drive			__attribute__ ((aligned (8)));
    unsigned int  dk_drive_rio			__attribute__ ((packed));
@@ -387,30 +373,6 @@ struct stats_one_cpu {
 
 #define STATS_ONE_CPU_SIZE	(sizeof(struct stats_one_cpu))
 
-/*
- * Members do not need to be aligned since these stats are not written
- * to daily data files.
- */
-struct pid_stats {
-   /* If pid is null, the process has been killed */
-   unsigned long pid				__attribute__ ((aligned (8)));
-   unsigned long minflt				__attribute__ ((packed));
-   unsigned long majflt				__attribute__ ((packed));
-   unsigned long utime				__attribute__ ((packed));
-   unsigned long stime				__attribute__ ((packed));
-   unsigned long nswap				__attribute__ ((packed));
-   unsigned long cminflt			__attribute__ ((packed));
-   unsigned long cmajflt			__attribute__ ((packed));
-   unsigned long cutime				__attribute__ ((packed));
-   unsigned long cstime				__attribute__ ((packed));
-   unsigned long cnswap				__attribute__ ((packed));
-   unsigned int  processor			__attribute__ ((packed));
-   unsigned char flag;
-   unsigned char pad[3];
-};
-
-#define PID_STATS_SIZE	(sizeof(struct pid_stats))
-
 struct stats_serial {
    unsigned int rx				__attribute__ ((aligned (4)));
    unsigned int tx				__attribute__ ((packed));
@@ -481,29 +443,29 @@ struct disk_stats {
 #define DISK_STATS_SIZE		(sizeof(struct disk_stats))
 
 struct stats_sum {
-   unsigned long count;
-   unsigned long frmkb;
-   unsigned long bufkb;
-   unsigned long camkb;
-   unsigned long frskb;
-   unsigned long tlskb;
-   unsigned long caskb;
-   unsigned long dentry_stat;
-   unsigned long file_used;
-   unsigned long inode_used;
-   unsigned long super_used;
-   unsigned long dquot_used;
-   unsigned long rtsig_queued;
-   unsigned long sock_inuse;
-   unsigned long tcp_inuse;
-   unsigned long udp_inuse;
-   unsigned long raw_inuse;
-   unsigned long frag_inuse;
-   unsigned long nr_running;
-   unsigned long nr_threads;
+   unsigned long long frmkb;
+   unsigned long long bufkb;
+   unsigned long long camkb;
+   unsigned long long frskb;
+   unsigned long long tlskb;
+   unsigned long long caskb;
+   unsigned long long dentry_stat;
+   unsigned long long file_used;
+   unsigned long long inode_used;
+   unsigned long long super_used;
+   unsigned long long dquot_used;
+   unsigned long long rtsig_queued;
+   unsigned long long sock_inuse;
+   unsigned long long tcp_inuse;
+   unsigned long long udp_inuse;
+   unsigned long long raw_inuse;
+   unsigned long long frag_inuse;
+   unsigned long long nr_running;
+   unsigned long long nr_threads;
    unsigned long load_avg_1;
    unsigned long load_avg_5;
    unsigned long load_avg_15;
+   unsigned long count;
 };
 
 #define STATS_SUM_SIZE	(sizeof(struct stats_sum))

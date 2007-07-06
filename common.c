@@ -455,7 +455,7 @@ int print_gal_header(struct tm *rectime, char *sysname, char *release, char *nod
       strftime(cur_date, sizeof(cur_date), "%x", rectime);
 
    printf("%s %s (%s) \t%s\n", sysname, release, nodename, cur_date);
-   
+
    return rc;
 }
 
@@ -606,7 +606,7 @@ unsigned long long get_interval(unsigned long long prev_uptime,
 				unsigned long long curr_uptime)
 {
    unsigned long long itv;
-   
+
    if (!prev_uptime)
       itv = curr_uptime;
    else
@@ -636,9 +636,9 @@ void readp_uptime(unsigned long long *uptime)
       return;
 
    sscanf(line, "%lu.%lu", &up_sec, &up_cent);
-   
+
    fclose(fp);
-   
+
    *uptime = up_sec * HZ + up_cent * HZ / 100;
 }
 
@@ -687,7 +687,7 @@ int readp_meminfo(struct meminf *st_mem)
    }
 
    fclose(fp);
-   
+
    return 0;
 }
 

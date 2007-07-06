@@ -56,12 +56,10 @@ struct disk_stats *st_disk[3] = {NULL, NULL, NULL};
 
 /* Array members of common types are always packed */
 unsigned int interrupts[3][NR_IRQS];
-struct pid_stats *pid_stats[3][MAX_PID_NR];
 
 struct tm rectime;
 /* Contain the date specified by -s and -e options */
 struct tstamp tm_start, tm_end;
-int pid_nr = 0;
 char *args[MAX_ARGV_NR];
 
 /*
@@ -77,7 +75,6 @@ void usage(char *progname)
 		   "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 		   "[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
 		   "[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
-		   "[ -x { <pid> | SELF | ALL } ] [ -X { <pid> | SELF | ALL } ]\n"
 	           "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 		   "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"),
 	   progname);
@@ -92,13 +89,8 @@ void usage(char *progname)
  */
 void init_all_stats(void)
 {
-   int i;
-
    init_stats(file_stats, interrupts);
    memset(&asum, 0, STATS_SUM_SIZE);
-
-   for (i = 0; i < 3; i++)
-      pid_stats[i][0] = NULL;
 }
 
 
@@ -119,44 +111,13 @@ void salloc(int i, char *ltemp)
 
 /*
  ***************************************************************************
- * Allocate pid_stats structures
- ***************************************************************************
- */
-void salloc_pid(int nr_pid)
-{
-   int i, pid;
-
-   for (i = 0; i < 3; i++) {
-      if (pid_stats[i][0])
-	 free(pid_stats[i][0]);
-      if ((pid_stats[i][0] = (struct pid_stats *) malloc(PID_STATS_SIZE * nr_pid)) == NULL) {
-	 perror("malloc");
-	 exit(4);
-      }
-
-      memset(pid_stats[i][0], 0, PID_STATS_SIZE * nr_pid);
-
-      for (pid = 1; pid < nr_pid; pid++)
-	 /* Structures are aligned but also padded. Thus array members are packed */
-	 pid_stats[i][pid] = pid_stats[i][0] + pid;	/* Assume nr_pids <= MAX_PID_NR */
-   }
-}
-
-
-/*
- ***************************************************************************
  * Allocate structures
  ***************************************************************************
  */
-void allocate_structures(int stype)
+void allocate_structures(void)
 {
    if (file_hdr.sa_proc)
       salloc_cpu_array(st_cpu, file_hdr.sa_proc);
-   if ((stype == USE_SADC) &&
-       (GET_PID(sar_actflag) || GET_CPID(sar_actflag))) {
-      pid_nr = file_hdr.sa_nr_pid;
-      salloc_pid(pid_nr);
-   }
    if (file_hdr.sa_serial)
       salloc_serial_array(st_serial, file_hdr.sa_serial);
    if (file_hdr.sa_irqcpu)
@@ -433,14 +394,24 @@ void write_stats_core(int prev, int curr, int dis, char *prev_string,
    /* Print paging statistics */
    if (GET_PAGE(act)) {
       if (dis)
-	 printf("\n%-11s  pgpgin/s pgpgout/s   fault/s  majflt/s\n",
+	 printf("\n%-11s  pgpgin/s pgpgout/s   fault/s  majflt/s  pgfree/s"
+		" pgscank/s pgscand/s pgsteal/s    %%vmeff\n",
 		prev_string);
 
-      printf("%-11s %9.2f %9.2f %9.2f %9.2f\n", curr_string,
+      printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+	     curr_string,
 	     S_VALUE(fsj->pgpgin, fsi->pgpgin, itv),
 	     S_VALUE(fsj->pgpgout, fsi->pgpgout, itv),
 	     S_VALUE(fsj->pgfault, fsi->pgfault, itv),
-	     S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv));
+	     S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv),
+	     S_VALUE(fsj->pgfree, fsi->pgfree, itv),
+	     S_VALUE(fsj->pgscan_kswapd, fsi->pgscan_kswapd, itv),
+	     S_VALUE(fsj->pgscan_direct, fsi->pgscan_direct, itv),
+	     S_VALUE(fsj->pgsteal, fsi->pgsteal, itv),
+	     (fsi->pgscan_kswapd + fsi->pgscan_direct - fsj->pgscan_kswapd - fsj->pgscan_direct) ?
+	     SP_VALUE(fsj->pgsteal, fsi->pgsteal,
+		      fsi->pgscan_kswapd + fsi->pgscan_direct -
+		      fsj->pgscan_kswapd - fsj->pgscan_direct) : 0.0);
    }
 
    /* Print number of swap pages brought in and out */
@@ -476,59 +447,6 @@ void write_stats_core(int prev, int curr, int dis, char *prev_string,
 	     S_VALUE((double) PG(fsj->frmkb), (double) PG(fsi->frmkb), itv),
 	     S_VALUE((double) PG(fsj->bufkb), (double) PG(fsi->bufkb), itv),
 	     S_VALUE((double) PG(fsj->camkb), (double) PG(fsi->camkb), itv));
-   }
-
-   /* Print per-process statistics */
-   if (GET_PID(act)) {
-      if (dis) {
-	 printf("\n%-11s       PID  minflt/s  majflt/s     %%user   %%system   nswap/s",
-		prev_string);
-	 if (!disp_avg)
-	    printf("   CPU\n");
-	 else
-	    printf("\n");
-      }
-
-      for (i = 0; i < pid_nr; i++) {
-	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & X_PID_SET))
-	    continue;
-
- 	 printf("%-11s %9ld", curr_string, pid_stats[curr][i]->pid);
-
-	 printf(" %9.2f %9.2f    %6.2f    %6.2f %9.2f",
-		S_VALUE(pid_stats[prev][i]->minflt, pid_stats[curr][i]->minflt, itv),
-		S_VALUE(pid_stats[prev][i]->majflt, pid_stats[curr][i]->majflt, itv),
-		SP_VALUE(pid_stats[prev][i]->utime, pid_stats[curr][i]->utime, itv),
-		SP_VALUE(pid_stats[prev][i]->stime, pid_stats[curr][i]->stime, itv),
-		S_VALUE((long) pid_stats[prev][i]->nswap,
-			(long) pid_stats[curr][i]->nswap, itv));
-
-	 if (!disp_avg)
-	    printf("   %3d\n", pid_stats[curr][i]->processor);
-	 else
-	    printf("\n");
-      }
-   }
-
-   /* Print statistics about children of a given process */
-   if (GET_CPID(act)) {
-      if (dis)
-	 printf("\n%-11s      PPID cminflt/s cmajflt/s    %%cuser  %%csystem  cnswap/s\n",
-		prev_string);
-
-      for (i = 0; i < pid_nr; i++) {
-	 if (!pid_stats[curr][i]->pid || !(pid_stats[curr][i]->flag & X_PPID_SET))
-	    continue;
-	 printf("%-11s %9ld", curr_string, pid_stats[curr][i]->pid);
-
-	 printf(" %9.2f %9.2f    %6.2f    %6.2f %9.2f\n",
-		S_VALUE(pid_stats[prev][i]->cminflt, pid_stats[curr][i]->cminflt, itv),
-		S_VALUE(pid_stats[prev][i]->cmajflt, pid_stats[curr][i]->cmajflt, itv),
-		SP_VALUE(pid_stats[prev][i]->cutime,  pid_stats[curr][i]->cutime,  itv),
-		SP_VALUE(pid_stats[prev][i]->cstime,  pid_stats[curr][i]->cstime,  itv),
-		S_VALUE((long) pid_stats[prev][i]->cnswap,
-			(long) pid_stats[curr][i]->cnswap, itv));
-      }
    }
 
    /* Print TTY statistics (serial lines) */
@@ -734,10 +652,10 @@ void write_stats_core(int prev, int curr, int dis, char *prev_string,
 
 	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
 	    dev_name = transform_devmapname(sdi->major, sdi->minor);
-	 
+	
 	 if (!dev_name)
 	    dev_name = get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags));
-	 
+	
 	 printf("%-11s %9s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
 		curr_string,
 		/* Confusion possible here between index and minor numbers */
@@ -967,7 +885,6 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
 
       /*
        * Will be used to compute the average.
-       * Note: overflow unlikely to happen but not impossible...
        * We assume that the total amount of memory installed can not vary
        * during the interval given on the command line, whereas the total
        * amount of swap space may.
@@ -1074,8 +991,6 @@ void write_stats_startup(int curr)
    if (file_hdr.sa_proc)
       memset(st_cpu[!curr], 0, STATS_ONE_CPU_SIZE * file_hdr.sa_proc);
    memset(interrupts[!curr], 0, STATS_ONE_IRQ_SIZE);
-   if (pid_nr)
-      memset (pid_stats[!curr][0], 0, PID_STATS_SIZE * pid_nr);
    if (file_hdr.sa_serial)
       memset(st_serial[!curr], 0, STATS_SERIAL_SIZE * file_hdr.sa_serial);
    if (file_hdr.sa_irqcpu)
@@ -1142,12 +1057,12 @@ int write_special(int curr, int use_tm_start, int use_tm_end, int rtype)
    }
    else if ((rtype == R_COMMENT) && DISPLAY_COMMENT(flags)) {
       struct file_comment *file_comment;
-      
+
       file_comment = (struct file_comment *) &(file_stats[curr]);
       printf("%-11s  COM %s\n", cur_time, file_comment->comment);
       return 1;
    }
-   
+
    return 0;
 }
 
@@ -1157,7 +1072,7 @@ int write_special(int curr, int use_tm_start, int use_tm_end, int rtype)
  * Move structures data
  ***************************************************************************
  */
-void copy_structures(int dest, int src, int stype)
+void copy_structures(int dest, int src)
 {
    memcpy(&file_stats[dest], &file_stats[src], FILE_STATS_SIZE);
    if (file_hdr.sa_proc)
@@ -1166,9 +1081,6 @@ void copy_structures(int dest, int src, int stype)
    if (GET_ONE_IRQ(file_hdr.sa_actflag))
       memcpy(interrupts[dest], interrupts[src],
 	     STATS_ONE_IRQ_SIZE);
-   if ((stype == USE_SADC) && (pid_nr))
-      memcpy(pid_stats[dest][0], pid_stats[src][0],
-	     PID_STATS_SIZE * pid_nr);
    if (file_hdr.sa_serial)
       memcpy(st_serial[dest], st_serial[src],
 	     STATS_SERIAL_SIZE * file_hdr.sa_serial);
@@ -1209,7 +1121,6 @@ void read_extra_stats(int curr, int ifd)
    if (file_hdr.sa_nr_disk)
       sa_fread(ifd, st_disk[curr],
 	       DISK_STATS_SIZE * file_hdr.sa_nr_disk, HARD_SIZE);
-   /* PID stats cannot be saved in file. So we don't read them */
 }
 
 
@@ -1227,9 +1138,6 @@ void read_stat_bunch(int curr)
       exit(0);
    if (GET_ONE_IRQ(file_hdr.sa_actflag) &&
        sa_read(interrupts[curr], STATS_ONE_IRQ_SIZE))
-      exit(0);
-   if (pid_nr &&
-       sa_read(pid_stats[curr][0], PID_STATS_SIZE * pid_nr))
       exit(0);
    if (file_hdr.sa_serial &&
        sa_read(st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial))
@@ -1268,7 +1176,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
     * Restore the first stats collected.
     * Used to compute the rate displayed on the first line.
     */
-   copy_structures(!(*curr), 2, USE_SA_FILE);
+   copy_structures(!(*curr), 2);
 	
    lines = 0;
    davg  = 0;
@@ -1306,7 +1214,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 	 dis = 0;
 
       if (!(*eosaf) && (rtype != R_RESTART)) {
-	 
+	
 	 if (rtype == R_COMMENT) {
 	    /* Display comment */
 	    next = write_special(*curr, tm_start.use, tm_end.use, R_COMMENT);
@@ -1384,7 +1292,7 @@ void read_stats_from_file(char from_file[])
       nr_cpu = count_bits(cpu_bitmap, sizeof(cpu_bitmap));
 
    /* Perform required allocations */
-   allocate_structures(USE_SA_FILE);
+   allocate_structures();
 
    /* Print report header */
    print_report_hdr(flags, &rectime, &file_hdr);
@@ -1418,7 +1326,7 @@ void read_stats_from_file(char from_file[])
 	     (tm_end.use && (datecmp(&rectime, &tm_end) >=0)));
 
       /* Save the first stats collected. Will be used to compute the average */
-      copy_structures(2, 0, USE_SA_FILE);
+      copy_structures(2, 0);
 
       reset = TRUE;	/* Set flag to reset last_uptime variable */
 
@@ -1526,7 +1434,7 @@ void read_stats(void)
     */
 
    /* Perform required allocations */
-   allocate_structures(USE_SADC);
+   allocate_structures();
 
    /* Print report header */
    print_report_hdr(flags, &rectime, &file_hdr);
@@ -1539,7 +1447,7 @@ void read_stats(void)
       write_stats_startup(0);
 
    /* Save the first stats collected. Will be used to compute the average */
-   copy_structures(2, 0, USE_SADC);
+   copy_structures(2, 0);
 
    /* Main loop */
    do {
@@ -1561,7 +1469,7 @@ void read_stats(void)
       if (file_stats[curr].record_type == R_LAST_STATS) {
 	 /* File rotation is happening: re-read header data sent by sadc */
 	 read_header_data();
-	 allocate_structures(USE_SADC);
+	 allocate_structures();
       }
 
       if (count > 0)
@@ -1585,7 +1493,6 @@ int main(int argc, char **argv)
 {
    int opt = 1, args_idx = 2;
    int fd[2];
-   unsigned long pid = 0;
    char from_file[MAX_FILE_LEN], to_file[MAX_FILE_LEN];
    char ltemp[20];
 
@@ -1669,52 +1576,6 @@ int main(int argc, char **argv)
 	 flags |= S_F_I_OPTION;
       }
 
-      else if (!strcmp(argv[opt], "-x") || !strcmp(argv[opt], "-X")) {
-	 if (argv[++opt]) {
-	    if (!strcmp(argv[opt], K_SADC)) {
-	       strcpy(ltemp, K_SELF);
-	       opt++;
-	    }
-	    else if (!strcmp(argv[opt], K_ALL)) {
-	       if (args_idx < MAX_ARGV_NR - 7) {
-		  salloc(args_idx++, argv[opt - 1]);	/* "-x" or "-X" */
-		  salloc(args_idx++, K_ALL);
-		  if (!strcmp(argv[opt - 1], "-x"))
-		     sar_actflag |= A_PID;
-		  else
-		     sar_actflag |= A_CPID;
-	       }
-	       opt++;
-	       continue;	/* Next option */
-	    }
-	    else {
-	       if (!strcmp(argv[opt], K_SELF)) {
-		  pid = getpid();
-		  opt++;
-	       }
-	       else if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
-		  usage(argv[0]);
-	       else {
-		  pid = atol(argv[opt++]);
-		  if (pid < 1)
-		     usage(argv[0]);
-	       }
-	       sprintf(ltemp, "%ld", pid);
-	    }
-
-	    if (args_idx < MAX_ARGV_NR - 7) {
-	       if (!strcmp(argv[opt - 2], "-x"))
-		  sar_actflag |= A_PID;
-	       else
-		  sar_actflag |= A_CPID;
-	       salloc(args_idx++, argv[opt - 2]);	/* "-x" or "-X" */
-	       salloc(args_idx++, ltemp);
-	    }
-	 }
-	 else
-	    usage(argv[0]);
-      }
-
       else if (!strcmp(argv[opt], "-n")) {
 	 if (argv[++opt]) {
 	    /* Parse option -n */
@@ -1787,12 +1648,6 @@ int main(int argc, char **argv)
       else
 	 /* Default value for the count parameter is 1 */
 	 count = 1;
-   }
-
-   /* -x and -X options ignored when writing to a file */
-   if (to_file[0]) {
-      sar_actflag &= ~A_PID;
-      sar_actflag &= ~A_CPID;
    }
 
    /* Default is CPU activity... */

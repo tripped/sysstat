@@ -354,7 +354,7 @@ void read_interrupts_stat(int curr)
 {
    FILE *fp;
    struct mp_stats *st_mp_cpu_i;
-   static char line[INTERRUPTS_LINE];
+   static char *line = NULL;
    unsigned long irq = 0;
    unsigned int cpu;
    char *cp, *next;
@@ -366,10 +366,17 @@ void read_interrupts_stat(int curr)
 
    if ((fp = fopen(INTERRUPTS, "r")) != NULL) {
 
-      while (fgets(line, INTERRUPTS_LINE, fp) != NULL) {
+      if (!line) {
+	 if ((line = (char *) malloc(INTERRUPTS_LINE + 11 * cpu_nr)) == NULL) {
+	    perror("malloc");
+	    exit(4);
+	 }
+      }
+
+      while (fgets(line, INTERRUPTS_LINE + 11 * cpu_nr, fp) != NULL) {
 
 	 if (isdigit(line[2])) {
-	    
+	
 	    /* Skip over "<irq>:" */
 	    if ((cp = strchr(line, ':')) == NULL)
 	       continue;

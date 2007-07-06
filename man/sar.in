@@ -1,4 +1,4 @@
-.TH SAR 1 "MAY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "JULY 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -6,11 +6,7 @@ sar \- Collect, report, or save system activity information.
 .I interval
 .B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
 .B [ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]
-.B [ -x {
-.I pid
-.B | SELF | ALL } ] [ -X {
-.I pid
-.B | SELF | ALL } ] [ -I {
+.B [ -I {
 .I irq
 .B | SUM | ALL | XALL } ] [ -P {
 .I cpu
@@ -177,7 +173,8 @@ Total amount of data written to devices in blocks per second.
 .RE
 .RE
 .IP -B
-Report paging statistics. The following values are displayed:
+Report paging statistics. Some of the metrics below are available
+only with post 2.5 kernels. The following values are displayed:
 
 .B pgpgin/s
 .RS
@@ -196,8 +193,7 @@ second (and not kilobytes).
 
 .B fault/s
 .RS
-Number of page faults (major + minor) made by the system per second
-(post 2.5 kernels only).
+Number of page faults (major + minor) made by the system per second.
 This is not a count of page faults that generate I/O, because some page
 faults can be resolved without I/O.
 .RE
@@ -205,8 +201,38 @@ faults can be resolved without I/O.
 .B majflt/s
 .RS
 Number of major faults the system has made per second, those which
-have required loading a memory page from disk
-(post 2.5 kernels only).
+have required loading a memory page from disk.
+.RE
+
+.B pgfree/s
+.RS
+Number of pages placed on the free list by the system per second.
+.RE
+
+.B pgscank/s
+.RS
+Number of pages scanned by the kswapd daemon per second.
+.RE
+
+.B pgscand/s
+.RS
+Number of pages scanned directly per second.
+.RE
+
+.B pgsteal/s
+.RS
+Number of pages the system has reclaimed from cache (pagecache and
+swapcache) per second to satisfy its memory demands.
+.RE
+
+.B %vmeff
+.RS
+Calculated as pgsteal / pgscan, this is a metric of the efficiency of
+page reclaim. If it is near 100% then almost every page coming off the
+tail of the inactive list is being reaped. If it gets too low (e.g. less
+than 30%) then the virtual memory is having some difficulty.
+This field is displayed as zero if no pages have been scanned during the
+interval of time.
 .RE
 .RE
 .IP -c
@@ -834,122 +860,6 @@ Total number of swap pages the system brought in per second.
 .B pswpout/s
 .RS
 Total number of swap pages the system brought out per second.
-.RE
-.RE
-.IP "-x { pid | SELF | ALL }"
-Report statistics for a given process.
-.B pid
-is the process identification number. The
-.B SELF
-keyword indicates that statistics are to be reported for the
-.B sar
-process itself, whereas the
-.B ALL
-keyword indicates that statistics are to be reported for all the system processes.
-All these statistics cannot be saved to a file.
-So this option will be ignored whenever -o option is used.
-Specifying multiple
-.B -x pid
-parameters on the command line will look at multiple independent processes.
-At the present time, no more than 256 processes can be monitored
-simultaneously.
-
-Note: This option is now obsolete and will soon be removed. Use
-.BR pidstat (1)
-instead.
-
-The following values are displayed:
-
-.B minflt/s
-.RS
-.RS
-Total number of minor faults the process has made per second, those
-which have not required loading a memory page from disk.
-.RE
-
-.B majflt/s
-.RS
-Total number of major faults the process has made per second, those
-which have required loading a memory page from disk.
-.RE
-
-.B %user
-.RS
-Percentage of CPU used by the process while executing at the user level
-(application), with or without nice priority.
-.RE
-
-.B %system
-.RS
-Percentage of CPU used by the process while executing at the system level
-(kernel).
-.RE
-
-.B nswap/s
-.RS
-Number of pages from the process address space the system has swapped out per second.
-This value is always zero with post 2.5 kernels.
-.RE
-
-.B CPU
-.RS
-Processor number to which the process is attached.
-.RE
-.RE
-.IP "-X { pid | SELF | ALL }"
-Report statistics for the child processes of the process whose PID is
-.B pid .
-The
-.B SELF
-keyword indicates that statistics are to be reported for the child processes of the
-.B sar
-process itself, whereas the
-.B ALL
-keyword indicates that statistics are to be reported for all the child processes 
-of all the system processes.
-All these statistics cannot be saved to a file.
-So this option will be ignored whenever -o option is used.
-Specifying multiple
-.B -X pid
-parameters on the command line will look at multiple independent processes.
-At the present time, no more than 256 processes can be monitored
-simultaneously.
-
-Note: This option is now obsolete and will soon be removed. Use
-.BR pidstat (1)
-instead.
-
-The following values are displayed:
-
-.B cminflt/s
-.RS
-.RS
-Total number of minor faults the child processes have made per second, those
-which have not required loading a memory page from disk.
-.RE
-
-.B cmajflt/s
-.RS
-Total number of major faults the child processes have made per second, those
-which have required loading a memory page from disk.
-.RE
-
-.B %cuser
-.RS
-Percentage of CPU used by the child processes while executing at the user level
-(application), with or without nice priority.
-.RE
-
-.B %csystem
-.RS
-Percentage of CPU used by the child processes while executing at the system level
-(kernel).
-.RE
-
-.B cnswap/s
-.RS
-Number of pages from the child processes address spaces the system has swapped out per second.
-This value is always zero with post 2.5 kernels.
 .RE
 .RE
 .IP -y

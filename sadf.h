@@ -15,7 +15,7 @@
 #define DNOVAL     0.0		/* Wilma!  */
 
 /* DTD version for XML output */
-#define XML_DTD_VERSION	"1.3"
+#define XML_DTD_VERSION	"1.4"
 
 static char *seps[] =  {"\t", ";"};
 

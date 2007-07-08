@@ -1,6 +1,13 @@
+sysstat (7.1.6-1) unstable; urgency=low
+
+  * New upstream version (development):
+    + daily data files format has changed again.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 08 Jul 2007 17:38:12 +0200
+
 sysstat (7.1.5-1) unstable; urgency=low
 
-  * New upstream version:
+  * New upstream version (development):
     + daily data files format has changed again.
   * Fix and reformat package description (closes: #427929).
   * Use ${source:Version} instead of ${Source-Version} (lintian).
@@ -10,7 +17,7 @@ sysstat (7.1.5-1) unstable; urgency=low
 
 sysstat (7.1.4-1) unstable; urgency=low
 
-  * New upstream version.
+  * New upstream version (development).
 
  -- Robert Luberda <robert@debian.org>  Thu, 03 May 2007 11:05:07 +0200
 

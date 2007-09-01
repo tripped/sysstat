@@ -1,6 +1,6 @@
 /*
  * sar/sadc: report system activity
- * (C) 1999-2007 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SA_H
@@ -18,7 +18,7 @@
  * System activity daily file magic number
  * (will vary when file format changes)
  */
-#define SA_MAGIC	0x216d
+#define SA_MAGIC	0x216e
 
 
 /* Define activities */
@@ -127,12 +127,7 @@
 #define FDENTRY_STATE	"/proc/sys/fs/dentry-state"
 #define FFILE_NR	"/proc/sys/fs/file-nr"
 #define FINODE_STATE	"/proc/sys/fs/inode-state"
-#define FDQUOT_NR	"/proc/sys/fs/dquot-nr"
-#define FDQUOT_MAX	"/proc/sys/fs/dquot-max"
-#define FSUPER_NR	"/proc/sys/fs/super-nr"
-#define FSUPER_MAX	"/proc/sys/fs/super-max"
-#define FRTSIG_NR	"/proc/sys/kernel/rtsig-nr"
-#define FRTSIG_MAX	"/proc/sys/kernel/rtsig-max"
+#define PTY_NR		"/proc/sys/kernel/pty/nr"
 #define NET_DEV		"/proc/net/dev"
 #define NET_SOCKSTAT	"/proc/net/sockstat"
 #define NET_RPC_NFS	"/proc/net/rpc/nfs"
@@ -295,18 +290,14 @@ struct file_stats {
    unsigned int  dk_drive_wblk			__attribute__ ((packed));
    unsigned int  file_used			__attribute__ ((packed));
    unsigned int  inode_used			__attribute__ ((packed));
-   unsigned int  super_used			__attribute__ ((packed));
-   unsigned int  super_max			__attribute__ ((packed));
-   unsigned int  dquot_used			__attribute__ ((packed));
-   unsigned int  dquot_max			__attribute__ ((packed));
-   unsigned int  rtsig_queued			__attribute__ ((packed));
-   unsigned int  rtsig_max			__attribute__ ((packed));
    unsigned int  sock_inuse			__attribute__ ((packed));
    unsigned int  tcp_inuse			__attribute__ ((packed));
+   unsigned int  tcp_tw				__attribute__ ((packed));
    unsigned int  udp_inuse			__attribute__ ((packed));
    unsigned int  raw_inuse			__attribute__ ((packed));
    unsigned int  frag_inuse			__attribute__ ((packed));
    unsigned int  dentry_stat			__attribute__ ((packed));
+   unsigned int  pty_nr				__attribute__ ((packed));
    unsigned int  load_avg_1			__attribute__ ((packed));
    unsigned int  load_avg_5			__attribute__ ((packed));
    unsigned int  load_avg_15			__attribute__ ((packed));
@@ -452,11 +443,10 @@ struct stats_sum {
    unsigned long long dentry_stat;
    unsigned long long file_used;
    unsigned long long inode_used;
-   unsigned long long super_used;
-   unsigned long long dquot_used;
-   unsigned long long rtsig_queued;
+   unsigned long long pty_nr;
    unsigned long long sock_inuse;
    unsigned long long tcp_inuse;
+   unsigned long long tcp_tw;
    unsigned long long udp_inuse;
    unsigned long long raw_inuse;
    unsigned long long frag_inuse;

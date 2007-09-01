@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -1116,46 +1116,11 @@ void read_ktables_stat(void)
       file_stats.inode_used -= parm;
    }
 
-   /* Open /proc/sys/fs/super-max file */
-   if ((fp = fopen(FSUPER_MAX, "r")) != NULL) {
-      fscanf(fp, "%u\n",
-	     &(file_stats.super_max));
+   /* Open /proc/sys/kernel/pty/nr file */
+   if ((fp = fopen(PTY_NR, "r")) != NULL) {
+      fscanf(fp, "%u",
+	     &(file_stats.pty_nr));
       fclose(fp);
-
-      /* Open /proc/sys/fs/super-nr file */
-      if ((fp = fopen(FSUPER_NR, "r")) != NULL) {
-	 fscanf(fp, "%u\n",
-		&(file_stats.super_used));
-	 fclose(fp);
-      }
-   }
-
-   /* Open /proc/sys/fs/dquot-max file */
-   if ((fp = fopen(FDQUOT_MAX, "r")) != NULL) {
-      fscanf(fp, "%u\n",
-	     &(file_stats.dquot_max));
-      fclose(fp);
-
-      /* Open /proc/sys/fs/dquot-nr file */
-      if ((fp = fopen(FDQUOT_NR, "r")) != NULL) {
-	 fscanf(fp, "%u",
-		&(file_stats.dquot_used));
-	 fclose(fp);
-      }
-   }
-
-   /* Open /proc/sys/kernel/rtsig-max file */
-   if ((fp = fopen(FRTSIG_MAX, "r")) != NULL) {
-      fscanf(fp, "%u\n",
-	     &(file_stats.rtsig_max));
-      fclose(fp);
-
-      /* Open /proc/sys/kernel/rtsig-nr file */
-      if ((fp = fopen(FRTSIG_NR, "r")) != NULL) {
-	 fscanf(fp, "%u\n",
-		&(file_stats.rtsig_queued));
-	 fclose(fp);
-      }
    }
 }
 
@@ -1234,6 +1199,7 @@ void read_net_sock_stat(void)
 {
    FILE *fp;
    static char line[96];
+   char *p;
 
    if ((fp = fopen(NET_SOCKSTAT, "r")) == NULL)
       return;
@@ -1243,9 +1209,12 @@ void read_net_sock_stat(void)
       if (!strncmp(line, "sockets:", 8))
 	 /* Sockets */
 	 sscanf(line + 14, "%u", &(file_stats.sock_inuse));
-      else if (!strncmp(line, "TCP:", 4))
+      else if (!strncmp(line, "TCP:", 4)) {
 	 /* TCP sockets */
 	 sscanf(line + 11, "%u", &(file_stats.tcp_inuse));
+	 if ((p = strstr(line, "tw")) != NULL)
+	    sscanf(p + 2, "%u", &(file_stats.tcp_tw));
+      }
       else if (!strncmp(line, "UDP:", 4))
 	 /* UDP sockets */
 	 sscanf(line + 11, "%u", &(file_stats.udp_inuse));

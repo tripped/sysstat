@@ -1,5 +1,5 @@
 # Makefile to build sysstat commands
-# # (C) 1999-2007 Sebastien GODARD (sysstat <at> wanadoo.fr)
+# # (C) 1999-2007 Sebastien GODARD (sysstat <at> orange.fr)
 
 # Version and package name
 VERSION = @PACKAGE_VERSION@
@@ -89,6 +89,9 @@ endif
 ifndef COMPRESS_MANPG
 COMPRESS_MANPG = @COMPRESS_MANPG@
 endif
+ifndef INSTALL_ISAG
+INSTALL_ISAG = @INSTALL_ISAG@
+endif
 
 # Run-command directories
 ifndef RC_DIR
@@ -167,7 +170,8 @@ endif
 	uninstall_base uninstall_all dist bdist
 
 install_base: all sa1 sa2 sysstat.sysconfig \
-	man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8
+	man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 \
+	contrib/isag/isag
 	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
 	mkdir -p $(DESTDIR)$(MAN1_DIR)
 	mkdir -p $(DESTDIR)$(MAN8_DIR)
@@ -204,6 +208,10 @@ endif
 	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
 	rm -f $(DESTDIR)$(MAN1_DIR)/pidstat.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/pidstat.1 $(DESTDIR)$(MAN1_DIR)
+ifeq ($(INSTALL_ISAG),y)
+	$(INSTALL_BIN) contrib/isag/isag $(DESTDIR)$(BIN_DIR)
+	$(INSTALL_DATA) $(MANGRPARG) contrib/isag/isag.1 $(DESTDIR)$(MAN1_DIR)
+endif
 ifeq ($(COMPRESS_MANPG),y)
 	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
 	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
@@ -213,6 +221,9 @@ ifeq ($(COMPRESS_MANPG),y)
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/iostat.1
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/mpstat.1
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/pidstat.1
+ifeq ($(INSTALL_ISAG),y)
+	$(ZIP) $(DESTDIR)$(MAN1_DIR)/isag.1
+endif
 endif
 	$(INSTALL_DATA) sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
 	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
@@ -309,6 +320,10 @@ uninstall_base:
 	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1*
 	rm -f $(DESTDIR)$(BIN_DIR)/pidstat
 	rm -f $(DESTDIR)$(MAN1_DIR)/pidstat.1*
+ifeq ($(INSTALL_ISAG),y)
+	rm -f $(DESTDIR)$(BIN_DIR)/isag
+	rm -f $(DESTDIR)$(MAN1_DIR)/isag.1
+endif
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_LIB_DIR)
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)

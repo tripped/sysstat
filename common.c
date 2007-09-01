@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -55,7 +55,7 @@ unsigned int kb_shift;
 void print_version(void)
 {
    fprintf(stderr, _("sysstat version %s\n"), VERSION);
-   fprintf(stderr, "(C) Sebastien Godard (sysstat <at> wanadoo.fr)\n");
+   fprintf(stderr, "(C) Sebastien Godard (sysstat <at> orange.fr)\n");
    exit(1);
 }
 

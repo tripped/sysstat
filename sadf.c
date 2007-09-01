@@ -1,6 +1,6 @@
 /*
  * sadf: system activity data formatter
- * (C) 1999-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -668,45 +668,16 @@ void write_mech_stats(int curr, unsigned int act,
 	     fsi->dentry_stat, DNOVAL);
 
       render(isdb, pre, PT_USEINT,
-	     "-\tfile-sz", NULL, NULL,
+	     "-\tfile-nr", NULL, NULL,
 	     fsi->file_used, DNOVAL);
 
       render(isdb, pre, PT_USEINT,
-	     "-\tinode-sz", NULL, NULL,
+	     "-\tinode-nr", NULL, NULL,
 	     fsi->inode_used, DNOVAL);
 
-      render(isdb, pre, PT_USEINT,
-	     "-\tsuper-sz", NULL, NULL,
-	     fsi->super_used, DNOVAL);
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\t%%super-sz", NULL, NULL,
-	     NOVAL,
-	     fsi->super_max
-	     ? ((double) (fsi->super_used * 100)) / fsi->super_max
-	     : 0.0);
-			
-      render(isdb, pre, PT_USEINT,
-	     "-\tdquot-sz", NULL, NULL,
-	     fsi->dquot_used, DNOVAL);
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\t%%dquot-sz", NULL, NULL,
-	     NOVAL,
-	     fsi->dquot_max
-	     ? ((double) (fsi->dquot_used * 100)) / fsi->dquot_max
-	     : 0.0);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\trtsig-sz", NULL, NULL,
-	     fsi->rtsig_queued, DNOVAL);
-
-      render(isdb, pre, PT_NEWLIN,
-	     "-\t%%rtsig-sz", NULL, NULL,
-	     NOVAL,
-	     fsi->rtsig_max
-	     ? ((double) (fsi->rtsig_queued * 100)) / fsi->rtsig_max
-	     : 0.0);
+      render(isdb, pre, PT_USEINT | PT_NEWLIN,
+	     "-\tpty-nr", NULL, NULL,
+	     fsi->pty_nr, DNOVAL);
    }
 
    /* Print network interface statistics */
@@ -828,8 +799,11 @@ void write_mech_stats(int curr, unsigned int act,
       render(isdb, pre, PT_USEINT,
 	     "-\trawsck", NULL, NULL, fsi->raw_inuse, DNOVAL);
 
-      render(isdb, pre, PT_USEINT | PT_NEWLIN,
+      render(isdb, pre, PT_USEINT,
 	     "-\tip-frag", NULL, NULL, fsi->frag_inuse, DNOVAL);
+
+      render(isdb, pre, PT_USEINT | PT_NEWLIN,
+	     "-\ttcp-tw", NULL, NULL, fsi->tcp_tw, DNOVAL);
    }
 
    /* Print load averages and queue length */
@@ -999,6 +973,7 @@ int write_parsable_stats(int curr, unsigned int act, int reset, long *cnt,
 {
    unsigned long long dt, itv, g_itv;
    char cur_time[26];
+   static int cross_day = 0;
 
    /* Check time (1) */
    if (!next_slice(file_stats[2].uptime0, file_stats[curr].uptime0,
@@ -1008,6 +983,20 @@ int write_parsable_stats(int curr, unsigned int act, int reset, long *cnt,
 
    /* Set current timestamp */
    set_timestamp(curr, cur_time, 26);
+
+   /* Check if we are beginning a new day */
+   if (use_tm_start && file_stats[!curr].ust_time &&
+       (file_stats[curr].ust_time > file_stats[!curr].ust_time) &&
+       (file_stats[curr].hour < file_stats[!curr].hour))
+      cross_day = 1;
+
+   if (cross_day)
+      /*
+       * This is necessary if we want to properly handle something like:
+       * sar -s time_start -e time_end with
+       * time_start(day D) > time_end(day D+1)
+       */
+      loctime.tm_hour +=24;
 
    /* Check time (2) */
    if (use_tm_start && (datecmp(&loctime, &tm_start) < 0))
@@ -1350,9 +1339,9 @@ void write_xml_stats(int curr, int *tab)
 	   S_VALUE(fsj->nfsd_getattcnt, fsi->nfsd_getattcnt, itv));
 
    xprintf(*tab, "<net-sock totsck=\"%u\" tcpsck=\"%u\" udpsck=\"%u\" "
-	         "rawsck=\"%u\" ip-frag=\"%u\"/>",
+	         "rawsck=\"%u\" ip-frag=\"%u\" tcp-tw=\"%u\"/>",
 	   fsi->sock_inuse, fsi->tcp_inuse, fsi->udp_inuse,
-	   fsi->raw_inuse, fsi->frag_inuse);
+	   fsi->raw_inuse, fsi->frag_inuse, fsi->tcp_tw);
 
    xprintf(--(*tab), "</network>");
 
@@ -1403,20 +1392,9 @@ void write_xml_stats(int curr, int *tab)
    xprintf(*tab, "<kernel per=\"second\">");
 
    xprintf(++(*tab), "<dentunusd>%u</dentunusd>", fsi->dentry_stat);
-   xprintf(*tab, "<file-sz>%u</file-sz>", fsi->file_used);
-   xprintf(*tab, "<inode-sz>%u</inode-sz>", fsi->inode_used);
-   xprintf(*tab, "<super-sz>%u</super-sz>", fsi->super_used);
-   xprintf(*tab, "<super-sz-percent>%.2f</super-sz-percent>",
-	   fsi->super_max ?
-	   ((double) (fsi->super_used * 100)) / fsi->super_max : 0.0);
-   xprintf(*tab, "<dquot-sz>%u</dquot-sz>", fsi->dquot_used);
-   xprintf(*tab, "<dquot-sz-percent>%.2f</dquot-sz-percent>",
-	   fsi->dquot_max ?
-	   ((double) (fsi->dquot_used * 100)) / fsi->dquot_max : 0.0);
-   xprintf(*tab, "<rtsig-sz>%u</rtsig-sz>", fsi->rtsig_queued);
-   xprintf(*tab, "<rtsig-sz-percent>%.2f</rtsig-sz-percent>",
-	   fsi->rtsig_max ?
-	   ((double) (fsi->rtsig_queued * 100)) / fsi->rtsig_max : 0.0);
+   xprintf(*tab, "<file-nr>%u</file-nr>", fsi->file_used);
+   xprintf(*tab, "<inode-nr>%u</inode-nr>", fsi->inode_used);
+   xprintf(*tab, "<pty-nr>%u</pty-nr>", fsi->pty_nr);
 
    xprintf(--(*tab), "</kernel>");
 
@@ -1632,7 +1610,7 @@ void read_extra_stats(int curr, int ifd)
 
 /*
  ***************************************************************************
- * Read stats for current activity from file
+ * Read stats for current activity from file and write them
  ***************************************************************************
  */
 void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
@@ -2100,6 +2078,9 @@ int main(int argc, char **argv)
    /* sadf reads current daily data file by default */
    if (!dfile[0])
       set_default_file(&rectime, dfile);
+
+   if (tm_start.use && tm_end.use && (tm_end.tm_hour < tm_start.tm_hour))
+      tm_end.tm_hour += 24;
 
    /*
     * Display all the contents of the daily data file if the count parameter

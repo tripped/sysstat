@@ -1,4 +1,4 @@
-.TH SADF 1 "APRIL 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "JULY 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
@@ -168,7 +168,7 @@ parameter is a number representing the day of the month.
 
 .RE
 .SH AUTHOR
-Sebastien Godard (sysstat <at> wanadoo.fr)
+Sebastien Godard (sysstat <at> orange.fr)
 .SH SEE ALSO
 .BR sar (1),
 .BR sadc (8),

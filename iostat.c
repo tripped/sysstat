@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1998-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1998-2007 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -1364,7 +1364,7 @@ int main(int argc, char **argv)
 	       break;
 	
 	     case 'N':
-	       flags |= I_D_DEVMAP_NAME;	/* Display device mapper logical name */
+	       flags |= I_D_DEVMAP_NAME; /* Display device mapper logical name */
 	       break;
 	
 	     case 'n':

@@ -1,5 +1,36 @@
 Changes:
 
+2007/09/02: Version 8.0.0 - Sebastien Godard (sysstat <at> orange.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x216e]
+	* pidstat command improved. It is now able to report CPU and
+	  page fault statistics for the child processes of a task.
+	* Option -T added to pidstat. This option tells pidstat if
+	  statistics are to be reported for tasks (which is the default)
+	  or for their children.
+	* Fixed a security flaw in sysstat startup script (CVE-2007-3852).
+	* Removed super*, dquot* and rtsig* fields from sar -v.
+	  They were made obsolete in Linux kernels 2.6.
+	* Fields file-sz and inode-sz from sar -v renamed in file-nr
+	  and inode-nr.
+	* Added field pty-nr (number of pseudo-terminals) to sar -v.
+	* Added field tcp-tw (number of sockets in TIME_WAIT state)
+	  to sar -n SOCK.
+	* sar and sadf updated so that they can properly extract records
+	  (with their options -s and -e) from a file containing data for
+	  two consecutive days.
+	* Added option "--enable-install-isag" to "configure" to enable
+	  the user to install isag script.
+	* Fixed a typo in iconfig script: The user was unable to specify
+	  the crontab owner.
+	* Manual pages updated.
+	* Sysstat DTD file updated.
+	* isag updated.
+	* NLS updated.
+	* FAQ updated.
+	* CREDITS file updated.
+	* Author's email updated.
+
 2007/07/08: Version 7.1.6 - Sebastien Godard (sysstat <at> wanadoo.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x216d]

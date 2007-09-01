@@ -1,4 +1,4 @@
-.TH SAR 1 "JULY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "AUGUST 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -316,7 +316,7 @@ value is close to 100%.
 .IP "-e [ hh:mm:ss ]"
 Set the ending time of the report. The default ending time is
 18:00:00. Hours must be given in 24-hour format.
-This option can be used only when data are read from
+This option can be used when data are read from
 or written to a file (options
 .B -f
 or
@@ -561,7 +561,7 @@ The following values are displayed:
 
 .B totsck
 .RS
-Total number of used sockets.
+Total number of sockets used by the system.
 .RE
 
 .B tcpsck
@@ -582,6 +582,11 @@ Number of RAW sockets currently in use.
 .B ip-frag
 .RS
 Number of IP fragments currently in use.
+.RE
+
+.B tcp-tw
+.RS
+Number of TCP sockets in TIME_WAIT state.
 .RE
 
 The
@@ -771,7 +776,7 @@ the system had an outstanding disk I/O request.
 
 .B %steal
 .RS
-Show the percentage of time spent in involuntary wait by the virtual CPU
+Percentage of time spent in involuntary wait by the virtual CPU
 or CPUs while the hypervisor was servicing another virtual processor.
 .RE
 
@@ -794,47 +799,19 @@ The following values are displayed:
 Number of unused cache entries in the directory cache.
 .RE
 
-.B file-sz
+.B file-nr
 .RS
-Number of used file handles.
+Number of file handles used by the system.
 .RE
 
-.B inode-sz
+.B inode-nr
 .RS
-Number of used inode handlers.
+Number of inode handlers used by the system.
 .RE
 
-.B super-sz
+.B pty-nr
 .RS
-Number of super block handlers allocated by the kernel.
-.RE
-
-.B %super-sz
-.RS
-Percentage of allocated super block handlers with regard to the maximum number
-of super block handlers that Linux can allocate.
-.RE
-
-.B dquot-sz
-.RS
-Number of allocated disk quota entries.
-.RE
-
-.B %dquot-sz
-.RS
-Percentage of allocated disk quota entries with regard to the maximum number
-of cached disk quota entries that can be allocated.
-.RE
-
-.B rtsig-sz
-.RS
-Number of queued RT signals.
-.RE
-
-.B %rtsig-sz
-.RS
-Percentage of queued RT signals with regard to the maximum number
-of RT signals that can be queued.
+Number of pseudo-terminals used by the system.
 .RE
 .RE
 .IP -V
@@ -965,7 +942,7 @@ parameter is a number representing the day of the month.
 .IR /proc
 contains various files with system statistics.
 .SH AUTHOR
-Sebastien Godard (sysstat <at> wanadoo.fr)
+Sebastien Godard (sysstat <at> orange.fr)
 .SH SEE ALSO
 .BR sadc (8),
 .BR sa1 (8),

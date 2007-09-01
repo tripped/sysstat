@@ -1,6 +1,6 @@
 #!/bin/sh
 # Configuration script for sysstat
-# (C) 2000-2007 Sebastien GODARD (sysstat <at> wanadoo.fr)
+# (C) 2000-2007 Sebastien GODARD (sysstat <at> orange.fr)
 
 ASK="sh build/Ask.sh"
 
@@ -112,7 +112,7 @@ else
 	echo "Parameter --enable-install-cron is NOT set"
 fi
 
-if [ "${CRON}" = "--enable-install-cron" ];
+if [ "${CRON}" != "" ];
 then
 	CRON_OWNER=`${ASK} 'Crontab owner:' "cron_owner" "cron_owner"`
 	if [ "${CRON_OWNER}" != "" ]; then

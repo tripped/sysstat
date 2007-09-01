@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1999-2007 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _IOSTAT_H

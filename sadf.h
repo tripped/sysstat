@@ -1,6 +1,6 @@
 /*
  * sadf: System activity data formatter
- * (C) 1999-2007 by Sebastien Godard (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SADF_H
@@ -15,7 +15,7 @@
 #define DNOVAL     0.0		/* Wilma!  */
 
 /* DTD version for XML output */
-#define XML_DTD_VERSION	"1.4"
+#define XML_DTD_VERSION	"1.5"
 
 static char *seps[] =  {"\t", ";"};
 

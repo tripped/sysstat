@@ -2,7 +2,7 @@
  * ioconf: ioconf configuration file handling code
  * Original code (C) 2004 by Red Hat (Charlie Bennett <ccb@redhat.com>)
  *
- * Modified and maintained by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * Modified and maintained by Sebastien GODARD (sysstat <at> orange.fr)
  */
 
 #ifndef _IOCONF_H

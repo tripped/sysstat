@@ -1,6 +1,6 @@
 # NLS support for the sysstat package.
 # Copyright (C) 1999 Free Software Foundation, Inc.
-# Sébastien GODARD <sysstat [at] wanadoo.fr>, 1999.
+# Sébastien GODARD <sysstat [at] orange.fr>, 1999.
 #
 #, fuzzy
 msgid ""
@@ -22,12 +22,12 @@ msgid ""
 "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
 "[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -u ] [ -V ]\n"
-"[ -p { <pid> | SELF | ALL } ]\n"
+"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
 "Aufruf: %s [ optionen... ] [ <intervall> [ <anzahl> ] ]\n"
 "mögliche Optionen:\n"
 "[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -u ] [ -V ]\n"
-"[ -p { <pid> | SELF | ALL } ]\n"
+"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
 #: mpstat.c:62
 msgid ""

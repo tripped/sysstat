@@ -991,6 +991,7 @@ set fngr_tmpdir  [exec mktemp -d "/tmp/isag.XXXXXX"]
 # plotstr array
 # in future - this string will not be fixed but functions will coming
 # SGo 2006-04-14: update fields for options -B, -q, -r, -R, -u, -v.
+# SGo 2007-07-31: update fields for option -v.
 set plotstr(b) "\"__FNGR__\" using 1:2 t \"rtps\" with line, \"__FNGR__\" using 1:3 t \"wtps\" with line, \"__FNGR__\" using 1:4 t \"bread/s\" with line,  \"__FNGR__\" using 1:5 t \"bwrtn/s\" with line"
 set plotstr(B) "\"__FNGR__\" using 1:2 t \"pgpgin/s\" with line, \"__FNGR__\" using 1:3 t \"pgpgout/s\" with line, \"__FNGR__\" using 1:4 t \"fault/s\" with line, \"__FNGR__\" using 1:5 t \"majflt/s\" with line"
 set plotstr(c) "\"__FNGR__\" using 1:2 t \"proc/s\" with line"
@@ -999,7 +1000,7 @@ set plotstr(q) "\"__FNGR__\" using 1:2 t \"runq-sz\" with line, \"__FNGR__\" usi
 set plotstr(r) "\"__FNGR__\" using 1:2 t \"kbmemfree\" with line, \"__FNGR__\" using 1:3 t \"kbmemused\" with line, \"__FNGR__\" using 1:4 t \"kbbuffers\" with line, \"__FNGR__\" using 1:5 t \"kbcached\" with line, \"__FNGR__\" using 1:6 t \"kbswpfree\" with line, \"__FNGR__\" using 1:7 t \"kbswpused\" with line, \"__FNGR__\" using 1:8 t \"kbswpcad\" with line"
 set plotstr(R) "\"__FNGR__\" using 1:2 t \"frmpg/s\" with line, \"__FNGR__\" using 1:3 t \"bufpg/s\" with line, \"__FNGR__\" using 1:4 t \"campg/s\" with line"
 set plotstr(u) "\"__FNGR__\" using 1:2 t \"%user\" with line, \"__FNGR__\" using 1:3 t \"%nice\" with line, \"__FNGR__\" using 1:4 t \"%system\" with line, \"__FNGR__\" using 1:5 t \"%iowait\" with line, \"__FNGR__\" using 1:6 t \"%steal\" with line"
-set plotstr(v) "\"__FNGR__\" using 1:2 t \"dentunusd\" with line, \"__FNGR__\" using 1:3 t \"file-sz\" with line, \"__FNGR__\" using 1:4 t \"inode-sz\" with line, \"__FNGR__\" using 1:5 t \"super-sz\" with line, \"__FNGR__\" using 1:6 t \"dquot-sz\" with line, \"__FNGR__\" using 1:7 t \"rtsig-sz\" with line"
+set plotstr(v) "\"__FNGR__\" using 1:2 t \"dentunusd\" with line, \"__FNGR__\" using 1:3 t \"file-nr\" with line, \"__FNGR__\" using 1:4 t \"inode-nr\" with line, \"__FNGR__\" using 1:5 t \"pty-nr\" with line"
 set plotstr(w) "\"__FNGR__\" using 1:2 t \"cswch/s\" with line"
 set plotstr(W) "\"__FNGR__\" using 1:2 t \"pswpin/s\" with line, \"__FNGR__\" using 1:3 t \"pswpout/s\" with line"
 

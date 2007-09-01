@@ -1,13 +1,13 @@
 # NLS support for the sysstat package.
 # Copyright (C) 1999 Free Software Foundation, Inc.
-# Sébastien GODARD <sysstat [at] wanadoo.fr>, 1999.
+# Sébastien GODARD <sysstat [at] orange.fr>, 1999.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: sysstat 3.0\n"
 "PO-Revision-Date: 2000-01-12 20:17\n"
-"Last-Translator: Sébastien Godard (sysstat <at> wanadoo.fr)\n"
+"Last-Translator: Sébastien Godard (sysstat <at> orange.fr)\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=ISO-8859-1\n"
@@ -22,12 +22,12 @@ msgid ""
 "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
 "[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -u ] [ -V ]\n"
-"[ -p { <pid> | SELF | ALL } ]\n"
+"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
 "Utilisation: %s [ options... ] [ <intervalle> [ <itérations> ] ]\n"
 "Options possibles:\n"
 "[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -u ] [ -V ]\n"
-"[ -p { <pid> | SELF | ALL } ]\n"
+"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
 #: mpstat.c:62
 msgid ""

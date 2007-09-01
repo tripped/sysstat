@@ -1,4 +1,4 @@
-.TH SADC 8 "MAY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "JULY 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
@@ -156,7 +156,7 @@ parameter is a number representing the day of the month.
 .IR /proc
 contains various files with system statistics.
 .SH AUTHOR
-Sebastien Godard (sysstat <at> wanadoo.fr)
+Sebastien Godard (sysstat <at> orange.fr)
 .SH SEE ALSO
 .BR sar (1),
 .BR sa1 (8),

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--DTD v1.4 for sysstat-->
+<!--DTD v1.5 for sysstat-->
 <!ELEMENT boot EMPTY>
 <!ATTLIST boot
 	date CDATA #REQUIRED
@@ -48,15 +48,13 @@
 	svctm CDATA #REQUIRED
 	util-percent CDATA #REQUIRED
 >
-<!ELEMENT dquot-sz (#PCDATA)>
-<!ELEMENT dquot-sz-percent (#PCDATA)>
-<!ELEMENT file-sz (#PCDATA)>
+<!ELEMENT file-nr (#PCDATA)>
 <!ELEMENT frmpg (#PCDATA)>
 <!ELEMENT host (sysname, release, statistics, restarts, comments)>
 <!ATTLIST host
 	nodename CDATA #REQUIRED
 >
-<!ELEMENT inode-sz (#PCDATA)>
+<!ELEMENT inode-nr (#PCDATA)>
 <!ELEMENT int-global (irq+)>
 <!ATTLIST int-global
 	per CDATA #REQUIRED
@@ -91,7 +89,7 @@
 	intr CDATA #REQUIRED
 	value CDATA #REQUIRED
 >
-<!ELEMENT kernel (dentunusd, file-sz, inode-sz, super-sz, super-sz-percent, dquot-sz, dquot-sz-percent, rtsig-sz, rtsig-sz-percent)>
+<!ELEMENT kernel (dentunusd, file-nr, inode-nr, pty-nr)>
 <!ATTLIST kernel
 	per CDATA #REQUIRED
 >
@@ -129,6 +127,7 @@
 	per CDATA #REQUIRED
 	proc CDATA #REQUIRED
 >
+<!ELEMENT pty-nr (#PCDATA)>
 <!ELEMENT queue EMPTY>
 <!ATTLIST queue
 	runq-sz CDATA #REQUIRED
@@ -150,8 +149,6 @@
 	rxmcst CDATA #REQUIRED
 >
 <!ELEMENT release (#PCDATA)>
-<!ELEMENT rtsig-sz (#PCDATA)>
-<!ELEMENT rtsig-sz-percent (#PCDATA)>
 <!ELEMENT serial (tty+)>
 <!ATTLIST serial
 	per CDATA #REQUIRED
@@ -163,10 +160,9 @@
 	udpsck CDATA #REQUIRED
 	rawsck CDATA #REQUIRED
 	ip-frag CDATA #REQUIRED
+	tcp-tw CDATA #REQUIRED
 >
 <!ELEMENT statistics (timestamp+)>
-<!ELEMENT super-sz (#PCDATA)>
-<!ELEMENT super-sz-percent (#PCDATA)>
 <!ELEMENT swap-pages EMPTY>
 <!ATTLIST swap-pages
 	per CDATA #REQUIRED

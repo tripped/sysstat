@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2007 by Sebastien GODARD (sysstat <at> wanadoo.fr)
+ * (C) 1999-2007 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -759,40 +759,29 @@ void write_stats_avg(int curr, int dis, unsigned int act, int read_from_file)
 
    if (GET_KTABLES(act)) {
       if (dis)
-	 printf("\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  "
-		"dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n",
+	 printf("\n%-11s dentunusd   file-nr  inode-nr    pty-nr\n",
 		string);
 
-      printf("%-11s %9.0f %9.0f %9.0f %9.0f    %6.2f %9.0f    %6.2f %9.0f    %6.2f\n",
+      printf("%-11s %9.0f %9.0f %9.0f %9.0f\n",
 	     string,
 	     (double) asum.dentry_stat / asum.count,
 	     (double) asum.file_used / asum.count,
 	     (double) asum.inode_used / asum.count,
-	     (double) asum.super_used / asum.count,
-	     fsi->super_max ?
-	     ((double) ((asum.super_used / asum.count) * 100)) / fsi->super_max
-	     : 0.0,
-	     (double) asum.dquot_used / asum.count,
-	     fsi->dquot_max ?
-	     ((double) ((asum.dquot_used / asum.count) * 100)) / fsi->dquot_max
-	     : 0.0,
-	     (double) asum.rtsig_queued / asum.count,
-	     fsi->rtsig_max ?
-	     ((double) ((asum.rtsig_queued / asum.count) * 100)) / fsi->rtsig_max
-	     : 0.0);
+	     (double) asum.pty_nr / asum.count);
    }
 
    if (GET_NET_SOCK(act)) {
       if (dis)
-	 printf("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag\n",
+	 printf("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag    tcp-tw\n",
 		string);
 
-      printf("%-11s %9.0f %9.0f %9.0f %9.0f %9.0f\n", string,
+      printf("%-11s %9.0f %9.0f %9.0f %9.0f %9.0f %9.0f\n", string,
 	     (double) asum.sock_inuse / asum.count,
 	     (double) asum.tcp_inuse / asum.count,
 	     (double) asum.udp_inuse / asum.count,
 	     (double) asum.raw_inuse / asum.count,
-	     (double) asum.frag_inuse / asum.count);
+	     (double) asum.frag_inuse / asum.count,
+	     (double) asum.tcp_tw / asum.count);
    }
 
    if (GET_QUEUE(act)) {
@@ -827,6 +816,7 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
    unsigned long long itv, g_itv;
    struct file_stats
       *fsi = &file_stats[curr];
+   static int cross_day = 0;
 
    /* Check time (1) */
    if (read_from_file) {
@@ -840,6 +830,20 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
    set_timestamp(!curr, cur_time[!curr], 16);
    /* Set current timestamp */
    set_timestamp(curr, cur_time[curr], 16);
+
+   /* Check if we are beginning a new day */
+   if (use_tm_start && file_stats[!curr].ust_time &&
+       (file_stats[curr].ust_time > file_stats[!curr].ust_time) &&
+       (file_stats[curr].hour < file_stats[!curr].hour))
+      cross_day = 1;
+
+   if (cross_day)
+      /*
+       * This is necessary if we want to properly handle something like:
+       * sar -s time_start -e time_end with
+       * time_start(day D) > time_end(day D+1)
+       */
+      rectime.tm_hour +=24;
 
    /* Check time (2) */
    if (use_tm_start && (datecmp(&rectime, &tm_start) < 0))
@@ -900,24 +904,15 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
    /* Print values of some kernel tables */
    if (GET_KTABLES(act)) {
       if (dis)
-	 printf("\n%-11s dentunusd   file-sz  inode-sz  super-sz %%super-sz  "
-		"dquot-sz %%dquot-sz  rtsig-sz %%rtsig-sz\n",
+	 printf("\n%-11s dentunusd   file-nr  inode-nr    pty-nr\n",
 		cur_time[!curr]);
 
-      printf("%-11s %9u %9u %9u %9u    %6.2f %9u    %6.2f %9u    %6.2f\n",
+      printf("%-11s %9u %9u %9u %9u\n",
 	     cur_time[curr],
 	     fsi->dentry_stat,
 	     fsi->file_used,
 	     fsi->inode_used,
-	     fsi->super_used,
-	     fsi->super_max ?
-	     ((double) (fsi->super_used * 100)) / fsi->super_max : 0.0,
-	     fsi->dquot_used,
-	     fsi->dquot_max ?
-	     ((double) (fsi->dquot_used * 100)) / fsi->dquot_max : 0.0,
-	     fsi->rtsig_queued,
-	     fsi->rtsig_max ?
-	     ((double) (fsi->rtsig_queued * 100)) / fsi->rtsig_max : 0.0);
+	     fsi->pty_nr);
 
       /*
        * Will be used to compute the average.
@@ -927,20 +922,18 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
       asum.dentry_stat += fsi->dentry_stat;
       asum.file_used += fsi->file_used;
       asum.inode_used += fsi->inode_used;
-      asum.super_used += fsi->super_used;
-      asum.dquot_used += fsi->dquot_used;
-      asum.rtsig_queued += fsi->rtsig_queued;
+      asum.pty_nr += fsi->pty_nr;
    }
 
    /* Print number of sockets in use */
    if (GET_NET_SOCK(act)) {
       if (dis)
-	 printf("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag\n",
+	 printf("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag    tcp-tw\n",
 		cur_time[!curr]);
 
-      printf("%-11s %9u %9u %9u %9u %9u\n", cur_time[curr],
+      printf("%-11s %9u %9u %9u %9u %9u %9u\n", cur_time[curr],
 	     fsi->sock_inuse, fsi->tcp_inuse, fsi->udp_inuse,
-	     fsi->raw_inuse, fsi->frag_inuse);
+	     fsi->raw_inuse, fsi->frag_inuse, fsi->tcp_tw);
 
       /* Will be used to compute the average */
       asum.sock_inuse += fsi->sock_inuse;
@@ -948,6 +941,7 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
       asum.udp_inuse += fsi->udp_inuse;
       asum.raw_inuse += fsi->raw_inuse;
       asum.frag_inuse += fsi->frag_inuse;
+      asum.tcp_tw += fsi->tcp_tw;
    }
 
    /* Print load averages and queue length */
@@ -1621,6 +1615,9 @@ int main(int argc, char **argv)
    if ((argc == 1) ||
        ((interval < 0) && !from_file[0] && !to_file[0]))
       set_default_file(&rectime, from_file);
+
+   if (tm_start.use && tm_end.use && (tm_end.tm_hour < tm_start.tm_hour))
+      tm_end.tm_hour += 24;
 
    /*
     * Check option dependencies

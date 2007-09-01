@@ -1,6 +1,6 @@
 # NLS support for the sysstat package.
 # Copyright (C) 1999 Free Software Foundation, Inc.
-# SИbastien GODARD <sysstat [at] wanadoo.fr>, 1999.
+# SИbastien GODARD <sysstat [at] orange.fr>, 1999.
 #
 msgid ""
 msgstr ""
@@ -22,12 +22,12 @@ msgid ""
 "Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
 "[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -u ] [ -V ]\n"
-"[ -p { <pid> | SELF | ALL } ]\n"
+"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
 "Использование: %s [ опции... ] [ <интервал> [ <счетчик> ] ]\n"
 "Допустимые опции:\n"
 "[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -u ] [ -V ]\n"
-"[ -p { <pid> | SELF | ALL } ]\n"
+"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
 #: mpstat.c:62
 msgid ""

@@ -2,9 +2,10 @@ sysstat (8.0.0-1) unstable; urgency=low
 
   * New upstream version (stable):
     + daily data files format has changed again.
-  *  Change isag's menu section to Applications/System/Monitoring (lintian).
+  * Change isag's menu section to Applications/System/Monitoring (lintian).
+  * Update upstream e-mail in the copyright file. 
 
- -- Robert Luberda <robert@debian.org>  Mon, 03 Sep 2007 19:33:02 +0200
+ -- Robert Luberda <robert@debian.org>  Mon, 03 Sep 2007 19:55:11 +0200
 
 sysstat (7.1.6-1) unstable; urgency=low
 

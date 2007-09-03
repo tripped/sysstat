@@ -1,3 +1,10 @@
+sysstat (8.0.0-1) unstable; urgency=low
+
+  * New upstream version (stable):
+    + daily data files format has changed again.
+
+ -- Robert Luberda <robert@debian.org>  Mon, 03 Sep 2007 19:09:07 +0200
+
 sysstat (7.1.6-1) unstable; urgency=low
 
   * New upstream version (development):

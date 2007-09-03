@@ -1,5 +1,5 @@
 ?package(isag):needs="x11" \
-	section="Apps/System" \
+	section="Applications/System/Monitoring" \
         title="Isag" \
 	hints="Monitoring" \
         command="/usr/bin/isag"

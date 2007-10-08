@@ -4,7 +4,7 @@
 # Modified by Sebastien Godard (sysstat <at> orange.fr)
 
 # Initialization of $PACKAGE_VERSION and $PACKAGE_NAME variables
-AC_INIT(sysstat, 8.0.0)
+AC_INIT(sysstat, 8.0.1)
 
 # Ensure that a recent enough version of Autoconf is being used
 AC_PREREQ(2.53)
@@ -46,6 +46,7 @@ AC_PROG_LN_S
 
 AC_CHECK_PROG(CHMOD, chmod, chmod)
 AC_CHECK_PROG(CHOWN, chown, chown)
+AC_CHECK_PROG(AR, ar, ar)
 AC_CHECK_PROG(INSTALL, install, install)
 AC_CHECK_PROG(MSGFMT, msgfmt, msgfmt)
 AC_CHECK_PROGS(ZIP, bzip2 gzip, gzip, /bin /etc /sbin /usr/bin /usr/etc /usr/sbin /usr/ucb /usr/local/bin /usr/local/etc /usr/local/sbin)

@@ -39,6 +39,9 @@
 #define _(string) (string)
 #endif
 
+#define SCCSID "@(#)" __FILE__ " compiled " __DATE__ " " __TIME__
+char *sccsid(void) { return (SCCSID); }
+
 long interval = -1, count = 0;
 unsigned int sar_actflag = 0;
 unsigned int flags = 0;
@@ -444,9 +447,9 @@ void write_stats_core(int prev, int curr, int dis, char *prev_string,
 	 printf("\n%-11s   frmpg/s   bufpg/s   campg/s\n", prev_string);
 
       printf("%-11s %9.2f %9.2f %9.2f\n", curr_string,
-	     S_VALUE((double) PG(fsj->frmkb), (double) PG(fsi->frmkb), itv),
-	     S_VALUE((double) PG(fsj->bufkb), (double) PG(fsi->bufkb), itv),
-	     S_VALUE((double) PG(fsj->camkb), (double) PG(fsi->camkb), itv));
+	     S_VALUE((double) KB_TO_PG(fsj->frmkb), (double) KB_TO_PG(fsi->frmkb), itv),
+	     S_VALUE((double) KB_TO_PG(fsj->bufkb), (double) KB_TO_PG(fsi->bufkb), itv),
+	     S_VALUE((double) KB_TO_PG(fsj->camkb), (double) KB_TO_PG(fsi->camkb), itv));
    }
 
    /* Print TTY statistics (serial lines) */

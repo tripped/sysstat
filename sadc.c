@@ -46,6 +46,9 @@
 #define _(string) (string)
 #endif
 
+#define SCCSID "@(#)" __FILE__ " compiled " __DATE__ " " __TIME__
+char *sccsid(void) { return (SCCSID); }
+
 /* Nb of processors on the machine */
 int cpu_nr = 0;
 unsigned int serial_nr = 0, iface_nr = 0, irqcpu_nr = 0, disk_nr = 0;

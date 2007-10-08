@@ -12,6 +12,7 @@ CC = @CC@
 CHMOD = @CHMOD@
 CHOWN = @CHOWN@
 LN_S = @LN_S@
+AR = @AR@
 # Full path to prevent from using aliases
 CP = @PATH_CP@
 
@@ -131,7 +132,12 @@ sa_common.o: sa_common.c sa.h common.h ioconf.h sysconfig.h
 
 ioconf.o: ioconf.c ioconf.h common.h sysconfig.h
 
+# Explicit rules needed to prevent possible file corruption
+# when using parallel execution.
 libsyscom.a: libsyscom.a(common.o ioconf.o)
+	$(AR) rv $@ common.o
+	$(AR) rv $@ ioconf.o
+	$(AR) s $@
 
 libsyssa.a: libsyssa.a(sa_common.o)
 

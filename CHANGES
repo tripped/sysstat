@@ -1,5 +1,21 @@
 Changes:
 
+2007/09/30: Version 8.0.1 - Sebastien Godard (sysstat <at> orange.fr)
+	* Option -t added to pistat. pidstat can now display stats for
+	  every thread (TID) of a process.
+	* pidstat's option -T CHILD now reports global statistics for
+	  selected tasks and all their children (and not only for the
+	  children).
+	* pidstat now reads VSZ and RSS values from /proc/#/stat instead
+	  of /proc/#/status.
+	* Fixed a rare parallel make issue creating archive libsyscom.a
+	  [GENTOO bug #193208].
+	* pidstat manual page updated.
+	* SCCS identification string added to all commands.
+	* NLS updated.
+	* Code cleaned.
+	* CREDITS file updated.
+
 2007/09/02: Version 8.0.0 - Sebastien Godard (sysstat <at> orange.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x216e]
@@ -11,7 +27,7 @@ Changes:
 	* Fixed a security flaw in sysstat startup script (CVE-2007-3852).
 	* Removed super*, dquot* and rtsig* fields from sar -v.
 	  They were made obsolete in Linux kernels 2.6.
-	* Fields file-sz and inode-sz from sar -v renamed in file-nr
+	* Fields file-sz and inode-sz from sar -v renamed to file-nr
 	  and inode-nr.
 	* Added field pty-nr (number of pseudo-terminals) to sar -v.
 	* Added field tcp-tw (number of sockets in TIME_WAIT state)

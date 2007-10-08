@@ -4,8 +4,10 @@
 # @INIT_DIR@/sysstat
 # (C) 2000-2007 Sebastien Godard (sysstat <at> orange.fr)
 #
-# Description: Insert a dummy record in current daily data file.
-#	       This indicates that the counters have restarted from 0.
+# Description: sysstat service
+#@(#) sysstat startup script:
+#@(#)	 Insert a dummy record in current daily data file.
+#@(#)	 This indicates that the counters have restarted from 0.
 #
 
 RETVAL=0

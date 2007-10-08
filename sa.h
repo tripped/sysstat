@@ -66,13 +66,6 @@
 #define GET_QUEUE(m)	(((m) & A_QUEUE) == A_QUEUE)
 #define GET_DISK(m)	(((m) & A_DISK) == A_DISK)
 
-
-/*
- * kB -> number of pages.
- * Page size depends on machine architecture (4 kB, 8 kB, 16 kB, 64 kB...)
- */
-#define PG(k)	((k) >> kb_shift)
-
 /* Keywords */
 #define K_XALL	"XALL"
 #define K_SUM	"SUM"

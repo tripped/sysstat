@@ -41,6 +41,8 @@
 #define _(string) (string)
 #endif
 
+#define SCCSID "@(#)" __FILE__ " compiled " __DATE__ " " __TIME__
+char *sccsid(void) { return (SCCSID); }
 
 long interval = -1, count = 0;
 unsigned int sadf_actflag = 0;
@@ -524,18 +526,18 @@ void write_mech_stats(int curr, unsigned int act,
       render(isdb, pre, PT_NOFLAG,
 	     "-\tfrmpg/s", NULL, NULL,
 	     NOVAL,
-	     S_VALUE((double) PG(fsj->frmkb),
-		     (double) PG(fsi->frmkb), itv));
+	     S_VALUE((double) KB_TO_PG(fsj->frmkb),
+		     (double) KB_TO_PG(fsi->frmkb), itv));
 
       render(isdb, pre, PT_NOFLAG,
 	     "-\tbufpg/s", NULL, NULL,
-	     NOVAL, S_VALUE((double) PG(fsj->bufkb),
-			    (double) PG(fsi->bufkb), itv));
+	     NOVAL, S_VALUE((double) KB_TO_PG(fsj->bufkb),
+			    (double) KB_TO_PG(fsi->bufkb), itv));
 
       render(isdb, pre, PT_NEWLIN,
 	     "-\tcampg/s", NULL, NULL,
-	     NOVAL, S_VALUE((double) PG(fsj->camkb),
-			    (double) PG(fsi->camkb), itv));
+	     NOVAL, S_VALUE((double) KB_TO_PG(fsj->camkb),
+			    (double) KB_TO_PG(fsi->camkb), itv));
    }
 
    /* Print TTY statistics (serial lines) */
@@ -1380,11 +1382,11 @@ void write_xml_stats(int curr, int *tab)
    xprintf(*tab, "<buffers>%lu</buffers>", fsi->bufkb);
    xprintf(*tab, "<cached>%lu</cached>", fsi->camkb);
    xprintf(*tab, "<frmpg>%.2f</frmpg>",
-	   S_VALUE((double) PG(fsj->frmkb), (double) PG(fsi->frmkb), itv));
+	   S_VALUE((double) KB_TO_PG(fsj->frmkb), (double) KB_TO_PG(fsi->frmkb), itv));
    xprintf(*tab, "<bufpg>%.2f</bufpg>",
-	   S_VALUE((double) PG(fsj->bufkb), (double) PG(fsi->bufkb), itv));
+	   S_VALUE((double) KB_TO_PG(fsj->bufkb), (double) KB_TO_PG(fsi->bufkb), itv));
    xprintf(*tab, "<campg>%.2f</campg>",
-	   S_VALUE((double) PG(fsj->camkb), (double) PG(fsi->camkb), itv));
+	   S_VALUE((double) KB_TO_PG(fsj->camkb), (double) KB_TO_PG(fsi->camkb), itv));
 	
    xprintf(--(*tab), "</memory>");
 

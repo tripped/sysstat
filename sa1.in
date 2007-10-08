@@ -2,7 +2,7 @@
 # @SA_LIB_DIR@/sa1
 # (C) 1999-2007 Sebastien Godard (sysstat <at> orange.fr)
 #
-# sa1: Collect and store binary data in system activity data file.
+#@(#) sa1: Collect and store binary data in system activity data file.
 #
 HISTORY=0
 SYSCONFIG_DIR=@SYSCONFIG_DIR@

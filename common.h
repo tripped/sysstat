@@ -74,6 +74,13 @@ extern unsigned int hz;
 /* Number of bit shifts to convert pages to kB */
 extern unsigned int kb_shift;
 
+/*
+ * kB <-> number of pages.
+ * Page size depends on machine architecture (4 kB, 8 kB, 16 kB, 64 kB...)
+ */
+#define KB_TO_PG(k)	((k) >> kb_shift)
+#define PG_TO_KB(k)	((k) << kb_shift)
+
 /* Memory data read from /proc/meminfo */
 struct meminf {
    unsigned long frmkb;

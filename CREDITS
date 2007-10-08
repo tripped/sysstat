@@ -104,6 +104,9 @@ The following people have contributed to 'sysstat' in one way or another:
 	Robert Luberda <robert [at] debian.org> brought a few improvements
 	to sysstat's code, and also reported several bugs.
 
+	Jeroen Roovers <jer [at] gentoo.org> sent me a patch to fix a rare
+	parallel make issue creating archive libsyscom.a.
+
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 

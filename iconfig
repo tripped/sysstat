@@ -1,5 +1,5 @@
 #!/bin/sh
-# Configuration script for sysstat
+#@(#) Configuration script for sysstat
 # (C) 2000-2007 Sebastien GODARD (sysstat <at> orange.fr)
 
 ASK="sh build/Ask.sh"

@@ -45,13 +45,14 @@
 #define _(string) (string)
 #endif
 
+#define SCCSID "@(#)" __FILE__ " compiled " __DATE__ " " __TIME__
+char *sccsid(void) { return (SCCSID); }
 
 struct comm_stats  comm_stats[2];
 struct io_stats *st_iodev[2];
 struct io_nfs_stats *st_ionfs[2];
 struct io_hdr_stats *st_hdr_iodev, *st_hdr_ionfs;
 struct io_dlist *st_dev_list;
-
 
 int iodev_nr = 0;	/* Nb of devices and partitions found */
 int ionfs_nr = 0;	/* Nb of NFS mounted directories found */

@@ -832,7 +832,7 @@ void write_mech_stats(int curr, unsigned int act,
    /* Print disk statistics */
    if (GET_DISK(act)) {
       int i, j;
-      char *name = NULL;
+      char *name;
       double tput, util, await, svctm, arqsz;
       struct disk_stats
 	 *sdi = st_disk[curr],
@@ -845,7 +845,8 @@ void write_mech_stats(int curr, unsigned int act,
 
 	 j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
 	 sdj = st_disk[!curr] + j;
-	
+
+	 name = NULL;
 	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
 	    name = transform_devmapname(sdi->major, sdi->minor);
 	

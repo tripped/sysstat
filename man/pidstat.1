@@ -1,4 +1,4 @@
-.TH PIDSTAT 1 "SEPTEMBER 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH PIDSTAT 1 "OCTOBER 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 pidstat \- Report statistics for Linux tasks.
 .SH SYNOPSIS
@@ -6,7 +6,7 @@ pidstat \- Report statistics for Linux tasks.
 .I comm
 .B ] [ -d ] [ -I ] [ -p {
 .I pid
-.B | SELF | ALL } ] [ -r ] [ -t ] [ -T { TASK | CHILD | ALL } ] [ -u ] [ -V ] [
+.B | SELF | ALL } ] [ -r ] [ -t ] [ -T { TASK | CHILD | ALL } ] [ -u ] [ -V ] [ -w ] [
 .I interval
 .B [
 .I count
@@ -285,7 +285,36 @@ together with its children.
 .RE
 .IP -V
 Print version number then exit.
+.IP -w
+Report task switching activity (kernels 2.6.23 and later only).
+The following values are displayed:
 
+.B PID
+.RS
+.RS
+The identification number of the task being monitored.
+.RE
+
+.B cswch/s
+.RS
+Total number of voluntary context switches the task made per second.
+A voluntary context switch occurs when a task blocks because it
+requires a resource that is unavailable.
+.RE
+
+.B nvcswch/s
+.RS
+Total number of non voluntary context switches the task made per second.
+A involuntary context switch takes place when a task executes
+for the duration of its time slice and then is forced to relinquish the
+processor.
+.RE
+
+.B Command
+.RS
+The command name of the task.
+.RE
+.RE
 .SH ENVIRONMENT
 The
 .B pidstat

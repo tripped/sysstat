@@ -1,5 +1,23 @@
 Changes:
 
+2007/10/26: Version 8.0.2 - Sebastien Godard (sysstat <at> orange.fr)
+	* Option -w added to pidstat. pidstat can now display task
+	  switching activity.
+	* Fixed a memory leak in pidstat that was triggered when
+	  reading stats for threads.
+	* Fixed a bug where device names were incorrectly displayed by
+	  sar -d or sar -dp. Fixed also this bug for sadf.
+	* When using option -o, sar now saves by default all the
+	  statistics into the file, including interrupts and disks
+	  statistics. Interrupts and disks statistics remain optional
+	  when using sadc.
+	* sysstat startup script updated.
+	* sar and pidstat manual pages updated.
+	* isag updated.
+	* NLS updated.
+	* Code cleaned.
+	* CREDITS file updated.
+
 2007/09/30: Version 8.0.1 - Sebastien Godard (sysstat <at> orange.fr)
 	* Option -t added to pistat. pidstat can now display stats for
 	  every thread (TID) of a process.

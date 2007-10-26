@@ -628,7 +628,7 @@ void write_stats_core(int prev, int curr, int dis, char *prev_string,
       struct disk_stats
 	 *sdi = st_disk[curr],
 	 *sdj;
-      char *dev_name = NULL;
+      char *dev_name;
 
       if (dis)
 	 printf("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz  "
@@ -653,6 +653,7 @@ void write_stats_core(int prev, int curr, int dis, char *prev_string,
 	    ((sdi->rd_sect - sdj->rd_sect) + (sdi->wr_sect - sdj->wr_sect)) /
 	    ((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
 
+	 dev_name = NULL;
 	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
 	    dev_name = transform_devmapname(sdi->major, sdi->minor);
 	
@@ -1714,10 +1715,8 @@ int main(int argc, char **argv)
 
       /* Flags to be passed to sadc */
       salloc(args_idx++, "-z");
-      if (GET_ONE_IRQ(sar_actflag))
-	 salloc(args_idx++, "-I");
-      if (GET_DISK(sar_actflag))
-	 salloc(args_idx++, "-d");
+      salloc(args_idx++, "-I");
+      salloc(args_idx++, "-d");
 
       /* Outfile arg */
       if (to_file[0])

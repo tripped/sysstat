@@ -1,4 +1,4 @@
-.TH SAR 1 "AUGUST 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "OCTOBER 2007" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -54,10 +54,7 @@ the
 .IR @SA_DIR@/sa dd
 file, where the dd parameter indicates the current day.
 By default all the data available from the kernel are saved in the
-data file. Exceptions are interrupts and disks data, for which the
-relevant options must be explicitly passed to sar (or to its backend
-.B sadc
-) when the data file is created (see options below).
+data file.
 
 The
 .B sar
@@ -236,12 +233,12 @@ interval of time.
 .RE
 .RE
 .IP -c
-Report process creation activity.
+Report task creation activity.
 
 .B proc/s
 .RS
 .RS
-Total number of processes created per second.
+Total number of tasks created per second.
 .RE
 .RE
 .IP -C
@@ -629,17 +626,20 @@ Report queue length and load averages. The following values are displayed:
 .B runq-sz
 .RS
 .RS
-Run queue length (number of processes waiting for run time). 
+Run queue length (number of tasks waiting for run time). 
 .RE
 
 .B plist-sz
 .RS
-Number of processes and threads in the process list.
+Number of tasks in the task list.
 .RE
 
 .B ldavg-1
 .RS
 System load average for the last minute.
+The load average is calculated as the average number of runnable or
+running tasks (R state), and the number of tasks in uninterruptible
+sleep (D state) over the specified interval.
 .RE
 
 .B ldavg-5

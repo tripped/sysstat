@@ -21,10 +21,12 @@
 #define P_A_CPU		0x01
 #define P_A_MEM		0x02
 #define P_A_IO		0x04
+#define P_A_CTXSW	0x08
 
 #define DISPLAY_CPU(m)		(((m) & P_A_CPU) == P_A_CPU)
 #define DISPLAY_MEM(m)		(((m) & P_A_MEM) == P_A_MEM)
 #define DISPLAY_IO(m)		(((m) & P_A_IO) == P_A_IO)
+#define DISPLAY_CTXSW(m)	(((m) & P_A_CTXSW) == P_A_CTXSW)
 
 /* TASK/CHILD */
 #define P_NULL		0x00
@@ -55,9 +57,11 @@
 #define PROC		"/proc"
 #define PROC_PID	"/proc/%u"
 #define PID_STAT	"/proc/%u/stat"
+#define PID_STATUS	"/proc/%u/status"
 #define PID_IO		"/proc/%u/io"
 #define PROC_TASK	"/proc/%u/task"
 #define TASK_STAT	"/proc/%u/task/%u/stat"
+#define TASK_STATUS	"/proc/%u/task/%u/status"
 #define TASK_IO		"/proc/%u/task/%u/io"
 
 #define PRINT_ID_HDR(_timestamp_, _flag_)	do {				\
@@ -66,6 +70,10 @@
    						if (DISPLAY_TID(_flag_))	\
 							printf("       TID");	\
 						} while (0)
+
+#define PRINT_COMM(_psti_)	printf("  %s%s\n",			\
+				      (_psti_->tgid ? "|__" : ""),	\
+				       _psti_->comm)
 
 struct pid_stats {
    unsigned long long read_bytes		__attribute__ ((aligned (8)));
@@ -83,6 +91,8 @@ struct pid_stats {
    unsigned long      cstime			__attribute__ ((packed));
    unsigned long      vsz			__attribute__ ((packed));
    unsigned long      rss			__attribute__ ((packed));
+   unsigned long      nvcsw			__attribute__ ((packed));
+   unsigned long      nivcsw			__attribute__ ((packed));
    /* If pid is null, the process has terminated */
    unsigned int       pid			__attribute__ ((packed));
    /* If tgid is not null, then this PID is in fact a TID */

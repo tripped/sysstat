@@ -5,7 +5,8 @@
 ASK="sh build/Ask.sh"
 
 echo ; echo
-echo This is the Interactive Configuration script...
+echo Welcome to sysstat\'s  Interactive Configuration script!
+echo
 echo This script enables you to set the parameters value used by ./configure.
 echo Please enter the value for the parameters listed below.
 echo Press Return to tell ./configure to use the default value or to try to guess the proper one.
@@ -117,6 +118,14 @@ then
 	CRON_OWNER=`${ASK} 'Crontab owner:' "cron_owner" "cron_owner"`
 	if [ "${CRON_OWNER}" != "" ]; then
 		CRON="${CRON}cron_owner=${CRON_OWNER} "
+	fi
+fi
+
+if [ "${CRON}" != "" ];
+then
+	CRON_INTERVAL=`${ASK} 'Crontab sampling interval (in minutes):' "cron_interval" "cron_interval"`
+	if [ "${CRON_INTERVAL}" != "" ]; then
+		CRON="${CRON}cron_interval=${CRON_INTERVAL} "
 	fi
 fi
 

@@ -45,7 +45,7 @@ MAN_DIR = @mandir@
 endif
 MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
-DOC_DIR = $(PREFIX)/doc/$(PACKAGE)-$(VERSION)
+DOC_DIR = @datadir@/doc/$(PACKAGE)-$(VERSION)
 NLS_DIR = $(PREFIX)/share/locale
 SYSCONFIG_DIR = @SYSCONFIG_DIR@
 
@@ -427,7 +427,7 @@ clean:
 almost-distclean: clean
 	rm -f sa1 sa2 sysstat crontab version.h sysconfig.h
 	rm -f sysstat.sysconfig sysstat.crond sysstat.cron.daily
-	rm -f sysstat.cron.hourly sysstat.crond.sample
+	rm -f sysstat.cron.hourly sysstat.crond.sample sysstat.crond.sample.in
 	rm -f contrib/isag/isag
 	rm -f man/sa1.8 man/sa2.8 man/sadc.8 man/sadf.1 man/sar.1
 	rm -f *.log config.status

@@ -107,6 +107,10 @@ The following people have contributed to 'sysstat' in one way or another:
 	Jeroen Roovers <jer [at] gentoo.org> sent me a patch to fix a rare
 	parallel make issue creating archive libsyscom.a.
 
+	Livio Soares <livio [at] eecg.toronto.edu> sent me a patch to fix
+	a bug where mpstat didn't parse /proc/interrupts correctly when
+	some CPUs had been set offline.
+
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 

@@ -4,7 +4,7 @@ sysstat: System performance tools for the Linux operating system...
 
 The latest version of sysstat can always be found on my web site at:
 
-http://perso.orange.fr/sebastien.godard/
+http://pagesperso-orange.fr/sebastien.godard/
 
 sysstat package is also available at ibiblio's Linux archive
 in the following directory:
@@ -94,7 +94,7 @@ ${PREFIX}/share/locale/ro/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/ru/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/sk/LC_MESSAGES/sysstat.mo
 ${PREFIX}/share/locale/sv/LC_MESSAGES/sysstat.mo
-${PREFIX}/doc/sysstat-x.y.z/*
+${PREFIX}/share/doc/sysstat-x.y.z/*
 /var/log/sa
 ${INIT_DIR}/sysstat
 /etc/sysconfig/sysstat

@@ -1,11 +1,11 @@
 Summary: 	SAR, SADF, MPSTAT, IOSTAT and PIDSTAT for Linux
 Name: 		sysstat
-Version: 	8.0.2
+Version: 	8.0.3
 Release: 	1
 License: 	GPL
 Group: 		Applications/System
 Source0: 	%{name}-%{version}.tar.gz
-URL:		http://perso.orange.fr/sebastien.godard
+URL:		http://pagesperso-orange.fr/sebastien.godard/
 Packager:	Damien Faure <damien-jn.faure@bull.net>
 BuildRoot:	%{_tmppath}/%{name}-%{version}-root-%(id -u -n)
 Requires:	gettext
@@ -61,7 +61,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files 
 %defattr(644,root,root,755)
-%doc %{_prefix}/doc/sysstat-%{version}/*
+%doc %{_datadir}/doc/sysstat-%{version}/*
 %attr(755,root,root) %{_bindir}/*
 %attr(755,root,root) %{_libdir}/sa/*
 %attr(644,root,root) %{_mandir}/man*/*

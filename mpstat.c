@@ -359,6 +359,7 @@ void read_interrupts_stat(int curr)
    static char *line = NULL;
    unsigned long irq = 0;
    unsigned int cpu;
+   int cpu_index[cpu_nr], index = 0;
    char *cp, *next;
 
    for (cpu = 0; cpu < cpu_nr; cpu++) {
@@ -375,6 +376,20 @@ void read_interrupts_stat(int curr)
 	 }
       }
 
+      /*
+       * Parse header line to see which CPUs are online
+       */
+      while (fgets(line, INTERRUPTS_LINE + 11 * cpu_nr, fp) != NULL) {
+	 next = line;
+	 while (((cp = strstr(next, "CPU")) != NULL) && (index < cpu_nr)) {
+	    cpu = strtol(cp + 3, &next, 10);
+	    cpu_index[index++] = cpu;
+	 }
+	 if (index)
+	    /* Header line found */
+	    break;
+      }
+
       while (fgets(line, INTERRUPTS_LINE + 11 * cpu_nr, fp) != NULL) {
 
 	 if (isdigit(line[2])) {
@@ -384,8 +399,8 @@ void read_interrupts_stat(int curr)
 	       continue;
 	    cp++;
 	
-	    for (cpu = 0; cpu < cpu_nr; cpu++) {
-	       st_mp_cpu_i = st_mp_cpu[curr] + cpu + 1;
+	    for (cpu = 0; cpu < index; cpu++) {
+	       st_mp_cpu_i = st_mp_cpu[curr] + cpu_index[cpu] + 1;
 	       irq = strtol(cp, &next, 10);
 	       st_mp_cpu_i->irq += irq;
 	       cp = next;

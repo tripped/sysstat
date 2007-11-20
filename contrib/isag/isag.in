@@ -517,6 +517,7 @@ proc fill_file_menu {} {
 		set files [glob -nocomplain -directory $directory -type f $sar_data_mask ]
 		# add compressed files too
 		set files [concat $files [glob -nocomplain -directory $directory -type f $sar_data_mask.gz ]]
+		set files [concat $files [glob -nocomplain -directory $directory -type f $sar_data_mask.bz2 ]]
 
 		if { 0 == [llength $files] } {
 			continue
@@ -564,6 +565,7 @@ proc fill_file_menu {} {
 			set l [string last "/" $basefile]
 			set label [string range  $basefile  [expr $l + 1] end]
 			set label [string map { .gz "" } $label]
+			set label [string map { .bz2 "" } $label]
 
 			$menudir add command -label "$label" -command "set_file $basefile"
 			set timestamp [file mtime $file]
@@ -589,7 +591,12 @@ proc set_file {name} {
 		set sag_if_archive_uncompressed "$fngr_tmpdir/sa_data"
 		exec zcat "$sar_data_path/$sag_if_archive" > $sag_if_archive_uncompressed
 	} else {
-		set sag_if_archive_uncompressed "$sar_data_path/$sag_if_archive"
+		if { [string range $sag_if_archive $l end] == ".bz2" } {
+			set sag_if_archive_uncompressed "$fngr_tmpdir/sa_data"
+			exec bzcat "$sar_data_path/$sag_if_archive" > $sag_if_archive_uncompressed
+		} else {
+			set sag_if_archive_uncompressed "$sar_data_path/$sag_if_archive"
+		}
 	}		
 
 

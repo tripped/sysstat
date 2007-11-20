@@ -4,7 +4,7 @@
 # Modified by Sebastien Godard (sysstat <at> orange.fr)
 
 # Initialization of $PACKAGE_VERSION and $PACKAGE_NAME variables
-AC_INIT(sysstat, 8.0.2)
+AC_INIT(sysstat, 8.0.3)
 
 # Ensure that a recent enough version of Autoconf is being used
 AC_PREREQ(2.53)
@@ -125,6 +125,7 @@ echo .
 #  compressafter number of days after which datafiles are compressed
 #  man_group     group for man pages
 #  cron_owner    crontab owner
+#  cron_interval crontab sampling interval.
 #
 # Fine tuning the installation directories:
 #  --mandir=DIR           man documentation directory [PREFIX/man]
@@ -412,14 +413,31 @@ if test $INSTALL_CRON = "y"; then
       # " (ignore this line)
       REM_CHOWN=$CHOWN
    fi
+
+   AC_MSG_CHECKING(crontab interval)
+   AC_ARG_VAR([cron_interval],[crontab interval])
+   if test x$cron_interval = x""; then
+      CRON_INTERVAL=10
+   else
+      CRON_INTERVAL=$cron_interval
+   fi
+   AC_MSG_RESULT($CRON_INTERVAL)
+   CRON_INTERVAL_SEC=`expr ${CRON_INTERVAL} \* 60`
+   CRON_COUNT=`expr 60 / ${CRON_INTERVAL}`
 else
    CRON_OWNER="root"
    SU_C_OWNER=""
    QUOTE=""
    REM_CHOWN="# REM_CHOWN"
+   CRON_INTERVAL=10
+   CRON_INTERVAL_SEC=600
+   CRON_COUNT=6
 fi
 AC_SUBST(CRON_OWNER)
 AC_SUBST(SU_C_OWNER)
+AC_SUBST(CRON_INTERVAL)
+AC_SUBST(CRON_INTERVAL_SEC)
+AC_SUBST(CRON_COUNT)
 AC_SUBST(QUOTE)
 AC_SUBST(REM_CHOWN)
 
@@ -455,6 +473,5 @@ echo "
    Configuration directory:	${SYSCONFIG_DIR}
    Compiler:			$CC
    Compiler flags:		$CFLAGS
-
 "
 

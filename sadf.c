@@ -1522,7 +1522,7 @@ void display_xml_header(int *tab)
 {
    printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
    printf("<!DOCTYPE Configure PUBLIC \"DTD v%s sysstat //EN\"\n", XML_DTD_VERSION);
-   printf("\"http://perso.orange.fr/sebastien.godard/sysstat.dtd\">\n");
+   printf("\"http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd\">\n");
 
    xprintf(*tab, "<sysstat>");
    xprintf(++(*tab), "<sysdata-version>%s</sysdata-version>", XML_DTD_VERSION);

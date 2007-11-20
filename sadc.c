@@ -1031,11 +1031,26 @@ void read_interrupts_stat(void)
    static char *line;
    unsigned int irq = 0, cpu;
    struct stats_irq_cpu *p;
+   int cpu_index[cpu_nr], index = 0;
    char *cp, *next;
 
    if ((fp = fopen(INTERRUPTS, "r")) != NULL) {
 
       SREALLOC(line, char, INTERRUPTS_LINE + 11 * cpu_nr);
+
+      /*
+       * Parse header line to see which CPUs are online
+       */
+      while (fgets(line, INTERRUPTS_LINE + 11 * cpu_nr, fp) != NULL) {
+	 next = line;
+	 while (((cp = strstr(next, "CPU")) != NULL) && (index < cpu_nr)) {
+	    cpu = strtol(cp + 3, &next, 10);
+	    cpu_index[index++] = cpu;
+	 }
+	 if (index)
+	    /* Header line found */
+	    break;
+      }
 
       while ((fgets(line, INTERRUPTS_LINE + 11 * cpu_nr, fp) != NULL) &&
 	     (irq < irqcpu_nr)) {
@@ -1049,8 +1064,8 @@ void read_interrupts_stat(void)
 	    p = st_irq_cpu + irq;
 	    p->irq = strtol(line, NULL, 10);
 	
-	    for (cpu = 0; cpu < cpu_nr; cpu++) {
-	       p = st_irq_cpu + cpu * irqcpu_nr + irq;
+	    for (cpu = 0; cpu < index; cpu++) {
+	       p = st_irq_cpu + cpu_index[cpu] * irqcpu_nr + irq;
 	       /*
 		* No need to set (st_irq_cpu + cpu * irqcpu_nr)->irq:
 		* same as st_irq_cpu->irq.

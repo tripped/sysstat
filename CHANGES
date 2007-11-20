@@ -1,5 +1,23 @@
 Changes:
 
+2007/11/19: Version 8.0.3 - Sebastien Godard (sysstat <at> orange.fr)
+	* mpstat and sar didn't parse /proc/interrupts correctly when
+	  some CPUs had been disabled. This is now fixed.
+	* Fixed a bug in pidstat where a confusion between PID and TID
+	  could sometimes happen, resulting in erroneous statistics
+	  values being displayed.
+	* iconfig script updated: Help for --enable-compress-manpg
+	  parameter is now available, help for --enable-install-cron
+	  parameter updated, added parameter cron_interval.
+	* sa2 shell script can now compress sar data files using bzip2.
+	* Makefile updated: Now also remove sysstat.crond.sample.in.
+	  Documentation is installed in $prefix/share/doc/ instead of
+	  $prefix/doc/ directory.
+	* isag updated.
+	* FAQ updated.
+	* CREDITS file updated.
+	* Sysstat's URL updated.
+
 2007/10/26: Version 8.0.2 - Sebastien Godard (sysstat <at> orange.fr)
 	* Option -w added to pidstat. pidstat can now display task
 	  switching activity.

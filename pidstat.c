@@ -272,7 +272,7 @@ void read_proc_stat(int curr)
 
 /*
  ***************************************************************************
- * Read stats from /proc/<pid>/stat
+ * Read stats from /proc/#[/task/##]/stat
  ***************************************************************************
  */
 int read_proc_pid_stat(unsigned int pid, struct pid_stats *pst,
@@ -323,7 +323,7 @@ int read_proc_pid_stat(unsigned int pid, struct pid_stats *pst,
 
 /*
  *****************************************************************************
- * Read stats from /proc/<pid>/status
+ * Read stats from /proc/#[/task/##]/status
  *****************************************************************************
  */
 int read_proc_pid_status(unsigned int pid, struct pid_stats *pst,
@@ -359,7 +359,7 @@ int read_proc_pid_status(unsigned int pid, struct pid_stats *pst,
 
 /*
  ***************************************************************************
- * Read stats from /proc/<pid>/io
+ * Read stats from /proc/#[/task/##]/io
  ***************************************************************************
  */
 int read_proc_pid_io(unsigned int pid, struct pid_stats *pst,
@@ -679,7 +679,8 @@ int get_pid_to_display(int prev, int curr, int p, unsigned int activity,
 	
       do {
 	 *pstj = st_pid_list[prev] + q;
-	 if ((*pstj)->pid == (*psti)->pid)
+	 if (((*pstj)->pid == (*psti)->pid) &&
+	     ((*pstj)->tgid == (*psti)->tgid))
 	    break;
 	 q++;
 	 if (q >= pid_nr)
@@ -687,7 +688,8 @@ int get_pid_to_display(int prev, int curr, int p, unsigned int activity,
       }
       while (q != p);
 
-      if ((*pstj)->pid != (*psti)->pid)
+      if (((*pstj)->pid != (*psti)->pid) ||
+	  ((*pstj)->tgid != (*psti)->tgid))
 	 /* PID not found (no data previously read) */
 	 *pstj = &st_pid_null;
 

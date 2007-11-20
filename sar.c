@@ -654,6 +654,7 @@ void write_stats_core(int prev, int curr, int dis, char *prev_string,
 	    ((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
 
 	 dev_name = NULL;
+
 	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
 	    dev_name = transform_devmapname(sdi->major, sdi->minor);
 	

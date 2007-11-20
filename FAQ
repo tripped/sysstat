@@ -70,6 +70,7 @@ Also tell me what version your kernel is).
 4.1. pidstat -d doesn't report task I/O statistics...
 4.2. The pidstat command complains with the following message:
       "Requested activities not available".
+4.3. pidstat doesn't display statistics for process (task) xyz...
 
 
 1. GENERAL QUESTIONS
@@ -600,6 +601,17 @@ the statistics you have requested. This may happen when you try to display
 statistics for child processes (option -T CHILD) because all options of
 pidstat don't necessarily work for child processes. Read the manual page
 to know which statistics are available for child processes.
+
+~~~
+
+4.3. pidstat doesn't display statistics for process (task) xyz...
+
+This must be because pidstat only displays statistics for active tasks
+by default. If you don't use option -p on the command line, then pidstat
+will display only tasks with non-zero statistics. For example, "pidstat -u"
+will display only tasks that have actually used some CPU resources since
+system startup. You should enter "pidstat -u -p ALL" to make sure that all
+the processes are listed in the report.
 
 --	
 Sebastien Godard (sysstat <at> orange.fr) is the author and the current

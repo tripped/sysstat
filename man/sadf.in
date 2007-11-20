@@ -128,7 +128,7 @@ unless option -t is used, in which case they are displayed
 in local time. The corresponding
 DTD (Document Type Definition) is included in the sysstat source package.
 It is also available at
-.I http://perso.orange.fr/sebastien.godard/sysstat.dtd
+.I http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd
 
 .SH ENVIRONMENT
 The
@@ -176,4 +176,4 @@ Sebastien Godard (sysstat <at> orange.fr)
 .BR sa2 (8),
 .BR isag (1)
 
-.I http://perso.orange.fr/sebastien.godard/
+.I http://pagesperso-orange.fr/sebastien.godard/

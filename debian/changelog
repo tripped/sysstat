@@ -1,3 +1,11 @@
+sysstat (8.0.3-1) unstable; urgency=low
+
+  * New upstream version (stable).
+  * Update upstream URL in debian{copyright,watch,control}.
+  * Make use of the new Homepage field.
+
+ -- Robert Luberda <robert@debian.org>  Tue, 20 Nov 2007 23:24:52 +0100
+
 sysstat (8.0.2-1) unstable; urgency=low
 
   * New upstream version (stable).

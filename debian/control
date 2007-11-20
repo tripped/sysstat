@@ -24,8 +24,7 @@ Description: sar, iostat and mpstat - system performance tools for Linux
  network activity, memory and swap space utilization, CPU
  utilization, kernel activities and TTY statistics, among
  others. Both UP and SMP machines are fully supported.
- .
- Homepage: http://perso.orange.fr/sebastien.godard/
+Homepage: http://pagesperso-orange.fr/sebastien.godard/
 
 Package: isag
 Architecture: all
@@ -35,7 +34,4 @@ Description: Interactive System Activity Grapher for sysstat
  This package includes the isag command, which graphically displays the 
  system activity data stored in a binary data produced by a sar command
  from a sysstat package.
- .
- Homepage: http://perso.orange.fr/sebastien.godard/
- and http://www.volny.cz/linux_monitor/isag/index.html
-
+Homepage: http://pagesperso-orange.fr/sebastien.godard/

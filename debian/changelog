@@ -1,8 +1,9 @@
 sysstat (8.0.3-1) unstable; urgency=low
 
   * New upstream version (stable).
-  * Update upstream URL in debian{copyright,watch,control}.
-  * Make use of the new Homepage field.
+  * Update upstream URL in debian/{copyright,watch,control}.
+  * Switch to the new Homepage field.
+  * Add dependacy on bzip2, used to compress log files.
 
  -- Robert Luberda <robert@debian.org>  Tue, 20 Nov 2007 23:24:52 +0100
 

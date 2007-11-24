@@ -7,7 +7,7 @@ Standards-Version: 3.7.2
 
 Package: sysstat
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ucf (>= 2.003), lsb-base (>= 3.0-6)
+Depends: ${shlibs:Depends}, ${misc:Depends}, ucf (>= 2.003), lsb-base (>= 3.0-6), bzip2
 Recommends: cron
 Suggests: isag
 Conflicts: atsar (<< 1.5-3)

@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
 Build-Depends: debhelper (>= 5.0.7), gettext
-Standards-Version: 3.7.2
+Standards-Version: 3.7.3
 
 Package: sysstat
 Architecture: any

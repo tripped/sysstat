@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: fix.sh,v 1.7 2003-07-02 21:36:37 robert Exp $
+# $Id: fix.sh,v 1.8 2008-01-03 22:30:06 robert Exp $
 
 set -e 
 
@@ -25,12 +25,19 @@ fi
 cd "$dir"
 
 for file in `echo $FFILES`; do
- if grep -q 'l[oi][gb]/sa' "$file" >/dev/null 2>&1 ; then
+ man_re=""
+ # try to fix hyphens in systat's man pages
+ if [ "${file%man/man*}" != "$file" ] && [ "${file%isag*}" = "$file" ]; then
+ 	man_re='2,${:S;s|\([^\\]\)-|\1\\-|g;tS}'
+ fi	
+
+ if [ -n "$man_re" ] || grep -q 'l[oi][gb]/sa' "$file" >/dev/null 2>&1 ; then
 	echo  " + processing file: $dir/$file"
 	mv "$file" _tmp_
 	sed -e 's|usr/lib/sa|usr/lib/sysstat|g' \
 	    -e 's|var/log/sa|var/log/sysstat|g' \
 	    -e 's|usr/local/lib/sa|usr/local/lib/sysstat|g' \
+	    -e "$man_re" \
 		< _tmp_ > "$file"
 	chmod --reference=_tmp_ "$file" 
 	touch -r _tmp_	"$file"

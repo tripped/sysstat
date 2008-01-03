@@ -45,7 +45,7 @@ MAN_DIR = @mandir@
 endif
 MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
-DOC_DIR = @datadir@/doc/$(PACKAGE)-$(VERSION)
+DOC_DIR = @datadir@/doc/$(PACKAGE)
 NLS_DIR = $(PREFIX)/share/locale
 SYSCONFIG_DIR = @SYSCONFIG_DIR@
 

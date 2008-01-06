@@ -33,6 +33,8 @@ The following people have contributed to 'sysstat' in one way or another:
 	    translation.
 	  * John Damm Sørensen <john [at] hovedpuden.dk> for the Danish
 	    translation.
+	  * Bram Schoenmakers <bramschoenmakers [at] kde.nl> for the Dutch
+	    translation.
 
 	Carl-Christian Weber <ccweber [at] itz-koeln.de> helped me to make sar
 	work on SMP machines.
@@ -110,6 +112,9 @@ The following people have contributed to 'sysstat' in one way or another:
 	Livio Soares <livio [at] eecg.toronto.edu> sent me a patch to fix
 	a bug where mpstat didn't parse /proc/interrupts correctly when
 	some CPUs had been set offline.
+
+	Emil Glatz <Emil.Glatz [at] wescoglobal.com> wrote the XML Schema
+	to be used with sadf option -x.
 
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):

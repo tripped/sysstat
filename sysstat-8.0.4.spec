@@ -1,6 +1,6 @@
 Summary: 	SAR, SADF, MPSTAT, IOSTAT and PIDSTAT for Linux
 Name: 		sysstat
-Version: 	8.0.3
+Version: 	8.0.4
 Release: 	1
 License: 	GPL
 Group: 		Applications/System
@@ -50,11 +50,11 @@ install -m 644 sysstat.ioconf $RPM_BUILD_ROOT/etc/sysconfig/sysstat.ioconf
 mkdir -p $RPM_BUILD_ROOT/etc/cron.d
 install -m 644 sysstat.crond.sample $RPM_BUILD_ROOT/etc/cron.d/sysstat
 mkdir -p $RPM_BUILD_ROOT/etc/rc2.d
-cd $RPM_BUILD_ROOT/etc/rc2.d && ln -sf ../init.d/sysstat S03sysstat
+cd $RPM_BUILD_ROOT/etc/rc2.d && ln -sf ../init.d/sysstat S01sysstat
 mkdir -p $RPM_BUILD_ROOT/etc/rc3.d
-cd $RPM_BUILD_ROOT/etc/rc3.d && ln -sf ../init.d/sysstat S03sysstat
+cd $RPM_BUILD_ROOT/etc/rc3.d && ln -sf ../init.d/sysstat S01sysstat
 mkdir -p $RPM_BUILD_ROOT/etc/rc5.d
-cd $RPM_BUILD_ROOT/etc/rc5.d && ln -sf ../init.d/sysstat S03sysstat
+cd $RPM_BUILD_ROOT/etc/rc5.d && ln -sf ../init.d/sysstat S01sysstat
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -70,8 +70,8 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) /etc/rc.d/init.d/sysstat
 %attr(644,root,root) /etc/sysconfig/sysstat
 %attr(644,root,root) /etc/sysconfig/sysstat.ioconf
-%attr(755,root,root) /etc/rc2.d/S03sysstat
-%attr(755,root,root) /etc/rc3.d/S03sysstat
-%attr(755,root,root) /etc/rc5.d/S03sysstat
+%attr(755,root,root) /etc/rc2.d/S01sysstat
+%attr(755,root,root) /etc/rc3.d/S01sysstat
+%attr(755,root,root) /etc/rc5.d/S01sysstat
 %config(noreplace) %attr(0644,root,root) /etc/cron.d/sysstat
 

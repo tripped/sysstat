@@ -1,5 +1,24 @@
 Changes:
 
+2008/01/06: Version 8.0.4 - Sebastien Godard (sysstat <at> orange.fr)
+	* Removed a 'packed' attribute in pidstat.h that generated
+	  a warning with gcc 4.1.1.
+	* Take account of all memory zone types when calculating
+	  pgscank, pgscand and pgsteal displayed by sar -B.
+	* XML Schema added. Useful with sadf option -x.
+	* sadc and sadf manual pages updated.
+	* NLS updated: Dutch translation added.
+	* NLS updated: Brazilian Portuguese translation added.
+	* NLS updated: Vietnamese translation added.
+	* NLS updated: Kirghiz translation added.
+	* NLS updated: Added a PO template file in nls directory.
+	  Makefile modified to enable PO files update.
+	* sccsid string now also includes package name and version number.
+	* Makefile updated: Startup links are named S01xxx instead of S03xxx
+	  to be consistent with chkconfig values.
+	* Various spelling fixes.
+	* CREDITS file updated.
+
 2007/11/19: Version 8.0.3 - Sebastien Godard (sysstat <at> orange.fr)
 	* mpstat and sar didn't parse /proc/interrupts correctly when
 	  some CPUs had been disabled. This is now fixed.

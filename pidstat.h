@@ -102,7 +102,7 @@ struct pid_stats {
    unsigned int       uc_asum_count		__attribute__ ((packed));
    unsigned int       processor			__attribute__ ((packed));
    unsigned int       flags			__attribute__ ((packed));
-   char               comm[MAX_COMM_LEN]	__attribute__ ((packed));
+   char               comm[MAX_COMM_LEN];
 };
 
 #define PID_STATS_SIZE	(sizeof(struct pid_stats))

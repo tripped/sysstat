@@ -26,6 +26,7 @@
 #include <time.h>
 #include <errno.h>
 
+#include "version.h"
 #include "sa.h"
 #include "common.h"
 #include "ioconf.h"
@@ -39,7 +40,7 @@
 #define _(string) (string)
 #endif
 
-#define SCCSID "@(#)" __FILE__ " compiled " __DATE__ " " __TIME__
+#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
 char *sccsid(void) { return (SCCSID); }
 
 long interval = -1, count = 0;

@@ -4,7 +4,7 @@
 # Modified by Sebastien Godard (sysstat <at> orange.fr)
 
 # Initialization of $PACKAGE_VERSION and $PACKAGE_NAME variables
-AC_INIT(sysstat, 8.0.3)
+AC_INIT(sysstat, 8.0.4)
 
 # Ensure that a recent enough version of Autoconf is being used
 AC_PREREQ(2.53)
@@ -49,6 +49,8 @@ AC_CHECK_PROG(CHOWN, chown, chown)
 AC_CHECK_PROG(AR, ar, ar)
 AC_CHECK_PROG(INSTALL, install, install)
 AC_CHECK_PROG(MSGFMT, msgfmt, msgfmt)
+AC_CHECK_PROG(XGETTEXT, xgettext, xgettext)
+AC_CHECK_PROG(MSGMERGE, msgmerge, msgmerge)
 AC_CHECK_PROGS(ZIP, bzip2 gzip, gzip, /bin /etc /sbin /usr/bin /usr/etc /usr/sbin /usr/ucb /usr/local/bin /usr/local/etc /usr/local/sbin)
 INSTALL_DATA="\${INSTALL} -m 644"
 AC_SUBST(INSTALL_DATA)
@@ -209,6 +211,12 @@ AC_MSG_RESULT($AUX_NLS)
 AC_SUBST(NLS)
 if test $AUX_NLS = "yes" &&  test x$MSGFMT != x"msgfmt"; then 
    echo "WARNING: msgfmt command not found!"
+fi
+if test $AUX_NLS = "yes" &&  test x$XGETTEXT != x"xgettext"; then 
+   echo "WARNING: xgettext command not found!"
+fi
+if test $AUX_NLS = "yes" &&  test x$MSGMERGE != x"msgmerge"; then 
+   echo "WARNING: msgmerge command not found!"
 fi
 
 # Linux SMP race workaround

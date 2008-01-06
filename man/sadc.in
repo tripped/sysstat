@@ -71,6 +71,8 @@ and
 parameters are not specified, tell sadc to write a dummy record containing
 a comment specified by the string
 .IR comment .
+This comment can then be displayed with option -C of
+.BR sar .
 .IP -d
 Tell
 .B sadc

@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
+#include "version.h"
 #include "iostat.h"
 #include "common.h"
 #include "ioconf.h"
@@ -45,7 +46,7 @@
 #define _(string) (string)
 #endif
 
-#define SCCSID "@(#)" __FILE__ " compiled " __DATE__ " " __TIME__
+#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
 char *sccsid(void) { return (SCCSID); }
 
 struct comm_stats  comm_stats[2];
@@ -120,7 +121,7 @@ void set_entries_inactive(int ioln_nr, struct io_hdr_stats *st_hdr_ioln)
 
 /*
  ***************************************************************************
- * Set structures's state to free for inactive entries
+ * Set structures' state to free for inactive entries
  ***************************************************************************
  */
 void free_inactive_entries(int ioln_nr, struct io_hdr_stats *st_hdr_ioln)

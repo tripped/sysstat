@@ -126,9 +126,11 @@ file contents will be displayed.
 Timestamps are displayed in UTC (Coordinated Universal Time)
 unless option -t is used, in which case they are displayed
 in local time. The corresponding
-DTD (Document Type Definition) is included in the sysstat source package.
-It is also available at
+DTD (Document Type Definition) and XML Schema are included in the sysstat
+source package. They are also available at
 .I http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd
+and
+.I http://pagesperso-orange.fr/sebastien.godard/sysstat.xsd
 
 .SH ENVIRONMENT
 The

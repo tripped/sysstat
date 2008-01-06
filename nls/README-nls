@@ -8,32 +8,19 @@ display the dates or the numbers for example.
 
 HOW I ENABLE NLS WITH SYSSTAT?
 ------------------------------
-That's easy: Answer 'y' (for 'yes') to the question:
-"Enable National Language Support (NLS)? [y]"
-during configuration stage ('make config').
-Beginning with sysstat release 3.2.2, NLS is now enabled by default.
+NLS is enabled by default when you configure sysstat (running "./configure").
+But you can disable it if you want: Use option "--disable-nls" with
+configure or answer 'y' (for 'yes') to the question:
+"Disable National Language Support (NLS)? (y/n) [--disable-nls]"
+if you use the interactive configuration script (iconfig).
 
 
 OK, BUT HOW DO I USE IT NOW?
 ------------------------------
 You have to set your LANG environment variable to the proper value.
-E.g.:
-	South Africa: af_ZA
-	Denmark: da_DK
-	Germany: de_DE
-	Spain: es_ES
-	France: fr_FR
-	Italy: it_IT
-	Japan: ja_JP
-	Norway: nb_NO or nn_NO
-	Poland: pl_PL
-	Brazil: pt_BR
-	Romania: ro_RO
-	Russia: ru_RU
-	Slovakia: sk_SK
-	Sweden: sv_SE
+E.g. in France, you may want to set it to "fr_FR" although other
+possibilities exist.
 
-although other possibilities exist.
 If you use bash and you want to configure your system for a french environment,
 enter:
 
@@ -68,18 +55,13 @@ Options possibles:
 
 HOW CAN I ADD A NEW LANGUAGE TO SYSSTAT?
 ----------------------------------------
-At the present time, sysstat is translated into English, French, German,
-Spanish, Portuguese, Afrikaans, Norwegian, Italian, Russian, Romanian,
-Polish, Slovak, Japanese, Swedish and Danish.
-To add another language, copy an existing Portable Object file (LANG.po) in
-one of your directories (you can copy the file named fr.po for instance).
-Update the header of that file to give your name and email address.
-Then you have to translate all the messages quoted in the lines beginning
-with the 'msgid' token...
-Last, mail me this file for inclusion in the next release of sysstat!
-
-For more information, read the documentation coming with the GNU 'gettext'
-package (enter 'info gettext').
+At the present time, sysstat is already translated into several languages.
+To add another language, use the Portable Object template file
+named sysstat.pot located in the nls directory.
+Fill it and send it to the Translation Project robot so that your
+translation can be included in next sysstat release.
+Please visit the Translation Project web site at:
+http://translationproject.org/
 
 --
 Sebastien Godard (sysstat <at> orange.fr)

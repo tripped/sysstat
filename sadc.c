@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 #include <sys/utsname.h>
 
+#include "version.h"
 #include "sa.h"
 #include "common.h"
 #include "ioconf.h"
@@ -46,7 +47,7 @@
 #define _(string) (string)
 #endif
 
-#define SCCSID "@(#)" __FILE__ " compiled " __DATE__ " " __TIME__
+#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
 char *sccsid(void) { return (SCCSID); }
 
 /* Nb of processors on the machine */
@@ -256,7 +257,7 @@ void sa_sys_init(unsigned int *flags)
    /*
     * Get number of devices in /proc/{diskstats,partitions}
     * or number of disk_io entries in /proc/stat.
-    * Alwyays done, since disk stats must be read at least for sar -b
+    * Always done, since disk stats must be read at least for sar -b
     * if not for sar -d.
     */
    if ((disk_nr = get_diskstats_dev_nr(CNT_DEV, CNT_USED_DEV)) > 0) {
@@ -639,7 +640,7 @@ void read_proc_stat(unsigned int flags)
 
 	 /*
 	  * Time spent in system mode also includes time spent
-	  * servicing hard interrrupts and softirqs.
+	  * servicing hard interrupts and softirqs.
 	  */
 	 file_stats.cpu_system += cc_hardirq + cc_softirq;
 	
@@ -915,45 +916,21 @@ void read_proc_vmstat(void)
 	 /* Read number of pages freed by the system */
 	 sscanf(line + 6, "%lu", &(file_stats.pgfree));
 
-      else if (!strncmp(line, "pgsteal_high", 12)) {
+      else if (!strncmp(line, "pgsteal_", 8)) {
 	 /* Read number of pages stolen by the system */
-	 sscanf(line + 12, "%lu", &pgtmp);
-	 file_stats.pgsteal += pgtmp;
-      }
-      else if (!strncmp(line, "pgsteal_normal", 14)) {
-	 sscanf(line + 14, "%lu", &pgtmp);
-	 file_stats.pgsteal += pgtmp;
-      }
-      else if (!strncmp(line, "pgsteal_dma", 11)) {
-	 sscanf(line + 11, "%lu", &pgtmp);
+	 sscanf(strchr(line, ' '), "%lu", &pgtmp);
 	 file_stats.pgsteal += pgtmp;
       }
 
-      else if (!strncmp(line, "pgscan_kswapd_high", 18)) {
+      else if (!strncmp(line, "pgscan_kswapd_", 14)) {
 	 /* Read number of pages scanned by the kswapd daemon */
-	 sscanf(line + 18, "%lu", &pgtmp);
-	 file_stats.pgscan_kswapd += pgtmp;
-      }
-      else if (!strncmp(line, "pgscan_kswapd_normal", 20)) {
-	 sscanf(line + 20, "%lu", &pgtmp);
-	 file_stats.pgscan_kswapd += pgtmp;
-      }
-      else if (!strncmp(line, "pgscan_kswapd_dma", 17)) {
-	 sscanf(line + 17, "%lu", &pgtmp);
+	 sscanf(strchr(line, ' '), "%lu", &pgtmp);
 	 file_stats.pgscan_kswapd += pgtmp;
       }
 
-      else if (!strncmp(line, "pgscan_direct_high", 18)) {
+      else if (!strncmp(line, "pgscan_direct_", 14)) {
 	 /* Read number of pages scanned directly */
-	 sscanf(line + 18, "%lu", &pgtmp);
-	 file_stats.pgscan_direct += pgtmp;
-      }
-      else if (!strncmp(line, "pgscan_direct_normal", 20)) {
-	 sscanf(line + 20, "%lu", &pgtmp);
-	 file_stats.pgscan_direct += pgtmp;
-      }
-      else if (!strncmp(line, "pgscan_direct_dma", 17)) {
-	 sscanf(line + 17, "%lu", &pgtmp);
+	 sscanf(strchr(line, ' '), "%lu", &pgtmp);
 	 file_stats.pgscan_direct += pgtmp;
       }
    }

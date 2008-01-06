@@ -5,7 +5,7 @@
 # (C) 2000-2007 Sebastien Godard (sysstat <at> orange.fr)
 #
 # Description: Reset the system activity logs
-#@(#) sysstat startup script:
+#@(#) @PACKAGE_NAME@-@PACKAGE_VERSION@ startup script:
 #@(#)	 Insert a dummy record in current daily data file.
 #@(#)	 This indicates that the counters have restarted from 0.
 #

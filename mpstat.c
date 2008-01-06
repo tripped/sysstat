@@ -29,6 +29,7 @@
 #include <ctype.h>
 #include <sys/utsname.h>
 
+#include "version.h"
 #include "mpstat.h"
 #include "common.h"
 
@@ -41,7 +42,7 @@
 #define _(string) (string)
 #endif
 
-#define SCCSID "@(#)" __FILE__ " compiled " __DATE__ " " __TIME__
+#define SCCSID "@(#)sysstat-" VERSION ": "  __FILE__ " compiled " __DATE__ " " __TIME__
 char *sccsid(void) { return (SCCSID); }
 
 unsigned long long uptime[3] = {0, 0, 0};

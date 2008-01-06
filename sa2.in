@@ -2,6 +2,7 @@
 # @SA_LIB_DIR@/sa2
 # (C) 1999-2007 Sebastien Godard (sysstat <at> orange.fr)
 #
+#@(#) @PACKAGE_NAME@-@PACKAGE_VERSION@
 #@(#) sa2: Write a daily report
 #
 S_TIME_FORMAT=ISO ; export S_TIME_FORMAT

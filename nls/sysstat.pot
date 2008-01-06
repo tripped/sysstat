@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2008-01-01 10:37+0100\n"
+"POT-Creation-Date: 2008-01-06 15:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,7 +22,7 @@ msgid "sysstat version %s\n"
 msgstr ""
 
 #: common.c:160 common.c:385 ioconf.c:459 mpstat.c:265 sa_common.c:601
-#: sadc.c:476 sadc.c:485 sadc.c:530 sadc.c:620
+#: sadc.c:476 sadc.c:485 sadc.c:530 sadc.c:621
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr ""

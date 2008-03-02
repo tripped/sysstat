@@ -9,7 +9,8 @@ Author of isag script: D. Doubrava <linux_monitor<at>volny.cz>
 Isag is distributed with sysstat's sources, but it can also be found on
 http://www.volny.cz/linux_monitor/isag/index.html
 
-Copyright:
- Sysstat is distributed under the GNU General Public License, Version 2.
- On Debian GNU/Linux systems you can find a copy of the GNU General
- Public License in the file /usr/share/common-licenses/GPL
+Copyright 1998-2007 by Sebastien GODARD (sysstat <at> orange.fr)
+
+Sysstat is distributed under the GNU General Public License, Version 2.
+On Debian GNU/Linux systems you can find a copy of the GNU General
+Public License in the file /usr/share/common-licenses/GPL

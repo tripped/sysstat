@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules,v 1.14 2008-01-03 22:30:06 robert Exp $
+# $Id: rules,v 1.15 2008-03-02 14:40:30 robert Exp $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -11,6 +11,8 @@
 
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
+
+export DH_ALWAYS_EXCLUDE=CVS:.svn
 
 
 DESTDIR=$(CURDIR)/debian/tmp

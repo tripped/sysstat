@@ -76,33 +76,33 @@
 				       _psti_->comm)
 
 struct pid_stats {
-   unsigned long long read_bytes		__attribute__ ((aligned (8)));
-   unsigned long long write_bytes		__attribute__ ((packed));
-   unsigned long long cancelled_write_bytes	__attribute__ ((packed));
-   unsigned long long total_vsz			__attribute__ ((packed));
-   unsigned long long total_rss			__attribute__ ((packed));
-   unsigned long      minflt			__attribute__ ((packed));
-   unsigned long      cminflt			__attribute__ ((packed));
-   unsigned long      majflt			__attribute__ ((packed));
-   unsigned long      cmajflt			__attribute__ ((packed));
-   unsigned long      utime			__attribute__ ((packed));
-   unsigned long      cutime			__attribute__ ((packed));
-   unsigned long      stime			__attribute__ ((packed));
-   unsigned long      cstime			__attribute__ ((packed));
-   unsigned long      vsz			__attribute__ ((packed));
-   unsigned long      rss			__attribute__ ((packed));
-   unsigned long      nvcsw			__attribute__ ((packed));
-   unsigned long      nivcsw			__attribute__ ((packed));
-   /* If pid is null, the process has terminated */
-   unsigned int       pid			__attribute__ ((packed));
-   /* If tgid is not null, then this PID is in fact a TID */
-   unsigned int       tgid			__attribute__ ((packed));
-   unsigned int       rt_asum_count		__attribute__ ((packed));
-   unsigned int       rc_asum_count		__attribute__ ((packed));
-   unsigned int       uc_asum_count		__attribute__ ((packed));
-   unsigned int       processor			__attribute__ ((packed));
-   unsigned int       flags			__attribute__ ((packed));
-   char               comm[MAX_COMM_LEN];
+	unsigned long long read_bytes			__attribute__ ((aligned (8)));
+	unsigned long long write_bytes			__attribute__ ((packed));
+	unsigned long long cancelled_write_bytes	__attribute__ ((packed));
+	unsigned long long total_vsz			__attribute__ ((packed));
+	unsigned long long total_rss			__attribute__ ((packed));
+	unsigned long      minflt			__attribute__ ((packed));
+	unsigned long      cminflt			__attribute__ ((packed));
+	unsigned long      majflt			__attribute__ ((packed));
+	unsigned long      cmajflt			__attribute__ ((packed));
+	unsigned long      utime			__attribute__ ((packed));
+	unsigned long      cutime			__attribute__ ((packed));
+	unsigned long      stime			__attribute__ ((packed));
+	unsigned long      cstime			__attribute__ ((packed));
+	unsigned long      vsz				__attribute__ ((packed));
+	unsigned long      rss				__attribute__ ((packed));
+	unsigned long      nvcsw			__attribute__ ((packed));
+	unsigned long      nivcsw			__attribute__ ((packed));
+	/* If pid is null, the process has terminated */
+	unsigned int       pid				__attribute__ ((packed));
+	/* If tgid is not null, then this PID is in fact a TID */
+	unsigned int       tgid				__attribute__ ((packed));
+	unsigned int       rt_asum_count		__attribute__ ((packed));
+	unsigned int       rc_asum_count		__attribute__ ((packed));
+	unsigned int       uc_asum_count		__attribute__ ((packed));
+	unsigned int       processor			__attribute__ ((packed));
+	unsigned int       flags			__attribute__ ((packed));
+	char               comm[MAX_COMM_LEN];
 };
 
 #define PID_STATS_SIZE	(sizeof(struct pid_stats))

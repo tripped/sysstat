@@ -15,7 +15,7 @@
 #define DNOVAL     0.0		/* Wilma!  */
 
 /* DTD version for XML output */
-#define XML_DTD_VERSION	"1.5"
+#define XML_DTD_VERSION	"1.6"
 
 static char *seps[] =  {"\t", ";"};
 
@@ -27,11 +27,11 @@ static char *seps[] =  {"\t", ";"};
 typedef enum e_tcons {iv, sv} tcons; /* Types of conses */
 
 typedef struct {
-   tcons t;			/* Type in {iv,sv} */
-   union {
-      unsigned long int i;
-      char *s;
-   } a, b;			/* Value pair, either ints or char *s */
+	tcons t;		/* Type in {iv,sv} */
+	union {
+		unsigned long int i;
+		char *s;
+	} a, b;			/* Value pair, either ints or char *s */
 } Cons;
 
 #endif  /* _SADF_H */

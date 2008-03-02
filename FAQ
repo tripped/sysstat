@@ -20,7 +20,7 @@ Also tell me what version your kernel is).
 2.1. The sar command complains with the following message:
      "Invalid system activity file: ...".
 2.2. The sar command complains with the following message:
-     "Cannot append data to that file".
+     "Cannot append data to that file (...)".
 2.3. The sar command complains with the following message:
      "Invalid data format".
 2.4. I get the following error message when I try to run sar:
@@ -40,7 +40,7 @@ Also tell me what version your kernel is).
       "flock: Resource temporarily unavailable".
 2.13. How should I run sysstat / sar so that I get a reading for 00:00:00?
 2.14. The sar command complains with the following message:
-      "Requested activities not available in file".
+      "Requested activities not available in file ...".
 2.15. Does sar need a lot of resources to run?
 2.16. Are the measurements gathered by sadc cumulative or instantaneous?
 2.17. Some fields are always displayed as 0.00 when I use the sar -d
@@ -157,18 +157,19 @@ locale.
 2.1. The sar command complains with the following message:
 Invalid system activity file: ...
 
-The format of the daily data files created by the sar command you are
-now using is not compatible with the format of the files created by a
-previous version of sar.
-The solution is easy: just log in as root and remove by hand all the files
-located in the /var/log/sa directory:
+You are trying to use a file which is not a system activity file, or
+whose format is no longer compatible with that of files created by
+current version of sar.
+If you were trying to use the standard system activity files located in the
+/var/log/sa directory then the solution is easy: just log in as root and
+remove by hand all the files located in the /var/log/sa directory:
 
 # rm /var/log/sa/sa??
 
 ~~~
 
 2.2. The sar command complains with the following message:
-Cannot append data to that file
+Cannot append data to that file (...)
 
 The internal structure of the data file does not allow sar to append
 data to it. The data file may come from another machine, or the components
@@ -373,7 +374,7 @@ Another possible crontab would be:
 ~~~
 
 2.14. The sar command complains with the following message:
-Requested activities not available in file
+Requested activities not available in file ...
 
 This error message means that you are trying to extract non-existent activities
 from the data file. Usually sadc reads all the available activities from the

@@ -33,13 +33,12 @@
 #include "common.h"
 #include "ioconf.h"
 
-
 #ifdef USE_NLS
-#include <locale.h>
-#include <libintl.h>
-#define _(string) gettext(string)
+# include <locale.h>
+# include <libintl.h>
+# define _(string) gettext(string)
 #else
-#define _(string) (string)
+# define _(string) (string)
 #endif
 
 #define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
@@ -71,52 +70,63 @@ char *args[MAX_ARGV_NR];
 /*
  ***************************************************************************
  * Print usage and exit
+ *
+ * IN:
+ * @progname	Name of sysstat command.
  ***************************************************************************
  */
 void usage(char *progname)
 {
-   fprintf(stderr, _("Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
-	           "Options are:\n"
-	           "[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
-		   "[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-		   "[ -- <sar_options...> ]\n"),
-	   progname);
-   exit(1);
-}
+	fprintf(stderr, "%s %s [ %s ] [ <%s> [ <%s> ] ] [ <%s> ]\n",
+		_("Usage:"), progname, _("options..."), _("interval"),
+		_("count"), _("datafile"));
 
+	fprintf(stderr, _("Options are:\n"));
+
+	fprintf(stderr, "[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
+		"[ -P { <%s> | ALL } ] [ -s [ <%s> ] ] [ -e [ <%s> ] ]\n"
+		"[ -- <%s> ]\n",
+		_("cpu"), _("hh:mm:ss"), _("hh:mm:ss"), _("sar_options..."));
+	exit(1);
+}
 
 /*
  ***************************************************************************
  * Print tabulations
+ *
+ * IN:
+ * @nr_tab	Number of tabs to print.
  ***************************************************************************
  */
 void prtab(int nr_tab)
 {
-   int i;
+	int i;
 
-   for (i = 0; i < nr_tab; i++)
-     printf("\t");
+	for (i = 0; i < nr_tab; i++)
+		printf("\t");
 }
-
 
 /*
  ***************************************************************************
  * printf() function modified for XML display
+ *
+ * IN:
+ * @nr_tab	Number of tabs to print.
+ * @fmt		printf() format.
  ***************************************************************************
  */
 void xprintf(int nr_tab, const char *fmt, ...)
 {
-   static char buf[1024];
-   va_list args;
+	static char buf[1024];
+	va_list args;
 
-   va_start(args, fmt);
-   vsnprintf(buf, sizeof(buf), fmt, args);
-   va_end(args);
+	va_start(args, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
 
-   prtab(nr_tab);
-   printf("%s\n", buf);
+	prtab(nr_tab);
+	printf("%s\n", buf);
 }
-
 
 /*
  ***************************************************************************
@@ -124,44 +134,52 @@ void xprintf(int nr_tab, const char *fmt, ...)
  * NB: Option -t is ignored when option -p is used, since option -p
  * displays its timestamp as a long integer. This is type 'time_t',
  * which is the number of seconds since 1970 _always_ expressed in UTC.
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
  ***************************************************************************
 */
 void set_rectime(int curr)
 {
-   struct tm *ltm;
+	struct tm *ltm;
 
-   ltm = localtime((const time_t *) &file_stats[curr].ust_time);
-   loctime = *ltm;
+	ltm = localtime((const time_t *) &file_stats[curr].ust_time);
+	loctime = *ltm;
 
-   if (!PRINT_TRUE_TIME(flags) ||
-       ((format != S_O_DB_OPTION) && (format != S_O_XML_OPTION)))
-      /* Option -t is valid only with options -d and -x */
-      ltm = gmtime((const time_t *) &file_stats[curr].ust_time);
+	if (!PRINT_TRUE_TIME(flags) ||
+	    ((format != S_O_DB_OPTION) && (format != S_O_XML_OPTION)))
+		/* Option -t is valid only with options -d and -x */
+		ltm = gmtime((const time_t *) &file_stats[curr].ust_time);
 
-   rectime = *ltm;
+	rectime = *ltm;
 }
-
 
 /*
  ***************************************************************************
  * Set timestamp string
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @len		Maximum length of timestamp string.
+ *
+ * OUT:
+ * @cur_time	Timestamp string.
  ***************************************************************************
 */
 void set_timestamp(int curr, char *cur_time, int len)
 {
-   set_rectime(curr);
-	
-   /* Set cur_time date value */
-   if (format == S_O_DB_OPTION) {
-      if (PRINT_TRUE_TIME(flags))
-	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S", &rectime);
-      else
-	 strftime(cur_time, len, "%Y-%m-%d %H:%M:%S UTC", &rectime);
-   }
-   else if ((format == S_O_PPC_OPTION) || (format == S_O_DBD_OPTION))
-      sprintf(cur_time, "%ld", file_stats[curr].ust_time);
-}
+	set_rectime(curr);
 
+	/* Set cur_time date value */
+	if (format == S_O_DB_OPTION) {
+		if (PRINT_TRUE_TIME(flags))
+			strftime(cur_time, len, "%Y-%m-%d %H:%M:%S", &rectime);
+		else
+			strftime(cur_time, len, "%Y-%m-%d %H:%M:%S UTC", &rectime);
+	}
+	else if ((format == S_O_PPC_OPTION) || (format == S_O_DBD_OPTION))
+		sprintf(cur_time, "%ld", file_stats[curr].ust_time);
+}
 
 /*
  ***************************************************************************
@@ -186,24 +204,23 @@ void set_timestamp(int curr, char *cur_time, int len)
  */
 static Cons *cons(tcons t, ...)
 {
-   va_list ap;
-   static Cons c;
+	va_list ap;
+	static Cons c;
 
-   c.t = t;
+	c.t = t;
 
-   va_start(ap, t);
-   if (t == iv) {
-      c.a.i = va_arg(ap, unsigned long int);
-      c.b.i = va_arg(ap, unsigned long int);
-   }
-   else {
-      c.a.s = va_arg(ap, char *);
-      c.b.s = va_arg(ap, char *);
-   }
-   va_end(ap);
-   return(&c);
+	va_start(ap, t);
+	if (t == iv) {
+		c.a.i = va_arg(ap, unsigned long int);
+		c.b.i = va_arg(ap, unsigned long int);
+	}
+	else {
+		c.a.s = va_arg(ap, char *);
+		c.b.s = va_arg(ap, char *);
+	}
+	va_end(ap);
+	return(&c);
 }
-
 
 /*
  ***************************************************************************
@@ -228,1311 +245,1574 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
 		   const char *dbtxt, Cons *mid, unsigned long int luval,
 		   double dval)
 {
-   static int newline = 1;
-   const char *txt[]  = {pptxt, dbtxt};
-   char *sep;
+	static int newline = 1;
+	const char *txt[]  = {pptxt, dbtxt};
+	char *sep;
 
-   /* Start a new line? */
-   if (newline)
-      printf("%s%s", pre, seps[isdb]);
+	/* Start a new line? */
+	if (newline)
+		printf("%s%s", pre, seps[isdb]);
 
-   /* Terminate this one ? ppc always gets a newline */
-   newline = ((rflags & PT_NEWLIN) || !isdb);
+	/* Terminate this one ? ppc always gets a newline */
+	newline = ((rflags & PT_NEWLIN) || !isdb);
 
-   if (txt[isdb]) {		/* pp/dbtxt? */
+	if (txt[isdb]) {
+		/* pp/dbtxt? */
 
-      if (mid) {		/* Got format args? */
-	 switch(mid->t) {
-	  case iv:
-	    printf(txt[isdb], mid->a.i, mid->b.i);
-	    break;
-	  case sv:
-	    printf(txt[isdb], mid->a.s, mid->b.s);
-	    break;
-	 }
-      }
-      else {
-	 printf(txt[isdb]);	/* No args */
-      }
-      printf("%s", seps[isdb]);	/* Only if something actually got printed */
-   }
+		if (mid) {
+			/* Got format args? */
+			switch(mid->t) {
+			case iv:
+				printf(txt[isdb], mid->a.i, mid->b.i);
+				break;
+			case sv:
+				printf(txt[isdb], mid->a.s, mid->b.s);
+				break;
+			}
+		}
+		else {
+			printf(txt[isdb]);	/* No args */
+		}
+		printf("%s", seps[isdb]);	/* Only if something actually got printed */
+	}
 
-   sep = (newline) ? "\n" : seps[isdb]; /* How does this rendering end? */
+	sep = (newline) ? "\n" : seps[isdb]; /* How does this rendering end? */
 
-   if (rflags & PT_USEINT) {
-      printf("%lu%s", luval, sep);
-   }
-   else {
-      printf("%.2f%s", dval, sep);
-   }
+	if (rflags & PT_USEINT) {
+		printf("%lu%s", luval, sep);
+	}
+	else {
+		printf("%.2f%s", dval, sep);
+	}
 }
 
+/*
+ ***************************************************************************
+ * Display per CPU statistics in selected format
+ *
+ * IN:
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ ***************************************************************************
+*/
+void render_per_cpu_stats(int isdb, char *pre, int curr)
+{
+
+	int i;
+	unsigned long long pc_itv;
+	struct stats_one_cpu
+		*sci = st_cpu[curr],
+		*scj = st_cpu[!curr];
+
+	for (i = 0; i < file_hdr.sa_proc; i++, sci++, scj++) {
+		if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
+
+			/* Recalculate itv for current proc */
+			pc_itv = get_per_cpu_interval(sci, scj);
+
+			render(isdb, pre, PT_NOFLAG,
+			       "cpu%d\t%%user",		/* ppc text with formatting */
+			       "%d",			/* db text with format char */
+			       cons(iv, i, NOVAL),	/* how we pass format args */
+			       NOVAL,
+			       !pc_itv ?
+			       0.0 :			/* CPU is offline */
+			       ll_sp_value(scj->per_cpu_user, sci->per_cpu_user,
+					   pc_itv));
+
+			render(isdb, pre, PT_NOFLAG,
+			       "cpu%d\t%%nice", NULL, cons(iv, i, NOVAL),
+			       NOVAL,
+			       !pc_itv ?
+			       0.0 :
+			       ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice,
+					   pc_itv));
+
+			render(isdb, pre, PT_NOFLAG,
+			       "cpu%d\t%%system", NULL, cons(iv, i, NOVAL),
+			       NOVAL,
+			       !pc_itv ?
+			       0.0 :
+			       ll_sp_value(scj->per_cpu_system, sci->per_cpu_system,
+					   pc_itv));
+
+			render(isdb, pre, PT_NOFLAG,
+			       "cpu%d\t%%iowait", NULL, cons(iv, i, NOVAL),
+			       NOVAL,
+			       !pc_itv ?
+			       0.0 :
+			       ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait,
+					   pc_itv));
+
+			render(isdb, pre, PT_NOFLAG,
+			       "cpu%d\t%%steal", NULL, cons(iv, i, NOVAL),
+			       NOVAL,
+			       !pc_itv ?
+			       0.0 :
+			       ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal,
+					   pc_itv));
+
+			if (!pc_itv)
+				/* CPU is offline */
+				render(isdb, pre, PT_NEWLIN,
+				       "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
+				       NOVAL,
+				       0.0);
+			else
+				render(isdb, pre, PT_NEWLIN,
+				       "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
+				       NOVAL,
+				       (sci->per_cpu_idle < scj->per_cpu_idle) ?
+				       0.0 :
+				       ll_sp_value(scj->per_cpu_idle, sci->per_cpu_idle,
+						   pc_itv));
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display per interrupts statistics in selected format
+ *
+ * IN:
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void render_per_irq_stats(int isdb, char *pre, int curr, unsigned long long itv)
+{
+	int i;
+
+	for (i = 0; i < NR_IRQS; i++) {
+		if (irq_bitmap[i >> 3] & (1 << (i & 0x07))) {
+			render(isdb, pre, PT_NEWLIN,
+			       "i%03d\tintr/s", "%d", cons(iv, i, NOVAL),
+			       NOVAL,
+			       S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display serial lines statistics in selected format
+ *
+ * IN:
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void render_serial_stats(int isdb, char *pre, int curr, unsigned long long itv)
+{
+	int i;
+	struct stats_serial
+		*ssi = st_serial[curr],
+		*ssj = st_serial[!curr];
+
+	for (i = 0; i++ < file_hdr.sa_serial; ssi++, ssj++) {
+
+		if (ssi->line == ~0)
+			continue;
+
+		if (ssi->line == ssj->line) {
+			render(isdb, pre, PT_NOFLAG,
+			       "ttyS%d\trcvin/s", "%d", cons(iv, ssi->line, NOVAL),
+			       NOVAL, S_VALUE(ssj->rx, ssi->rx, itv));
+
+			render(isdb, pre, PT_NOFLAG,
+			       "ttyS%d\txmtin/s", "%d", cons(iv, ssi->line, NOVAL),
+			       NOVAL, S_VALUE(ssj->tx, ssi->tx, itv));
+
+			render(isdb, pre, PT_NOFLAG,
+			       "ttyS%d\tframerr/s", "%d", cons(iv, ssi->line, NOVAL),
+			       NOVAL, S_VALUE(ssj->frame, ssi->frame, itv));
+
+			render(isdb, pre, PT_NOFLAG,
+			       "ttyS%d\tprtyerr/s", "%d", cons(iv, ssi->line, NOVAL),
+			       NOVAL, S_VALUE(ssj->parity, ssi->parity, itv));
+
+			render(isdb, pre, PT_NOFLAG,
+			       "ttyS%d\tbrk/s", "%d", cons(iv, ssi->line, NOVAL),
+			       NOVAL, S_VALUE(ssj->brk, ssi->brk, itv));
+
+			render(isdb, pre, PT_NEWLIN,
+			       "ttyS%d\tovrun/s", "%d", cons(iv, ssi->line, NOVAL),
+			       NOVAL, S_VALUE(ssj->overrun, ssi->overrun, itv));
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display interrupts per CPU statistics in selected format
+ *
+ * IN:
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void render_irq_per_cpu_stats(int isdb, char *pre, int curr, unsigned long long itv)
+{
+	int j, k, offset;
+	struct stats_irq_cpu *p, *q, *p0, *q0;
+
+	for (k = 0; k < file_hdr.sa_proc; k++) {
+		if (!(cpu_bitmap[k >> 3] & (1 << (k & 0x07))))
+			continue;
+
+		for (j = 0; j < file_hdr.sa_irqcpu; p0++, j++) {
+			p0 = st_irq_cpu[curr] + j; /* irq field set only for proc #0 */
+
+			/*
+			 * A value of ~0 means it is a remaining interrupt
+			 * which is no longer used, for example because the
+			 * number of interrupts has decreased in /proc/interrupts
+			 * or because we are appending data to an old sa file
+			 * with more interrupts than are actually available now.
+			 */
+			if (p0->irq == ~0)
+				continue;
+
+			q0 = st_irq_cpu[!curr] + j;
+			offset = j;
+
+			if (p0->irq != q0->irq) {
+				if (j)
+					offset = j - 1;
+				q0 = st_irq_cpu[!curr] + offset;
+
+				if ((p0->irq != q0->irq)
+				    && (j + 1 < file_hdr.sa_irqcpu))
+					offset = j + 1;
+				q0 = st_irq_cpu[!curr] + offset;
+			}
+
+			if (p0->irq != q0->irq)
+				continue;
+
+			p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
+			q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
+			render(isdb, pre, PT_NEWLIN,
+			       "cpu%d\ti%03d/s", "%d;%d", cons(iv, k, p0->irq),
+			       NOVAL, S_VALUE(q->interrupt, p->interrupt, itv));
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display network interface statistics in selected format
+ *
+ * IN:
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void render_net_dev_stats(int isdb, char *pre, int curr, unsigned long long itv)
+{
+	int i, j;
+	struct stats_net_dev
+		*sndi = st_net_dev[curr],
+		*sndj;
+	char *ifc;
+
+	for (i = 0; i < file_hdr.sa_iface; i++, ++sndi) {
+
+		if (!strcmp((ifc = sndi->interface), "?"))
+			continue;
+
+		j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
+		sndj = st_net_dev[!curr] + j;
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\trxpck/s", "%s",
+		       cons(sv, ifc, NULL), /* What if the format args are strings? */
+		       NOVAL, S_VALUE(sndj->rx_packets, sndi->rx_packets, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\ttxpck/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->tx_packets, sndi->tx_packets, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\trxkB/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv) / 1024);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\ttxkB/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv) / 1024);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\trxcmp/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->rx_compressed, sndi->rx_compressed, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\ttxcmp/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->tx_compressed, sndi->tx_compressed, itv));
+
+		render(isdb, pre, PT_NEWLIN,
+		       "%s\trxmcst/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->multicast, sndi->multicast, itv));
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display network interface error statistics in selected format
+ *
+ * IN:
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void render_net_edev_stats(int isdb, char *pre, int curr, unsigned long long itv)
+{
+	int i, j;
+	struct stats_net_dev
+		*sndi = st_net_dev[curr],
+		*sndj;
+	char *ifc;
+
+	for (i = 0; i < file_hdr.sa_iface; i++, ++sndi) {
+
+		if (!strcmp((ifc = sndi->interface), "?"))
+			continue;
+
+		j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
+		sndj = st_net_dev[!curr] + j;
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\trxerr/s", "%s", cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->rx_errors, sndi->rx_errors, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\ttxerr/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->tx_errors, sndi->tx_errors, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\tcoll/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->collisions, sndi->collisions, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\trxdrop/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->rx_dropped, sndi->rx_dropped, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\ttxdrop/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->tx_dropped, sndi->tx_dropped, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\ttxcarr/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->tx_carrier_errors,
+				      sndi->tx_carrier_errors, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\trxfram/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->rx_frame_errors,
+				      sndi->rx_frame_errors, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\trxfifo/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->rx_fifo_errors,
+				      sndi->rx_fifo_errors, itv));
+
+		render(isdb, pre, PT_NEWLIN,
+		       "%s\ttxfifo/s", NULL, cons(sv, ifc, NULL),
+		       NOVAL, S_VALUE(sndj->tx_fifo_errors,
+				      sndi->tx_fifo_errors, itv));
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display disk statistics in selected format
+ *
+ * IN:
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void render_disk_stats(int isdb, char *pre, int curr, unsigned long long itv)
+{
+	int i, j;
+	char *name;
+	double tput, util, await, svctm, arqsz;
+	struct disk_stats
+		*sdi = st_disk[curr],
+		*sdj;
+
+	for (i = 0; i < file_hdr.sa_nr_disk; i++, ++sdi) {
+
+		if (!(sdi->major + sdi->minor))
+			continue;
+
+		j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
+		sdj = st_disk[!curr] + j;
+
+		name = NULL;
+		if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
+			name = transform_devmapname(sdi->major, sdi->minor);
+
+		if (!name)
+			name = get_devname(sdi->major, sdi->minor,
+					   USE_PRETTY_OPTION(flags));
+
+		tput = ((double) (sdi->nr_ios - sdj->nr_ios)) * HZ / itv;
+		util = S_VALUE(sdj->tot_ticks, sdi->tot_ticks, itv);
+		svctm = tput ? util / tput : 0.0;
+		await = (sdi->nr_ios - sdj->nr_ios) ?
+			((sdi->rd_ticks - sdj->rd_ticks) +
+			 (sdi->wr_ticks - sdj->wr_ticks)) /
+			((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
+		arqsz  = (sdi->nr_ios - sdj->nr_ios) ?
+			((sdi->rd_sect - sdj->rd_sect) +
+			 (sdi->wr_sect - sdj->wr_sect)) /
+			((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\ttps", "%s",
+		       cons(sv, name, NULL),
+		       NOVAL, S_VALUE(sdj->nr_ios, sdi->nr_ios, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\trd_sec/s", NULL,
+		       cons(sv, name, NULL),
+		       NOVAL, ll_s_value(sdj->rd_sect, sdi->rd_sect, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\twr_sec/s", NULL,
+		       cons(sv, name, NULL),
+		       NOVAL,	ll_s_value(sdj->wr_sect, sdi->wr_sect, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\tavgrq-sz", NULL,
+		       cons(sv, name, NULL),
+		       NOVAL, arqsz);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\tavgqu-sz", NULL,
+		       cons(sv, name, NULL),
+		       NOVAL, S_VALUE(sdj->rq_ticks, sdi->rq_ticks, itv) / 1000.0);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\tawait", NULL,
+		       cons(sv, name, NULL),
+		       NOVAL, await);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\tsvctm", NULL,
+		       cons(sv, name, NULL),
+		       NOVAL, svctm);
+
+		render(isdb, pre, PT_NEWLIN,
+		       "%s\t%%util", NULL,
+		       cons(sv, name, NULL),
+		       NOVAL, util / 10.0);
+	}
+}
 
 /*
  ***************************************************************************
  * write_mech_stats() -
  * Replace the old write_stats_for_ppc() and write_stats_for_db(),
  * making it easier for them to remain in sync and print the same data.
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @act		Activities to display.
+ * @dt		Interval of time in seconds.
+ * @itv		Interval of time in jiffies.
+ * @g_itv	Interval of time in jiffies multiplied by the number of
+ * 		processors.
+ * @cur_time	Current timestamp.
  ***************************************************************************
  */
 void write_mech_stats(int curr, unsigned int act,
 		      unsigned long dt, unsigned long long itv,
 		      unsigned long long g_itv, char *cur_time)
 {
-   struct file_stats
-      *fsi = &file_stats[curr],
-      *fsj = &file_stats[!curr];
-   char pre[80];	/* Text at beginning of each line */
-   int wantproc = !WANT_PER_PROC(flags)
-      || (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags));
-   int isdb = ((format == S_O_DB_OPTION) || (format == S_O_DBD_OPTION));
-
-   /*
-    * This substring appears on every output line, preformat it here
-    */
-   snprintf(pre, 80, "%s%s%ld%s%s",
-	    file_hdr.sa_nodename, seps[isdb], dt, seps[isdb], cur_time);
-   pre[79] = '\0';
-
-   if (GET_PROC(act)) {
-      /* The first one as an example */
-      render(isdb,		/* db/ppc flag */
-	     pre,		/* the preformatted line leader */
-	     PT_NEWLIN,		/* is this the end of a db line? */
-	     "-\tproc/s",	/* ppc text */
-	     NULL,		/* db text */
-	     NULL,		/* db/ppc text format args (Cons *) */
-	     NOVAL,		/* %lu value (unused unless PT_USEINT) */
-	     /* and %.2f value, used unless PT_USEINT */
-	     S_VALUE(fsj->processes, fsi->processes, itv));
-   }
-
-   if (GET_CTXSW(act)) {
-      render(isdb, pre, PT_NEWLIN,
-	     "-\tcswch/s", NULL, NULL,
-	     NOVAL,
-	     ll_s_value(fsj->context_swtch, fsi->context_swtch, itv));
-   }
-
-   if (GET_CPU(act) && wantproc) {
-      render(isdb, pre,
-	     PT_NOFLAG,		/* that's zero but you know what it means */
-	     "all\t%%user",	/* all ppctext is used as format, thus '%%' */
-	     "-1",		/* look! dbtext */
-	     NULL,		/* no args */
-	     NOVAL,		/* another 0, named for readability */
-	     ll_sp_value(fsj->cpu_user, fsi->cpu_user, g_itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "all\t%%nice", NULL, NULL,
-	     NOVAL,
-	     ll_sp_value(fsj->cpu_nice, fsi->cpu_nice, g_itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "all\t%%system", NULL, NULL,
-	     NOVAL,
-	     ll_sp_value(fsj->cpu_system, fsi->cpu_system, g_itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "all\t%%iowait", NULL, NULL,
-	     NOVAL,
-	     ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "all\t%%steal", NULL, NULL,
-	     NOVAL,
-	     ll_sp_value(fsj->cpu_steal, fsi->cpu_steal, g_itv));
-
-      render(isdb, pre, PT_NEWLIN,
-	     "all\t%%idle", NULL, NULL,
-	     NOVAL,
-	     (fsi->cpu_idle < fsj->cpu_idle) ?
-	     0.0 :
-	     ll_sp_value(fsj->cpu_idle, fsi->cpu_idle, g_itv));
-   }
-
-   if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc) {
-      int i;
-      unsigned long long pc_itv;
-      struct stats_one_cpu
-	 *sci = st_cpu[curr],
-         *scj = st_cpu[!curr];
-
-      for (i = 0; i < file_hdr.sa_proc; i++, sci++, scj++) {
-	 if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
-
-	    /* Recalculate itv for current proc */
-	    pc_itv = get_per_cpu_interval(sci, scj);
-
-	    render(isdb, pre, PT_NOFLAG,
-		   "cpu%d\t%%user",	/* ppc text with formatting */
-		   "%d",		/* db text with format char */
-		   cons(iv, i, NOVAL),	/* how we pass format args */
-		   NOVAL,
-		   !pc_itv ?
-		   0.0 :		/* CPU is offline */
-		   ll_sp_value(scj->per_cpu_user, sci->per_cpu_user, pc_itv));
-
-	    render(isdb, pre, PT_NOFLAG,
-		   "cpu%d\t%%nice", NULL, cons(iv, i, NOVAL),
-		   NOVAL,
-		   !pc_itv ?
-		   0.0 :
-		   ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice, pc_itv));
-
-	    render(isdb, pre, PT_NOFLAG,
-		   "cpu%d\t%%system", NULL, cons(iv, i, NOVAL),
-		   NOVAL,
-		   !pc_itv ?
-		   0.0 :
-		   ll_sp_value(scj->per_cpu_system, sci->per_cpu_system, pc_itv));
-
-	    render(isdb, pre, PT_NOFLAG,
-		   "cpu%d\t%%iowait", NULL, cons(iv, i, NOVAL),
-		   NOVAL,
-		   !pc_itv ?
-		   0.0 :
-		   ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait, pc_itv));
-
-	    render(isdb, pre, PT_NOFLAG,
-		   "cpu%d\t%%steal", NULL, cons(iv, i, NOVAL),
-		   NOVAL,
-		   !pc_itv ?
-		   0.0 :
-		   ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal, pc_itv));
-
-	    if (!pc_itv)
-	       /* CPU is offline */
-	       render(isdb, pre, PT_NEWLIN,
-		      "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
-		      NOVAL,
-		      0.0);
-	    else
-	       render(isdb, pre, PT_NEWLIN,
-		      "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
-		      NOVAL,
-		      (sci->per_cpu_idle < scj->per_cpu_idle) ?
-		      0.0 :
-		      ll_sp_value(scj->per_cpu_idle, sci->per_cpu_idle, pc_itv));
-	 }
-      }
-   }
-
-   if (GET_IRQ(act) && wantproc) {
-      /* Print number of interrupts per second */
-      render(isdb, pre, PT_NEWLIN,
-	     "sum\tintr/s", "-1", NULL,
-	     NOVAL, ll_s_value(fsj->irq_sum, fsi->irq_sum, itv));
-   }
-
-   if (GET_ONE_IRQ(act)) {
-      int i;
-
-      for (i = 0; i < NR_IRQS; i++) {
-	 if (irq_bitmap[i >> 3] & (1 << (i & 0x07))) {
-	    render(isdb, pre, PT_NEWLIN,
-		   "i%03d\tintr/s", "%d", cons(iv, i, NOVAL),
-		   NOVAL,
-		   S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
-	 }
-      }
-   }
-
-   /* print paging stats */
-   if (GET_PAGE(act)) {
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tpgpgin/s", NULL, NULL,
-	     NOVAL,
-	     S_VALUE(fsj->pgpgin, fsi->pgpgin, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tpgpgout/s", NULL, NULL,
-	     NOVAL,
-	     S_VALUE(fsj->pgpgout, fsi->pgpgout, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tfault/s", NULL, NULL,
-	     NOVAL,
-	     S_VALUE(fsj->pgfault, fsi->pgfault, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tmajflt/s", NULL, NULL,
-	     NOVAL,
-	     S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tpgfree/s", NULL, NULL,
-	     NOVAL,
-	     S_VALUE(fsj->pgfree, fsi->pgfree, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tpgscank/s", NULL, NULL,
-	     NOVAL,
-	     S_VALUE(fsj->pgscan_kswapd, fsi->pgscan_kswapd, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tpgscand/s", NULL, NULL,
-	     NOVAL,
-	     S_VALUE(fsj->pgscan_direct, fsi->pgscan_direct, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tpgsteal/s", NULL, NULL,
-	     NOVAL,
-	     S_VALUE(fsj->pgsteal, fsi->pgsteal, itv));
-
-      render(isdb, pre, PT_NEWLIN,
-	     "-\t%%vmeff", NULL, NULL,
-	     NOVAL,
-	     (fsi->pgscan_kswapd + fsi->pgscan_direct - fsj->pgscan_kswapd - fsj->pgscan_direct) ?
-	     SP_VALUE(fsj->pgsteal, fsi->pgsteal,
-		      fsi->pgscan_kswapd + fsi->pgscan_direct -
-		      fsj->pgscan_kswapd - fsj->pgscan_direct) : 0.0);
-   }
-
-   /* Print number of swap pages brought in and out */
-   if (GET_SWAP(act)) {
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tpswpin/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->pswpin, fsi->pswpin, itv));
-      render(isdb, pre, PT_NEWLIN,
-	     "-\tpswpout/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->pswpout, fsi->pswpout, itv));
-   }
-
-   /* Print I/O stats (no distinction made between disks) */
-   if (GET_IO(act)) {
-      render(isdb, pre, PT_NOFLAG,
-	     "-\ttps", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->dk_drive, fsi->dk_drive, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\trtps", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->dk_drive_rio, fsi->dk_drive_rio, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\twtps", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->dk_drive_wio, fsi->dk_drive_wio, itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tbread/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->dk_drive_rblk, fsi->dk_drive_rblk, itv));
-
-      render(isdb, pre, PT_NEWLIN,
-	     "-\tbwrtn/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->dk_drive_wblk, fsi->dk_drive_wblk, itv));
-   }
-
-   /* Print memory stats */
-   if (GET_MEMORY(act)) {
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tfrmpg/s", NULL, NULL,
-	     NOVAL,
-	     S_VALUE((double) KB_TO_PG(fsj->frmkb),
-		     (double) KB_TO_PG(fsi->frmkb), itv));
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tbufpg/s", NULL, NULL,
-	     NOVAL, S_VALUE((double) KB_TO_PG(fsj->bufkb),
-			    (double) KB_TO_PG(fsi->bufkb), itv));
-
-      render(isdb, pre, PT_NEWLIN,
-	     "-\tcampg/s", NULL, NULL,
-	     NOVAL, S_VALUE((double) KB_TO_PG(fsj->camkb),
-			    (double) KB_TO_PG(fsi->camkb), itv));
-   }
-
-   /* Print TTY statistics (serial lines) */
-   if (GET_SERIAL(act)) {
-      int i;
-      struct stats_serial
-	 *ssi = st_serial[curr],
-         *ssj = st_serial[!curr];
-
-      for (i = 0; i++ < file_hdr.sa_serial; ssi++, ssj++) {
-
-	 if (ssi->line == ~0)
-	    continue;
-	
-	 if (ssi->line == ssj->line) {
-	    render(isdb, pre, PT_NOFLAG,
-		   "ttyS%d\trcvin/s", "%d", cons(iv, ssi->line, NOVAL),
-		   NOVAL, S_VALUE(ssj->rx, ssi->rx, itv));
-
-	    render(isdb, pre, PT_NOFLAG,
-		   "ttyS%d\txmtin/s", "%d", cons(iv, ssi->line, NOVAL),
-		   NOVAL, S_VALUE(ssj->tx, ssi->tx, itv));
-	
-	    render(isdb, pre, PT_NOFLAG,
-		   "ttyS%d\tframerr/s", "%d", cons(iv, ssi->line, NOVAL),
-		   NOVAL, S_VALUE(ssj->frame, ssi->frame, itv));
-	
-	    render(isdb, pre, PT_NOFLAG,
-		   "ttyS%d\tprtyerr/s", "%d", cons(iv, ssi->line, NOVAL),
-		   NOVAL, S_VALUE(ssj->parity, ssi->parity, itv));
-	
-	    render(isdb, pre, PT_NOFLAG,
-		   "ttyS%d\tbrk/s", "%d", cons(iv, ssi->line, NOVAL),
-		   NOVAL, S_VALUE(ssj->brk, ssi->brk, itv));
-	
-	    render(isdb, pre, PT_NEWLIN,
-		   "ttyS%d\tovrun/s", "%d", cons(iv, ssi->line, NOVAL),
-		   NOVAL, S_VALUE(ssj->overrun, ssi->overrun, itv));
-	 }
-      }
-   }
-
-   /* Print amount and usage of memory */
-   if (GET_MEM_AMT(act)) {
-      render(isdb, pre, PT_USEINT,
-	     "-\tkbmemfree", NULL, NULL, fsi->frmkb, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\tkbmemused", NULL, NULL, fsi->tlmkb - fsi->frmkb, DNOVAL);
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\t%%memused", NULL, NULL, NOVAL,
-	     fsi->tlmkb
-	     ? SP_VALUE(fsi->frmkb, fsi->tlmkb, fsi->tlmkb)
-	     : 0.0);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\tkbbuffers", NULL, NULL, fsi->bufkb, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\tkbcached", NULL, NULL, fsi->camkb, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\tkbswpfree", NULL, NULL, fsi->frskb, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\tkbswpused", NULL, NULL, fsi->tlskb - fsi->frskb, DNOVAL);
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\t%%swpused", NULL, NULL, NOVAL,
-	     fsi->tlskb
-	     ? SP_VALUE(fsi->frskb, fsi->tlskb, fsi->tlskb)
-	     : 0.0);
-
-      render(isdb, pre, PT_USEINT | PT_NEWLIN,
-	     "-\tkbswpcad", NULL, NULL, fsi->caskb, DNOVAL);
-   }
-
-   if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
-      int j, k, offset;
-      struct stats_irq_cpu *p, *q, *p0, *q0;
-
-      for (k = 0; k < file_hdr.sa_proc; k++) {
-	 if (!(cpu_bitmap[k >> 3] & (1 << (k & 0x07))))
-	    continue;
-
-	 for (j = 0; j < file_hdr.sa_irqcpu; p0++, j++) {
-	    p0 = st_irq_cpu[curr] + j;	    /* irq field set only for proc #0 */
-
-	    /*
-	     * A value of ~0 means it is a remaining interrupt
-	     * which is no longer used, for example because the
-	     * number of interrupts has decreased in /proc/interrupts
-	     * or because we are appending data to an old sa file
-	     * with more interrupts than are actually available now.
-	     */
-	    if (p0->irq == ~0)
-	       continue;
-	
-	    q0 = st_irq_cpu[!curr] + j;
-	    offset = j;
-	
-	    if (p0->irq != q0->irq) {
-	       if (j)
-		  offset = j - 1;
-	       q0 = st_irq_cpu[!curr] + offset;
-	
-	       if ((p0->irq != q0->irq)
-		   && (j + 1 < file_hdr.sa_irqcpu))
-		  offset = j + 1;
-	       q0 = st_irq_cpu[!curr] + offset;
-	    }
-	
-	    if (p0->irq != q0->irq)
-	       continue;
-	
-	    p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
-	    q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
-	    render(isdb, pre, PT_NEWLIN,
-		   "cpu%d\ti%03d/s", "%d;%d", cons(iv, k, p0->irq),
-		   NOVAL, S_VALUE(q->interrupt, p->interrupt, itv));
-	 }
-      }
-   }
-
-   /* Print values of some kernel tables */
-   if (GET_KTABLES(act)) {
-      render(isdb, pre, PT_USEINT,
-	     "-\tdentunusd", NULL, NULL,
-	     fsi->dentry_stat, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\tfile-nr", NULL, NULL,
-	     fsi->file_used, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\tinode-nr", NULL, NULL,
-	     fsi->inode_used, DNOVAL);
-
-      render(isdb, pre, PT_USEINT | PT_NEWLIN,
-	     "-\tpty-nr", NULL, NULL,
-	     fsi->pty_nr, DNOVAL);
-   }
-
-   /* Print network interface statistics */
-   if (GET_NET_DEV(act)) {
-      int i, j;
-      struct stats_net_dev
-	 *sndi = st_net_dev[curr],
-         *sndj;
-      char *ifc;
-
-      for (i = 0; i < file_hdr.sa_iface; i++, ++sndi) {
-
-	 if (!strcmp((ifc = sndi->interface), "?"))
-	    continue;
-
-	 j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
-	 sndj = st_net_dev[!curr] + j;
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\trxpck/s", "%s",
-		cons(sv, ifc, NULL), /* What if the format args are strings? */
-		NOVAL, S_VALUE(sndj->rx_packets, sndi->rx_packets, itv));
-		
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\ttxpck/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->tx_packets, sndi->tx_packets, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\trxkB/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv) / 1024);
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\ttxkB/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv) / 1024);
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\trxcmp/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->rx_compressed, sndi->rx_compressed, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\ttxcmp/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->tx_compressed, sndi->tx_compressed, itv));
-
-	 render(isdb, pre, PT_NEWLIN,
-		"%s\trxmcst/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->multicast, sndi->multicast, itv));
-      }
-   }
-
-   /* Print network interface statistics (errors) */
-   if (GET_NET_EDEV(act)) {
-      int i, j;
-      struct stats_net_dev
-	 *sndi = st_net_dev[curr],
-         *sndj;
-      char *ifc;
-
-      for (i = 0; i < file_hdr.sa_iface; i++, ++sndi) {
-
-	 if (!strcmp((ifc = sndi->interface), "?"))
-	    continue;
-
-	 j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
-	 sndj = st_net_dev[!curr] + j;
-	
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\trxerr/s", "%s", cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->rx_errors, sndi->rx_errors, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\ttxerr/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->tx_errors, sndi->tx_errors, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\tcoll/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->collisions, sndi->collisions, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\trxdrop/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->rx_dropped, sndi->rx_dropped, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\ttxdrop/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->tx_dropped, sndi->tx_dropped, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\ttxcarr/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->tx_carrier_errors,
-			       sndi->tx_carrier_errors, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\trxfram/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->rx_frame_errors,
-			       sndi->rx_frame_errors, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\trxfifo/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->rx_fifo_errors,
-			       sndi->rx_fifo_errors, itv));
-
-	 render(isdb, pre, PT_NEWLIN,
-		"%s\ttxfifo/s", NULL, cons(sv, ifc, NULL),
-		NOVAL, S_VALUE(sndj->tx_fifo_errors,
-			       sndi->tx_fifo_errors, itv));
-      }
-   }
-
-   /* Print number of sockets in use */
-   if (GET_NET_SOCK(act)) {
-      render(isdb, pre, PT_USEINT,
-	     "-\ttotsck", NULL, NULL, fsi->sock_inuse, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\ttcpsck", NULL, NULL, fsi->tcp_inuse, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\tudpsck",  NULL, NULL, fsi->udp_inuse, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\trawsck", NULL, NULL, fsi->raw_inuse, DNOVAL);
-
-      render(isdb, pre, PT_USEINT,
-	     "-\tip-frag", NULL, NULL, fsi->frag_inuse, DNOVAL);
-
-      render(isdb, pre, PT_USEINT | PT_NEWLIN,
-	     "-\ttcp-tw", NULL, NULL, fsi->tcp_tw, DNOVAL);
-   }
-
-   /* Print load averages and queue length */
-   if (GET_QUEUE(act)) {
-      render(isdb, pre, PT_USEINT,
-	     "-\trunq-sz", NULL, NULL, fsi->nr_running, DNOVAL);
-	
-      render(isdb, pre, PT_USEINT,
-	     "-\tplist-sz", NULL, NULL, fsi->nr_threads, DNOVAL);
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tldavg-1", NULL, NULL,
-	     NOVAL, (double) fsi->load_avg_1 / 100);
-
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tldavg-5", NULL, NULL,
-	     NOVAL, (double) fsi->load_avg_5 / 100);
-
-      render(isdb, pre, PT_NEWLIN,
-	     "-\tldavg-15", NULL, NULL,
-	     NOVAL, (double) fsi->load_avg_15 / 100);
-   }
-
-   /* Print disk statistics */
-   if (GET_DISK(act)) {
-      int i, j;
-      char *name;
-      double tput, util, await, svctm, arqsz;
-      struct disk_stats
-	 *sdi = st_disk[curr],
-         *sdj;
-
-      for (i = 0; i < file_hdr.sa_nr_disk; i++, ++sdi) {
-
-	 if (!(sdi->major + sdi->minor))
-	    continue;
-
-	 j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
-	 sdj = st_disk[!curr] + j;
-
-	 name = NULL;
-	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
-	    name = transform_devmapname(sdi->major, sdi->minor);
-	
-	 if (!name)
-	    name = get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags));
-
-	 tput = ((double) (sdi->nr_ios - sdj->nr_ios)) * HZ / itv;
-	 util = S_VALUE(sdj->tot_ticks, sdi->tot_ticks, itv);
-	 svctm = tput ? util / tput : 0.0;
-	 await = (sdi->nr_ios - sdj->nr_ios) ?
-	    ((sdi->rd_ticks - sdj->rd_ticks) + (sdi->wr_ticks - sdj->wr_ticks)) /
-	    ((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
-	 arqsz  = (sdi->nr_ios - sdj->nr_ios) ?
-	    ((sdi->rd_sect - sdj->rd_sect) + (sdi->wr_sect - sdj->wr_sect)) /
-	    ((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
-	
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\ttps", "%s",
-		cons(sv, name, NULL),
-		NOVAL, S_VALUE(sdj->nr_ios, sdi->nr_ios, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\trd_sec/s", NULL,
-		cons(sv, name, NULL),
-		NOVAL, ll_s_value(sdj->rd_sect, sdi->rd_sect, itv));
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\twr_sec/s", NULL,
-		cons(sv, name, NULL),
-		NOVAL,	ll_s_value(sdj->wr_sect, sdi->wr_sect, itv));
-	
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\tavgrq-sz", NULL,
-		cons(sv, name, NULL),
-		NOVAL, arqsz);
-	
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\tavgqu-sz", NULL,
-		cons(sv, name, NULL),
-		NOVAL, S_VALUE(sdj->rq_ticks, sdi->rq_ticks, itv) / 1000.0);
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\tawait", NULL,
-		cons(sv, name, NULL),
-		NOVAL, await);
-
-	 render(isdb, pre, PT_NOFLAG,
-		"%s\tsvctm", NULL,
-		cons(sv, name, NULL),
-		NOVAL, svctm);
-
-	 render(isdb, pre, PT_NEWLIN,
-		"%s\t%%util", NULL,
-		cons(sv, name, NULL),
-		NOVAL, util / 10.0);
-      }
-   }
-
-   /* Print NFS client stats */
-   if (GET_NET_NFS(act)) {
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tcall/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfs_rpccnt, fsi->nfs_rpccnt, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tretrans/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfs_rpcretrans, fsi->nfs_rpcretrans, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tread/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfs_readcnt, fsi->nfs_readcnt, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\twrite/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfs_writecnt, fsi->nfs_writecnt, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\taccess/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfs_accesscnt, fsi->nfs_accesscnt, itv));
-      render(isdb, pre, PT_NEWLIN,
-	     "-\tgetatt/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfs_getattcnt, fsi->nfs_getattcnt, itv));
-   }
-
-   /* Print NFS server stats */
-   if (GET_NET_NFSD(act)) {
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tscall/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_rpccnt, fsi->nfsd_rpccnt, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tbadcall/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_rpcbad, fsi->nfsd_rpcbad, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tpacket/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_netcnt, fsi->nfsd_netcnt, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tudp/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_netudpcnt, fsi->nfsd_netudpcnt, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\ttcp/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_nettcpcnt, fsi->nfsd_nettcpcnt, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\thit/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_rchits, fsi->nfsd_rchits, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tmiss/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_rcmisses, fsi->nfsd_rcmisses, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tsread/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_readcnt, fsi->nfsd_readcnt, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tswrite/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_writecnt, fsi->nfsd_writecnt, itv));
-      render(isdb, pre, PT_NOFLAG,
-	     "-\tsaccess/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_accesscnt, fsi->nfsd_accesscnt, itv));
-      render(isdb, pre, PT_NEWLIN,
-	     "-\tsgetatt/s", NULL, NULL,
-	     NOVAL, S_VALUE(fsj->nfsd_getattcnt, fsi->nfsd_getattcnt, itv));
-   }
+	struct file_stats
+		*fsi = &file_stats[curr],
+		*fsj = &file_stats[!curr];
+	char pre[80];	/* Text at beginning of each line */
+	int wantproc = !WANT_PER_PROC(flags)
+		|| (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags));
+	int isdb = ((format == S_O_DB_OPTION) || (format == S_O_DBD_OPTION));
+
+	/*
+	 * This substring appears on every output line, preformat it here
+	 */
+	snprintf(pre, 80, "%s%s%ld%s%s",
+		 file_hdr.sa_nodename, seps[isdb], dt, seps[isdb], cur_time);
+	pre[79] = '\0';
+
+	if (GET_PROC(act)) {
+		/* The first one as an example */
+		render(isdb,		/* db/ppc flag */
+		       pre,		/* the preformatted line leader */
+		       PT_NEWLIN,	/* is this the end of a db line? */
+		       "-\tproc/s",	/* ppc text */
+		       NULL,		/* db text */
+		       NULL,		/* db/ppc text format args (Cons *) */
+		       NOVAL,		/* %lu value (unused unless PT_USEINT) */
+		       /* and %.2f value, used unless PT_USEINT */
+		       S_VALUE(fsj->processes, fsi->processes, itv));
+	}
+
+	if (GET_CTXSW(act)) {
+		render(isdb, pre, PT_NEWLIN,
+		       "-\tcswch/s", NULL, NULL,
+		       NOVAL,
+		       ll_s_value(fsj->context_swtch, fsi->context_swtch, itv));
+	}
+
+	if (GET_CPU(act) && wantproc) {
+		render(isdb, pre,
+		       PT_NOFLAG,	/* that's zero but you know what it means */
+		       "all\t%%user",	/* all ppctext is used as format, thus '%%' */
+		       "-1",		/* look! dbtext */
+		       NULL,		/* no args */
+		       NOVAL,		/* another 0, named for readability */
+		       ll_sp_value(fsj->cpu_user, fsi->cpu_user, g_itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "all\t%%nice", NULL, NULL,
+		       NOVAL,
+		       ll_sp_value(fsj->cpu_nice, fsi->cpu_nice, g_itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "all\t%%system", NULL, NULL,
+		       NOVAL,
+		       ll_sp_value(fsj->cpu_system, fsi->cpu_system, g_itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "all\t%%iowait", NULL, NULL,
+		       NOVAL,
+		       ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "all\t%%steal", NULL, NULL,
+		       NOVAL,
+		       ll_sp_value(fsj->cpu_steal, fsi->cpu_steal, g_itv));
+
+		render(isdb, pre, PT_NEWLIN,
+		       "all\t%%idle", NULL, NULL,
+		       NOVAL,
+		       (fsi->cpu_idle < fsj->cpu_idle) ?
+		       0.0 :
+		       ll_sp_value(fsj->cpu_idle, fsi->cpu_idle, g_itv));
+	}
+
+	if (GET_CPU(act) && WANT_PER_PROC(flags) && file_hdr.sa_proc)
+		render_per_cpu_stats(isdb, pre, curr);
+
+	if (GET_IRQ(act) && wantproc) {
+		/* Print number of interrupts per second */
+		render(isdb, pre, PT_NEWLIN,
+		       "sum\tintr/s", "-1", NULL,
+		       NOVAL, ll_s_value(fsj->irq_sum, fsi->irq_sum, itv));
+	}
+
+	if (GET_ONE_IRQ(act))
+		render_per_irq_stats(isdb, pre, curr, itv);
+
+	/* print paging stats */
+	if (GET_PAGE(act)) {
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tpgpgin/s", NULL, NULL,
+		       NOVAL,
+		       S_VALUE(fsj->pgpgin, fsi->pgpgin, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tpgpgout/s", NULL, NULL,
+		       NOVAL,
+		       S_VALUE(fsj->pgpgout, fsi->pgpgout, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tfault/s", NULL, NULL,
+		       NOVAL,
+		       S_VALUE(fsj->pgfault, fsi->pgfault, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tmajflt/s", NULL, NULL,
+		       NOVAL,
+		       S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tpgfree/s", NULL, NULL,
+		       NOVAL,
+		       S_VALUE(fsj->pgfree, fsi->pgfree, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tpgscank/s", NULL, NULL,
+		       NOVAL,
+		       S_VALUE(fsj->pgscan_kswapd, fsi->pgscan_kswapd, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tpgscand/s", NULL, NULL,
+		       NOVAL,
+		       S_VALUE(fsj->pgscan_direct, fsi->pgscan_direct, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tpgsteal/s", NULL, NULL,
+		       NOVAL,
+		       S_VALUE(fsj->pgsteal, fsi->pgsteal, itv));
+
+		render(isdb, pre, PT_NEWLIN,
+		       "-\t%%vmeff", NULL, NULL,
+		       NOVAL,
+		       (fsi->pgscan_kswapd + fsi->pgscan_direct -
+			fsj->pgscan_kswapd - fsj->pgscan_direct) ?
+		       SP_VALUE(fsj->pgsteal, fsi->pgsteal,
+				fsi->pgscan_kswapd + fsi->pgscan_direct -
+				fsj->pgscan_kswapd - fsj->pgscan_direct) : 0.0);
+	}
+
+	/* Print number of swap pages brought in and out */
+	if (GET_SWAP(act)) {
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tpswpin/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->pswpin, fsi->pswpin, itv));
+		render(isdb, pre, PT_NEWLIN,
+		       "-\tpswpout/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->pswpout, fsi->pswpout, itv));
+	}
+
+	/* Print I/O stats (no distinction made between disks) */
+	if (GET_IO(act)) {
+		render(isdb, pre, PT_NOFLAG,
+		       "-\ttps", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->dk_drive, fsi->dk_drive, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\trtps", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->dk_drive_rio, fsi->dk_drive_rio, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\twtps", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->dk_drive_wio, fsi->dk_drive_wio, itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tbread/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->dk_drive_rblk, fsi->dk_drive_rblk, itv));
+
+		render(isdb, pre, PT_NEWLIN,
+		       "-\tbwrtn/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->dk_drive_wblk, fsi->dk_drive_wblk, itv));
+	}
+
+	/* Print memory stats */
+	if (GET_MEMORY(act)) {
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tfrmpg/s", NULL, NULL,
+		       NOVAL,
+		       S_VALUE((double) KB_TO_PG(fsj->frmkb),
+			       (double) KB_TO_PG(fsi->frmkb), itv));
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tbufpg/s", NULL, NULL,
+		       NOVAL, S_VALUE((double) KB_TO_PG(fsj->bufkb),
+				      (double) KB_TO_PG(fsi->bufkb), itv));
+
+		render(isdb, pre, PT_NEWLIN,
+		       "-\tcampg/s", NULL, NULL,
+		       NOVAL, S_VALUE((double) KB_TO_PG(fsj->camkb),
+				      (double) KB_TO_PG(fsi->camkb), itv));
+	}
+
+	/* Print TTY statistics (serial lines) */
+	if (GET_SERIAL(act))
+		render_serial_stats(isdb, pre, curr, itv);
+
+	/* Print amount and usage of memory */
+	if (GET_MEM_AMT(act)) {
+		render(isdb, pre, PT_USEINT,
+		       "-\tkbmemfree", NULL, NULL, fsi->frmkb, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tkbmemused", NULL, NULL, fsi->tlmkb - fsi->frmkb, DNOVAL);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\t%%memused", NULL, NULL, NOVAL,
+		       fsi->tlmkb
+		       ? SP_VALUE(fsi->frmkb, fsi->tlmkb, fsi->tlmkb)
+		       : 0.0);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tkbbuffers", NULL, NULL, fsi->bufkb, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tkbcached", NULL, NULL, fsi->camkb, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tkbswpfree", NULL, NULL, fsi->frskb, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tkbswpused", NULL, NULL, fsi->tlskb - fsi->frskb, DNOVAL);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\t%%swpused", NULL, NULL, NOVAL,
+		       fsi->tlskb
+		       ? SP_VALUE(fsi->frskb, fsi->tlskb, fsi->tlskb)
+		       : 0.0);
+
+		render(isdb, pre, PT_USEINT | PT_NEWLIN,
+		       "-\tkbswpcad", NULL, NULL, fsi->caskb, DNOVAL);
+	}
+
+	if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu)
+		render_irq_per_cpu_stats(isdb, pre, curr, itv);
+
+	/* Print values of some kernel tables */
+	if (GET_KTABLES(act)) {
+		render(isdb, pre, PT_USEINT,
+		       "-\tdentunusd", NULL, NULL,
+		       fsi->dentry_stat, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tfile-nr", NULL, NULL,
+		       fsi->file_used, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tinode-nr", NULL, NULL,
+		       fsi->inode_used, DNOVAL);
+
+		render(isdb, pre, PT_USEINT | PT_NEWLIN,
+		       "-\tpty-nr", NULL, NULL,
+		       fsi->pty_nr, DNOVAL);
+	}
+
+	/* Print network interface statistics */
+	if (GET_NET_DEV(act))
+		render_net_dev_stats(isdb, pre, curr, itv);
+
+	/* Print network interface statistics (errors) */
+	if (GET_NET_EDEV(act))
+		render_net_edev_stats(isdb, pre, curr, itv);
+
+	/* Print number of sockets in use */
+	if (GET_NET_SOCK(act)) {
+		render(isdb, pre, PT_USEINT,
+		       "-\ttotsck", NULL, NULL, fsi->sock_inuse, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\ttcpsck", NULL, NULL, fsi->tcp_inuse, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tudpsck",  NULL, NULL, fsi->udp_inuse, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\trawsck", NULL, NULL, fsi->raw_inuse, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tip-frag", NULL, NULL, fsi->frag_inuse, DNOVAL);
+
+		render(isdb, pre, PT_USEINT | PT_NEWLIN,
+		       "-\ttcp-tw", NULL, NULL, fsi->tcp_tw, DNOVAL);
+	}
+
+	/* Print load averages and queue length */
+	if (GET_QUEUE(act)) {
+		render(isdb, pre, PT_USEINT,
+		       "-\trunq-sz", NULL, NULL, fsi->nr_running, DNOVAL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tplist-sz", NULL, NULL, fsi->nr_threads, DNOVAL);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tldavg-1", NULL, NULL,
+		       NOVAL, (double) fsi->load_avg_1 / 100);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tldavg-5", NULL, NULL,
+		       NOVAL, (double) fsi->load_avg_5 / 100);
+
+		render(isdb, pre, PT_NEWLIN,
+		       "-\tldavg-15", NULL, NULL,
+		       NOVAL, (double) fsi->load_avg_15 / 100);
+	}
+
+	/* Print disk statistics */
+	if (GET_DISK(act))
+		render_disk_stats(isdb, pre, curr, itv);
+
+	/* Print NFS client stats */
+	if (GET_NET_NFS(act)) {
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tcall/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfs_rpccnt, fsi->nfs_rpccnt, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tretrans/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfs_rpcretrans, fsi->nfs_rpcretrans, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tread/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfs_readcnt, fsi->nfs_readcnt, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\twrite/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfs_writecnt, fsi->nfs_writecnt, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\taccess/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfs_accesscnt, fsi->nfs_accesscnt, itv));
+		render(isdb, pre, PT_NEWLIN,
+		       "-\tgetatt/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfs_getattcnt, fsi->nfs_getattcnt, itv));
+	}
+
+	/* Print NFS server stats */
+	if (GET_NET_NFSD(act)) {
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tscall/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_rpccnt, fsi->nfsd_rpccnt, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tbadcall/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_rpcbad, fsi->nfsd_rpcbad, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tpacket/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_netcnt, fsi->nfsd_netcnt, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tudp/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_netudpcnt, fsi->nfsd_netudpcnt, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\ttcp/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_nettcpcnt, fsi->nfsd_nettcpcnt, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\thit/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_rchits, fsi->nfsd_rchits, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tmiss/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_rcmisses, fsi->nfsd_rcmisses, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tsread/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_readcnt, fsi->nfsd_readcnt, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tswrite/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_writecnt, fsi->nfsd_writecnt, itv));
+		render(isdb, pre, PT_NOFLAG,
+		       "-\tsaccess/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_accesscnt, fsi->nfsd_accesscnt, itv));
+		render(isdb, pre, PT_NEWLIN,
+		       "-\tsgetatt/s", NULL, NULL,
+		       NOVAL, S_VALUE(fsj->nfsd_getattcnt, fsi->nfsd_getattcnt, itv));
+	}
 }
-
 
 /*
  ***************************************************************************
  * Write system statistics
+ *
+ * IN:
+ * @curr		Index in array for current sample statistics.
+ * @act			Activities to display.
+ * @reset		Set to TRUE if last_uptime variable should be
+ * 			reinitialized (used in next_slice() function).
+ * @use_tm_start	Set to TRUE if option -s has been used.
+ * @use_tm_end		Set to TRUE if option -e has been used.
+ *
+ * OUT:
+ * @cnt			Set to 0 to indicate that no other lines of stats
+ * 			should be displayed.
+ *
+ * RETURNS:
+ * 1 if a line of stats has been displayed, and 0 otherwise.
  ***************************************************************************
  */
 int write_parsable_stats(int curr, unsigned int act, int reset, long *cnt,
 			 int use_tm_start, int use_tm_end)
 {
-   unsigned long long dt, itv, g_itv;
-   char cur_time[26];
-   static int cross_day = 0;
+	unsigned long long dt, itv, g_itv;
+	char cur_time[26];
+	static int cross_day = 0;
 
-   /* Check time (1) */
-   if (!next_slice(file_stats[2].uptime0, file_stats[curr].uptime0,
-		   reset, interval))
-      /* Not close enough to desired interval */
-      return 0;
+	/* Check time (1) */
+	if (!next_slice(file_stats[2].uptime0, file_stats[curr].uptime0,
+			reset, interval))
+		/* Not close enough to desired interval */
+		return 0;
 
-   /* Set current timestamp */
-   set_timestamp(curr, cur_time, 26);
+	/* Set current timestamp */
+	set_timestamp(curr, cur_time, 26);
 
-   /* Check if we are beginning a new day */
-   if (use_tm_start && file_stats[!curr].ust_time &&
-       (file_stats[curr].ust_time > file_stats[!curr].ust_time) &&
-       (file_stats[curr].hour < file_stats[!curr].hour))
-      cross_day = 1;
+	/* Check if we are beginning a new day */
+	if (use_tm_start && file_stats[!curr].ust_time &&
+	    (file_stats[curr].ust_time > file_stats[!curr].ust_time) &&
+	    (file_stats[curr].hour < file_stats[!curr].hour))
+		cross_day = 1;
 
-   if (cross_day)
-      /*
-       * This is necessary if we want to properly handle something like:
-       * sar -s time_start -e time_end with
-       * time_start(day D) > time_end(day D+1)
-       */
-      loctime.tm_hour +=24;
+	if (cross_day)
+		/*
+		 * This is necessary if we want to properly handle something like:
+		 * sar -s time_start -e time_end with
+		 * time_start(day D) > time_end(day D+1)
+		 */
+		loctime.tm_hour += 24;
 
-   /* Check time (2) */
-   if (use_tm_start && (datecmp(&loctime, &tm_start) < 0))
-     /* it's too soon... */
-     return 0;
+	/* Check time (2) */
+	if (use_tm_start && (datecmp(&loctime, &tm_start) < 0))
+		/* it's too soon... */
+		return 0;
 
-   /* Get interval values */
-   get_itv_value(&file_stats[curr], &file_stats[!curr],
-		 file_hdr.sa_proc, &itv, &g_itv);
+	/* Get interval values */
+	get_itv_value(&file_stats[curr], &file_stats[!curr],
+		      file_hdr.sa_proc, &itv, &g_itv);
 
-   /* Check time (3) */
-   if (use_tm_end && (datecmp(&loctime, &tm_end) > 0)) {
-      /* It's too late... */
-      *cnt = 0;
-      return 0;
-   }
+	/* Check time (3) */
+	if (use_tm_end && (datecmp(&loctime, &tm_end) > 0)) {
+		/* It's too late... */
+		*cnt = 0;
+		return 0;
+	}
 
-   dt = itv / HZ;
-   /* Correct rounding error for dt */
-   if ((itv % HZ) >= (HZ / 2))
-      dt++;
+	dt = itv / HZ;
+	/* Correct rounding error for dt */
+	if ((itv % HZ) >= (HZ / 2))
+		dt++;
 
-   write_mech_stats(curr, act, dt, itv, g_itv, cur_time);
+	write_mech_stats(curr, act, dt, itv, g_itv, cur_time);
 
-   return 1;
+	return 1;
 }
 
+/*
+ ***************************************************************************
+ * Display per CPU XML statistics
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @tab		Number of tabulations to print.
+ ***************************************************************************
+*/
+void write_xml_per_cpu_stats(int curr, int tab)
+{
+	int i;
+	unsigned long long pc_itv;
+	struct stats_one_cpu
+		*sci = st_cpu[curr],
+		*scj = st_cpu[!curr];
+
+	for (i = 0; i < file_hdr.sa_proc; i++, sci++, scj++) {
+
+		/* Recalculate itv for current proc */
+		pc_itv = get_per_cpu_interval(sci, scj);
+
+		if (!pc_itv)
+			/* Current proc is offlined */
+			xprintf(tab, "<cpu number=\"%d\" user=\"0.00\" nice=\"0.00\" "
+				"system=\"0.00\" iowait=\"0.00\" steal=\"0.00\" "
+				"idle=\"0.00\"/>", i);
+		else {
+			xprintf(tab, "<cpu number=\"%d\" user=\"%.2f\" nice=\"%.2f\" "
+				"system=\"%.2f\" iowait=\"%.2f\" steal=\"%.2f\" "
+				"idle=\"%.2f\"/>", i,
+				ll_sp_value(scj->per_cpu_user, sci->per_cpu_user, pc_itv),
+				ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice, pc_itv),
+				ll_sp_value(scj->per_cpu_system, sci->per_cpu_system,
+					    pc_itv),
+				ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait,
+					    pc_itv),
+				ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal,
+					    pc_itv),
+				(sci->per_cpu_idle < scj->per_cpu_idle)
+				? 0.0
+				: ll_sp_value(scj->per_cpu_idle, sci->per_cpu_idle,
+					      pc_itv));
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display interrupts per CPU XML statistics
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @tab		Number of tabulations to print.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void write_xml_irq_per_cpu_stats(int curr, int tab, unsigned long long itv)
+{
+	int offset, j, k;
+	struct stats_irq_cpu *p, *q, *p0, *q0;
+
+	xprintf(tab, "<int-proc per=\"second\">");
+	tab++;
+
+	for (k = 0; k < file_hdr.sa_proc; k++) {
+
+		for (j = 0; j < file_hdr.sa_irqcpu; j++) {
+			p0 = st_irq_cpu[curr] + j; /* irq field set only for proc #0 */
+
+			/*
+			 * A value of ~0 means it is a remaining interrupt
+			 * which is no longer used, for example because the
+			 * number of interrupts has decreased in /proc/interrupts
+			 * or because we are appending data to an old sa file
+			 * with more interrupts than are actually available now.
+			 */
+			if (p0->irq == ~0)
+				continue;
+
+			q0 = st_irq_cpu[!curr] + j;
+			offset = j;
+
+			if (p0->irq != q0->irq) {
+				if (j)
+					offset = j - 1;
+				q0 = st_irq_cpu[!curr] + offset;
+
+				if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
+					offset = j + 1;
+				q0 = st_irq_cpu[!curr] + offset;
+			}
+
+			if (p0->irq != q0->irq)
+				continue;
+
+			p = st_irq_cpu[curr] + k * file_hdr.sa_irqcpu + j;
+			q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
+
+			xprintf(tab, "<irqcpu cpu=\"%d\" intr=\"%d\" value=\"%.2f\"/>",
+				k, p0->irq,
+				S_VALUE(q->interrupt, p->interrupt, itv));
+		}
+	}
+	xprintf(--tab, "</int-proc>");
+}
+
+/*
+ ***************************************************************************
+ * Display disk XML statistics
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @tab		Number of tabulations to print.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void write_xml_disk_stats(int curr, int tab, unsigned long long itv)
+{
+	int i, j;
+	double tput, util, await, svctm, arqsz;
+	struct disk_stats
+		*sdi = st_disk[curr],
+		*sdj;
+	char *name = NULL;
+
+	xprintf(tab, "<disk per=\"second\">");
+	tab++;
+
+	for (i = 0; i < file_hdr.sa_nr_disk; i++, ++sdi) {
+
+		if (!(sdi->major + sdi->minor))
+			continue;
+
+		j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
+		sdj = st_disk[!curr] + j;
+
+		tput = ((double) (sdi->nr_ios - sdj->nr_ios)) * HZ / itv;
+		util = S_VALUE(sdj->tot_ticks, sdi->tot_ticks, itv);
+		svctm = tput ? util / tput : 0.0;
+		await = (sdi->nr_ios - sdj->nr_ios) ?
+			((sdi->rd_ticks - sdj->rd_ticks) +
+			 (sdi->wr_ticks - sdj->wr_ticks)) /
+			((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
+		arqsz  = (sdi->nr_ios - sdj->nr_ios) ?
+			((sdi->rd_sect - sdj->rd_sect) +
+			 (sdi->wr_sect - sdj->wr_sect)) /
+			((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
+
+		if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
+			name = transform_devmapname(sdi->major, sdi->minor);
+
+		if (!name)
+			name = get_devname(sdi->major, sdi->minor,
+					   USE_PRETTY_OPTION(flags));
+
+		xprintf(tab, "<disk-device dev=\"%s\" tps=\"%.2f\" rd_sec=\"%.2f\" "
+			"wr_sec=\"%.2f\" avgrq-sz=\"%.2f\" avgqu-sz=\"%.2f\" "
+			"await=\"%.2f\" svctm=\"%.2f\" util-percent=\"%.2f\"/>",
+			name,
+			S_VALUE(sdj->nr_ios,  sdi->nr_ios,  itv),
+			ll_s_value(sdj->rd_sect, sdi->rd_sect, itv),
+			ll_s_value(sdj->wr_sect, sdi->wr_sect, itv),
+			/* See iostat for explanations */
+			arqsz,
+			S_VALUE(sdj->rq_ticks, sdi->rq_ticks, itv) / 1000.0,
+			await,
+			svctm,
+			util / 10.0);
+	}
+	xprintf(--tab, "</disk>");
+}
+
+/*
+ ***************************************************************************
+ * Display serial lines XML statistics
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @tab		Number of tabulations to print.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void write_xml_serial_stats(int curr, int tab, unsigned long long itv)
+{
+	int i;
+	struct stats_serial
+		*ssi = st_serial[curr],
+		*ssj = st_serial[!curr];
+
+	xprintf(tab, "<serial per=\"second\">");
+	tab++;
+
+	for (i = 0; i < file_hdr.sa_serial; i++, ssi++, ssj++) {
+
+		if (ssi->line == ~0)
+			continue;
+		if (ssi->line == ssj->line) {
+
+			xprintf(tab, "<tty line=\"%d\" rcvin=\"%.2f\" xmtin=\"%.2f\" "
+				"framerr=\"%.2f\" prtyerr=\"%.2f\" brk=\"%.2f\" "
+				"ovrun=\"%.2f\"/>",
+				ssi->line,
+				S_VALUE(ssj->rx, ssi->rx, itv),
+				S_VALUE(ssj->tx, ssi->tx, itv),
+				S_VALUE(ssj->frame, ssi->frame, itv),
+				S_VALUE(ssj->parity, ssi->parity, itv),
+				S_VALUE(ssj->brk, ssi->brk, itv),
+				S_VALUE(ssj->overrun, ssi->overrun, itv));
+		}
+	}
+	xprintf(--tab, "</serial>");
+}
+
+/*
+ ***************************************************************************
+ * Display network device XML statistics
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @tab		Number of tabulations to print.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+*/
+void write_xml_net_dev_stats(int curr, int tab, unsigned long long itv)
+{
+	int i, j;
+	struct stats_net_dev
+		*sndi = st_net_dev[curr],
+		*sndj;
+
+	for (i = 0; i < file_hdr.sa_iface; i++, sndi++) {
+
+		if (!strcmp(sndi->interface, "?"))
+			continue;
+		j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
+		sndj = st_net_dev[!curr] + j;
+
+		xprintf(tab++, "<net-device iface=\"%s\">",
+			sndi->interface);
+
+		xprintf(tab, "<net-dev rxpck=\"%.2f\" txpck=\"%.2f\" rxkB=\"%.2f\" "
+			"txkB=\"%.2f\" rxcmp=\"%.2f\" txcmp=\"%.2f\" rxmcst=\"%.2f\"/>",
+			S_VALUE(sndj->rx_packets, sndi->rx_packets, itv),
+			S_VALUE(sndj->tx_packets, sndi->tx_packets, itv),
+			S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv) / 1024,
+			S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv) / 1024,
+			S_VALUE(sndj->rx_compressed, sndi->rx_compressed, itv),
+			S_VALUE(sndj->tx_compressed, sndi->tx_compressed, itv),
+			S_VALUE(sndj->multicast, sndi->multicast, itv));
+
+		xprintf(tab, "<net-edev rxerr=\"%.2f\" txerr=\"%.2f\" coll=\"%.2f\" "
+			"rxdrop=\"%.2f\" txdrop=\"%.2f\" txcarr=\"%.2f\" "
+			"rxfram=\"%.2f\" rxfifo=\"%.2f\" txfifo=\"%.2f\"/>",
+			S_VALUE(sndj->rx_errors, sndi->rx_errors, itv),
+			S_VALUE(sndj->tx_errors, sndi->tx_errors, itv),
+			S_VALUE(sndj->collisions, sndi->collisions, itv),
+			S_VALUE(sndj->rx_dropped, sndi->rx_dropped, itv),
+			S_VALUE(sndj->tx_dropped, sndi->tx_dropped, itv),
+			S_VALUE(sndj->tx_carrier_errors, sndi->tx_carrier_errors, itv),
+			S_VALUE(sndj->rx_frame_errors, sndi->rx_frame_errors, itv),
+			S_VALUE(sndj->rx_fifo_errors, sndi->rx_fifo_errors, itv),
+			S_VALUE(sndj->tx_fifo_errors, sndi->tx_fifo_errors, itv));
+
+		xprintf(--tab, "</net-device>");
+	}
+}
 
 /*
  ***************************************************************************
  * Display XML activity records
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @tab		Number of tabulations to print.
+ *
+ * OUT:
+ * @tab		Number of tabulations to print.
  ***************************************************************************
  */
-void write_xml_stats(int curr, int *tab)
+void write_xml_stats(int curr, int tab)
 {
-   int i, j, k;
-   unsigned long long dt, itv, g_itv;
-   char cur_time[64];
-   struct file_stats
-      *fsi = &file_stats[curr],
-      *fsj = &file_stats[!curr];
+	int i;
+	unsigned long long dt, itv, g_itv;
+	char cur_time[64];
+	struct file_stats
+		*fsi = &file_stats[curr],
+		*fsj = &file_stats[!curr];
 
-   /* Set timestamp for current data */
-   set_rectime(curr);
+	/* Set timestamp for current data */
+	set_rectime(curr);
 
-   /* Get interval values */
-   get_itv_value(&file_stats[curr], &file_stats[!curr],
-		 file_hdr.sa_proc, &itv, &g_itv);
+	/* Get interval values */
+	get_itv_value(&file_stats[curr], &file_stats[!curr],
+		      file_hdr.sa_proc, &itv, &g_itv);
 
-   dt = itv / HZ;
-   /* Correct rounding error for dt */
-   if ((itv % HZ) >= (HZ / 2))
-      dt++;
+	dt = itv / HZ;
+	/* Correct rounding error for dt */
+	if ((itv % HZ) >= (HZ / 2))
+		dt++;
 
-   strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
-   xprintf(*tab, "<timestamp %s interval=\"%llu\">", cur_time, dt);
-   (*tab)++;
+	strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
+	xprintf(tab, "<timestamp %s interval=\"%llu\">", cur_time, dt);
+	tab++;
 
-   /* proc/s */
-   xprintf(*tab, "<processes per=\"second\" proc=\"%.2f\"/>",
-	   S_VALUE(fsj->processes, fsi->processes, itv));
+	/* proc/s */
+	xprintf(tab, "<processes per=\"second\" proc=\"%.2f\"/>",
+		S_VALUE(fsj->processes, fsi->processes, itv));
 
-   /* cswch/s */
-   xprintf(*tab, "<context-switch per=\"second\" cswch=\"%.2f\"/>",
-	   ll_s_value(fsj->context_swtch, fsi->context_swtch, itv));
+	/* cswch/s */
+	xprintf(tab, "<context-switch per=\"second\" cswch=\"%.2f\"/>",
+		ll_s_value(fsj->context_swtch, fsi->context_swtch, itv));
 
-   /* cpu */
-   xprintf(*tab, "<cpu-load>");
-   xprintf(++(*tab), "<cpu number=\"all\" user=\"%.2f\" nice=\"%.2f\" "
-	             "system=\"%.2f\" iowait=\"%.2f\" steal=\"%.2f\" idle=\"%.2f\"/>",
-	   ll_sp_value(fsj->cpu_user, fsi->cpu_user, g_itv),
-	   ll_sp_value(fsj->cpu_nice, fsi->cpu_nice, g_itv),
-	   ll_sp_value(fsj->cpu_system, fsi->cpu_system, g_itv),
-	   ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv),
-	   ll_sp_value(fsj->cpu_steal, fsi->cpu_steal, g_itv),
-	   (fsi->cpu_idle < fsj->cpu_idle)
-	   ? 0.0
-	   : ll_sp_value(fsj->cpu_idle, fsi->cpu_idle, g_itv));
+	/* cpu */
+	xprintf(tab, "<cpu-load>");
+	xprintf(++tab, "<cpu number=\"all\" user=\"%.2f\" nice=\"%.2f\" "
+		"system=\"%.2f\" iowait=\"%.2f\" steal=\"%.2f\" idle=\"%.2f\"/>",
+		ll_sp_value(fsj->cpu_user, fsi->cpu_user, g_itv),
+		ll_sp_value(fsj->cpu_nice, fsi->cpu_nice, g_itv),
+		ll_sp_value(fsj->cpu_system, fsi->cpu_system, g_itv),
+		ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv),
+		ll_sp_value(fsj->cpu_steal, fsi->cpu_steal, g_itv),
+		(fsi->cpu_idle < fsj->cpu_idle)
+		? 0.0
+		: ll_sp_value(fsj->cpu_idle, fsi->cpu_idle, g_itv));
 
-   if (file_hdr.sa_proc) {
-      unsigned long long pc_itv;
-      struct stats_one_cpu
-	 *sci = st_cpu[curr],
-         *scj = st_cpu[!curr];
+	if (file_hdr.sa_proc)
+		write_xml_per_cpu_stats(curr, tab);
 
-      for (i = 0; i < file_hdr.sa_proc; i++, sci++, scj++) {
+	xprintf(--tab, "</cpu-load>");
 
-	 /* Recalculate itv for current proc */
-	 pc_itv = get_per_cpu_interval(sci, scj);
-	
-	 if (!pc_itv)
-	    /* Current proc is offlined */
-	    xprintf(*tab, "<cpu number=\"%d\" user=\"0.00\" nice=\"0.00\" "
-		    "system=\"0.00\" iowait=\"0.00\" steal=\"0.00\" idle=\"0.00\"/>",
-		    i);
-	 else {
-	    xprintf(*tab, "<cpu number=\"%d\" user=\"%.2f\" nice=\"%.2f\" "
-		    "system=\"%.2f\" iowait=\"%.2f\" steal=\"%.2f\" idle=\"%.2f\"/>",
-		    i,
-		    ll_sp_value(scj->per_cpu_user, sci->per_cpu_user, pc_itv),
-		    ll_sp_value(scj->per_cpu_nice, sci->per_cpu_nice, pc_itv),
-		    ll_sp_value(scj->per_cpu_system, sci->per_cpu_system, pc_itv),
-		    ll_sp_value(scj->per_cpu_iowait, sci->per_cpu_iowait, pc_itv),
-		    ll_sp_value(scj->per_cpu_steal, sci->per_cpu_steal, pc_itv),
-		    (sci->per_cpu_idle < scj->per_cpu_idle)
-		    ? 0.0
-		    : ll_sp_value(scj->per_cpu_idle, sci->per_cpu_idle, pc_itv));
-	 }
-      }
-   }
-   xprintf(--(*tab), "</cpu-load>");
+	/* Interrupts */
+	xprintf(tab, "<interrupts>");
+	xprintf(++tab, "<int-global per=\"second\">");
+	xprintf(++tab, "<irq intr=\"sum\" value=\"%.2f\"/>",
+		ll_s_value(fsj->irq_sum, fsi->irq_sum, itv));
 
-   /* Interrupts */
-   xprintf(*tab, "<interrupts>");
-   xprintf(++(*tab), "<int-global per=\"second\">");
-   xprintf(++(*tab), "<irq intr=\"sum\" value=\"%.2f\"/>",
-	   ll_s_value(fsj->irq_sum, fsi->irq_sum, itv));
+	/* Display individual interrupts stats only if they are available in file */
+	if (GET_ONE_IRQ(file_hdr.sa_actflag)) {
+		for (i = 0; i < NR_IRQS; i++) {
+			xprintf(tab, "<irq intr=\"%d\" value=\"%.2f\"/>", i,
+				S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
+		}
+	}
 
-   /* Display individual interrupts stats only if they are available in file */
-   if (GET_ONE_IRQ(file_hdr.sa_actflag)) {
-      for (i = 0; i < NR_IRQS; i++) {
-	 xprintf(*tab, "<irq intr=\"%d\" value=\"%.2f\"/>", i,
-		 S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
-      }
-   }
+	xprintf(--tab, "</int-global>");
 
-   xprintf(--(*tab), "</int-global>");
+	if (file_hdr.sa_irqcpu)
+		write_xml_irq_per_cpu_stats(curr, tab, itv);
 
-   if (file_hdr.sa_irqcpu) {
-      int offset;
-      struct stats_irq_cpu *p, *q, *p0, *q0;
+	xprintf(--tab, "</interrupts>");
 
-      xprintf(*tab, "<int-proc per=\"second\">");
-      (*tab)++;
+	/* swap */
+	xprintf(tab, "<swap-pages per=\"second\" pswpin=\"%.2f\" pswpout=\"%.2f\"/>",
+		S_VALUE(fsj->pswpin, fsi->pswpin, itv),
+		S_VALUE(fsj->pswpout, fsi->pswpout, itv));
 
-      for (k = 0; k < file_hdr.sa_proc; k++) {
+	/* io */
+	xprintf(tab, "<io per=\"second\">");
+	xprintf(++tab, "<tps>%.2f</tps>",
+		S_VALUE(fsj->dk_drive, fsi->dk_drive, itv));
+	xprintf(tab, "<io-reads rtps=\"%.2f\" bread=\"%.2f\"/>",
+		S_VALUE(fsj->dk_drive_rio, fsi->dk_drive_rio, itv),
+		S_VALUE(fsj->dk_drive_rblk, fsi->dk_drive_rblk, itv));
+	xprintf(tab, "<io-writes wtps=\"%.2f\" bwrtn=\"%.2f\"/>",
+		S_VALUE(fsj->dk_drive_wio, fsi->dk_drive_wio, itv),
+		S_VALUE(fsj->dk_drive_wblk, fsi->dk_drive_wblk, itv));
+	xprintf(--tab, "</io>");
 
-	 for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-	    p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
+	/* Disks */
+	if (file_hdr.sa_nr_disk)
+		write_xml_disk_stats(curr, tab, itv);
 
-	    /*
-	     * A value of ~0 means it is a remaining interrupt
-	     * which is no longer used, for example because the
-	     * number of interrupts has decreased in /proc/interrupts
-	     * or because we are appending data to an old sa file
-	     * with more interrupts than are actually available now.
-	     */
-	    if (p0->irq == ~0)
-	       continue;
+	/* Serial lines */
+	if (file_hdr.sa_serial)
+		write_xml_serial_stats(curr, tab, itv);
 
-	    q0 = st_irq_cpu[!curr] + j;
-	    offset = j;
+	/* Network */
+	xprintf(tab, "<network per=\"second\">");
+	tab++;
 
-	    if (p0->irq != q0->irq) {
-	       if (j)
-		  offset = j - 1;
-	       q0 = st_irq_cpu[!curr] + offset;
+	if (file_hdr.sa_iface)
+		write_xml_net_dev_stats(curr, tab, itv);
 
-	       if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-		  offset = j + 1;
-	       q0 = st_irq_cpu[!curr] + offset;
-	    }
+	xprintf(tab, "<net-nfs call=\"%.2f\" retrans=\"%.2f\" read=\"%.2f\" "
+		"write=\"%.2f\" access=\"%.2f\" getatt=\"%.2f\"/>",
+		S_VALUE(fsj->nfs_rpccnt, fsi->nfs_rpccnt, itv),
+		S_VALUE(fsj->nfs_rpcretrans, fsi->nfs_rpcretrans, itv),
+		S_VALUE(fsj->nfs_readcnt, fsi->nfs_readcnt, itv),
+		S_VALUE(fsj->nfs_writecnt, fsi->nfs_writecnt, itv),
+		S_VALUE(fsj->nfs_accesscnt, fsi->nfs_accesscnt, itv),
+		S_VALUE(fsj->nfs_getattcnt, fsi->nfs_getattcnt, itv));
+	xprintf(tab, "<net-nfsd scall=\"%.2f\" badcall=\"%.2f\" packet=\"%.2f\" "
+		"udp=\"%.2f\" tcp=\"%.2f\" hit=\"%.2f\" miss=\"%.2f\" "
+		"sread=\"%.2f\" swrite=\"%.2f\" saccess=\"%.2f\" sgetatt=\"%.2f\"/>",
+		S_VALUE(fsj->nfsd_rpccnt, fsi->nfsd_rpccnt, itv),
+		S_VALUE(fsj->nfsd_rpcbad, fsi->nfsd_rpcbad, itv),
+		S_VALUE(fsj->nfsd_netcnt, fsi->nfsd_netcnt, itv),
+		S_VALUE(fsj->nfsd_netudpcnt, fsi->nfsd_netudpcnt, itv),
+		S_VALUE(fsj->nfsd_nettcpcnt, fsi->nfsd_nettcpcnt, itv),
+		S_VALUE(fsj->nfsd_rchits, fsi->nfsd_rchits, itv),
+		S_VALUE(fsj->nfsd_rcmisses, fsi->nfsd_rcmisses, itv),
+		S_VALUE(fsj->nfsd_readcnt, fsi->nfsd_readcnt, itv),
+		S_VALUE(fsj->nfsd_writecnt, fsi->nfsd_writecnt, itv),
+		S_VALUE(fsj->nfsd_accesscnt, fsi->nfsd_accesscnt, itv),
+		S_VALUE(fsj->nfsd_getattcnt, fsi->nfsd_getattcnt, itv));
 
-	    if (p0->irq != q0->irq)
-	       continue;
+	xprintf(tab, "<net-sock totsck=\"%u\" tcpsck=\"%u\" udpsck=\"%u\" "
+		"rawsck=\"%u\" ip-frag=\"%u\" tcp-tw=\"%u\"/>",
+		fsi->sock_inuse, fsi->tcp_inuse, fsi->udp_inuse,
+		fsi->raw_inuse, fsi->frag_inuse, fsi->tcp_tw);
 
-	    p = st_irq_cpu[curr] + k * file_hdr.sa_irqcpu + j;
-	    q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
-	    xprintf(*tab, "<irqcpu cpu=\"%d\" intr=\"%d\" value=\"%.2f\"/>",
-		    k, p0->irq,
-		    S_VALUE(q->interrupt, p->interrupt, itv));
-	 }
-      }
-      xprintf(--(*tab), "</int-proc>");
-   }
-   xprintf(--(*tab), "</interrupts>");
+	xprintf(--tab, "</network>");
 
-   /* swap */
-   xprintf(*tab, "<swap-pages per=\"second\" pswpin=\"%.2f\" pswpout=\"%.2f\"/>",
-	   S_VALUE(fsj->pswpin, fsi->pswpin, itv),
-	   S_VALUE(fsj->pswpout, fsi->pswpout, itv));
+	/* paging */
+	xprintf(tab, "<paging per=\"second\" pgpgin=\"%.2f\" pgpgout=\"%.2f\" "
+		"fault=\"%.2f\" majflt=\"%.2f\" pgfree=\"%.2f\" "
+		"pgscank=\"%.2f\" pgscand=\"%.2f\" pgsteal=\"%.2f\" "
+		"vmeff-percent=\"%.2f\"/>",
+		S_VALUE(fsj->pgpgin, fsi->pgpgin, itv),
+		S_VALUE(fsj->pgpgout, fsi->pgpgout, itv),
+		S_VALUE(fsj->pgfault, fsi->pgfault, itv),
+		S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv),
+		S_VALUE(fsj->pgfree, fsi->pgfree, itv),
+		S_VALUE(fsj->pgscan_kswapd, fsi->pgscan_kswapd, itv),
+		S_VALUE(fsj->pgscan_direct, fsi->pgscan_direct, itv),
+		S_VALUE(fsj->pgsteal, fsi->pgsteal, itv),
+		(fsi->pgscan_kswapd + fsi->pgscan_direct -
+		 fsj->pgscan_kswapd - fsj->pgscan_direct) ?
+		SP_VALUE(fsj->pgsteal, fsi->pgsteal,
+			 fsi->pgscan_kswapd + fsi->pgscan_direct -
+			 fsj->pgscan_kswapd - fsj->pgscan_direct) : 0.0);
 
-   /* io */
-   xprintf(*tab, "<io per=\"second\">");
-   xprintf(++(*tab), "<tps>%.2f</tps>",
-	   S_VALUE(fsj->dk_drive, fsi->dk_drive, itv));
-   xprintf(*tab, "<io-reads rtps=\"%.2f\" bread=\"%.2f\"/>",
-	   S_VALUE(fsj->dk_drive_rio, fsi->dk_drive_rio, itv),
-	   S_VALUE(fsj->dk_drive_rblk, fsi->dk_drive_rblk, itv));
-   xprintf(*tab, "<io-writes wtps=\"%.2f\" bwrtn=\"%.2f\"/>",
-	   S_VALUE(fsj->dk_drive_wio, fsi->dk_drive_wio, itv),
-	   S_VALUE(fsj->dk_drive_wblk, fsi->dk_drive_wblk, itv));
-   xprintf(--(*tab), "</io>");
+	/* memory */
+	xprintf(tab, "<memory per=\"second\" unit=\"kB\">");
 
-   /* Disks */
-   if (file_hdr.sa_nr_disk) {
-      double tput, util, await, svctm, arqsz;
-      struct disk_stats
-	 *sdi = st_disk[curr],
-	 *sdj;
-      char *name = NULL;
+	xprintf(++tab, "<memfree>%lu</memfree>", fsi->frmkb);
+	xprintf(tab, "<memused>%lu</memused>", fsi->tlmkb - fsi->frmkb);
+	xprintf(tab, "<memused-percent>%.2f</memused-percent>",
+		fsi->tlmkb ?
+		SP_VALUE(fsi->frmkb, fsi->tlmkb, fsi->tlmkb) : 0.0);
+	xprintf(tab, "<swpfree>%lu</swpfree>", fsi->frskb);
+	xprintf(tab, "<swpused>%lu</swpused>", fsi->tlskb - fsi->frskb);
+	xprintf(tab, "<swpused-percent>%.2f</swpused-percent>",
+		fsi->tlskb ?
+		SP_VALUE(fsi->frskb, fsi->tlskb, fsi->tlskb) : 0.0);
+	xprintf(tab, "<swpcad>%lu</swpcad>", fsi->caskb);
+	xprintf(tab, "<buffers>%lu</buffers>", fsi->bufkb);
+	xprintf(tab, "<cached>%lu</cached>", fsi->camkb);
+	xprintf(tab, "<frmpg>%.2f</frmpg>",
+		S_VALUE((double) KB_TO_PG(fsj->frmkb), (double) KB_TO_PG(fsi->frmkb), itv));
+	xprintf(tab, "<bufpg>%.2f</bufpg>",
+		S_VALUE((double) KB_TO_PG(fsj->bufkb), (double) KB_TO_PG(fsi->bufkb), itv));
+	xprintf(tab, "<campg>%.2f</campg>",
+		S_VALUE((double) KB_TO_PG(fsj->camkb), (double) KB_TO_PG(fsi->camkb), itv));
 
-      xprintf(*tab, "<disk per=\"second\">");
-      (*tab)++;
+	xprintf(--tab, "</memory>");
 
-      for (i = 0; i < file_hdr.sa_nr_disk; i++, ++sdi) {
-	
-	 if (!(sdi->major + sdi->minor))
-	    continue;
+	/* kernel */
+	xprintf(tab, "<kernel per=\"second\">");
 
-	 j = check_disk_reg(&file_hdr, st_disk, curr, !curr, i);
-	 sdj = st_disk[!curr] + j;
+	xprintf(++tab, "<dentunusd>%u</dentunusd>", fsi->dentry_stat);
+	xprintf(tab, "<file-nr>%u</file-nr>", fsi->file_used);
+	xprintf(tab, "<inode-nr>%u</inode-nr>", fsi->inode_used);
+	xprintf(tab, "<pty-nr>%u</pty-nr>", fsi->pty_nr);
 
-	 tput = ((double) (sdi->nr_ios - sdj->nr_ios)) * HZ / itv;
-	 util = S_VALUE(sdj->tot_ticks, sdi->tot_ticks, itv);
-	 svctm = tput ? util / tput : 0.0;
-	 await = (sdi->nr_ios - sdj->nr_ios) ?
-	    ((sdi->rd_ticks - sdj->rd_ticks) + (sdi->wr_ticks - sdj->wr_ticks)) /
-	    ((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
-	 arqsz  = (sdi->nr_ios - sdj->nr_ios) ?
-	    ((sdi->rd_sect - sdj->rd_sect) + (sdi->wr_sect - sdj->wr_sect)) /
-	    ((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
+	xprintf(--tab, "</kernel>");
 
-	 if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
-	    name = transform_devmapname(sdi->major, sdi->minor);
-	
-	 if (!name)
-	    name = get_devname(sdi->major, sdi->minor, USE_PRETTY_OPTION(flags));
+	/* queue */
+	xprintf(tab, "<queue runq-sz=\"%lu\" plist-sz=\"%u\" ldavg-1=\"%.2f\" "
+		"ldavg-5=\"%.2f\" ldavg-15=\"%.2f\"/>",
+		fsi->nr_running,
+		fsi->nr_threads,
+		(double) fsi->load_avg_1 / 100,
+		(double) fsi->load_avg_5 / 100,
+		(double) fsi->load_avg_15 / 100);
 
-	 xprintf(*tab, "<disk-device dev=\"%s\" tps=\"%.2f\" rd_sec=\"%.2f\" "
-		       "wr_sec=\"%.2f\" avgrq-sz=\"%.2f\" avgqu-sz=\"%.2f\" "
-		       "await=\"%.2f\" svctm=\"%.2f\" util-percent=\"%.2f\"/>",
-		 name,
-		 S_VALUE(sdj->nr_ios,  sdi->nr_ios,  itv),
-		 ll_s_value(sdj->rd_sect, sdi->rd_sect, itv),
-		 ll_s_value(sdj->wr_sect, sdi->wr_sect, itv),
-		 /* See iostat for explanations */
-		 arqsz,
-		 S_VALUE(sdj->rq_ticks, sdi->rq_ticks, itv) / 1000.0,
-		 await,
-		 svctm,
-		 util / 10.0);
-      }
-      xprintf(--(*tab), "</disk>");
-   }
-
-   /* Serial lines */
-   if (file_hdr.sa_serial) {
-      struct stats_serial
-	 *ssi = st_serial[curr],
-	 *ssj = st_serial[!curr];
-
-      xprintf(*tab, "<serial per=\"second\">");
-      (*tab)++;
-
-      for (i = 0; i < file_hdr.sa_serial; i++, ssi++, ssj++) {
-	
-	 if (ssi->line == ~0)
-	    continue;
-	 if (ssi->line == ssj->line) {
-	    xprintf(*tab, "<tty line=\"%d\" rcvin=\"%.2f\" xmtin=\"%.2f\" "
-		          "framerr=\"%.2f\" prtyerr=\"%.2f\" brk=\"%.2f\" "
-		          "ovrun=\"%.2f\"/>",
-		    ssi->line,
-		    S_VALUE(ssj->rx, ssi->rx, itv),
-		    S_VALUE(ssj->tx, ssi->tx, itv),
-		    S_VALUE(ssj->frame, ssi->frame, itv),
-		    S_VALUE(ssj->parity, ssi->parity, itv),
-		    S_VALUE(ssj->brk, ssi->brk, itv),
-		    S_VALUE(ssj->overrun, ssi->overrun, itv));
-	 }
-      }
-      xprintf(--(*tab), "</serial>");
-   }
-
-   /* Network */
-   xprintf(*tab, "<network per=\"second\">");
-   (*tab)++;
-
-   if (file_hdr.sa_iface) {
-      struct stats_net_dev
-	 *sndi = st_net_dev[curr],
-	 *sndj;
-
-      for (i = 0; i < file_hdr.sa_iface; i++, sndi++) {
-	
-	 if (!strcmp(sndi->interface, "?"))
-	    continue;
-	 j = check_iface_reg(&file_hdr, st_net_dev, curr, !curr, i);
-	 sndj = st_net_dev[!curr] + j;
-	
-	 xprintf((*tab)++, "<net-device iface=\"%s\">",
-		 sndi->interface);
-	 xprintf(*tab, "<net-dev rxpck=\"%.2f\" txpck=\"%.2f\" rxkB=\"%.2f\" "
-		       "txkB=\"%.2f\" rxcmp=\"%.2f\" txcmp=\"%.2f\" rxmcst=\"%.2f\"/>",
-		 S_VALUE(sndj->rx_packets, sndi->rx_packets, itv),
-		 S_VALUE(sndj->tx_packets, sndi->tx_packets, itv),
-		 S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv) / 1024,
-		 S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv) / 1024,
-		 S_VALUE(sndj->rx_compressed, sndi->rx_compressed, itv),
-		 S_VALUE(sndj->tx_compressed, sndi->tx_compressed, itv),
-		 S_VALUE(sndj->multicast, sndi->multicast, itv));
-	 xprintf(*tab, "<net-edev rxerr=\"%.2f\" txerr=\"%.2f\" coll=\"%.2f\" "
-		       "rxdrop=\"%.2f\" txdrop=\"%.2f\" txcarr=\"%.2f\" "
-		       "rxfram=\"%.2f\" rxfifo=\"%.2f\" txfifo=\"%.2f\"/>",
-		 S_VALUE(sndj->rx_errors, sndi->rx_errors, itv),
-		 S_VALUE(sndj->tx_errors, sndi->tx_errors, itv),
-		 S_VALUE(sndj->collisions, sndi->collisions, itv),
-		 S_VALUE(sndj->rx_dropped, sndi->rx_dropped, itv),
-		 S_VALUE(sndj->tx_dropped, sndi->tx_dropped, itv),
-		 S_VALUE(sndj->tx_carrier_errors, sndi->tx_carrier_errors, itv),
-		 S_VALUE(sndj->rx_frame_errors, sndi->rx_frame_errors, itv),
-		 S_VALUE(sndj->rx_fifo_errors, sndi->rx_fifo_errors, itv),
-		 S_VALUE(sndj->tx_fifo_errors, sndi->tx_fifo_errors, itv));
-	 xprintf(--(*tab), "</net-device>");
-      }
-   }
-
-   xprintf(*tab, "<net-nfs call=\"%.2f\" retrans=\"%.2f\" read=\"%.2f\" "
-	         "write=\"%.2f\" access=\"%.2f\" getatt=\"%.2f\"/>",
-	   S_VALUE(fsj->nfs_rpccnt, fsi->nfs_rpccnt, itv),
-	   S_VALUE(fsj->nfs_rpcretrans, fsi->nfs_rpcretrans, itv),
-	   S_VALUE(fsj->nfs_readcnt, fsi->nfs_readcnt, itv),
-	   S_VALUE(fsj->nfs_writecnt, fsi->nfs_writecnt, itv),
-	   S_VALUE(fsj->nfs_accesscnt, fsi->nfs_accesscnt, itv),
-	   S_VALUE(fsj->nfs_getattcnt, fsi->nfs_getattcnt, itv));
-   xprintf(*tab, "<net-nfsd scall=\"%.2f\" badcall=\"%.2f\" packet=\"%.2f\" "
-	         "udp=\"%.2f\" tcp=\"%.2f\" hit=\"%.2f\" miss=\"%.2f\" "
-	         "sread=\"%.2f\" swrite=\"%.2f\" saccess=\"%.2f\" sgetatt=\"%.2f\"/>",
-	   S_VALUE(fsj->nfsd_rpccnt, fsi->nfsd_rpccnt, itv),
-	   S_VALUE(fsj->nfsd_rpcbad, fsi->nfsd_rpcbad, itv),
-	   S_VALUE(fsj->nfsd_netcnt, fsi->nfsd_netcnt, itv),
-	   S_VALUE(fsj->nfsd_netudpcnt, fsi->nfsd_netudpcnt, itv),
-	   S_VALUE(fsj->nfsd_nettcpcnt, fsi->nfsd_nettcpcnt, itv),
-	   S_VALUE(fsj->nfsd_rchits, fsi->nfsd_rchits, itv),
-	   S_VALUE(fsj->nfsd_rcmisses, fsi->nfsd_rcmisses, itv),
-	   S_VALUE(fsj->nfsd_readcnt, fsi->nfsd_readcnt, itv),
-	   S_VALUE(fsj->nfsd_writecnt, fsi->nfsd_writecnt, itv),
-	   S_VALUE(fsj->nfsd_accesscnt, fsi->nfsd_accesscnt, itv),
-	   S_VALUE(fsj->nfsd_getattcnt, fsi->nfsd_getattcnt, itv));
-
-   xprintf(*tab, "<net-sock totsck=\"%u\" tcpsck=\"%u\" udpsck=\"%u\" "
-	         "rawsck=\"%u\" ip-frag=\"%u\" tcp-tw=\"%u\"/>",
-	   fsi->sock_inuse, fsi->tcp_inuse, fsi->udp_inuse,
-	   fsi->raw_inuse, fsi->frag_inuse, fsi->tcp_tw);
-
-   xprintf(--(*tab), "</network>");
-
-   /* paging */
-   xprintf(*tab, "<paging per=\"second\" pgpgin=\"%.2f\" pgpgout=\"%.2f\" "
-	         "fault=\"%.2f\" majflt=\"%.2f\" pgfree=\"%.2f\" "
-	         "pgscank=\"%.2f\" pgscand=\"%.2f\" pgsteal=\"%.2f\" "
-	         "vmeff-percent=\"%.2f\"/>",
-	   S_VALUE(fsj->pgpgin, fsi->pgpgin, itv),
-	   S_VALUE(fsj->pgpgout, fsi->pgpgout, itv),
-	   S_VALUE(fsj->pgfault, fsi->pgfault, itv),
-	   S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv),
-	   S_VALUE(fsj->pgfree, fsi->pgfree, itv),
-	   S_VALUE(fsj->pgscan_kswapd, fsi->pgscan_kswapd, itv),
-	   S_VALUE(fsj->pgscan_direct, fsi->pgscan_direct, itv),
-	   S_VALUE(fsj->pgsteal, fsi->pgsteal, itv),
-	   (fsi->pgscan_kswapd + fsi->pgscan_direct - fsj->pgscan_kswapd - fsj->pgscan_direct) ?
-	   SP_VALUE(fsj->pgsteal, fsi->pgsteal,
-		    fsi->pgscan_kswapd + fsi->pgscan_direct -
-		    fsj->pgscan_kswapd - fsj->pgscan_direct) : 0.0);
-
-   /* memory */
-   xprintf(*tab, "<memory per=\"second\" unit=\"kB\">");
-
-   xprintf(++(*tab), "<memfree>%lu</memfree>", fsi->frmkb);
-   xprintf(*tab, "<memused>%lu</memused>", fsi->tlmkb - fsi->frmkb);
-   xprintf(*tab, "<memused-percent>%.2f</memused-percent>",
-	   fsi->tlmkb ?
-	   SP_VALUE(fsi->frmkb, fsi->tlmkb, fsi->tlmkb) : 0.0);
-   xprintf(*tab, "<swpfree>%lu</swpfree>", fsi->frskb);
-   xprintf(*tab, "<swpused>%lu</swpused>", fsi->tlskb - fsi->frskb);
-   xprintf(*tab, "<swpused-percent>%.2f</swpused-percent>",
-	   fsi->tlskb ?
-	   SP_VALUE(fsi->frskb, fsi->tlskb, fsi->tlskb) : 0.0);
-   xprintf(*tab, "<swpcad>%lu</swpcad>", fsi->caskb);
-   xprintf(*tab, "<buffers>%lu</buffers>", fsi->bufkb);
-   xprintf(*tab, "<cached>%lu</cached>", fsi->camkb);
-   xprintf(*tab, "<frmpg>%.2f</frmpg>",
-	   S_VALUE((double) KB_TO_PG(fsj->frmkb), (double) KB_TO_PG(fsi->frmkb), itv));
-   xprintf(*tab, "<bufpg>%.2f</bufpg>",
-	   S_VALUE((double) KB_TO_PG(fsj->bufkb), (double) KB_TO_PG(fsi->bufkb), itv));
-   xprintf(*tab, "<campg>%.2f</campg>",
-	   S_VALUE((double) KB_TO_PG(fsj->camkb), (double) KB_TO_PG(fsi->camkb), itv));
-	
-   xprintf(--(*tab), "</memory>");
-
-   /* kernel */
-   xprintf(*tab, "<kernel per=\"second\">");
-
-   xprintf(++(*tab), "<dentunusd>%u</dentunusd>", fsi->dentry_stat);
-   xprintf(*tab, "<file-nr>%u</file-nr>", fsi->file_used);
-   xprintf(*tab, "<inode-nr>%u</inode-nr>", fsi->inode_used);
-   xprintf(*tab, "<pty-nr>%u</pty-nr>", fsi->pty_nr);
-
-   xprintf(--(*tab), "</kernel>");
-
-   /* queue */
-   xprintf(*tab, "<queue runq-sz=\"%lu\" plist-sz=\"%u\" ldavg-1=\"%.2f\" "
-	         "ldavg-5=\"%.2f\" ldavg-15=\"%.2f\"/>",
-	   fsi->nr_running,
-	   fsi->nr_threads,
-	   (double) fsi->load_avg_1 / 100,
-	   (double) fsi->load_avg_5 / 100,
-	   (double) fsi->load_avg_15 / 100);
-
-   xprintf(--(*tab), "</timestamp>");
+	xprintf(--tab, "</timestamp>");
 }
-
 
 /*
  ***************************************************************************
  * Display XML restart records
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @tab		Number of tabulations to print.
  ***************************************************************************
  */
-void write_xml_restarts(int curr, int *tab)
+void write_xml_restarts(int curr, int tab)
 {
-   char cur_time[64];
+	char cur_time[64];
 
-   /* Set timestamp for current data */
-   set_rectime(curr);
+	/* Set timestamp for current data */
+	set_rectime(curr);
 
-   strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
-   xprintf(*tab, "<boot %s/>", cur_time);
+	strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
+	xprintf(tab, "<boot %s/>", cur_time);
 }
-
 
 /*
  ***************************************************************************
  * Display XML COMMENT records
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @tab		Number of tabulations to print.
  ***************************************************************************
  */
-void write_xml_comments(int curr, int *tab)
+void write_xml_comments(int curr, int tab)
 {
-   char cur_time[64];
-   struct file_comment *file_comment;
+	char cur_time[64];
+	struct file_comment *file_comment;
 
-   file_comment = (struct file_comment *) &(file_stats[curr]);
+	file_comment = (struct file_comment *) &(file_stats[curr]);
 
-   /* Set timestamp for current data */
-   set_rectime(curr);
+	/* Set timestamp for current data */
+	set_rectime(curr);
 
-   strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
-   xprintf(*tab, "<comment %s com=\"%s\"/>", cur_time, file_comment->comment);
+	strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
+	xprintf(tab, "<comment %s com=\"%s\"/>", cur_time, file_comment->comment);
 }
-
 
 /*
  ***************************************************************************
  * Print contents of a special (RESTART or COMMENT) record
+ *
+ * IN:
+ * @curr		Index in array for current sample statistics.
+ * @use_tm_start	Set to TRUE if option -s has been used.
+ * @use_tm_end		Set to TRUE if option -e has been used.
+ * @rtype		Record type (RESTART or COMMENT).
  ***************************************************************************
  */
 void write_special(int curr, int use_tm_start, int use_tm_end, int rtype)
 {
-   char cur_time[26];
+	char cur_time[26];
 
-   set_timestamp(curr, cur_time, 26);
+	set_timestamp(curr, cur_time, 26);
 
-   /* The record must be in the interval specified by -s/-e options */
-   if ((use_tm_start && (datecmp(&loctime, &tm_start) < 0)) ||
-       (use_tm_end && (datecmp(&loctime, &tm_end) > 0)))
-      return;
+	/* The record must be in the interval specified by -s/-e options */
+	if ((use_tm_start && (datecmp(&loctime, &tm_start) < 0)) ||
+	    (use_tm_end && (datecmp(&loctime, &tm_end) > 0)))
+		return;
 
-   if (rtype == R_RESTART) {
-      if (format == S_O_PPC_OPTION)
-	 printf("%s\t-1\t%ld\tLINUX-RESTART\n",
-		file_hdr.sa_nodename, file_stats[curr].ust_time);
-      else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
-	 printf("%s;-1;%s;LINUX-RESTART\n",
-		file_hdr.sa_nodename, cur_time);
-   }
-   else if ((rtype == R_COMMENT) && DISPLAY_COMMENT(flags)) {
-      struct file_comment *file_comment;
+	if (rtype == R_RESTART) {
+		if (format == S_O_PPC_OPTION)
+			printf("%s\t-1\t%ld\tLINUX-RESTART\n",
+			       file_hdr.sa_nodename, file_stats[curr].ust_time);
+		else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
+			printf("%s;-1;%s;LINUX-RESTART\n",
+			       file_hdr.sa_nodename, cur_time);
+	}
+	else if ((rtype == R_COMMENT) && DISPLAY_COMMENT(flags)) {
+		struct file_comment *file_comment;
 
-      file_comment = (struct file_comment *) &(file_stats[curr]);
-      if (format == S_O_PPC_OPTION)
-	 printf("%s\t-1\t%ld\tCOM %s\n",
-		file_hdr.sa_nodename, file_stats[curr].ust_time,
-		file_comment->comment);
-      else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
-	 printf("%s;-1;%s;COM %s\n",
-		file_hdr.sa_nodename, cur_time,	file_comment->comment);
-   }
+		file_comment = (struct file_comment *) &(file_stats[curr]);
+		if (format == S_O_PPC_OPTION)
+			printf("%s\t-1\t%ld\tCOM %s\n",
+			       file_hdr.sa_nodename, file_stats[curr].ust_time,
+			       file_comment->comment);
+		else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
+			printf("%s;-1;%s;COM %s\n",
+			       file_hdr.sa_nodename, cur_time,	file_comment->comment);
+	}
 }
-
 
 /*
  ***************************************************************************
  * Display data file header
+ *
+ * IN:
+ * @dfile	Name of system activity data file
+ * @file_magic	System activity file magic header
+ * @file_hdr	System activity file standard header
  ***************************************************************************
  */
-void display_file_header(char *dfile, struct file_hdr *file_hdr)
+void display_file_header(char *dfile, struct file_magic *file_magic,
+			 struct file_hdr *file_hdr)
 {
-   printf("File: %s (%#x)\n", dfile, file_hdr->sa_magic);
+	fprintf(stderr, _("System activity data file: %s (%#x)\n"),
+		dfile, file_magic->format_magic);
 
-   print_gal_header(localtime((const time_t *) &(file_hdr->sa_ust_time)),
-		    file_hdr->sa_sysname, file_hdr->sa_release,
-		    file_hdr->sa_nodename);
+	display_sa_file_version(file_magic);
 
-   printf("Activity flag: %#x\n", file_hdr->sa_actflag);
-   printf("Sizeof(long): %d\n", file_hdr->sa_sizeof_long);
-   printf("#CPU:    %u\n", file_hdr->sa_proc);
-   printf("#IrqCPU: %u\n", file_hdr->sa_irqcpu);
-   printf("#Disks:  %u\n", file_hdr->sa_nr_disk);
-   printf("#Serial: %u\n", file_hdr->sa_serial);
-   printf("#Ifaces: %u\n", file_hdr->sa_iface);
+	if (file_magic->format_magic != FORMAT_MAGIC)
+		exit(0);
+
+	fprintf(stderr, _("Host: "));
+	print_gal_header(localtime((const time_t *) &(file_hdr->sa_ust_time)),
+			 file_hdr->sa_sysname, file_hdr->sa_release,
+			 file_hdr->sa_nodename, file_hdr->sa_machine);
+
+	fprintf(stderr, _("Activity flag: %#x\n"), file_hdr->sa_actflag);
+	fprintf(stderr, _("Size of a long int: %d\n"), file_hdr->sa_sizeof_long);
+	fprintf(stderr, _("Number of CPU: %u\n"), file_hdr->sa_proc);
+	fprintf(stderr, _("Number of interrupts per CPU: %u\n"), file_hdr->sa_irqcpu);
+	fprintf(stderr, _("Number of disks: %u\n"), file_hdr->sa_nr_disk);
+	fprintf(stderr, _("Number of serial lines: %u\n"), file_hdr->sa_serial);
+	fprintf(stderr, _("Number of network interfaces: %u\n"), file_hdr->sa_iface);
+
+	exit(0);
 }
-
 
 /*
  ***************************************************************************
  * Display XML header and host data
+ *
+ * IN:
+ * @tab		Number of tabulations to print.
+ *
+ * OUT:
+ * @tab		Number of tabulations to print.
  ***************************************************************************
  */
 void display_xml_header(int *tab)
 {
-   printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-   printf("<!DOCTYPE Configure PUBLIC \"DTD v%s sysstat //EN\"\n", XML_DTD_VERSION);
-   printf("\"http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd\">\n");
+	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	printf("<!DOCTYPE Configure PUBLIC \"DTD v%s sysstat //EN\"\n", XML_DTD_VERSION);
+	printf("\"http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd\">\n");
 
-   xprintf(*tab, "<sysstat>");
-   xprintf(++(*tab), "<sysdata-version>%s</sysdata-version>", XML_DTD_VERSION);
+	xprintf(*tab, "<sysstat>");
+	xprintf(++(*tab), "<sysdata-version>%s</sysdata-version>", XML_DTD_VERSION);
 
-   xprintf(*tab, "<host nodename=\"%s\">", file_hdr.sa_nodename);
-   xprintf(++(*tab), "<sysname>%s</sysname>", file_hdr.sa_sysname);
-   xprintf(*tab, "<release>%s</release>", file_hdr.sa_release);
+	xprintf(*tab, "<host nodename=\"%s\">", file_hdr.sa_nodename);
+	xprintf(++(*tab), "<sysname>%s</sysname>", file_hdr.sa_sysname);
+	xprintf(*tab, "<release>%s</release>", file_hdr.sa_release);
+	xprintf(*tab, "<machine>%s</machine>", file_hdr.sa_machine);
 }
-
 
 /*
  ***************************************************************************
@@ -1541,373 +1821,408 @@ void display_xml_header(int *tab)
  */
 void allocate_structures(void)
 {
-   if (file_hdr.sa_proc)
-      salloc_cpu_array(st_cpu, file_hdr.sa_proc);
-   if (file_hdr.sa_serial)
-      salloc_serial_array(st_serial, file_hdr.sa_serial);
-   if (file_hdr.sa_irqcpu)
-      salloc_irqcpu_array(st_irq_cpu, file_hdr.sa_proc,
-			  file_hdr.sa_irqcpu);
-   if (file_hdr.sa_iface)
-      salloc_net_dev_array(st_net_dev, file_hdr.sa_iface);
-   if (file_hdr.sa_nr_disk)
-      salloc_disk_array(st_disk, file_hdr.sa_nr_disk);
+	if (file_hdr.sa_proc)
+		salloc_cpu_array(st_cpu, file_hdr.sa_proc);
+	if (file_hdr.sa_serial)
+		salloc_serial_array(st_serial, file_hdr.sa_serial);
+	if (file_hdr.sa_irqcpu)
+		salloc_irqcpu_array(st_irq_cpu, file_hdr.sa_proc,
+				    file_hdr.sa_irqcpu);
+	if (file_hdr.sa_iface)
+		salloc_net_dev_array(st_net_dev, file_hdr.sa_iface);
+	if (file_hdr.sa_nr_disk)
+		salloc_disk_array(st_disk, file_hdr.sa_nr_disk);
 }
-
 
 /*
  ***************************************************************************
  * Move structures data
+ *
+ * IN:
+ * @dest	Index in array for target structure where stats have to be
+ *		copied to.
+ * @src		Index in array for source structure containing stats to copy.
  ***************************************************************************
  */
 void copy_structures(int dest, int src)
 {
-   memcpy(&file_stats[dest], &file_stats[src], FILE_STATS_SIZE);
-   if (file_hdr.sa_proc)
-      memcpy(st_cpu[dest], st_cpu[src],
-	     STATS_ONE_CPU_SIZE * file_hdr.sa_proc);
-   if (GET_ONE_IRQ(file_hdr.sa_actflag))
-      memcpy(interrupts[dest], interrupts[src],
-	     STATS_ONE_IRQ_SIZE);
-   if (file_hdr.sa_serial)
-      memcpy(st_serial[dest], st_serial[src],
-	     STATS_SERIAL_SIZE * file_hdr.sa_serial);
-   if (file_hdr.sa_irqcpu)
-      memcpy(st_irq_cpu[dest], st_irq_cpu[src],
-	     STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu);
-   if (file_hdr.sa_iface)
-      memcpy(st_net_dev[dest], st_net_dev[src],
-	     STATS_NET_DEV_SIZE * file_hdr.sa_iface);
-   if (file_hdr.sa_nr_disk)
-      memcpy(st_disk[dest], st_disk[src],
-	     DISK_STATS_SIZE * file_hdr.sa_nr_disk);
+	memcpy(&file_stats[dest], &file_stats[src], FILE_STATS_SIZE);
+	if (file_hdr.sa_proc)
+		memcpy(st_cpu[dest], st_cpu[src],
+		       STATS_ONE_CPU_SIZE * file_hdr.sa_proc);
+	if (GET_ONE_IRQ(file_hdr.sa_actflag))
+		memcpy(interrupts[dest], interrupts[src],
+		       STATS_ONE_IRQ_SIZE);
+	if (file_hdr.sa_serial)
+		memcpy(st_serial[dest], st_serial[src],
+		       STATS_SERIAL_SIZE * file_hdr.sa_serial);
+	if (file_hdr.sa_irqcpu)
+		memcpy(st_irq_cpu[dest], st_irq_cpu[src],
+		       STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu);
+	if (file_hdr.sa_iface)
+		memcpy(st_net_dev[dest], st_net_dev[src],
+		       STATS_NET_DEV_SIZE * file_hdr.sa_iface);
+	if (file_hdr.sa_nr_disk)
+		memcpy(st_disk[dest], st_disk[src],
+		       DISK_STATS_SIZE * file_hdr.sa_nr_disk);
 }
-
 
 /*
  ***************************************************************************
  * Read varying part of the statistics from a daily data file
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @ifd		File descriptor of input file.
  ***************************************************************************
  */
 void read_extra_stats(int curr, int ifd)
 {
-   if (file_hdr.sa_proc)
-      sa_fread(ifd, st_cpu[curr],
-	       STATS_ONE_CPU_SIZE * file_hdr.sa_proc, HARD_SIZE);
-   if (GET_ONE_IRQ(file_hdr.sa_actflag))
-      sa_fread(ifd, interrupts[curr],
-	       STATS_ONE_IRQ_SIZE, HARD_SIZE);
-   if (file_hdr.sa_serial)
-      sa_fread(ifd, st_serial[curr],
-	       STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
-   if (file_hdr.sa_irqcpu)
-      sa_fread(ifd, st_irq_cpu[curr],
-	       STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu, HARD_SIZE);
-   if (file_hdr.sa_iface)
-      sa_fread(ifd, st_net_dev[curr],
-	       STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
-   if (file_hdr.sa_nr_disk)
-      sa_fread(ifd, st_disk[curr],
-	       DISK_STATS_SIZE * file_hdr.sa_nr_disk, HARD_SIZE);
+	if (file_hdr.sa_proc)
+		sa_fread(ifd, st_cpu[curr],
+			 STATS_ONE_CPU_SIZE * file_hdr.sa_proc, HARD_SIZE);
+	if (GET_ONE_IRQ(file_hdr.sa_actflag))
+		sa_fread(ifd, interrupts[curr],
+			 STATS_ONE_IRQ_SIZE, HARD_SIZE);
+	if (file_hdr.sa_serial)
+		sa_fread(ifd, st_serial[curr],
+			 STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
+	if (file_hdr.sa_irqcpu)
+		sa_fread(ifd, st_irq_cpu[curr],
+			 STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu,
+			 HARD_SIZE);
+	if (file_hdr.sa_iface)
+		sa_fread(ifd, st_net_dev[curr],
+			 STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
+	if (file_hdr.sa_nr_disk)
+		sa_fread(ifd, st_disk[curr],
+			 DISK_STATS_SIZE * file_hdr.sa_nr_disk, HARD_SIZE);
 }
-
 
 /*
  ***************************************************************************
  * Read stats for current activity from file and write them
+ *
+ * IN:
+ * @ifd		File descriptor of input file.
+ * @fpos	Position in file where reading must start.
+ * @curr	Index in array for current sample statistics.
+ * @act		Activity to display.
+ *
+ * OUT:
+ * @curr	Index in array for next sample statistics.
+ * @cnt		Number of lines of stats remaining to write.
+ * @eosaf	Set to TRUE if EOF (end of file) has been reached.
+ * @reset	Set to TRUE if last_uptime variable should be
+ * 		reinitialized (used in next_slice() function).
  ***************************************************************************
  */
 void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 			 unsigned int act, int *reset)
 {
-   unsigned char rtype;
-   int next;
+	unsigned char rtype;
+	int next;
 
-   if (lseek(ifd, fpos, SEEK_SET) < fpos) {
-      perror("lseek");
-      exit(2);
-   }
+	if (lseek(ifd, fpos, SEEK_SET) < fpos) {
+		perror("lseek");
+		exit(2);
+	}
 
-   /*
-    * Restore the first stats collected.
-    * Used to compute the rate displayed on the first line.
-    */
-   copy_structures(!(*curr), 2);
-	
-   *cnt  = count;
+	/*
+	 * Restore the first stats collected.
+	 * Used to compute the rate displayed on the first line.
+	 */
+	copy_structures(!(*curr), 2);
 
-   do {
-      /* Display <count> lines of stats */
-      *eosaf = sa_fread(ifd, &file_stats[*curr],
-			file_hdr.sa_st_size, SOFT_SIZE);
-      rtype = file_stats[*curr].record_type;
-	
-      if (!(*eosaf) && (rtype != R_RESTART) && (rtype != R_COMMENT))
-	 /* Read the extra fields since it's not a RESTART record */
-	 read_extra_stats(*curr, ifd);
+	*cnt  = count;
 
-      if (!(*eosaf) && (rtype != R_RESTART)) {
-	
-	 if (rtype == R_COMMENT) {
-	    write_special(*curr, tm_start.use, tm_end.use, R_COMMENT);
-	    continue;
-	 }
+	do {
+		/* Display <count> lines of stats */
+		*eosaf = sa_fread(ifd, &file_stats[*curr],
+				  file_hdr.sa_st_size, SOFT_SIZE);
+		rtype = file_stats[*curr].record_type;
 
-	 next = write_parsable_stats(*curr, act, *reset, cnt,
-				     tm_start.use, tm_end.use);
-	
-	 if (next) {
-	    /*
-	     * next is set to 1 when we were close enough to desired interval.
-	     * In this case, the call to write_parsable_stats() has actually
-	     * displayed a line of stats.
-	     */
-	    *curr ^=1;
-	    if ((*cnt) > 0)
-	      (*cnt)--;
-	 }
-	
-	 *reset = FALSE;
-      }
-   }
-   while ((*cnt) && !(*eosaf) && (rtype != R_RESTART));
+		if (!(*eosaf) && (rtype != R_RESTART) && (rtype != R_COMMENT))
+			/* Read the extra fields since it's not a RESTART record */
+			read_extra_stats(*curr, ifd);
 
-   *reset = TRUE;
+		if (!(*eosaf) && (rtype != R_RESTART)) {
+
+			if (rtype == R_COMMENT) {
+				write_special(*curr, tm_start.use, tm_end.use, R_COMMENT);
+				continue;
+			}
+
+			next = write_parsable_stats(*curr, act, *reset, cnt,
+						    tm_start.use, tm_end.use);
+
+			if (next) {
+				/*
+				 * next is set to 1 when we were close enough to desired interval.
+				 * In this case, the call to write_parsable_stats() has actually
+				 * displayed a line of stats.
+				 */
+				*curr ^=1;
+				if ((*cnt) > 0)
+					(*cnt)--;
+			}
+
+			*reset = FALSE;
+		}
+	}
+	while ((*cnt) && !(*eosaf) && (rtype != R_RESTART));
+
+	*reset = TRUE;
 }
-
 
 /*
  ***************************************************************************
  * Display activities for -x option
+ *
+ * IN:
+ * @ifd		File descriptor of input file.
  ***************************************************************************
  */
 void xml_display_loop(int ifd)
 {
-   int curr, tab = 0, rtype;
-   int eosaf = TRUE;
-   off_t fpos;
+	int curr, tab = 0, rtype;
+	int eosaf = TRUE;
+	off_t fpos;
 
-   /* Save current file position */
-   if ((fpos = lseek(ifd, 0, SEEK_CUR)) < 0) {
-      perror("lseek");
-      exit(2);
-   }
+	/* Save current file position */
+	if ((fpos = lseek(ifd, 0, SEEK_CUR)) < 0) {
+		perror("lseek");
+		exit(2);
+	}
 
-   /* Print XML header */
-   display_xml_header(&tab);
+	/* Print XML header */
+	display_xml_header(&tab);
 
-   /* Process activities */
-   xprintf(tab++, "<statistics>");
-   do {
-      /*
-       * If this record is a special (RESTART or COMMENT)  one,
-       * try to get another one.
-       */
-      do {
-	 eosaf = sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE);
-	 rtype = file_stats[0].record_type;
-	
-	 if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
-	    /*
-	     * Ok: previous record was not a special one.
-	     * So read now the extra fields.
-	     */
-	    read_extra_stats(0, ifd);
-	 }
-      }
-      while (!eosaf && ((rtype == R_RESTART) || (rtype == R_COMMENT)));
+	/* Process activities */
+	xprintf(tab++, "<statistics>");
+	do {
+		/*
+		 * If this record is a special (RESTART or COMMENT)  one,
+		 * try to get another one.
+		 */
+		do {
+			eosaf = sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE);
+			rtype = file_stats[0].record_type;
 
-      curr = 1;
+			if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
+				/*
+				 * Ok: previous record was not a special one.
+				 * So read now the extra fields.
+				 */
+				read_extra_stats(0, ifd);
+			}
+		}
+		while (!eosaf && ((rtype == R_RESTART) || (rtype == R_COMMENT)));
 
-      if (!eosaf) {
-	 do {
-	    eosaf = sa_fread(ifd, &file_stats[curr],
-			     file_hdr.sa_st_size, SOFT_SIZE);
-	    rtype = file_stats[curr].record_type;
-	
-	    if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
-	       /* Read the extra fields since it's not a special record */
-	       read_extra_stats(curr, ifd);
+		curr = 1;
 
-	       write_xml_stats(curr, &tab);
-	       curr ^= 1;
-	    }
-	 }
-	 while (!eosaf && (rtype != R_RESTART));
-      }
+		if (!eosaf) {
+			do {
+				eosaf = sa_fread(ifd, &file_stats[curr],
+						 file_hdr.sa_st_size, SOFT_SIZE);
+				rtype = file_stats[curr].record_type;
 
-   }
-   while (!eosaf);
-   xprintf(--tab, "</statistics>");
+				if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
+					/* Read the extra fields since it's not a special record */
+					read_extra_stats(curr, ifd);
 
-   /* Rewind file */
-   if (lseek(ifd, fpos, SEEK_SET) < fpos) {
-      perror("lseek");
-      exit(2);
-   }
+					write_xml_stats(curr, tab);
+					curr ^= 1;
+				}
+			}
+			while (!eosaf && (rtype != R_RESTART));
+		}
+	}
+	while (!eosaf);
+	xprintf(--tab, "</statistics>");
 
-   /* Process now RESTART entries to display restart messages */
-   xprintf(tab++, "<restarts>");
-   do {
-      if ((eosaf = sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE)) == 0) {
+	/* Rewind file */
+	if (lseek(ifd, fpos, SEEK_SET) < fpos) {
+		perror("lseek");
+		exit(2);
+	}
 
-	 rtype = file_stats[0].record_type;
-	 if ((rtype != R_RESTART) && (rtype != R_COMMENT))
-	    read_extra_stats(0, ifd);
-	 if (rtype == R_RESTART)
-	   write_xml_restarts(0, &tab);
-      }
-   }
-   while (!eosaf);
-   xprintf(--tab, "</restarts>");
+	/* Process now RESTART entries to display restart messages */
+	xprintf(tab++, "<restarts>");
+	do {
+		if ((eosaf = sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE)) == 0) {
 
-   /* Rewind file */
-   if (lseek(ifd, fpos, SEEK_SET) < fpos) {
-      perror("lseek");
-      exit(2);
-   }
+			rtype = file_stats[0].record_type;
+			if ((rtype != R_RESTART) && (rtype != R_COMMENT))
+				read_extra_stats(0, ifd);
+			if (rtype == R_RESTART)
+				write_xml_restarts(0, tab);
+		}
+	}
+	while (!eosaf);
+	xprintf(--tab, "</restarts>");
 
-   /* Last, process COMMENT entries to display comments */
-   xprintf(tab++, "<comments>");
-   do {
-      if ((eosaf = sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE)) == 0) {
+	/* Rewind file */
+	if (lseek(ifd, fpos, SEEK_SET) < fpos) {
+		perror("lseek");
+		exit(2);
+	}
 
-	 rtype = file_stats[0].record_type;
-	 if ((rtype != R_RESTART) && (rtype != R_COMMENT))
-	    read_extra_stats(0, ifd);
-	 if (rtype == R_COMMENT)
-	   write_xml_comments(0, &tab);
-      }
-   }
-   while (!eosaf);
-   xprintf(--tab, "</comments>");
+	/* Last, process COMMENT entries to display comments */
+	xprintf(tab++, "<comments>");
+	do {
+		if ((eosaf = sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE)) == 0) {
 
-   xprintf(--tab, "</host>");
-   xprintf(--tab, "</sysstat>");
+			rtype = file_stats[0].record_type;
+			if ((rtype != R_RESTART) && (rtype != R_COMMENT))
+				read_extra_stats(0, ifd);
+			if (rtype == R_COMMENT)
+				write_xml_comments(0, tab);
+		}
+	}
+	while (!eosaf);
+	xprintf(--tab, "</comments>");
+
+	xprintf(--tab, "</host>");
+	xprintf(--tab, "</sysstat>");
 }
-
 
 /*
  ***************************************************************************
  * Display activities for -p and -d options
+ *
+ * IN:
+ * @ifd		File descriptor of input file.
  ***************************************************************************
  */
 void main_display_loop(int ifd)
 {
-   int curr = 1, rtype;
-   unsigned int act;
-   int eosaf = TRUE, reset = FALSE;
-   long cnt = 1;
-   off_t fpos;
+	int curr = 1, rtype;
+	unsigned int act;
+	int eosaf = TRUE, reset = FALSE;
+	long cnt = 1;
+	off_t fpos;
 
-   /* Read system statistics from file */
-   do {
-      /*
-       * If this record is a special (RESTART or COMMENT) one, print it and
-       * (try to) get another one.
-       * We must be sure that we have real stats in file_stats[2].
-       */
-      do {
-	 if (sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE))
-	    /* End of sa data file */
-	    return;
+	/* Read system statistics from file */
+	do {
+		/*
+		 * If this record is a special (RESTART or COMMENT) one, print it and
+		 * (try to) get another one.
+		 * We must be sure that we have real stats in file_stats[2].
+		 */
+		do {
+			if (sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE))
+				/* End of sa data file */
+				return;
 
-	 rtype = file_stats[0].record_type;
-	 if ((rtype == R_RESTART) || (rtype == R_COMMENT))
-	    write_special(0, tm_start.use, tm_end.use, rtype);
-	 else {
-	    /*
-	     Ok: previous record was not a RESTART one. So read now the extra fields. */
-	    read_extra_stats(0, ifd);
-	    set_rectime(0);
-	 }
-      }
-      while ((rtype == R_RESTART) || (rtype == R_COMMENT) ||
-	     (tm_start.use && (datecmp(&loctime, &tm_start) < 0)) ||
-	     (tm_end.use && (datecmp(&loctime, &tm_end) >=0)));
+			rtype = file_stats[0].record_type;
+			if ((rtype == R_RESTART) || (rtype == R_COMMENT))
+				write_special(0, tm_start.use, tm_end.use, rtype);
+			else {
+				/*
+				 * Ok: previous record was not a RESTART one.
+				 * So read now the extra fields.
+				 */
+				read_extra_stats(0, ifd);
+				set_rectime(0);
+			}
+		}
+		while ((rtype == R_RESTART) || (rtype == R_COMMENT) ||
+		       (tm_start.use && (datecmp(&loctime, &tm_start) < 0)) ||
+		       (tm_end.use && (datecmp(&loctime, &tm_end) >=0)));
 
-      /* Save the first stats collected. Will be used to compute the average */
-      copy_structures(2, 0);
+		/* Save the first stats collected. Will be used to compute the average */
+		copy_structures(2, 0);
 
-      reset = TRUE;	/* Set flag to reset last_uptime variable */
+		reset = TRUE;	/* Set flag to reset last_uptime variable */
 
-      /* Save current file position */
-      if ((fpos = lseek(ifd, 0, SEEK_CUR)) < 0) {
-	 perror("lseek");
-	 exit(2);
-      }
+		/* Save current file position */
+		if ((fpos = lseek(ifd, 0, SEEK_CUR)) < 0) {
+			perror("lseek");
+			exit(2);
+		}
 
-      /* Read and write stats located between two possible Linux restarts */
+		/* Read and write stats located between two possible Linux restarts */
 
-      /* For each requested activity... */
-      for (act = 1; act <= A_LAST; act <<= 1) {
+		/* For each requested activity... */
+		for (act = 1; act <= A_LAST; act <<= 1) {
 
-	 if (sadf_actflag & act) {
-	    if ((act == A_IRQ) && WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)) {
-	       /* Distinguish -I SUM activity from IRQs per processor activity */
-	       flags &= ~S_F_PER_PROC;
-	       read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, act, &reset);
-	       flags |= S_F_PER_PROC;
-	       flags &= ~S_F_ALL_PROC;
-	       read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, act, &reset);
-	       flags |= S_F_ALL_PROC;
-	    }
-	    else
-	       read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, act, &reset);
-	 }
-      }
+			if (sadf_actflag & act) {
+				if ((act == A_IRQ) && WANT_PER_PROC(flags) &&
+				    WANT_ALL_PROC(flags)) {
+					/*
+					 * Distinguish -I SUM activity from
+					 * IRQs per processor activity
+					 */
+					flags &= ~S_F_PER_PROC;
+					read_curr_act_stats(ifd, fpos, &curr, &cnt,
+							    &eosaf, act, &reset);
+					flags |= S_F_PER_PROC;
+					flags &= ~S_F_ALL_PROC;
+					read_curr_act_stats(ifd, fpos, &curr, &cnt,
+							    &eosaf, act, &reset);
+					flags |= S_F_ALL_PROC;
+				}
+				else
+					read_curr_act_stats(ifd, fpos, &curr, &cnt,
+							    &eosaf, act, &reset);
+			}
+		}
 
-      if (!cnt) {
-	 /* Go to next Linux restart, if possible */
-	 do {
-	    eosaf = sa_fread(ifd, &file_stats[curr],
-			     file_hdr.sa_st_size, SOFT_SIZE);
-	    rtype = file_stats[curr].record_type;
-	    if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT))
-	       read_extra_stats(curr, ifd);
-	 }
-	 while (!eosaf && (rtype != R_RESTART));
-      }
+		if (!cnt) {
+			/* Go to next Linux restart, if possible */
+			do {
+				eosaf = sa_fread(ifd, &file_stats[curr],
+						 file_hdr.sa_st_size, SOFT_SIZE);
+				rtype = file_stats[curr].record_type;
+				if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT))
+					read_extra_stats(curr, ifd);
+			}
+			while (!eosaf && (rtype != R_RESTART));
+		}
 
-      /* The last record we read was a RESTART one: Print it */
-      if (!eosaf && (file_stats[curr].record_type == R_RESTART))
-	 write_special(curr, tm_start.use, tm_end.use, R_RESTART);
-   }
-   while (!eosaf);
+		/* The last record we read was a RESTART one: Print it */
+		if (!eosaf && (file_stats[curr].record_type == R_RESTART))
+			write_special(curr, tm_start.use, tm_end.use, R_RESTART);
+	}
+	while (!eosaf);
 }
-
 
 /*
  ***************************************************************************
  * Read statistics from a system activity data file
+ *
+ * IN:
+ * @dfile	System activity data file name.
  ***************************************************************************
  */
 void read_stats_from_file(char dfile[])
 {
-   int ifd;
+	struct file_magic file_magic;
+	int ifd, ignore;
 
-   /* Prepare file for reading */
-   prep_file_for_reading(&ifd, dfile, &file_hdr, &sadf_actflag, flags);
+	/* Prepare file for reading */
+	ignore = (format == S_O_HDR_OPTION);
+	prep_file_for_reading(&ifd, dfile, &file_magic, &file_hdr,
+			      &sadf_actflag, flags, ignore);
 
-   if (format == S_O_HDR_OPTION) {
-      /* Display data file header */
-      display_file_header(dfile, &file_hdr);
-      return;
-   }
+	if (format == S_O_HDR_OPTION) {
+		/* Display data file header then exit */
+		display_file_header(dfile, &file_magic, &file_hdr);
+	}
 
-   /* Perform required allocations */
-   allocate_structures();
+	/* Perform required allocations */
+	allocate_structures();
 
-   set_hdr_rectime(flags, &rectime, &file_hdr);
+	set_hdr_rectime(flags, &rectime, &file_hdr);
 
-   if (format == S_O_XML_OPTION)
-     xml_display_loop(ifd);
-   else
-     main_display_loop(ifd);
+	if (format == S_O_XML_OPTION)
+		xml_display_loop(ifd);
+	else
+		main_display_loop(ifd);
 
-   close(ifd);
+	close(ifd);
 }
-
 
 /*
  ***************************************************************************
@@ -1916,199 +2231,208 @@ void read_stats_from_file(char dfile[])
  */
 int main(int argc, char **argv)
 {
-   int opt = 1, sar_options = 0;
-   int i;
-   char dfile[MAX_FILE_LEN];
+	int opt = 1, sar_options = 0;
+	int i;
+	char dfile[MAX_FILE_LEN];
 
-   /* Get HZ */
-   get_HZ();
+	/* Get HZ */
+	get_HZ();
 
-   /* Compute page shift in kB */
-   get_kb_shift();
+	/* Compute page shift in kB */
+	get_kb_shift();
 
-   dfile[0] = '\0';
+	dfile[0] = '\0';
 
 #ifdef USE_NLS
-   /* Init National Language Support */
-   init_nls();
+	/* Init National Language Support */
+	init_nls();
 #endif
 
-   tm_start.use = tm_end.use = FALSE;
-   init_bitmap(irq_bitmap, 0, NR_IRQS);
-   init_bitmap(cpu_bitmap, 0, NR_CPUS);
-   init_stats(file_stats, interrupts);
+	tm_start.use = tm_end.use = FALSE;
+	init_bitmap(irq_bitmap, 0, NR_IRQS);
+	init_bitmap(cpu_bitmap, 0, NR_CPUS);
+	init_stats(file_stats, interrupts);
 
-   /* Process options */
-   while (opt < argc) {
+	/* Process options */
+	while (opt < argc) {
 
-      if (!strcmp(argv[opt], "-I")) {
-	 if (argv[++opt] && sar_options) {
-	    if (parse_sar_I_opt(argv, &opt, &sadf_actflag,
-				irq_bitmap))
-	       usage(argv[0]);
-	 }
-	 else
-	    usage(argv[0]);
-      }
+		if (!strcmp(argv[opt], "-I")) {
+			if (argv[++opt] && sar_options) {
+				if (parse_sar_I_opt(argv, &opt, &sadf_actflag,
+						    irq_bitmap))
+					usage(argv[0]);
+			}
+			else
+				usage(argv[0]);
+		}
 
-      else if (!strcmp(argv[opt], "-P")) {
-	 if (parse_sa_P_opt(argv, &opt, &flags, cpu_bitmap))
-	    usage(argv[0]);
-      }
+		else if (!strcmp(argv[opt], "-P")) {
+			if (parse_sa_P_opt(argv, &opt, &flags, cpu_bitmap))
+				usage(argv[0]);
+		}
 
-      else if (!strcmp(argv[opt], "-s")) {
-	 /* Get time start */
-	 if (parse_timestamp(argv, &opt, &tm_start, DEF_TMSTART))
-	    usage(argv[0]);
-      }
+		else if (!strcmp(argv[opt], "-s")) {
+			/* Get time start */
+			if (parse_timestamp(argv, &opt, &tm_start, DEF_TMSTART))
+				usage(argv[0]);
+		}
 
-      else if (!strcmp(argv[opt], "-e")) {
-	 /* Get time end */
-	 if (parse_timestamp(argv, &opt, &tm_end, DEF_TMEND))
-	    usage(argv[0]);
-      }
+		else if (!strcmp(argv[opt], "-e")) {
+			/* Get time end */
+			if (parse_timestamp(argv, &opt, &tm_end, DEF_TMEND))
+				usage(argv[0]);
+		}
 
-      else if (!strcmp(argv[opt], "--")) {
-	 sar_options = 1;
-	 opt++;
-      }
+		else if (!strcmp(argv[opt], "--")) {
+			sar_options = 1;
+			opt++;
+		}
 
-      else if (!strcmp(argv[opt], "-n")) {
-	 if (argv[++opt] && sar_options) {
-	    /* Parse sar's option -n */
-	    if (parse_sar_n_opt(argv, &opt, &sadf_actflag))
-	       usage(argv[0]);
-	 }
-	 else
-	    usage(argv[0]);
-      }
+		else if (!strcmp(argv[opt], "-n")) {
+			if (argv[++opt] && sar_options) {
+				/* Parse sar's option -n */
+				if (parse_sar_n_opt(argv, &opt, &sadf_actflag))
+					usage(argv[0]);
+			}
+			else
+				usage(argv[0]);
+		}
 
-      else if (!strncmp(argv[opt], "-", 1)) {
-	 /* Other options not previously tested */
-	 if (sar_options) {
-	    if (parse_sar_opt(argv, opt, &sadf_actflag, &flags, C_SADF,
-			      irq_bitmap, cpu_bitmap))
-	       usage(argv[0]);
-	 }
-	 else {
+		else if (!strncmp(argv[opt], "-", 1)) {
+			/* Other options not previously tested */
+			if (sar_options) {
+				if (parse_sar_opt(argv, opt, &sadf_actflag, &flags, C_SADF,
+						  irq_bitmap, cpu_bitmap))
+					usage(argv[0]);
+			}
+			else {
 
-	    for (i = 1; *(argv[opt] + i); i++) {
+				for (i = 1; *(argv[opt] + i); i++) {
 
-	       switch (*(argv[opt] + i)) {
-	
-		case 'd':
-		  if (format && (format != S_O_DB_OPTION))
-		     usage(argv[0]);
-		  format = S_O_DB_OPTION;
-		  break;
-		case 'D':
-		  if (format && (format != S_O_DBD_OPTION))
-		     usage(argv[0]);
-		  format = S_O_DBD_OPTION;
-		  break;
-		case 'H':
-		  if (format && (format != S_O_HDR_OPTION))
-		     usage(argv[0]);
-		  format = S_O_HDR_OPTION;
-		  break;
-		case 'p':
-		  if (format && (format != S_O_PPC_OPTION))
-		     usage(argv[0]);
-		  format = S_O_PPC_OPTION;
-		  break;
-		case 't':
-		  flags |= S_F_TRUE_TIME;
-		  break;
-		case 'x':
-		  if (format && (format != S_O_XML_OPTION))
-		     usage(argv[0]);
-		  format = S_O_XML_OPTION;
-		  break;
-		case 'V':
-		  print_version();
-		  break;
-		default:
-		  usage(argv[0]);
-	       }
-	    }
-	 }
-	 opt++;
-      }
-	
-      /* Get data file name */
-      else if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
-	 if (!dfile[0]) {
-	    if (!strcmp(argv[opt], "-")) {
-	       /* File name set to '-' */
-	       set_default_file(&rectime, dfile);
-	       opt++;
-	    }
-	    else if (!strncmp(argv[opt], "-", 1))
-	       /* Bad option */
-	       usage(argv[0]);
-	    else {
-	       /* Write data to file */
-	       strncpy(dfile, argv[opt++], MAX_FILE_LEN);
-	       dfile[MAX_FILE_LEN - 1] = '\0';
-	    }
-	 }
-	 else
-	    /* File already specified */
-	    usage(argv[0]);
-      }
+					switch (*(argv[opt] + i)) {
 
-      else if (interval < 0) { 		/* Get interval */
-	 if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
-	    usage(argv[0]);
-	 interval = atol(argv[opt++]);
-	 if (interval <= 0)
-	   usage(argv[0]);
-      }
+					case 'd':
+						if (format && (format != S_O_DB_OPTION))
+							usage(argv[0]);
+						format = S_O_DB_OPTION;
+						break;
 
-      else {				/* Get count value */
-	 if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
-	    usage(argv[0]);
-	 if (count)
-	    /* Count parameter already set */
-	    usage(argv[0]);
-	 count = atol(argv[opt++]);
-	 if (count < 0)
-	   usage(argv[0]);
-	 else if (!count)
-	    count = -1;	/* To generate a report continuously */
-      }
-   }
+					case 'D':
+						if (format && (format != S_O_DBD_OPTION))
+							usage(argv[0]);
+						format = S_O_DBD_OPTION;
+						break;
 
-   /* sadf reads current daily data file by default */
-   if (!dfile[0])
-      set_default_file(&rectime, dfile);
+					case 'H':
+						if (format && (format != S_O_HDR_OPTION))
+							usage(argv[0]);
+						format = S_O_HDR_OPTION;
+						break;
 
-   if (tm_start.use && tm_end.use && (tm_end.tm_hour < tm_start.tm_hour))
-      tm_end.tm_hour += 24;
+					case 'p':
+						if (format && (format != S_O_PPC_OPTION))
+							usage(argv[0]);
+						format = S_O_PPC_OPTION;
+						break;
 
-   /*
-    * Display all the contents of the daily data file if the count parameter
-    * was not set on the command line.
-    */
-   if (!count)
-      count = -1;
+					case 't':
+						flags |= S_F_TRUE_TIME;
+						break;
 
-   /*
-    * Default is CPU activity and PPC display.
-    * For XML display, activity flag is meaningless since every activity will
-    * be displayed. So make sure that sadf won't complain about non existent
-    * activities in file...
-    */
-   if (!sadf_actflag || (format == S_O_XML_OPTION))
-      sadf_actflag |= A_CPU;
-   if (!format)
-      format = S_O_PPC_OPTION;
+					case 'x':
+						if (format && (format != S_O_XML_OPTION))
+							usage(argv[0]);
+						format = S_O_XML_OPTION;
+						break;
 
-   if (interval < 0)
-      interval = 1;
+					case 'V':
+						print_version();
+						break;
 
-   /* Read stats from file */
-   read_stats_from_file(dfile);
+					default:
+						usage(argv[0]);
+					}
+				}
+			}
+			opt++;
+		}
 
-   return 0;
+		/* Get data file name */
+		else if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
+			if (!dfile[0]) {
+				if (!strcmp(argv[opt], "-")) {
+					/* File name set to '-' */
+					set_default_file(&rectime, dfile);
+					opt++;
+				}
+				else if (!strncmp(argv[opt], "-", 1))
+					/* Bad option */
+					usage(argv[0]);
+				else {
+					/* Write data to file */
+					strncpy(dfile, argv[opt++], MAX_FILE_LEN);
+					dfile[MAX_FILE_LEN - 1] = '\0';
+				}
+			}
+			else
+				/* File already specified */
+				usage(argv[0]);
+		}
+
+		else if (interval < 0) {
+			/* Get interval */
+			if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
+				usage(argv[0]);
+			interval = atol(argv[opt++]);
+			if (interval <= 0)
+				usage(argv[0]);
+		}
+
+		else {
+			/* Get count value */
+			if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
+				usage(argv[0]);
+			if (count)
+				/* Count parameter already set */
+				usage(argv[0]);
+			count = atol(argv[opt++]);
+			if (count < 0)
+				usage(argv[0]);
+			else if (!count)
+				count = -1;	/* To generate a report continuously */
+		}
+	}
+
+	/* sadf reads current daily data file by default */
+	if (!dfile[0])
+		set_default_file(&rectime, dfile);
+
+	if (tm_start.use && tm_end.use && (tm_end.tm_hour < tm_start.tm_hour))
+		tm_end.tm_hour += 24;
+
+	/*
+	 * Display all the contents of the daily data file if the count parameter
+	 * was not set on the command line.
+	 */
+	if (!count)
+		count = -1;
+
+	/*
+	 * Default is CPU activity and PPC display.
+	 * For XML display, activity flag is meaningless since every activity will
+	 * be displayed. So make sure that sadf won't complain about non existent
+	 * activities in file...
+	 */
+	if (!sadf_actflag || (format == S_O_XML_OPTION))
+		sadf_actflag |= A_CPU;
+	if (!format)
+		format = S_O_PPC_OPTION;
+
+	if (interval < 0)
+		interval = 1;
+
+	/* Read stats from file */
+	read_stats_from_file(dfile);
+
+	return 0;
 }

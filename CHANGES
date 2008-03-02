@@ -1,5 +1,27 @@
 Changes:
 
+2008/02/10: Version 8.1.1 - Sebastien Godard (sysstat <at> orange.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x216f]
+	* System activity data files now have extra header data that
+	  enable to identify which version of sysstat created them.
+	* sadf -H now displays the version of sysstat used to create
+	  a system activity data file.
+	* Machine architecture is now displayed in the reports header.
+	  sadf -x also displays machine architecture.
+	* DTD and XML Schema documents updated.
+	* The number of processors was not properly calculated on
+	  machines where a directory named cpuidle was present in the
+	  /sys/devices/system/cpu directory [GENTOO bug# 207886].
+	* Use __CPU_SETSIZE definition from <sched.h> instead of a
+	  static definition for the maximum number of CPUs (NR_CPUS).
+	* Improved error messages displayed by sysstat's commands.
+	* NLS updated: Finnish translation added, Dutch translation
+	  updated.
+	* FAQ updated.
+	* Code cleaned and documented. Linux-like style applied to
+	  code source. Large functions split into smaller ones.
+
 2008/01/06: Version 8.0.4 - Sebastien Godard (sysstat <at> orange.fr)
 	* Removed a 'packed' attribute in pidstat.h that generated
 	  a warning with gcc 4.1.1.

@@ -7,13 +7,18 @@
 #define _COMMON_H
 
 #include <time.h>
+#include <sched.h>	/* For __CPU_SETSIZE */
 
 #define FALSE	0
 #define TRUE	1
 
 #define MINIMUM(a,b)	((a) < (b) ? (a) : (b))
 
-#define NR_CPUS		16384
+#ifdef __CPU_SETSIZE
+#define NR_CPUS		__CPU_SETSIZE
+#else
+#define NR_CPUS		1024
+#endif
 
 /* Size of /proc/interrupts line, CPU data excluded */
 #define INTERRUPTS_LINE	128
@@ -60,7 +65,6 @@
 
 #define DIGITS		"0123456789"
 
-#define UTSNAME_LEN	65
 #define MAX_NAME_LEN	72
 
 #define NR_DISKS	4
@@ -83,13 +87,13 @@ extern unsigned int kb_shift;
 
 /* Memory data read from /proc/meminfo */
 struct meminf {
-   unsigned long frmkb;
-   unsigned long bufkb;
-   unsigned long camkb;
-   unsigned long tlmkb;
-   unsigned long frskb;
-   unsigned long tlskb;
-   unsigned long caskb;
+	unsigned long frmkb;
+	unsigned long bufkb;
+	unsigned long camkb;
+	unsigned long tlmkb;
+	unsigned long frskb;
+	unsigned long tlskb;
+	unsigned long caskb;
 };
 
 
@@ -98,10 +102,10 @@ struct meminf {
  * This is what we try to guess here
  */
 #define TEST_STDOUT(_fd_)	do {					\
-   				   if (write(_fd_, "", 0) == -1) {	\
-				       perror("stdout");		\
-				       exit(6);				\
-				   }					\
+					if (write(_fd_, "", 0) == -1) {	\
+				        	perror("stdout");	\
+				       		exit(6);		\
+				 	}				\
 				} while (0)
 
 /* Functions */
@@ -124,7 +128,7 @@ extern double	ll_s_value(unsigned long long, unsigned long long,
 			   unsigned long long);
 extern double	ll_sp_value(unsigned long long, unsigned long long,
 			    unsigned long long);
-extern int	print_gal_header(struct tm *, char *, char *, char *);
+extern int	print_gal_header(struct tm *, char *, char *, char *, char *);
 extern void	print_version(void);
 extern int	readp_meminfo(struct meminf *);
 extern void	readp_uptime(unsigned long long *);

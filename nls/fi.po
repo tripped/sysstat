@@ -1,37 +1,36 @@
-# Translation of sysstat-8.0.4 to Dutch.
-# Copyright (C) 1999, 2007 Free Software Foundation, Inc.
+# translation of sysstat-8.0.4.po to Finnish
+# Copyright (C) 2007 Free Software Foundation, Inc.
+# This file is distributed under the same license as the sysstat package.
 #
-# Bram Schoenmakers <bramschoenmakers@kde.nl>, 2007.
-# Benno Schulenberg <benno@vertaalt.nl>, 2008.
+# Jorma Karvonen <karvjorm@users.sf.net>, 2007.
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat-8.0.4\n"
+"Project-Id-Version: sysstat 8.0.4\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
 "POT-Creation-Date: 2007-12-19 14:02+0100\n"
-"PO-Revision-Date: 2008-01-17 23:41+0100\n"
-"Last-Translator: Benno Schulenberg <benno@vertaalt.nl>\n"
-"Language-Team: Dutch <vertaling@vrijschrift.org>\n"
+"PO-Revision-Date: 2007-12-23 00:21+0200\n"
+"Last-Translator: Jorma Karvonen <karvjorm@users.sf.net>\n"
+"Language-Team: Finnish <translation-team-fi@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: KBabel 1.11.4\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: common.c:57
 #, c-format
 msgid "sysstat version %s\n"
-msgstr "sysstat versie %s\n"
+msgstr "sysstat-versio %s\n"
 
 #: common.c:160 common.c:385 ioconf.c:459 mpstat.c:265 sa_common.c:601
 #: sadc.c:476 sadc.c:485 sadc.c:530 sadc.c:620
 #, c-format
 msgid "Cannot open %s: %s\n"
-msgstr "Kan %s niet openen: %s\n"
+msgstr "Ei voida avata %s: %s\n"
 
 #: common.c:199
 #, c-format
 msgid "Cannot handle so many processors!\n"
-msgstr "Kan niet zoveel processoren bijhouden!\n"
+msgstr "Ei voida käsitellä niin monia prosessoreja!\n"
 
 #: iostat.c:74
 #, c-format
@@ -41,20 +40,20 @@ msgid ""
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
 "[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"
 msgstr ""
-"Gebruik: %s [ opties... ] [ <interval> [ <aantal> ] ]\n"
-"Mogelijke opties zijn:\n"
+"Käyttö: %s [ valitsimet... ] [ <aikaväli> [ <lukumäärä> ] ]\n"
+"Valitsimet ovat:\n"
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <apparaat> [ ... ] | ALL ] [ -p [ <apparaat> | ALL ] ]\n"
+"[ <laite> [ ... ] | ALL ] [ -p [ <laite> | ALL ] ]\n"
 
 #: iostat.c:1119
 #, c-format
 msgid "Time: %s\n"
-msgstr "Tijd:  %s\n"
+msgstr "Aika: %s\n"
 
 #: iostat.c:1435
 #, c-format
 msgid "-x and -p options are mutually exclusive\n"
-msgstr "Opties '-x' en '-p' gaan niet samen.\n"
+msgstr "Valitsimet ”-x” ja ”-p” ovat keskenään vaihtoehtoisia\n"
 
 #: mpstat.c:66
 #, c-format
@@ -63,19 +62,18 @@ msgid ""
 "Options are:\n"
 "[ -P { <cpu> | ALL } ] [ -V ]\n"
 msgstr ""
-"Gebruik:  %s [ opties... ] [ <interval> [ <aantal> ] ]\n"
-"Mogelijke opties zijn:\n"
-"[ -P { <cpu> | ALL } ] [ -V ]\n"
+"Käyttö: %s [ valitsimet... ] [ <aikaväli> [ <lukumäärä> ] ]\n"
+"Valitsimet ovat:\n"
+"[ -P { <prosessori> | ALL } ] [ -V ]\n"
 
-# sar.c:
 #: mpstat.c:226 pidstat.c:1148 sar.c:740
 msgid "Average:"
-msgstr "Gemiddeld:"
+msgstr "Keskiarvo:"
 
 #: mpstat.c:563 sar.c:157
 #, c-format
 msgid "Not that many processors!\n"
-msgstr "Er zijn niet zoveel processoren!\n"
+msgstr "Ei niin monta prosessoria!\n"
 
 #: pidstat.c:72
 #, c-format
@@ -85,35 +83,37 @@ msgid ""
 "[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
-"Gebruik:  %s [ opties... ] [ <interval> [ <aantal> ] ]\n"
-"Mogelijke opties zijn:\n"
+"Käyttö: %s [ valitsimet... ] [ <aikaväli> [ <lukumäärä> ] ]\n"
+"Valitsimet ovat:\n"
 "[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
-"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+"[ -p { <prosessitunniste> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
+#  Pyydetyt voi olla tilanteesta riippuen halutut, tiedustellut,
+#  kyseiset, haetut tms. 
 #: pidstat.c:166 sar.c:1419
 #, c-format
 msgid "Requested activities not available\n"
-msgstr "De gevraagde activiteiten zijn niet beschikbaar\n"
+msgstr "Pyydetyt toiminnot eivät ole käytettävissä\n"
 
 #: sa_common.c:572
 #, c-format
 msgid "Error while reading system activity file: %s\n"
-msgstr "Er is een fout opgetreden bij het uitlezen van het activiteitsbestand: %s\n"
+msgstr "Virhe luettaessa järjestelmätoimintojen lokitiedostoa: %s\n"
 
 #: sa_common.c:581
 #, c-format
 msgid "End of system activity file unexpected\n"
-msgstr "Onverwacht einde van activiteitsbestand\n"
+msgstr "Järjestelmätoimintojen lokitiedoston loppu odottamaton\n"
 
 #: sa_common.c:608 sadc.c:549
 #, c-format
 msgid "Invalid system activity file: %s (%#x)\n"
-msgstr "Ongeldig activiteitsbestand: %s (%#x)\n"
+msgstr "Virheellinen järjestelmätoimintojen lokitiedosto: %s (%#x)\n"
 
 #: sa_common.c:632
 #, c-format
 msgid "Requested activities not available in file\n"
-msgstr "De gevraagde activiteiten zijn niet beschikbaar in het bestand\n"
+msgstr "Pyydetyt toiminnot eivät ole käytettävissä tiedostossa\n"
 
 #: sadc.c:83
 #, c-format
@@ -122,24 +122,26 @@ msgid ""
 "Options are:\n"
 "[ -C <comment> ] [ -d ] [ -F ] [ -I ] [ -V ]\n"
 msgstr ""
-"Gebruik:  %s [ opties... ] [ <interval> [ <aantal> ] ] [ <uitvoerbestand> ]\n"
-"Mogelijke opties zijn:\n"
-"[ -C <commentaar> ] [ -d ] [ -F ] [ -I ] [ -V ]\n"
+"Käyttö: %s [ valitsimet... ] [ <aikaväli> [ <lukumäärä> ] ] [ <tulostetiedosto> ]\n"
+"Valitsimet ovat:\n"
+"[ -C <kommentti> ] [ -d ] [ -F ] [ -I ] [ -V ]\n"
 
 #: sadc.c:110
 #, c-format
 msgid "Cannot write data to system activity file: %s\n"
-msgstr "Kan geen gegevens schrijven naar het activiteitsbestand: %s\n"
+msgstr "Ei voida kirjoittaa tietoja järjestelmätoimintojen lokitiedostoon: %s\n"
 
 #: sadc.c:361
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
-msgstr "Kan geen kopregels schrijven naar het activiteitsbestand: %s\n"
+msgstr "Ei voida kirjoittaa järjestelmätoimintojen lokitiedoston otsaketta %s\n"
 
+#  Tässä haluttuun sana voidaan korvata tilanteessa osuvammalla sanalla,
+#  esim. pyydettyyn, toivottuun, valittuun, kyseiseen tms. 
 #: sadc.c:568
 #, c-format
 msgid "Cannot append data to that file\n"
-msgstr "Kan geen gegevens toevoegen aan dat bestand\n"
+msgstr "Tietoja ei voida liittää haluttuun tiedostoon\n"
 
 #: sadf.c:78
 #, c-format
@@ -150,11 +152,11 @@ msgid ""
 "[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_options...> ]\n"
 msgstr ""
-"Gebruik: %s [ opties... ] [ <interval> [ <aantal> ] ] [ <gegevensbestand> ]\n"
-"Mogelijke opties zijn:\n"
+"Käyttö: %s [ valitsimet... ] [ <aikaväli> [ <lukumäärä> ] ] [ <data-tiedosto> ]\n"
+"Valitsimet ovat:\n"
 "[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ -- <sar_opties...> ]\n"
+"[ -P { <prosessori> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_valitsimet...> ]\n"
 
 #: sar.c:76
 #, c-format
@@ -168,31 +170,31 @@ msgid ""
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr ""
-"Gebruik:  %s [ opties... ] [ <interval> [ <aantal> ] ]\n"
-"Mogelijke opties zijn:\n"
-"[ -A ] [ -b ] [ -B ] [ -c ] [ -C ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
+"Käyttö: %s [ valitsimet... ] [ <aikaväli> [ <lukumäärä> ] ]\n"
+"Valitsimet ovat:\n"
+"[ -A ] [ -b ] [ -B ] [ -c ] [ -C ] [ -d ] [ -i <aikaväli> ] [ -p ] [ -q ]\n"
 "[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
+"[ -I { <keskeytyspyyntö> | SUM | ALL | XALL } ] [ -P { <prosessori> | ALL } ]\n"
 "[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
-"[ -o [ <bestandsnaam> ] | -f [ <bestandsnaam> ] ]\n"
+"[ -o [ <tiedostonimi> ] | -f [ <tiedostonimi> ] ]\n"
 "[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 
 #: sar.c:149
 #, c-format
 msgid "Not an SMP machine...\n"
-msgstr "Geen SMP-machine...\n"
+msgstr "Ei ole symmetrinen monisuoritinkone...\n"
 
 #: sar.c:1261
 #, c-format
 msgid "Invalid data format\n"
-msgstr "Ongeldige gegevensindeling\n"
+msgstr "Virheellinen datamuoto\n"
 
 #: sar.c:1633
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
-msgstr "Opties '-f' en '-o' gaan niet samen.\n"
+msgstr "Valitsimet ”-f” ja ”-o” ovat keskenään vaihtoehtoisia\n"
 
 #: sar.c:1639
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
-msgstr "Er wordt geen activiteitsbestand gelezen (gebruik optie '-f')\n"
+msgstr "Ei lueta järjestelmätoimintojen lokitiedostosta (käytä valitsinta ”-f”)\n"

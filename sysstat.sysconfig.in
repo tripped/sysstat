@@ -1,4 +1,4 @@
-# @PACKAGE_NAME@-@PACKAGE_VERSION@ configuration file.
+# @PACKAGE_NAME@ configuration file.
 
 # How long to keep log files (in days).
 # Used by sa2(8) script

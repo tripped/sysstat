@@ -2,7 +2,11 @@ sysstat (8.1.1-1) experimental; urgency=low
 
   * New upstream version (development):
     + daily data files format has changed again.
+  * sysstat.postinst: while removing daily data files also remove the
+    bzip2-compressed ones.
   * Update debian/copyright.
+  * sysstat.sysconfig.in: remove @PACKAGE_VERSION@ from the file to avoid
+    unnecesary dpkg conffile change prompt on each upgrade.
   * Build with debhelper v6. 
 
  -- Robert Luberda <robert@debian.org>  Sun, 02 Mar 2008 15:16:27 +0100

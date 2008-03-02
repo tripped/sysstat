@@ -1,3 +1,10 @@
+sysstat (8.1.1-1) experimental; urgency=low
+
+  * New upstream version (development):
+    + daily data files format has changed again.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 02 Mar 2008 15:16:27 +0100
+
 sysstat (8.0.4-1) unstable; urgency=low
 
   * New upstream version.
@@ -76,7 +83,7 @@ sysstat (7.1.3-1) experimental; urgency=low
 
  -- Robert Luberda <robert@debian.org>  Fri, 30 Mar 2007 21:29:43 +0200
 
-sysstat (7.1.2-1) experimental; urgency=low
+sysstat (7.1.2-1 ) experimental; urgency=low
 
   * New upstream version (development):
     + daily data files format has changed again.

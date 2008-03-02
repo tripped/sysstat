@@ -1,10 +1,10 @@
 #! /bin/sh
 # vim:ts=4:et
-# $Id: sysstat.postinst,v 1.34 2007-09-03 17:09:20 robert Exp $
+# $Id: sysstat.postinst,v 1.35 2008-03-02 15:04:16 robert Exp $
 
 set -e
 
-S_VERSION="8.0.0-1"
+S_VERSION="8.1.1-1"
 DEFAULT="/etc/default/sysstat"
 ENABLED="false"
 

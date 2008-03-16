@@ -1,8 +1,8 @@
-.TH SADF 1 "JULY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "FEBRUARY 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
-.B sadf [ -d | -D | -H | -p | -x ] [ -t ] [ -V ] [ -P {
+.B sadf [ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ] [ -P {
 .I cpu
 .B | ALL } ] [ -s [
 .I hh:mm:ss
@@ -89,6 +89,9 @@ in local time.
 Set the ending time of the report, given in local time. The default ending
 time is 18:00:00. Hours must be given in 24-hour format.
 This option is ignored when option -x is used.
+.IP -h
+When used in conjunction with options -d or -D, indicate that all activities
+should be displayed horizontally on a single line of data.
 .IP -H
 Display the header of the data file.
 .IP "-P { cpu | ALL }"

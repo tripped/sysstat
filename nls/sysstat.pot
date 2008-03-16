@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2008-02-09 18:30+0100\n"
+"POT-Creation-Date: 2008-03-10 12:29+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,7 +22,7 @@ msgid "sysstat version %s\n"
 msgstr ""
 
 #: common.c:197 common.c:449 ioconf.c:471 mpstat.c:324 sa_common.c:810
-#: sadc.c:590 sadc.c:599 sadc.c:660 sadc.c:761
+#: sadc.c:627 sadc.c:636 sadc.c:697 sadc.c:798
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr ""
@@ -57,12 +57,12 @@ msgstr ""
 msgid "device"
 msgstr ""
 
-#: iostat.c:1245
+#: iostat.c:1284
 #, c-format
 msgid "Time: %s\n"
 msgstr ""
 
-#: iostat.c:1575
+#: iostat.c:1619
 #, c-format
 msgid "-x and -p options are mutually exclusive\n"
 msgstr ""
@@ -84,7 +84,7 @@ msgstr ""
 msgid "command"
 msgstr ""
 
-#: pidstat.c:177 sar.c:1717
+#: pidstat.c:177 sar.c:1720
 #, c-format
 msgid "Requested activities not available\n"
 msgstr ""
@@ -133,12 +133,12 @@ msgstr ""
 msgid "Cannot write data to system activity file: %s\n"
 msgstr ""
 
-#: sadc.c:445
+#: sadc.c:482
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
 msgstr ""
 
-#: sadc.c:706
+#: sadc.c:743
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
 msgstr ""
@@ -155,47 +155,47 @@ msgstr ""
 msgid "sar_options..."
 msgstr ""
 
-#: sadf.c:1767
+#: sadf.c:1852
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr ""
 
-#: sadf.c:1775
+#: sadf.c:1860
 #, c-format
 msgid "Host: "
 msgstr ""
 
-#: sadf.c:1780
+#: sadf.c:1865
 #, c-format
 msgid "Activity flag: %#x\n"
 msgstr ""
 
-#: sadf.c:1781
+#: sadf.c:1866
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr ""
 
-#: sadf.c:1782
+#: sadf.c:1867
 #, c-format
 msgid "Number of CPU: %u\n"
 msgstr ""
 
-#: sadf.c:1783
+#: sadf.c:1868
 #, c-format
 msgid "Number of interrupts per CPU: %u\n"
 msgstr ""
 
-#: sadf.c:1784
+#: sadf.c:1869
 #, c-format
 msgid "Number of disks: %u\n"
 msgstr ""
 
-#: sadf.c:1785
+#: sadf.c:1870
 #, c-format
 msgid "Number of serial lines: %u\n"
 msgstr ""
 
-#: sadf.c:1786
+#: sadf.c:1871
 #, c-format
 msgid "Number of network interfaces: %u\n"
 msgstr ""
@@ -223,17 +223,17 @@ msgstr ""
 msgid "Using a wrong data collector from a different sysstat version\n"
 msgstr ""
 
-#: sar.c:1932
+#: sar.c:1934
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr ""
 
-#: sar.c:1938
+#: sar.c:1940
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr ""
 
-#: sar.c:2036
+#: sar.c:2038
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr ""

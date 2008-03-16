@@ -79,7 +79,7 @@ void usage(char *progname)
 
 	fprintf(stderr, _("Options are:\n"));
 
-	fprintf(stderr, "[ -c ] [ -d ] [ -N ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+	fprintf(stderr, "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
 		"[ <%s> [ ... ] | ALL ] [ -p [ <%s> | ALL ] ]\n",
 		_("device"), _("device"));
 	exit(1);
@@ -923,10 +923,11 @@ void read_ppartitions_stat(int curr, int flags)
 void read_nfs_stat(int curr, int flags)
 {
 	FILE *fp;
-	int i, sw = 0;
+	int sw = 0;
 	char line[8192];
+	char *xprt_line;
 	char nfs_name[MAX_NAME_LEN];
-	char mount[10], on[10], bytes[10], aux[32];
+	char mount[10], on[10], prefix[10], aux[32];
 	struct io_nfs_stats snfs;
 
 	/* Every I/O NFS entry is potentially unregistered */
@@ -949,14 +950,46 @@ void read_nfs_stat(int curr, int flags)
 			}
 		}
 
-		sscanf(line, "%10s", bytes);
-		if (sw && (!strncmp(bytes, "bytes:", 6))) {
+		sscanf(line, "%10s", prefix);
+		if (sw && (!strncmp(prefix, "bytes:", 6))) {
 			/* Read the stats for the last NFS-mounted directory */
-			i = sscanf(strstr(line, "bytes:") + 6, "%llu %llu %llu %llu %llu %llu",
-				   &snfs.rd_normal_bytes, &snfs.wr_normal_bytes,
-				   &snfs.rd_direct_bytes, &snfs.wr_direct_bytes,
-				   &snfs.rd_server_bytes, &snfs.wr_server_bytes);
+			sscanf(strstr(line, "bytes:") + 6, "%llu %llu %llu %llu %llu %llu",
+			       &snfs.rd_normal_bytes, &snfs.wr_normal_bytes,
+			       &snfs.rd_direct_bytes, &snfs.wr_direct_bytes,
+			       &snfs.rd_server_bytes, &snfs.wr_server_bytes);
+			sw = 2;
+		}
 
+		if ((sw == 2) && (!strncmp(prefix, "xprt:", 5))) {
+			/*
+			 * Read extended statistic for the last NFS-mounted directory
+			 * - number of sent rpc requests.
+			 */
+			xprt_line = (strstr(line, "xprt:") + 6);
+			/* udp, tcp or rdma data */
+			if (!strncmp(xprt_line, "udp", 3)) {
+				/* port bind_count sends recvs (bad_xids req_u bklog_u) */
+				sscanf(strstr(xprt_line, "udp") + 4, "%*u %*u %lu %lu",
+				       &snfs.rpc_sends, &snfs.rpc_recvs);
+			}
+			if (!strncmp(xprt_line, "tcp", 3)) {
+				/*
+				 * port bind_counter connect_count connect_time idle_time
+				 * sends recvs (bad_xids req_u bklog_u)
+				 */
+				sscanf(strstr(xprt_line, "tcp") + 4,
+				       "%*u %*u %*u %*u %*d %lu %lu",
+				       &snfs.rpc_sends, &snfs.rpc_recvs);
+			}
+			if (!strncmp(xprt_line,"rdma", 4)) {
+				/*
+				 * 0(port) bind_count connect_count connect_time idle_time
+				 * sends recvs (bad_xids req_u bklog_u...)
+				 */
+				sscanf(strstr(xprt_line, "rdma") + 5,
+				       "%*u %*u %*u %*u %*d %lu %lu",
+				       &snfs.rpc_sends, &snfs.rpc_recvs);
+			}
 			save_stats(nfs_name, curr, &snfs, ionfs_nr, st_hdr_ionfs);
 			sw = 0;
 		}
@@ -1052,19 +1085,20 @@ void write_nfs_stat_header(int flags, int *fctr)
 	printf("Filesystem:           ");
 	if (DISPLAY_KILOBYTES(flags)) {
 		printf("    rkB_nor/s    wkB_nor/s    rkB_dir/s    wkB_dir/s"
-		       "    rkB_svr/s    wkB_svr/s\n");
+		       "    rkB_svr/s    wkB_svr/s");
 		*fctr = 1024;
 	}
 	else if (DISPLAY_MEGABYTES(flags)) {
 		printf("    rMB_nor/s    wMB_nor/s    rMB_dir/s    wMB_dir/s"
-		       "    rMB_svr/s    wMB_svr/s\n");
+		       "    rMB_svr/s    wMB_svr/s");
 		*fctr = 1024 * 1024;
 	}
 	else {
 		printf("   rBlk_nor/s   wBlk_nor/s   rBlk_dir/s   wBlk_dir/s"
-		       "   rBlk_svr/s   wBlk_svr/s\n");
+		       "   rBlk_svr/s   wBlk_svr/s");
 		*fctr = 512;
 	}
+	printf("    rops/s    wops/s\n");
 }
 
 /*
@@ -1206,14 +1240,19 @@ void write_nfs_stat(int curr, unsigned long long itv, int flags, int fctr,
 		    struct io_hdr_stats *shi, struct io_nfs_stats *ioni,
 		    struct io_nfs_stats *ionj)
 {
-	printf("%-22s %12.2f %12.2f %12.2f %12.2f %12.2f %12.2f\n",
-	       shi->name,
+	if (DISPLAY_HUMAN_READ(flags))
+		printf("%-22s\n%23s", shi-> name, "");
+	else
+		printf("%-22s ", shi->name);
+	printf("%12.2f %12.2f %12.2f %12.2f %12.2f %12.2f %9.2f %9.2f \n",
 	       S_VALUE(ionj->rd_normal_bytes, ioni->rd_normal_bytes, itv) / fctr,
 	       S_VALUE(ionj->wr_normal_bytes, ioni->wr_normal_bytes, itv) / fctr,
 	       S_VALUE(ionj->rd_direct_bytes, ioni->rd_direct_bytes, itv) / fctr,
 	       S_VALUE(ionj->wr_direct_bytes, ioni->wr_direct_bytes, itv) / fctr,
 	       S_VALUE(ionj->rd_server_bytes, ioni->rd_server_bytes, itv) / fctr,
-	       S_VALUE(ionj->wr_server_bytes, ioni->wr_server_bytes, itv) / fctr);
+	       S_VALUE(ionj->wr_server_bytes, ioni->wr_server_bytes, itv) / fctr,
+	       S_VALUE(ionj->rpc_sends, ioni->rpc_sends, itv),
+	       S_VALUE(ionj->rpc_recvs, ioni->rpc_recvs, itv));
 }
 
 /*
@@ -1358,6 +1397,9 @@ void rw_io_stat_loop(int flags, long int count, struct tm *rectime)
 {
 	int curr = 1;
 
+	/* Don't buffer data if redirected to a pipe */
+	setbuf(stdout, NULL);
+	
 	do {
 		if (cpu_nr > 1) {
 			/*
@@ -1406,9 +1448,6 @@ void rw_io_stat_loop(int flags, long int count, struct tm *rectime)
 
 		/* Print results */
 		write_stats(curr, flags, rectime);
-
-		/* FLush data */
-		fflush(stdout);
 
 		if (count > 0)
 			count--;
@@ -1484,6 +1523,11 @@ int main(int argc, char **argv)
 				case 'd':
 					/* Display disk utilization */
 					flags |= I_D_DISK;
+					break;
+
+				case 'h':
+					/* Display an easy-to-read NFS report */
+					flags |= I_D_HUMAN_READ;
 					break;
 	
 				case 'k':

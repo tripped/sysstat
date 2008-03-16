@@ -579,7 +579,7 @@ in /proc/{partitions,diskstats} which is always different from 0, and even
 negative sometimes. Yet this field should go to zero, since it gives the
 number of I/Os currently in progress (it is incremented as requests are
 submitted, and decremented as they finish).
-To (temporarily) solve the problem, you should reboot your system to reset the
+To (temporarily) fix the problem, you should reboot your system to reset the
 counters in /proc/{partitions,diskstats}.
 
 

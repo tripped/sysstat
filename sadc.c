@@ -290,6 +290,43 @@ void sa_sys_init(unsigned int *flags)
 
 /*
  ***************************************************************************
+ * Write data to file. If the write() call was interrupted by a signal, try
+ * again so that the whole buffer can be written.
+ *
+ * IN:
+ * @fd		Output file descriptor.
+ * @buffer	Data buffer.
+ * @nr_bytes	Number of bytes to write.
+ *
+ * RETURNS:
+ * Number of bytes written to file, or -1 on error.
+ ***************************************************************************
+ */
+int write_all(int fd, const void *buf, int nr_bytes)
+{
+	int block, offset = 0;
+	char *buffer = (char *) buf;
+	
+	while (nr_bytes > 0) {
+		block = write(fd, &buffer[offset], nr_bytes);
+		
+		if (block < 0) {
+			if (errno == EINTR)
+				continue;
+			return block;
+		}
+		if (block == 0)
+			return offset;
+		
+		offset += block;
+		nr_bytes -= block;
+	}
+	
+	return offset;
+}
+
+/*
+ ***************************************************************************
  * If -L option used, request a non-blocking, exclusive lock on the file.
  * If lock would block, then another process (possibly sadc) has already
  * opened that file => exit.
@@ -396,7 +433,7 @@ void setup_file_hdr(int fd, size_t *file_stats_size)
 	/* Fill then write file magic header */
 	fill_magic_header(&file_magic);
 
-	if ((n = write(fd, &file_magic, FILE_MAGIC_SIZE)) != FILE_MAGIC_SIZE) {
+	if ((n = write_all(fd, &file_magic, FILE_MAGIC_SIZE)) != FILE_MAGIC_SIZE) {
 		goto write_error;
 	}
 
@@ -436,7 +473,7 @@ void setup_file_hdr(int fd, size_t *file_stats_size)
 	file_hdr.sa_machine[UTSNAME_LEN - 1] = '\0';
 
 	/* Write file header */
-	if ((n = write(fd, &file_hdr, FILE_HDR_SIZE)) == FILE_HDR_SIZE) {
+	if ((n = write_all(fd, &file_hdr, FILE_HDR_SIZE)) == FILE_HDR_SIZE) {
 		return;
 	}
 
@@ -495,7 +532,7 @@ void write_special_record(int ofd, size_t file_stats_size, unsigned int *flags,
 	}
 
 	/* Write record now */
-	if ((n = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
+	if ((n = write_all(ofd, &file_stats, file_stats_size)) != file_stats_size)
 		p_write_error();
 }
 
@@ -533,36 +570,36 @@ void write_stats(int ofd, size_t file_stats_size, unsigned int *flags)
 			 */
 			return;
 	}
-	if ((n = write(ofd, &file_stats, file_stats_size)) != file_stats_size)
+	if ((n = write_all(ofd, &file_stats, file_stats_size)) != file_stats_size)
 		p_write_error();
 	if (cpu_nr) {
-		if ((n = write(ofd, st_cpu, STATS_ONE_CPU_SIZE * cpu_nr)) !=
+		if ((n = write_all(ofd, st_cpu, STATS_ONE_CPU_SIZE * cpu_nr)) !=
 		    (STATS_ONE_CPU_SIZE * cpu_nr))
 			p_write_error();
 	}
 	if (GET_ONE_IRQ(sadc_actflag)) {
-		if ((n = write(ofd, interrupts, STATS_ONE_IRQ_SIZE)) !=
+		if ((n = write_all(ofd, interrupts, STATS_ONE_IRQ_SIZE)) !=
 		    STATS_ONE_IRQ_SIZE)
 			p_write_error();
 	}
 	if (serial_nr) {
-		if ((n = write(ofd, st_serial, STATS_SERIAL_SIZE * serial_nr)) !=
+		if ((n = write_all(ofd, st_serial, STATS_SERIAL_SIZE * serial_nr)) !=
 		    (STATS_SERIAL_SIZE * serial_nr))
 			p_write_error();
 	}
 	if (irqcpu_nr) {
-		if ((n = write(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * cpu_nr * irqcpu_nr))
+		if ((n = write_all(ofd, st_irq_cpu, STATS_IRQ_CPU_SIZE * cpu_nr * irqcpu_nr))
 		    != (STATS_IRQ_CPU_SIZE * cpu_nr * irqcpu_nr))
 			p_write_error();
 	}
 	if (iface_nr) {
-		if ((n = write(ofd, st_net_dev, STATS_NET_DEV_SIZE * iface_nr)) !=
+		if ((n = write_all(ofd, st_net_dev, STATS_NET_DEV_SIZE * iface_nr)) !=
 		    (STATS_NET_DEV_SIZE * iface_nr))
 			p_write_error();
 	}
 	if (disk_nr && GET_DISK(sadc_actflag)) {
 		/* Disk stats written only if -d option used */
-		if ((n = write(ofd, st_disk, DISK_STATS_SIZE * disk_nr)) !=
+		if ((n = write_all(ofd, st_disk, DISK_STATS_SIZE * disk_nr)) !=
 		    (DISK_STATS_SIZE * disk_nr))
 			p_write_error();
 	}

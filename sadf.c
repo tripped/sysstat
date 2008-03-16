@@ -83,7 +83,7 @@ void usage(char *progname)
 
 	fprintf(stderr, _("Options are:\n"));
 
-	fprintf(stderr, "[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
+	fprintf(stderr, "[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
 		"[ -P { <%s> | ALL } ] [ -s [ <%s> ] ] [ -e [ <%s> ] ]\n"
 		"[ -- <%s> ]\n",
 		_("cpu"), _("hh:mm:ss"), _("hh:mm:ss"), _("sar_options..."));
@@ -247,17 +247,18 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
 {
 	static int newline = 1;
 	const char *txt[]  = {pptxt, dbtxt};
-	char *sep;
 
 	/* Start a new line? */
-	if (newline)
-		printf("%s%s", pre, seps[isdb]);
+	if (newline && !DISPLAY_HORIZONTALLY(flags))
+		printf("%s", pre);
 
 	/* Terminate this one ? ppc always gets a newline */
 	newline = ((rflags & PT_NEWLIN) || !isdb);
 
 	if (txt[isdb]) {
 		/* pp/dbtxt? */
+
+		printf("%s", seps[isdb]);	/* Only if something actually gets printed */
 
 		if (mid) {
 			/* Got format args? */
@@ -273,17 +274,16 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
 		else {
 			printf(txt[isdb]);	/* No args */
 		}
-		printf("%s", seps[isdb]);	/* Only if something actually got printed */
 	}
-
-	sep = (newline) ? "\n" : seps[isdb]; /* How does this rendering end? */
 
 	if (rflags & PT_USEINT) {
-		printf("%lu%s", luval, sep);
+		printf("%s%lu", seps[isdb], luval);
 	}
 	else {
-		printf("%.2f%s", dval, sep);
+		printf("%s%.2f", seps[isdb], dval);
 	}
+	if (newline)
+		printf("\n");
 }
 
 /*
@@ -298,12 +298,12 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
 */
 void render_per_cpu_stats(int isdb, char *pre, int curr)
 {
-
 	int i;
 	unsigned long long pc_itv;
 	struct stats_one_cpu
 		*sci = st_cpu[curr],
 		*scj = st_cpu[!curr];
+	int pt_newlin = (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
 	for (i = 0; i < file_hdr.sa_proc; i++, sci++, scj++) {
 		if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
@@ -355,12 +355,12 @@ void render_per_cpu_stats(int isdb, char *pre, int curr)
 
 			if (!pc_itv)
 				/* CPU is offline */
-				render(isdb, pre, PT_NEWLIN,
+				render(isdb, pre, pt_newlin,
 				       "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
 				       NOVAL,
 				       0.0);
 			else
-				render(isdb, pre, PT_NEWLIN,
+				render(isdb, pre, pt_newlin,
 				       "cpu%d\t%%idle", NULL, cons(iv, i, NOVAL),
 				       NOVAL,
 				       (sci->per_cpu_idle < scj->per_cpu_idle) ?
@@ -385,10 +385,11 @@ void render_per_cpu_stats(int isdb, char *pre, int curr)
 void render_per_irq_stats(int isdb, char *pre, int curr, unsigned long long itv)
 {
 	int i;
+	int pt_newlin = (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
 	for (i = 0; i < NR_IRQS; i++) {
 		if (irq_bitmap[i >> 3] & (1 << (i & 0x07))) {
-			render(isdb, pre, PT_NEWLIN,
+			render(isdb, pre, pt_newlin,
 			       "i%03d\tintr/s", "%d", cons(iv, i, NOVAL),
 			       NOVAL,
 			       S_VALUE(interrupts[!curr][i], interrupts[curr][i], itv));
@@ -413,6 +414,7 @@ void render_serial_stats(int isdb, char *pre, int curr, unsigned long long itv)
 	struct stats_serial
 		*ssi = st_serial[curr],
 		*ssj = st_serial[!curr];
+	int pt_newlin = (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
 	for (i = 0; i++ < file_hdr.sa_serial; ssi++, ssj++) {
 
@@ -440,7 +442,7 @@ void render_serial_stats(int isdb, char *pre, int curr, unsigned long long itv)
 			       "ttyS%d\tbrk/s", "%d", cons(iv, ssi->line, NOVAL),
 			       NOVAL, S_VALUE(ssj->brk, ssi->brk, itv));
 
-			render(isdb, pre, PT_NEWLIN,
+			render(isdb, pre, pt_newlin,
 			       "ttyS%d\tovrun/s", "%d", cons(iv, ssi->line, NOVAL),
 			       NOVAL, S_VALUE(ssj->overrun, ssi->overrun, itv));
 		}
@@ -462,6 +464,7 @@ void render_irq_per_cpu_stats(int isdb, char *pre, int curr, unsigned long long 
 {
 	int j, k, offset;
 	struct stats_irq_cpu *p, *q, *p0, *q0;
+	int pt_newlin = (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
 	for (k = 0; k < file_hdr.sa_proc; k++) {
 		if (!(cpu_bitmap[k >> 3] & (1 << (k & 0x07))))
@@ -499,7 +502,7 @@ void render_irq_per_cpu_stats(int isdb, char *pre, int curr, unsigned long long 
 
 			p = st_irq_cpu[curr]  + k * file_hdr.sa_irqcpu + j;
 			q = st_irq_cpu[!curr] + k * file_hdr.sa_irqcpu + offset;
-			render(isdb, pre, PT_NEWLIN,
+			render(isdb, pre, pt_newlin,
 			       "cpu%d\ti%03d/s", "%d;%d", cons(iv, k, p0->irq),
 			       NOVAL, S_VALUE(q->interrupt, p->interrupt, itv));
 		}
@@ -524,6 +527,7 @@ void render_net_dev_stats(int isdb, char *pre, int curr, unsigned long long itv)
 		*sndi = st_net_dev[curr],
 		*sndj;
 	char *ifc;
+	int pt_newlin = (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
 	for (i = 0; i < file_hdr.sa_iface; i++, ++sndi) {
 
@@ -558,7 +562,7 @@ void render_net_dev_stats(int isdb, char *pre, int curr, unsigned long long itv)
 		       "%s\ttxcmp/s", NULL, cons(sv, ifc, NULL),
 		       NOVAL, S_VALUE(sndj->tx_compressed, sndi->tx_compressed, itv));
 
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "%s\trxmcst/s", NULL, cons(sv, ifc, NULL),
 		       NOVAL, S_VALUE(sndj->multicast, sndi->multicast, itv));
 	}
@@ -582,6 +586,7 @@ void render_net_edev_stats(int isdb, char *pre, int curr, unsigned long long itv
 		*sndi = st_net_dev[curr],
 		*sndj;
 	char *ifc;
+	int pt_newlin = (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
 	for (i = 0; i < file_hdr.sa_iface; i++, ++sndi) {
 
@@ -626,7 +631,7 @@ void render_net_edev_stats(int isdb, char *pre, int curr, unsigned long long itv
 		       NOVAL, S_VALUE(sndj->rx_fifo_errors,
 				      sndi->rx_fifo_errors, itv));
 
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "%s\ttxfifo/s", NULL, cons(sv, ifc, NULL),
 		       NOVAL, S_VALUE(sndj->tx_fifo_errors,
 				      sndi->tx_fifo_errors, itv));
@@ -652,6 +657,7 @@ void render_disk_stats(int isdb, char *pre, int curr, unsigned long long itv)
 	struct disk_stats
 		*sdi = st_disk[curr],
 		*sdj;
+	int pt_newlin = (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
 	for (i = 0; i < file_hdr.sa_nr_disk; i++, ++sdi) {
 
@@ -716,11 +722,83 @@ void render_disk_stats(int isdb, char *pre, int curr, unsigned long long itv)
 		       cons(sv, name, NULL),
 		       NOVAL, svctm);
 
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "%s\t%%util", NULL,
 		       cons(sv, name, NULL),
 		       NOVAL, util / 10.0);
 	}
+}
+
+/*
+ ***************************************************************************
+ * Display the field list (when displaying stats in DB format)
+ *
+ * IN:
+ * @act	Activities to display.
+ ***************************************************************************
+ */
+void list_fields(unsigned int act)
+{
+	printf("# hostname;interval;timestamp");
+	
+	if (GET_PROC(act))
+		printf(";proc/s");
+	if (GET_CTXSW(act))
+		printf(";cswch/s");
+	if (GET_CPU(act)) {
+		printf(";CPU;%%user;%%nice;%%system;%%iowait;%%steal;%%idle");
+		if (WANT_PER_PROC(flags) && DISPLAY_HORIZONTALLY(flags))
+			printf(" [...]");
+	}
+	if ((GET_IRQ(act) && !WANT_PER_PROC(flags)) || GET_ONE_IRQ(act)) {
+		printf(";INTR;intr/s");
+		if (GET_ONE_IRQ(act) && DISPLAY_HORIZONTALLY(flags))
+			printf(" [...]");
+	}
+	if (GET_PAGE(act))
+		printf(";pgpgin/s;pgpgout/s;fault/s;majflt/s;pgfree/s;pgscank/s;pgscand/s;pgsteal/s;%%vmeff");
+	if (GET_SWAP(act))
+		printf(";pswpin/s;pswpout/s");
+	if (GET_IO(act))
+		printf(";tps;rtps;wtps;bread/s;bwrtn/s");
+	if (GET_MEMORY(act))
+		printf(";frmpg/s;bufpg/s;campg/s");
+	if (GET_SERIAL(act))
+		printf(";TTY;rcvin/s;txmtin/s;framerr/s;prtyerr/s;brk/s;ovrun/s [...]");
+	if (GET_MEM_AMT(act))
+		printf(";kbmemfree;kbmemused;%%memused;kbbuffers;kbcached;kbswpfree;kbswpused;%%swpused;kbswpcad");
+	if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu) {
+		printf(";CPU;INTR;intr/s");
+		if (DISPLAY_HORIZONTALLY(flags))
+			printf(" [...]");
+	}
+	if (GET_KTABLES(act))
+		printf(";dentunusd;file-nr;inode-nr;pty-nr");
+	if (GET_NET_DEV(act)) {
+		printf(";IFACE;rxpck/s;txpck/s;rxkB/s;txkB/s;rxcmp/s;txcmp/s;rxmcst/s");
+		if (DISPLAY_HORIZONTALLY(flags))
+			printf(" [...]");
+	}
+	if (GET_NET_EDEV(act)) {
+		printf(";IFACE;rxerr/s;txerr/s;coll/s;rxdrop/s;txdrop/s;txcarr/s;rxfram/s;rxfifo/s;txfifo/s");
+		if (DISPLAY_HORIZONTALLY(flags))
+			printf(" [...]");
+	}
+	if (GET_NET_SOCK(act))
+		printf(";totsck;tcpsck;udpsck;rawsck;ip-frag;tcp-tw");
+	if (GET_QUEUE(act))
+		printf(";runq-sz;plist-sz;ldavg-1;ldavg-5;ldavg-15");
+	if (GET_DISK(act)) {
+		printf(";DEV;tps;rd_sec/s;wr_sec/s;avgrq-sz;avgqu-sz;await;svctm;%%util");
+		if (DISPLAY_HORIZONTALLY(flags))
+			printf(" [...]");
+	}
+	if (GET_NET_NFS(act))
+		printf(";call/s;retrans/s;read/s;write/s;access/s;getatt/s");
+	if (GET_NET_NFSD(act))
+		printf(";scall/s;badcall/s;packet/s;udp/s;tcp/s;hit/s;miss/s;sread/s;swrite/s;saccess/s;sgetatt/s");
+	
+	printf("\n");
 }
 
 /*
@@ -750,7 +828,8 @@ void write_mech_stats(int curr, unsigned int act,
 	int wantproc = !WANT_PER_PROC(flags)
 		|| (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags));
 	int isdb = ((format == S_O_DB_OPTION) || (format == S_O_DBD_OPTION));
-
+	int pt_newlin = (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
 	/*
 	 * This substring appears on every output line, preformat it here
 	 */
@@ -758,11 +837,14 @@ void write_mech_stats(int curr, unsigned int act,
 		 file_hdr.sa_nodename, seps[isdb], dt, seps[isdb], cur_time);
 	pre[79] = '\0';
 
+	if (DISPLAY_HORIZONTALLY(flags))
+		printf("%s", pre);
+
 	if (GET_PROC(act)) {
 		/* The first one as an example */
 		render(isdb,		/* db/ppc flag */
 		       pre,		/* the preformatted line leader */
-		       PT_NEWLIN,	/* is this the end of a db line? */
+		       pt_newlin,	/* is this the end of a db line? */
 		       "-\tproc/s",	/* ppc text */
 		       NULL,		/* db text */
 		       NULL,		/* db/ppc text format args (Cons *) */
@@ -772,7 +854,7 @@ void write_mech_stats(int curr, unsigned int act,
 	}
 
 	if (GET_CTXSW(act)) {
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "-\tcswch/s", NULL, NULL,
 		       NOVAL,
 		       ll_s_value(fsj->context_swtch, fsi->context_swtch, itv));
@@ -807,7 +889,7 @@ void write_mech_stats(int curr, unsigned int act,
 		       NOVAL,
 		       ll_sp_value(fsj->cpu_steal, fsi->cpu_steal, g_itv));
 
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "all\t%%idle", NULL, NULL,
 		       NOVAL,
 		       (fsi->cpu_idle < fsj->cpu_idle) ?
@@ -820,7 +902,7 @@ void write_mech_stats(int curr, unsigned int act,
 
 	if (GET_IRQ(act) && wantproc) {
 		/* Print number of interrupts per second */
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "sum\tintr/s", "-1", NULL,
 		       NOVAL, ll_s_value(fsj->irq_sum, fsi->irq_sum, itv));
 	}
@@ -870,7 +952,7 @@ void write_mech_stats(int curr, unsigned int act,
 		       NOVAL,
 		       S_VALUE(fsj->pgsteal, fsi->pgsteal, itv));
 
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "-\t%%vmeff", NULL, NULL,
 		       NOVAL,
 		       (fsi->pgscan_kswapd + fsi->pgscan_direct -
@@ -885,7 +967,7 @@ void write_mech_stats(int curr, unsigned int act,
 		render(isdb, pre, PT_NOFLAG,
 		       "-\tpswpin/s", NULL, NULL,
 		       NOVAL, S_VALUE(fsj->pswpin, fsi->pswpin, itv));
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "-\tpswpout/s", NULL, NULL,
 		       NOVAL, S_VALUE(fsj->pswpout, fsi->pswpout, itv));
 	}
@@ -908,7 +990,7 @@ void write_mech_stats(int curr, unsigned int act,
 		       "-\tbread/s", NULL, NULL,
 		       NOVAL, S_VALUE(fsj->dk_drive_rblk, fsi->dk_drive_rblk, itv));
 
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "-\tbwrtn/s", NULL, NULL,
 		       NOVAL, S_VALUE(fsj->dk_drive_wblk, fsi->dk_drive_wblk, itv));
 	}
@@ -926,7 +1008,7 @@ void write_mech_stats(int curr, unsigned int act,
 		       NOVAL, S_VALUE((double) KB_TO_PG(fsj->bufkb),
 				      (double) KB_TO_PG(fsi->bufkb), itv));
 
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "-\tcampg/s", NULL, NULL,
 		       NOVAL, S_VALUE((double) KB_TO_PG(fsj->camkb),
 				      (double) KB_TO_PG(fsi->camkb), itv));
@@ -968,7 +1050,7 @@ void write_mech_stats(int curr, unsigned int act,
 		       ? SP_VALUE(fsi->frskb, fsi->tlskb, fsi->tlskb)
 		       : 0.0);
 
-		render(isdb, pre, PT_USEINT | PT_NEWLIN,
+		render(isdb, pre, PT_USEINT | pt_newlin,
 		       "-\tkbswpcad", NULL, NULL, fsi->caskb, DNOVAL);
 	}
 
@@ -989,7 +1071,7 @@ void write_mech_stats(int curr, unsigned int act,
 		       "-\tinode-nr", NULL, NULL,
 		       fsi->inode_used, DNOVAL);
 
-		render(isdb, pre, PT_USEINT | PT_NEWLIN,
+		render(isdb, pre, PT_USEINT | pt_newlin,
 		       "-\tpty-nr", NULL, NULL,
 		       fsi->pty_nr, DNOVAL);
 	}
@@ -1019,7 +1101,7 @@ void write_mech_stats(int curr, unsigned int act,
 		render(isdb, pre, PT_USEINT,
 		       "-\tip-frag", NULL, NULL, fsi->frag_inuse, DNOVAL);
 
-		render(isdb, pre, PT_USEINT | PT_NEWLIN,
+		render(isdb, pre, PT_USEINT | pt_newlin,
 		       "-\ttcp-tw", NULL, NULL, fsi->tcp_tw, DNOVAL);
 	}
 
@@ -1039,7 +1121,7 @@ void write_mech_stats(int curr, unsigned int act,
 		       "-\tldavg-5", NULL, NULL,
 		       NOVAL, (double) fsi->load_avg_5 / 100);
 
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "-\tldavg-15", NULL, NULL,
 		       NOVAL, (double) fsi->load_avg_15 / 100);
 	}
@@ -1065,7 +1147,7 @@ void write_mech_stats(int curr, unsigned int act,
 		render(isdb, pre, PT_NOFLAG,
 		       "-\taccess/s", NULL, NULL,
 		       NOVAL, S_VALUE(fsj->nfs_accesscnt, fsi->nfs_accesscnt, itv));
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "-\tgetatt/s", NULL, NULL,
 		       NOVAL, S_VALUE(fsj->nfs_getattcnt, fsi->nfs_getattcnt, itv));
 	}
@@ -1102,10 +1184,13 @@ void write_mech_stats(int curr, unsigned int act,
 		render(isdb, pre, PT_NOFLAG,
 		       "-\tsaccess/s", NULL, NULL,
 		       NOVAL, S_VALUE(fsj->nfsd_accesscnt, fsi->nfsd_accesscnt, itv));
-		render(isdb, pre, PT_NEWLIN,
+		render(isdb, pre, pt_newlin,
 		       "-\tsgetatt/s", NULL, NULL,
 		       NOVAL, S_VALUE(fsj->nfsd_getattcnt, fsi->nfsd_getattcnt, itv));
 	}
+
+	if (DISPLAY_HORIZONTALLY(flags))
+		printf("\n");
 }
 
 /*
@@ -1733,7 +1818,7 @@ void write_special(int curr, int use_tm_start, int use_tm_end, int rtype)
 		if (format == S_O_PPC_OPTION)
 			printf("%s\t-1\t%ld\tLINUX-RESTART\n",
 			       file_hdr.sa_nodename, file_stats[curr].ust_time);
-		else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
+		else if ((format == S_O_DB_OPTION) || (format == S_O_DBD_OPTION))
 			printf("%s;-1;%s;LINUX-RESTART\n",
 			       file_hdr.sa_nodename, cur_time);
 	}
@@ -1745,7 +1830,7 @@ void write_special(int curr, int use_tm_start, int use_tm_end, int rtype)
 			printf("%s\t-1\t%ld\tCOM %s\n",
 			       file_hdr.sa_nodename, file_stats[curr].ust_time,
 			       file_comment->comment);
-		else if ((format == S_O_DB_OPTION) || (format ==S_O_DBD_OPTION))
+		else if ((format == S_O_DB_OPTION) || (format == S_O_DBD_OPTION))
 			printf("%s;-1;%s;COM %s\n",
 			       file_hdr.sa_nodename, cur_time,	file_comment->comment);
 	}
@@ -1927,6 +2012,10 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 		perror("lseek");
 		exit(2);
 	}
+	
+	if ((format == S_O_DB_OPTION) || (format == S_O_DBD_OPTION))
+		/* Print field list */
+		list_fields(act);
 
 	/*
 	 * Restore the first stats collected.
@@ -2102,7 +2191,7 @@ void main_display_loop(int ifd)
 	int eosaf = TRUE, reset = FALSE;
 	long cnt = 1;
 	off_t fpos;
-
+	
 	/* Read system statistics from file */
 	do {
 		/*
@@ -2144,31 +2233,40 @@ void main_display_loop(int ifd)
 
 		/* Read and write stats located between two possible Linux restarts */
 
-		/* For each requested activity... */
-		for (act = 1; act <= A_LAST; act <<= 1) {
+		if (DISPLAY_HORIZONTALLY(flags)) {
+			/*
+			 * If stats are displayed horizontally, then all activities
+			 * are printed on the same line.
+			 */
+			read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
+					    sadf_actflag, &reset);
+		}
+		else {
+			/* For each requested activity... */
+			for (act = 1; act <= A_LAST; act <<= 1) {
 
-			if (sadf_actflag & act) {
-				if ((act == A_IRQ) && WANT_PER_PROC(flags) &&
-				    WANT_ALL_PROC(flags)) {
-					/*
-					 * Distinguish -I SUM activity from
-					 * IRQs per processor activity
-					 */
-					flags &= ~S_F_PER_PROC;
-					read_curr_act_stats(ifd, fpos, &curr, &cnt,
-							    &eosaf, act, &reset);
-					flags |= S_F_PER_PROC;
-					flags &= ~S_F_ALL_PROC;
-					read_curr_act_stats(ifd, fpos, &curr, &cnt,
-							    &eosaf, act, &reset);
-					flags |= S_F_ALL_PROC;
+				if (sadf_actflag & act) {
+					if ((act == A_IRQ) && WANT_PER_PROC(flags) &&
+					    WANT_ALL_PROC(flags)) {
+						/*
+						 * Distinguish -I SUM activity from
+						 * IRQs per processor activity
+						 */
+						flags &= ~S_F_PER_PROC;
+						read_curr_act_stats(ifd, fpos, &curr, &cnt,
+								    &eosaf, act, &reset);
+						flags |= S_F_PER_PROC;
+						flags &= ~S_F_ALL_PROC;
+						read_curr_act_stats(ifd, fpos, &curr, &cnt,
+								    &eosaf, act, &reset);
+						flags |= S_F_ALL_PROC;
+					}
+					else
+						read_curr_act_stats(ifd, fpos, &curr, &cnt,
+								    &eosaf, act, &reset);
 				}
-				else
-					read_curr_act_stats(ifd, fpos, &curr, &cnt,
-							    &eosaf, act, &reset);
 			}
 		}
-
 		if (!cnt) {
 			/* Go to next Linux restart, if possible */
 			do {
@@ -2323,6 +2421,10 @@ int main(int argc, char **argv)
 						format = S_O_DBD_OPTION;
 						break;
 
+					case 'h':
+						flags |= S_F_HORIZONTALLY;
+						break;
+
 					case 'H':
 						if (format && (format != S_O_HDR_OPTION))
 							usage(argv[0]);
@@ -2425,8 +2527,12 @@ int main(int argc, char **argv)
 	 */
 	if (!sadf_actflag || (format == S_O_XML_OPTION))
 		sadf_actflag |= A_CPU;
-	if (!format)
-		format = S_O_PPC_OPTION;
+	if (!format) {
+		if (DISPLAY_HORIZONTALLY(flags))
+			format = S_O_DB_OPTION;
+		else
+			format = S_O_PPC_OPTION;
+	}
 
 	if (interval < 0)
 		interval = 1;

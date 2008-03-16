@@ -1,5 +1,21 @@
 Changes:
 
+2008/03/16: Version 8.1.2 - Sebastien Godard (sysstat <at> orange.fr)
+	* [Ivana Varekova]: iostat now displays read and write operations
+	  per second in the NFS report.
+	* [Tomas Mraz]: sadc now retries to write its buffers when the
+	  write() call has been interrupted by a signal.
+	* Use setbuf() call instead of fflush() to indicate that data
+	  should not be buffered to stdout.
+	* Option -h added to sadf. Used with options -d or -D, it
+	  indicates that all activities should be displayed horizontally
+	  on a single line of data.
+	* sadf -d and sadf -D now display the list of fields for easier
+	  data reading.
+	* sadf and iostat manual pages updated.
+	* NLS updated: Chinese (simplified) translation added, other
+	  translations updated.
+
 2008/02/10: Version 8.1.1 - Sebastien Godard (sysstat <at> orange.fr)
 	  WARNING: Daily data files format has changed, and is *not*
 	  compatible with the previous one! [0x216f]

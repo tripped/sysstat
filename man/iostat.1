@@ -1,9 +1,9 @@
-.TH IOSTAT 1 "JULY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "MARCH 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices, partitions and network filesystems (NFS).
 .SH SYNOPSIS
-.B iostat [ -c ] [ -d ] [ -N ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [
+.B iostat [ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [
 .I device
 .B [ ... ] | ALL ] [ -p [
 .I device
@@ -409,6 +409,18 @@ NFS READ request.
 .RS
 Indicate the number of megabytes written to the server by the NFS client via an
 NFS WRITE request.
+
+.RE
+.B rops/s
+.RS
+Indicate the number of read operations that were issued to the filesystem 
+per second.
+
+.RE
+.B wops/s
+.RS
+Indicate the number of write operations that were issued to the filesystem
+per second.
 .RE
 .RE
 .SH OPTIONS
@@ -416,6 +428,8 @@ NFS WRITE request.
 Display the CPU utilization report.
 .IP -d
 Display the device utilization report.
+.IP -h
+Make the NFS report displayed by option -n easier to read by a human.
 .IP -k
 Display statistics in kilobytes per second instead of blocks per second.
 Data displayed are valid only with kernels 2.4 and later.

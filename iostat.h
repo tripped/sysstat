@@ -27,6 +27,7 @@
 #define I_F_HAS_NFS		0x08000
 #define I_D_DEVMAP_NAME		0x10000
 #define I_D_ISO			0x20000
+#define I_D_HUMAN_READ		0x40000
 
 #define DISPLAY_CPU(m)		(((m) & I_D_CPU) == I_D_CPU)
 #define DISPLAY_DISK(m)		(((m) & I_D_DISK) == I_D_DISK)
@@ -46,6 +47,8 @@
 #define HAS_NFS(m)		(((m) & I_F_HAS_NFS) == I_F_HAS_NFS)
 #define DISPLAY_DEVMAP_NAME(m)	(((m) & I_D_DEVMAP_NAME) == I_D_DEVMAP_NAME)
 #define DISPLAY_ISO(m)		(((m) & I_D_ISO) == I_D_ISO)
+#define DISPLAY_HUMAN_READ(m)	(((m) & I_D_HUMAN_READ) == I_D_HUMAN_READ)
+
 
 #define DT_DEVICE	0
 #define DT_PARTITION	1
@@ -120,6 +123,8 @@ struct io_nfs_stats {
 	unsigned long long wr_direct_bytes	__attribute__ ((packed));
 	unsigned long long rd_server_bytes	__attribute__ ((packed));
 	unsigned long long wr_server_bytes	__attribute__ ((packed));
+	unsigned long rpc_sends			__attribute__ ((packed));
+	unsigned long rpc_recvs			__attribute__ ((packed));
 };
 
 #define IO_NFS_STATS_SIZE	(sizeof(struct io_nfs_stats))

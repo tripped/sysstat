@@ -1691,6 +1691,9 @@ void read_stats(void)
 	unsigned int rows = 23;
 	int dis_hdr = 0;
 
+	/* Don't buffer data if redirected to a pipe... */
+	setbuf(stdout, NULL);
+
 	/* Read stats header */
 	read_header_data();
 
@@ -1762,7 +1765,6 @@ void read_stats(void)
 		}
 		write_stats(curr, dis, sar_actflag, USE_SADC, &count, NO_TM_START,
 			    tm_end.use, NO_RESET, ST_IMMEDIATE);
-		fflush(stdout);	/* Don't buffer data if redirected to a pipe... */
 
 		if (file_stats[curr].record_type == R_LAST_STATS) {
 			/* File rotation is happening: re-read header data sent by sadc */

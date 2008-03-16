@@ -1407,6 +1407,9 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 	int again;
 	unsigned long lines = rows;
 
+	/* Don't buffer data if redirected to a pipe */
+	setbuf(stdout, NULL);
+	
 	if (cpu_nr > 1) {
 		/*
 		 * Read system uptime (only for SMP machines).
@@ -1467,7 +1470,6 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 
 		/* Print results */
 		again = write_stats(curr, dis);
-		fflush(stdout);
 
 		if (!again)
 			return;

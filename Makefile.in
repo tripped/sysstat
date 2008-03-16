@@ -273,6 +273,7 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/sv/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/vi/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/zh_CN/LC_MESSAGES
 	$(INSTALL_DATA) nls/af.gmo $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/da.gmo $(DESTDIR)$(NLS_DIR)/da/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/de.gmo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES/$(PACKAGE).mo
@@ -293,6 +294,7 @@ ifdef REQUIRE_NLS
 	$(INSTALL_DATA) nls/sk.gmo $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/sv.gmo $(DESTDIR)$(NLS_DIR)/sv/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/vi.gmo $(DESTDIR)$(NLS_DIR)/vi/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/zh_CN.gmo $(DESTDIR)$(NLS_DIR)/zh_CN/LC_MESSAGES/$(PACKAGE).mo
 endif
 
 install_all: install_base crontab sysstat \
@@ -396,6 +398,7 @@ endif
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/sk/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/sv/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/vi/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/zh_CN/LC_MESSAGES/$(PACKAGE).mo
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/da/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES
@@ -416,6 +419,7 @@ endif
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sk/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sv/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/vi/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/zh_CN/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/da
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de
@@ -436,6 +440,7 @@ endif
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sk
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sv
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/vi
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/zh_CN
 	rm -f $(DESTDIR)$(DOC_DIR)/*
 	-rmdir $(DESTDIR)$(DOC_DIR)
 	@echo "Please ignore the errors above, if any."

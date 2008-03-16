@@ -14,6 +14,15 @@
 #define NOVAL      0		/* For placeholder zeros */
 #define DNOVAL     0.0		/* Wilma!  */
 
+
+/* Output formats (O_= Output)  */
+#define S_O_HDR_OPTION		1
+#define S_O_PPC_OPTION		2
+#define S_O_DB_OPTION		3
+#define S_O_XML_OPTION		4
+#define S_O_DBD_OPTION		5
+
+
 /* DTD version for XML output */
 #define XML_DTD_VERSION	"1.6"
 

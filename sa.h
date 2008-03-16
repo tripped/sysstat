@@ -81,7 +81,7 @@
 #define S_F_HAS_DISKSTATS	0x0200
 #define S_F_FILE_LCK		0X0400
 #define S_F_PER_PROC		0x0800
-/* Unused			0x1000 */
+#define S_F_HORIZONTALLY	0x1000
 #define S_F_COMMENT		0x2000
 
 #define WANT_ALL_PROC(m)	(((m) & S_F_ALL_PROC) == S_F_ALL_PROC)
@@ -96,14 +96,8 @@
 #define HAS_DISKSTATS(m)	(((m) & S_F_HAS_DISKSTATS) == S_F_HAS_DISKSTATS)
 #define FILE_LOCKED(m)		(((m) & S_F_FILE_LCK) == S_F_FILE_LCK)
 #define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC) == S_F_PER_PROC)
+#define DISPLAY_HORIZONTALLY(m)	(((m) & S_F_HORIZONTALLY) == S_F_HORIZONTALLY)
 #define DISPLAY_COMMENT(m)	(((m) & S_F_COMMENT) == S_F_COMMENT)
-
-/* Output formats (O_= Output)  */
-#define S_O_HDR_OPTION		1
-#define S_O_PPC_OPTION		2
-#define S_O_DB_OPTION		3
-#define S_O_XML_OPTION		4
-#define S_O_DBD_OPTION		5
 
 /* Files */
 #define PROC		"/proc"

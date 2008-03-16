@@ -495,6 +495,9 @@ void rw_mpstat_loop(int dis_hdr, int rows)
 	int curr = 1, dis = 1;
 	unsigned long lines = rows;
 
+	/* Dont buffer data if redirected to a pipe */
+	setbuf(stdout, NULL);
+	
 	/* Read stats */
 	if (cpu_nr > 1) {
 		/*
@@ -557,9 +560,6 @@ void rw_mpstat_loop(int dis_hdr, int rows)
 			lines++;
 		}
 		write_stats(curr, dis);
-
-		/* Flush data */
-		fflush(stdout);
 
 		if (count > 0)
 			count--;

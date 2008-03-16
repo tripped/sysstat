@@ -1,3 +1,9 @@
+sysstat (8.1.2-1~) UNRELEASED; urgency=low
+
+  * New upstream version.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 16 Mar 2008 21:43:45 +0100
+
 sysstat (8.1.1-1) experimental; urgency=low
 
   * New upstream version (development):

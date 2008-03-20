@@ -1,8 +1,9 @@
-sysstat (8.1.2-1~) UNRELEASED; urgency=low
+sysstat (8.1.2-1) experimental; urgency=low
 
   * New upstream version.
+  * Change doc-base section to System/Monitoring. 
 
- -- Robert Luberda <robert@debian.org>  Sun, 16 Mar 2008 21:43:45 +0100
+ -- Robert Luberda <robert@debian.org>  Thu, 20 Mar 2008 21:31:25 +0100
 
 sysstat (8.1.1-1) experimental; urgency=low
 

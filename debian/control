@@ -28,7 +28,7 @@ Homepage: http://pagesperso-orange.fr/sebastien.godard/
 
 Package: isag
 Architecture: all
-Depends: sysstat (>= ${source:Version}), tk8.3|wish, gnuplot-x11, ${misc:Depends}
+Depends: sysstat (>= ${source:Version}), tk8.5|wish, gnuplot-x11, ${misc:Depends}
 Suggests: rcs
 Description: Interactive System Activity Grapher for sysstat
  This package includes the isag command, which graphically displays the 

@@ -1,0 +1,62 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: sysstat\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-01-08 04:34+0100\n"
+"PO-Revision-Date: 2008-03-25 12:50+0200\n"
+"Last-Translator: Esko Arajärvi <edu@iki.fi>\n"
+"Language-Team: Finnish <debian-l10n-finnish@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Finnish\n"
+"X-Poedit-Country: FINLAND\n"
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:1001
+msgid "Do you want post-installation script to remove these data files?"
+msgstr "Tulisiko asennuksen jälkeen ajettavan komentosarjan poistaa nämä tietotiedostot?"
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:1001
+msgid "Format of daily data statistics files has changed in version ${s_version} of sysstat and is *not* compatible with the previous one!"
+msgstr "Päivittäisten tietotilastotiedostojen muoto on vaihtunut systatin versiossa ${s_version}, eikä uusi muoto ole yhteensopiva edellisen kanssa."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:1001
+msgid "If you activate this option, any existing data files in /var/log/sysstat/ directory will be deleted."
+msgstr "Jos valitset tämän, kaikki hakemistossa /var/log/sysstat olevat tietotiedostot poistetaan."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:1001
+msgid "If you don't want to remove them automatically, please remove them by hand later, in order for the sar command to work properly."
+msgstr "Jos niitä ei haluta poistaa automaattisesti, ne tulisi poistaa myöhemmin käsin, jotta komento sar toimii oikein."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:2001
+msgid "Do you want to activate sysstat's cron job?"
+msgstr "Otetaanko ohjelman sysstat cron-työ käyttöön?"
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:2001
+msgid "If this option is enabled the sysstat package will collect (using the cron daemon and init.d script) binary data concerning system activities and store them in log files within /var/log/sysstat/ directory."
+msgstr "Jos tämä on valittuna, paketti systat kerää (käyttäen cron-taustaohjelmaa ja init.d-komentosarjaa) tietoja järjestelmän toiminnasta ja tallentaa ne lokitiedostoihin hakemistoon /var/log/sysstat."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:2001
+msgid "With this data the sar(1) command will be able to display day-long system statistics."
+msgstr "Komento sar(1) voi näiden tietojen avulla näyttää päivän järjestelmätilastot."
+
+#. Type: boolean
+#. Description
+#: ../sysstat.templates:2001
+msgid "If you don't enable this option, the sar(1) command will show only the current statistics."
+msgstr "Jos tätä ei valita, komento sar(1) näyttää vain tämänhetkiset tilastot."
+

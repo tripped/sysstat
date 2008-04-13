@@ -1,3 +1,10 @@
+sysstat (8.1.2-2) unstable; urgency=low
+
+  * Initial Finnish translations of debconf templates (closes: #472620).
+  * Upload to unstable.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 13 Apr 2008 17:59:13 +0200
+
 sysstat (8.1.2-1) experimental; urgency=low
 
   * New upstream version.

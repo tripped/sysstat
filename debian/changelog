@@ -6,11 +6,14 @@ sysstat (8.1.6-1) experimental; urgency=low
     + All sysstat commands are made consistent with how parameters are 
       interpreted: "COMMAND <interval>" now generates a report continusouly, 
       "COMMAND <interval> 0" causes an error, "COMMAND 0" displays a report 
-      since system startup (closes: #475707).
+      since system startup (closes: #475707);
+   + Option -S added to sadc, which replaces previous options -I or -d. Existing
+     defaults file should be updated.
   * Standards-Version: 3.8.0 (no changes).
   * Merge the following change from Ubuntu:
     - remove call to execvp() as it's not needed and has potential
       security problems.
+  * 
 
  -- Robert Luberda <robert@debian.org>  Sat, 01 Nov 2008 10:36:17 +0100
 

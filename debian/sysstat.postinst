@@ -1,6 +1,6 @@
 #! /bin/sh
 # vim:ts=4:et
-# $Id: sysstat.postinst 1398 2008-11-01 10:03:36Z robert $
+# $Id: sysstat.postinst 1399 2008-11-01 15:46:04Z robert $
 
 set -e
 
@@ -35,9 +35,9 @@ ENABLED="$ENABLED"
 
 # Additional options passed to sa1 by /etc/init.d/sysstat
 # and /etc/cron.d/sysstat
-# By default contains the \`-d' option responsible for 
+# By default contains the \`-S DISK' option responsible for 
 # generating disk statisitcs.
-SA1_OPTIONS="-d"
+SA1_OPTIONS="-S DISK"
 
 # Additional options passed to sa2 by /etc/cron.daily/sysstat.
 SA2_OPTIONS=""

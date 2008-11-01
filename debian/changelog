@@ -1,3 +1,18 @@
+sysstat (8.1.6-1) experimental; urgency=low
+
+  * New upstream release:
+    + NFS v4 support added to sar -n (closes: #434442);
+    + All sysstat commands are made consistent with how parameters are 
+      interpreted: "COMMAND <interval>" now generates a report continusouly, 
+      "COMMAND <interval> 0" causes an error, "COMMAND 0" displays a report 
+      since system startup (closes: #475707).
+  * Standards-Version: 3.8.0 (no changes).
+  * Merge the following change from Ubuntu:
+    - remove call to execvp() as it's not needed and has potential
+      security problems.
+
+ -- Robert Luberda <robert@debian.org>  Sat, 01 Nov 2008 10:36:17 +0100
+
 sysstat (8.1.2-2) unstable; urgency=low
 
   * Initial Finnish translations of debconf templates (closes: #472620).

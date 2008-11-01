@@ -1218,7 +1218,6 @@ int main(int argc, char **argv)
 
 		/* Call now the data collector */
 		execv(SADC_PATH, args);
-		execvp(SADC, args);
 		/*
 		 * Note: Don't use execl/execlp since we don't have a fixed number of
 		 * args to give to sadc.

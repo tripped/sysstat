@@ -147,9 +147,17 @@ int ioc_init(void)
 	char desc[IOC_DESCLEN + 1];
 	struct ioc_entry  *iocp = NULL;
 	struct blk_config *blkp = NULL;
+	char ioconf_name[64];
 
-	if ((fp = fopen(IOCONF, "r")) == NULL)
-		return 0;
+	if ((fp = fopen(IOCONF, "r")) == NULL) {
+		if ((fp = fopen(LOCAL_IOCONF, "r")) == NULL)
+			return 0;
+		strncpy(ioconf_name, LOCAL_IOCONF, 64);
+	}
+	else {
+		strncpy(ioconf_name, IOCONF, 64);
+	}
+	ioconf_name[63] = '\0';
 
 	while (fgets(buf, IOC_LINESIZ, fp)) {
 
@@ -180,14 +188,14 @@ int ioc_init(void)
 			}
 			if (indirect >= MAX_BLKDEV) {
 				fprintf(stderr, "%s: Indirect major #%u out of range\n",
-					IOCONF, indirect);
+					ioconf_name, indirect);
 				continue;
 			}
 			if (ioconf[indirect] == NULL) {
 				fprintf(stderr,
 					"%s: Indirect record '%u:%u:%u:...'"
 					" references not yet seen major %u\n",
-					IOCONF, major, indirect, iocp->ctrlno, major);
+					ioconf_name, major, indirect, iocp->ctrlno, major);
 				continue;
 			}
 			/*
@@ -223,7 +231,7 @@ int ioc_init(void)
 
 		if (i != 9) {
 			fprintf(stderr, "%s: Malformed %d field record: %s\n",
-				IOCONF, i, buf);
+				ioconf_name, i, buf);
 			continue;
 		}
 
@@ -247,7 +255,7 @@ int ioc_init(void)
 			if (ioconf[major] == NULL) {
 				fprintf(stderr, "%s: type 'x' record for"
 					" major #%u must follow the base record - ignored\n",
-					IOCONF, major);
+					ioconf_name, major);
 				continue;
 			}
 			xblkp = ioconf[major]->blkp;
@@ -260,7 +268,7 @@ int ioc_init(void)
 				 */
 				fprintf(stderr, "%s: duplicate 'x' record for"
 					" major #%u - ignored\ninput line: %s\n",
-					IOCONF, major, buf);
+					ioconf_name, major, buf);
 				continue;
 			}
 			/*

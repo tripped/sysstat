@@ -1,5 +1,127 @@
 Changes:
 
+2008/09/30: Version 8.1.6 - Sebastien Godard (sysstat <at> orange.fr)
+	* [David Alan Gilbert]: Option -h added to pidstat. This
+	  option is used to display all activities horizontally on a
+	  single line.
+	* Fixed a bug in pidstat: When pidstat was used to monitor a
+	  process and all its threads (with pidstat's option -t), it
+	  could display weird values if the thread group leader terminated.
+	* Header line displayed by sar, iostat, mpstat, pidstat and
+	  sadf -H now includes the number of CPU.
+	* Use the correct word TGID instead of PID with pidstat -t.
+	* mpstat now displays stats for all interrupts, including NMI,
+	  LOC, etc.
+	* sar and sadf now check that CPU activity is available in file.
+	* iostat's option -t now always displays the date and the time.
+	* Added option "--disable-documentation" to ./configure. Using
+	  this option prevents documentation files (including manual
+	  pages) from being installed.
+	* iconfig script updated. Now ask the user for documentation
+	  and isag script installation.
+	* Manual pages updated.
+	* NLS updated. Indonesian and Chinese (traditional) translations
+	  added.
+	* README-nls file updated.
+	* Makefile updated: There is now a dedicated target to install
+	  or uninstall NLS files
+	* FAQ updated.
+	* CREDITS file updated.
+	* Code cleaned.
+
+2008/07/14: Version 8.1.5 - Sebastien Godard (sysstat <at> orange.fr)
+	* Added virtual machine time accounting to "sar -u ALL" and
+	  mpstat (%guest).
+	* pidstat has also been updated to be able to display time
+	  spent in virtual machine for a task, and for a task and all
+	  its children.
+	* Option -S added to sar: This options tells sar to display
+	  swap space utilization. Option -r now only displays memory
+	  utilization.
+	* Added %swpcad to sar -S (percentage of cached swap memory
+	  in relation to the amount of used swap space).
+	* Added kbcommit and %commit to sar -r (amount and percentage
+	  of memory needed for current workload).
+	* sadf -x now distinguishes between options -r and -R.
+	* sadf command updated to take into account new fields
+	  (%guest, %swpcad, etc.)
+	* [Ivana Varekova]: iostat now displays the total number of
+	  operations per second in the NFS report.
+	* Fixed iostat so that %system (percentage of CPU utilization
+	  that occurred while executing at system level) also takes
+	  into account time spent to service interrupts and softirqs.
+	* Added a missing header line for activities with multiple
+	  outputs displayed by sar (eg. sar -rR ...).
+	* Makefile updated: There is now a dedicated target to install
+	  or uninstall manual pages.
+	* Manual pages updated.
+	* Code cleaned.
+	* XSD and DTD documents updated.
+	* isag script updated.
+
+2008/06/22: Version 8.1.4 - Sebastien Godard (sysstat <at> orange.fr)
+	* sar can now collect and display all CPU fields with its new
+	  option "-u ALL". sadf has also been updated to be able to
+	  display them.
+	* mpstat can now display per-CPU interrupts statistics with its
+	  option "-I CPU". This was a feature available in sar that was
+	  removed in previous sysstat version.
+	* mpstat uses now a separate option ("-I SUM") to display the
+	  total number of interrupts for each processor.
+	* Option -A added to mpstat. This switch tells mpstat to display
+	  all possible activities.
+	* NFS v4 support added to sar -n NFS(D). When both NFS v3 and
+	  NFS v4 are used, stats from NFS v3 and NFS v4 are added
+	  together [DEBIAN bug#434442].
+	* Code cleaned: mpstat, iostat and pidstat now use the common
+	  functions from rd_stats.c to read CPU stats from /proc/stat;
+	  Computing extended disk statistics (service time, etc.) is now
+	  done in one place (common function used by iostat, sar, sadf).
+	* All sysstat commands are made consistent with how parameters
+	  are interpreted: "COMMAND <interval>" now generates a report
+	  continusouly, "COMMAND <interval> 0" causes an error,
+	  "COMMAND 0" displays a report since system startup
+	  [DEBIAN bug#475707].
+	* Changed XML output for processes and context switches displayed
+	  by sadf -x to be consistent with output from sar.
+	* mpstat and sar manual pages updated.
+	* isag script updated.
+	* FAQ updated.
+	* DTD and XML Schema updated.
+	* NLS updated.
+
+2008/05/25: Version 8.1.3 - Sebastien Godard (sysstat <at> orange.fr)
+	  WARNING: Daily data files format has changed, and is *not*
+	  compatible with the previous one! [0x2170]
+	* sar, sadc and sadf heavily modified. It is now easier to add
+	  (or remove) activities since sar and sadc have been rewritten
+	  in a non-monolithic way with a generic design architecture.
+	* Option -c removed from sar. Task creation and context switch
+	  activities are now merged and available with option -w.
+	* sar no longer displays interrupts per processor statistics.
+	  This feature will be included in mpstat in next sysstat version.
+	* Option -S added to sadc. This option replaces previous options
+	  -I or -d, and is used to select activities that should be
+	  collected and saved in file. It is even possible to
+	  select each activity collected by sadc.
+	* Format of data files created by sar/sadc heavily modified.
+	  In some cases, it is now possible to add or remove activities
+	  while keeping a compatible format that can be read by a previous
+	  or future sysstat version.
+	* sadf now only displays activities that have been explicitly
+	  selected.
+	* sar now checks that devices displayed by option -d are whole
+	  devices (and not partitions) using sysstat.ioconf configuration
+	  file. If this file is not found in its default directory, then
+	  sysstat looks for it in current directory.
+	* gettextize entire usage() messages so that translators have
+	  free scope to act.
+	* DTD and XML Schema updated.
+	* Manual pages updated.
+	* Crontab samples updated.
+	* FAQ updated.
+	* Code cleaned.
+
 2008/03/16: Version 8.1.2 - Sebastien Godard (sysstat <at> orange.fr)
 	* [Ivana Varekova]: iostat now displays read and write operations
 	  per second in the NFS report.

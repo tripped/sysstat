@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:annotation>
-	-- XML Schema v1.6 for sysstat --
-</xs:annotation>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://pagesperso-orange.fr/sebastien.godard/sysstat" targetNamespace="http://pagesperso-orange.fr/sebastien.godard/sysstat" elementFormDefault="qualified">
+<xs:annotation><xs:appinfo>-- XML Schema v2.1 for sysstat. See sadf.h --</xs:appinfo></xs:annotation>
 
     <xs:element name="queue" type="queue-type"></xs:element>
 
@@ -14,7 +12,6 @@
     	<xs:attribute name="ldavg-5" type="hundredth-type"></xs:attribute>
     	<xs:attribute name="ldavg-15" type="hundredth-type"></xs:attribute>
     </xs:complexType>
-
 
 
     <xs:element name="kernel" type="kernel-type">
@@ -43,14 +40,16 @@
     	<xs:sequence>
     		<xs:element name="memfree" type="xs:negativeInteger"></xs:element>
     		<xs:element name="memused" type="xs:nonNegativeInteger"></xs:element>
-    		<xs:element name="memused-percent" type="hundredth-type">
-    		</xs:element>
+    		<xs:element name="memused-percent" type="hundredth-type"></xs:element>
+    		<xs:element name="buffers" type="xs:nonNegativeInteger"></xs:element>
+    		<xs:element name="cached" type="xs:nonNegativeInteger"></xs:element>
+    		<xs:element name="commit" type="xs:nonNegativeInteger"></xs:element>
+    		<xs:element name="commit-percent" type="hundredth-type"></xs:element>
     		<xs:element name="swpfree" type="xs:nonNegativeInteger"></xs:element>
     		<xs:element name="swpused" type="xs:nonNegativeInteger"></xs:element>
     		<xs:element name="swpused-percent" type="hundredth-type"></xs:element>
     		<xs:element name="swpcad" type="xs:nonNegativeInteger"></xs:element>
-    		<xs:element name="buffers" type="xs:nonNegativeInteger"></xs:element>
-    		<xs:element name="cached" type="xs:nonNegativeInteger"></xs:element>
+    		<xs:element name="swpcad-percent" type="hundredth-type"></xs:element>
     		<xs:element name="frmpg" type="hundredth-type"></xs:element>
     		<xs:element name="bufpg" type="hundredth-type"></xs:element>
     		<xs:element name="campg" type="hundredth-type"></xs:element>
@@ -130,6 +129,7 @@
     <xs:element name="net-dev" type="net-dev-type"></xs:element>
 
     <xs:complexType name="net-dev-type">
+	<xs:attribute name="iface" type="xs:string"></xs:attribute>    
     	<xs:attribute name="rxpck" type="hundredth-type"></xs:attribute>
     	<xs:attribute name="txpck" type="hundredth-type"></xs:attribute>
     	<xs:attribute name="rxkB" type="hundredth-type"></xs:attribute>
@@ -142,6 +142,7 @@
     <xs:element name="net-edev" type="net-edev-type"></xs:element>
 
     <xs:complexType name="net-edev-type">
+	<xs:attribute name="iface" type="xs:string"></xs:attribute>
     	<xs:attribute name="rxerr" type="hundredth-type"></xs:attribute>
     	<xs:attribute name="txerr" type="hundredth-type"></xs:attribute>
     	<xs:attribute name="coll" type="hundredth-type"></xs:attribute>
@@ -153,21 +154,12 @@
     	<xs:attribute name="txfifo" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
-    <xs:element name="net-device" type="net-device-type"></xs:element>
-
-    <xs:complexType name="net-device-type">
-    	<xs:sequence>
-    		<xs:element name="net-dev" type="net-dev-type" minOccurs="1"></xs:element>
-    		<xs:element name="net-edev" type="net-edev-type" minOccurs="1"></xs:element>
-    	</xs:sequence>
-    	<xs:attribute name="iface" type="xs:string"></xs:attribute>
-    </xs:complexType>
-
     <xs:element name="network" type="network-type"></xs:element>
 
     <xs:complexType name="network-type">
     	<xs:sequence>
-    		<xs:element name="net-device" type="net-device-type"></xs:element>
+		<xs:element name="net-dev" type="net-dev-type" minOccurs="1"></xs:element>
+		<xs:element name="net-edev" type="net-edev-type" minOccurs="1"></xs:element>
     		<xs:element name="net-nfs" type="net-nfs-type" minOccurs="1"></xs:element>
     		<xs:element name="net-nfsd" type="net-nfsd-type" minOccurs="1"></xs:element>
     		<xs:element name="net-sock" type="net-sock-type" minOccurs="1"></xs:element>
@@ -255,14 +247,6 @@
     	<xs:attribute name="pswpout" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
-    <xs:element name="irqcpu" type="irqcpu-type"></xs:element>
-
-    <xs:complexType name="irqcpu-type">
-    	<xs:attribute name="cpu" type="xs:int"></xs:attribute>
-    	<xs:attribute name="intr" type="xs:int"></xs:attribute>
-    	<xs:attribute name="value" type="hundredth-type"></xs:attribute>
-    </xs:complexType>
-
     <xs:element name="int-global" type="int-global-type"></xs:element>
 
     <xs:complexType name="int-global-type">
@@ -291,6 +275,21 @@
     	<xs:attribute name="idle" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
+    <xs:element name="cpu-all" type="cpu-all-type"></xs:element>
+
+    <xs:complexType name="cpu-all-type">
+    	<xs:attribute name="number" type="xs:string"></xs:attribute>
+    	<xs:attribute name="usr" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="nice" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="sys" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="iowait" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="steal" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="irq" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="soft" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="guest" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="idle" type="hundredth-type"></xs:attribute>
+    </xs:complexType>
+
     <xs:element name="cpu-load" type="cpu-load-type"></xs:element>
 
     <xs:complexType name="cpu-load-type">
@@ -299,39 +298,41 @@
     	</xs:sequence>
     </xs:complexType>
 
-    <xs:element name="context-switch" type="context-switch-type"></xs:element>
+    <xs:element name="cpu-load-all" type="cpu-load-all-type"></xs:element>
 
-    <xs:complexType name="context-switch-type">
-    	<xs:attribute name="per" type="per-type"></xs:attribute>
-    	<xs:attribute name="cswch" type="hundredth-type"></xs:attribute>
+    <xs:complexType name="cpu-load-all-type">
+    	<xs:sequence>
+    		<xs:element name="cpu-all" type="cpu-all-type"></xs:element>
+    	</xs:sequence>
     </xs:complexType>
 
-    <xs:element name="processes" type="processes-type"></xs:element>
+    <xs:element name="process-and-context-switch"
+	    type="process-and-context-switch-type"></xs:element>
 
-    <xs:complexType name="processes-type">
+    <xs:complexType name="process-and-context-switch-type">
     	<xs:attribute name="per" type="per-type"></xs:attribute>
-    	<xs:attribute name="proc" type="hundredth-type"></xs:attribute>
+	<xs:attribute name="proc" type="hundredth-type"></xs:attribute>
+	<xs:attribute name="cswch" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
     <xs:element name="timestamp" type="timestamp-type"></xs:element>
 
     <xs:complexType name="timestamp-type">
     	<xs:sequence>
-    		<xs:element name="processes" type="processes-type"></xs:element>
-    		<xs:element name="context-switch"
-    			type="context-switch-type">
-    		</xs:element>
     		<xs:element name="cpu-load" type="cpu-load-type"></xs:element>
+    		<xs:element name="cpu-load-all" type="cpu-load-all-type"></xs:element>
+		<xs:element name="process-and-context-switch"
+			type="process-and-context-switch-type"></xs:element>
     		<xs:element name="interrupts" type="interrupts-type"></xs:element>
     		<xs:element name="swap-pages" type="swap-pages-type"></xs:element>
-    		<xs:element name="io" type="io-type"></xs:element>
-    		<xs:element name="disk" type="disk-type"></xs:element>
-    		<xs:element name="serial" type="serial-type"></xs:element>
-    		<xs:element name="network" type="network-type"></xs:element>
     		<xs:element name="paging" type="paging-type"></xs:element>
+    		<xs:element name="io" type="io-type"></xs:element>
     		<xs:element name="memory" type="memory-type"></xs:element>
     		<xs:element name="kernel" type="kernel-type"></xs:element>
     		<xs:element name="queue" type="queue-type"></xs:element>
+    		<xs:element name="serial" type="serial-type"></xs:element>
+    		<xs:element name="disk" type="disk-type"></xs:element>
+    		<xs:element name="network" type="network-type"></xs:element>
     	</xs:sequence>
     	<xs:attribute name="date" type="xs:date"></xs:attribute>
     	<xs:attribute name="time" type="xs:time"></xs:attribute>
@@ -345,17 +346,7 @@
     		<xs:element name="int-global" type="int-global-type"
     			minOccurs="1">
     		</xs:element>
-    		<xs:element name="int-proc" type="int-proc-type"></xs:element>
     	</xs:sequence>
-    </xs:complexType>
-
-    <xs:element name="int-proc" type="int-proc-type"></xs:element>
-
-    <xs:complexType name="int-proc-type">
-    	<xs:sequence>
-    		<xs:element name="irqcpu" type="irqcpu-type" minOccurs="1"></xs:element>
-    	</xs:sequence>
-    	<xs:attribute name="per" type="per-type"></xs:attribute>
     </xs:complexType>
 
     <xs:simpleType name="tps-type">

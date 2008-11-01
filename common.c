@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2007 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -25,15 +25,14 @@
 #include <time.h>
 #include <errno.h>
 #include <unistd.h>	/* For STDOUT_FILENO, among others */
-#include <dirent.h>
-#include <ctype.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 #include "version.h"
 #include "common.h"
 #include "ioconf.h"
+#include "rd_stats.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -124,8 +123,9 @@ time_t get_time(struct tm *rectime)
 
 	if (!utc) {
 		/* Read environment variable value once */
-		if ((e = getenv(ENV_TIME_DEFTM)) != NULL)
+		if ((e = getenv(ENV_TIME_DEFTM)) != NULL) {
 			utc = !strcmp(e, K_UTC);
+		}
 		utc++;
 	}
 	
@@ -133,116 +133,6 @@ time_t get_time(struct tm *rectime)
 		return get_gmtime(rectime);
 	else
 		return get_localtime(rectime);
-}
-
-/*
- ***************************************************************************
- * Count number of processors in /sys
- *
- * RETURNS:
- * Number of processors (online and offline).
- * A value of 0 means that /sys was not mounted.
- * A value of N (!=0) means N processor(s) (0 .. N-1).
- ***************************************************************************
- */
-int get_sys_cpu_nr(void)
-{
-	DIR *dir;
-	struct dirent *drd;
-	struct stat buf;
-	char line[MAX_PF_NAME];
-	int proc_nr = 0;
-
-	/* Open relevant /sys directory */
-	if ((dir = opendir(SYSFS_DEVCPU)) == NULL)
-		return 0;
-
-	/* Get current file entry */
-	while ((drd = readdir(dir)) != NULL) {
-
-		if (!strncmp(drd->d_name, "cpu", 3) && isdigit(drd->d_name[3])) {
-			snprintf(line, MAX_PF_NAME, "%s/%s", SYSFS_DEVCPU, drd->d_name);
-			line[MAX_PF_NAME - 1] = '\0';
-			if (stat(line, &buf) < 0)
-				continue;
-			if (S_ISDIR(buf.st_mode))
-				proc_nr++;
-		}
-	}
-
-	/* Close directory */
-	closedir(dir);
-
-	return proc_nr;
-}
-
-/*
- ***************************************************************************
- * Count number of processors in /proc/stat
- *
- * RETURNS:
- * Number of processors. The returned value is greater than or equal to the
- * number of online processors.
- * A value of 0 means one processor and non SMP kernel.
- * A value of N (!=0) means N processor(s) (0 .. N-1) woth SMP kernel.
- ***************************************************************************
- */
-int get_proc_cpu_nr(void)
-{
-	FILE *fp;
-	char line[16];
-	int num_proc, proc_nr = -1;
-
-	if ((fp = fopen(STAT, "r")) == NULL) {
-		fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
-		exit(1);
-	}
-
-	while (fgets(line, 16, fp) != NULL) {
-
-		if (strncmp(line, "cpu ", 4) && !strncmp(line, "cpu", 3)) {
-			sscanf(line + 3, "%d", &num_proc);
-			if (num_proc > proc_nr)
-				proc_nr = num_proc;
-		}
-	}
-
-	fclose(fp);
-
-	return (proc_nr + 1);
-}
-
-/*
- ***************************************************************************
- * Count the number of processors on the machine
- * Try to use /sys for that, or /proc/stat if /sys doesn't exist.
- *
- * IN:
- * @max_nr_cpus	Maximum number of proc that sysstat can handle.
- *
- * RETURNS:
- * Number of processors.
- * 0: one proc and non SMP kernel
- * 1: one proc and SMP kernel (NB: on SMP machines where all the CPUs but
- *    one have been disabled, we get the total number of proc since we use
- *    /sys to count them).
- * 2: two proc...
- ***************************************************************************
- */
-int get_cpu_nr(unsigned int max_nr_cpus)
-{
-	int cpu_nr;
-
-	if ((cpu_nr = get_sys_cpu_nr()) == 0)
-		/* /sys may be not mounted. Use /proc/stat instead */
-		cpu_nr = get_proc_cpu_nr();
-
-	if (cpu_nr > max_nr_cpus) {
-		fprintf(stderr, _("Cannot handle so many processors!\n"));
-		exit(1);
-	}
-
-	return cpu_nr;
 }
 
 /*
@@ -278,9 +168,10 @@ int get_dev_part_nr(char *dev_name)
 		line[MAX_PF_NAME - 1] = '\0';
 
 		/* Try to guess if current entry is a directory containing a stat file */
-		if (!access(line, R_OK))
+		if (!access(line, R_OK)) {
 			/* Yep... */
 			part++;
+		}
 	}
 	
 	/* Close directory */
@@ -327,9 +218,10 @@ int get_sysfs_dev_nr(int display_partitions)
 			/* Yep... */
 			dev++;
 	
-			if (display_partitions)
+			if (display_partitions) {
 				/* We also want the number of partitions for this device */
 				dev += get_dev_part_nr(drd->d_name);
+			}
 		}
 	}
 
@@ -337,130 +229,6 @@ int get_sysfs_dev_nr(int display_partitions)
 	closedir(dir);
 
 	return dev;
-}
-
-/*
- ***************************************************************************
- * Find number of devices and partitions available in /proc/diskstats.
- *
- * IN:
- * @count_part		Set to TRUE if devices _and_ partitions are to be
- *			counted.
- * @only_used_dev	When counting devices, set to TRUE if only devices
- *			with non zero stats must be counted.
- *
- * RETURNS:
- * Number of devices (and partitions).
- ***************************************************************************
- */
-int get_diskstats_dev_nr(int count_part, int only_used_dev)
-{
-	FILE *fp;
-	char line[256];
-	int dev = 0, i;
-	unsigned long rd_ios, wr_ios;
-
-	if ((fp = fopen(DISKSTATS, "r")) == NULL)
-		/* File non-existent */
-		return 0;
-
-	/*
-	 * Counting devices and partitions is simply a matter of counting
-	 * the number of lines...
-	 */
-	while (fgets(line, 256, fp) != NULL) {
-		if (!count_part) {
-			i = sscanf(line, "%*d %*d %*s %lu %*u %*u %*u %lu",
-				   &rd_ios, &wr_ios);
-			if (i == 1)
-				/* It was a partition and not a device */
-				continue;
-			if (only_used_dev && !rd_ios && !wr_ios)
-				/* Unused device */
-				continue;
-		}
-		dev++;
-	}
-
-	fclose(fp);
-
-	return dev;
-}
-
-/*
- ***************************************************************************
- * Find number of devices and partitions that have statistics in
- * /proc/partitions.
- *
- * IN:
- * @count_part	Set to TRUE if devices _and_ partitions are to be counted.
- *
- * RETURNS:
- * Number of devices (and partitions) that have statistics.
- ***************************************************************************
- */
-int get_ppartitions_dev_nr(int count_part)
-{
-	FILE *fp;
-	char line[256];
-	int dev = 0;
-	unsigned int major, minor, tmp;
-
-	if ((fp = fopen(PPARTITIONS, "r")) == NULL)
-		/* File non-existent */
-		return 0;
-
-	while (fgets(line, 256, fp) != NULL) {
-		if (sscanf(line, "%u %u %*u %*s %u", &major, &minor, &tmp) == 3) {
-			/*
-			 * We have just read a line from /proc/partitions containing stats
-			 * for a device or a partition (i.e. this is not a fake line:
-			 * header, blank line,... or a line without stats!)
-			 */
-			if (!count_part && !ioc_iswhole(major, minor))
-				/* This was a partition, and we don't want to count them */
-				continue;
-			dev++;
-		}
-	}
-
-	fclose(fp);
-
-	return dev;
-}
-
-/*
- ***************************************************************************
- * Find number of disk entries that are registered on the
- * "disk_io:" line in /proc/stat.
- *
- * RETURNS:
- * Number of dis entries.
- ***************************************************************************
- */
-unsigned int get_disk_io_nr(void)
-{
-	FILE *fp;
-	char line[8192];
-	unsigned int dsk = 0;
-	int pos;
-
-	if ((fp = fopen(STAT, "r")) == NULL) {
-		fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
-		exit(2);
-	}
-
-	while (fgets(line, 8192, fp) != NULL) {
-
-		if (!strncmp(line, "disk_io: ", 9)) {
-			for (pos = 9; pos < strlen(line) - 1; pos += strcspn(line + pos, " ") + 1)
-				dsk++;
-		}
-	}
-
-	fclose(fp);
-
-	return dsk;
 }
 
 /*
@@ -510,13 +278,14 @@ int get_nfs_mount_nr(void)
  * @release	System release number to display.
  * @nodename	Hostname to display.
  * @machine	Machine architecture to display.
+ * @cpu_nr	Number of CPU.
  *
  * RETURNS:
  * TRUE if S_TIME_FORMAT is set to ISO, or FALSE otherwise.
  ***************************************************************************
  */
 int print_gal_header(struct tm *rectime, char *sysname, char *release,
-		     char *nodename, char *machine)
+		     char *nodename, char *machine, int cpu_nr)
 {
 	char cur_date[64];
 	char *e;
@@ -526,11 +295,12 @@ int print_gal_header(struct tm *rectime, char *sysname, char *release,
 		strftime(cur_date, sizeof(cur_date), "%Y-%m-%d", rectime);
 		rc = 1;
 	}
-	else
+	else {
 		strftime(cur_date, sizeof(cur_date), "%x", rectime);
+	}
 
-	printf("%s %s (%s) \t%s \t_%s_\n", sysname, release, nodename,
-	       cur_date, machine);
+	printf("%s %s (%s) \t%s \t_%s_\t(%d CPU)\n", sysname, release, nodename,
+	       cur_date, machine, cpu_nr);
 
 	return rc;
 }
@@ -571,8 +341,9 @@ int get_win_height(void)
 	int rows = 3600 * 24;
 
 	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &win) != -1) {
-		if (win.ws_row > 2)
+		if (win.ws_row > 2) {
 			rows = win.ws_row - 2;
+		}
 	}
 	return rows;
 }
@@ -607,8 +378,9 @@ void get_kb_shift(void)
 	long size;
 
 	/* One can also use getpagesize() to get the size of a page */
-	if ((size = sysconf(_SC_PAGESIZE)) == -1)
+	if ((size = sysconf(_SC_PAGESIZE)) == -1) {
 		perror("sysconf");
+	}
 
 	size >>= 10;	/* Assume that a page has a minimum size of 1 kB */
 
@@ -629,8 +401,9 @@ void get_HZ(void)
 {
 	long ticks;
 
-	if ((ticks = sysconf(_SC_CLK_TCK)) == -1)
+	if ((ticks = sysconf(_SC_CLK_TCK)) == -1) {
 		perror("sysconf");
+	}
 
 	hz = (unsigned int) ticks;
 }
@@ -692,90 +465,124 @@ unsigned long long get_interval(unsigned long long prev_uptime,
 {
 	unsigned long long itv;
 
-	if (!prev_uptime)
+	if (!prev_uptime) {
 		itv = curr_uptime;
-	else
+	}
+	else {
 		itv = (curr_uptime - prev_uptime) & 0xffffffff;
-	if (!itv)	/* Paranoia checking */
+	}
+	if (!itv) {	/* Paranoia checking */
 		itv = 1;
+	}
 
 	return itv;
 }
 
 /*
  ***************************************************************************
- * Read machine uptime, independently of the number of processors
+ * Since ticks may vary slightly from CPU to CPU, we'll want
+ * to recalculate itv based on this CPU's tick count, rather
+ * than that reported by the "cpu" line. Otherwise we
+ * occasionally end up with slightly skewed figures, with
+ * the skew being greater as the time interval grows shorter.
  *
- * OUT:
- * @uptime	Uptime value in jiffies.
+ * IN:
+ * @scc	Current sample statistics for current CPU.
+ * @scp	Previous sample statistics for current CPU.
+ *
+ * RETURNS:
+ * Interval of time based on current CPU.
  ***************************************************************************
  */
-void readp_uptime(unsigned long long *uptime)
+unsigned long long get_per_cpu_interval(struct stats_cpu *scc,
+					struct stats_cpu *scp)
 {
-	FILE *fp;
-	char line[128];
-	unsigned long up_sec, up_cent;
-
-	if ((fp = fopen(UPTIME, "r")) == NULL)
-		return;
-
-	if (fgets(line, 128, fp) == NULL)
-		return;
-
-	sscanf(line, "%lu.%lu", &up_sec, &up_cent);
-
-	fclose(fp);
-
-	*uptime = up_sec * HZ + up_cent * HZ / 100;
+	/* Don't take cpu_guest into account because cpu_user already includes it */
+	return ((scc->cpu_user    + scc->cpu_nice   +
+		 scc->cpu_sys     + scc->cpu_iowait +
+		 scc->cpu_idle    + scc->cpu_steal  +
+		 scc->cpu_hardirq + scc->cpu_softirq) -
+		(scp->cpu_user    + scp->cpu_nice   +
+		 scp->cpu_sys     + scp->cpu_iowait +
+		 scp->cpu_idle    + scp->cpu_steal  +
+		 scp->cpu_hardirq + scp->cpu_softirq));
 }
 
 /*
  ***************************************************************************
- * Read stats from /proc/meminfo
+ * Unhandled situation: Panic and exit.
  *
- * OUT:
- * @st_mem	Memory data read from /proc/meminfo.
+ * IN:
+ * @function	Function name where situation occured.
+ * @error_code	Error code.
  ***************************************************************************
  */
-int readp_meminfo(struct meminf *st_mem)
+void sysstat_panic(const char *function, int error_code)
 {
-	FILE *fp;
-	static char line[128];
+	fprintf(stderr, "sysstat: %s[%d]: Last chance handler...\n",
+		function, error_code);
+	exit(1);
+}
 
-	if ((fp = fopen(MEMINFO, "r")) == NULL)
-		return 1;
+/*
+ ***************************************************************************
+ * Count number of bits set in an array.
+ *
+ * IN:
+ * @ptr		Pointer to array.
+ * @size	Size of array in bytes.
+ *
+ * RETURNS:
+ * Number of bits set in the array.
+ ***************************************************************************
+*/
+int count_bits(void *ptr, int size)
+{
+	int nr = 0, i, k;
+	char *p;
 
-	while (fgets(line, 128, fp) != NULL) {
-
-		if (!strncmp(line, "MemTotal:", 9))
-			/* Read the total amount of memory in kB */
-			sscanf(line + 9, "%lu", &(st_mem->tlmkb));
-		else if (!strncmp(line, "MemFree:", 8))
-			/* Read the amount of free memory in kB */
-			sscanf(line + 8, "%lu", &(st_mem->frmkb));
-
-		else if (!strncmp(line, "Buffers:", 8))
-			/* Read the amount of buffered memory in kB */
-			sscanf(line + 8, "%lu", &(st_mem->bufkb));
-
-		else if (!strncmp(line, "Cached:", 7))
-			/* Read the amount of cached memory in kB */
-			sscanf(line + 7, "%lu", &(st_mem->camkb));
-
-		else if (!strncmp(line, "SwapCached:", 11))
-			/* Read the amount of cached swap in kB */
-			sscanf(line + 11, "%lu", &(st_mem->caskb));
-
-		else if (!strncmp(line, "SwapTotal:", 10))
-			/* Read the total amount of swap memory in kB */
-			sscanf(line + 10, "%lu", &(st_mem->tlskb));
-
-		else if (!strncmp(line, "SwapFree:", 9))
-			/* Read the amount of free swap memory in kB */
-			sscanf(line + 9, "%lu", &(st_mem->frskb));
+	p = ptr;
+	for (i = 0; i < size; i++, p++) {
+		k = 0x80;
+		while (k) {
+			if ((*p) & k)
+				nr++;
+			k >>= 1;
+		}
 	}
 
-	fclose(fp);
+	return nr;
+}
 
-	return 0;
+/*
+ ***************************************************************************
+ * Compute "extended" device statistics (service time, etc.)
+ *
+ * IN:
+ * @sdc		Structure with current device statistics.
+ * @sdp		Structure with previous device statistics.
+ * @itv		Interval of time in jiffies.
+ *
+ * OUT:
+ * @xds		Structure with extended statistics.
+ ***************************************************************************
+*/
+void compute_ext_disk_stats(struct stats_disk *sdc, struct stats_disk *sdp,
+			    unsigned long long itv, struct ext_disk_stats *xds)
+{
+	double tput
+		= ((double) (sdc->nr_ios - sdp->nr_ios)) * HZ / itv;
+	
+	xds->util  = S_VALUE(sdp->tot_ticks, sdc->tot_ticks, itv);
+	xds->svctm = tput ? xds->util / tput : 0.0;
+	/*
+	 * Kernel gives ticks already in milliseconds for all platforms
+	 * => no need for further scaling.
+	 */
+	xds->await = (sdc->nr_ios - sdp->nr_ios) ?
+		((sdc->rd_ticks - sdp->rd_ticks) + (sdc->wr_ticks - sdp->wr_ticks)) /
+		((double) (sdc->nr_ios - sdp->nr_ios)) : 0.0;
+	xds->arqsz = (sdc->nr_ios - sdp->nr_ios) ?
+		((sdc->rd_sect - sdp->rd_sect) + (sdc->wr_sect - sdp->wr_sect)) /
+		((double) (sdc->nr_ios - sdp->nr_ios)) : 0.0;
 }

@@ -395,9 +395,10 @@ set last_graph ""
 # procedure to autoload the file on program's startup
 set sag_latest_file ""
 
+# SGo 2008-07-06: Update options (options -S added).
+# SGo 2008-06-15: Update options (options -c and -w have been merged).
 # sar switches as names for object-instances (final and curent)
-#set prog_swtch [list b B c n q r R u v w W y]
-set  prog_swtch [list b B c   q r R u v w W]
+set  prog_swtch [list b B q r R S u v w W]
 
 # maximal and current values for each graph indexed by sar switch i.e. for cpu 
 # is index u not -u
@@ -422,39 +423,41 @@ set val_cur(W) 1
 #	y2label - label for secondary y-axis
 #	plotstr - string plot for gnuplot, describes a graph
 #
+# SGo 2008-07-06: Add menu option, ylabel and y2label for option -S.
+# SGo 2008-06-15: Update menu functions and ylabel names
 # view_n(ame) array
 set view_n(b) "I/O Transfer Rate"
 set view_n(B) "Paging Statistics"
-set view_n(c) "Process Creation"
 set view_n(q) "Run Queue"
-set view_n(r) "Memory and Swap"
+set view_n(r) "Memory Utilization"
 set view_n(R) "Memory Statistics"
+set view_n(S) "Swap Utilization"
 set view_n(u) "CPU Utilization"
 set view_n(v) "Inode Status"
-set view_n(w) "System Switching"
+set view_n(w) "Process Creation and Context Switches"
 set view_n(W) "System Swapping"
 
 # xlabel is not an array - all values are same
 set xlabel "Time"
 
 # ylabel array
-set ylabel(b) "ops/sec"
-set ylabel(B) "pages/sec"
-set ylabel(c) "procs/sec"
+set ylabel(b) "ops/s"
+set ylabel(B) "pages/s"
 set ylabel(q) ""
 set ylabel(r) "kB"
-set ylabel(R) "ops/sec"
+set ylabel(R) "ops/s"
+set ylabel(S) "kB"
 set ylabel(u) "Percent"
 set ylabel(v) ""
-set ylabel(w) "cswch/sec"
-set ylabel(W) "swp/sec"
+set ylabel(w) "ops/s"
+set ylabel(W) "swp/s"
 
 set y2label(b) ""
 set y2label(B) ""
-set y2label(c) ""
 set y2label(q) ""
 set y2label(r) ""
 set y2label(R) ""
+set y2label(S) ""
 set y2label(u) ""
 set y2label(v) ""
 set y2label(w) ""
@@ -463,20 +466,22 @@ set y2label(W) ""
 # sag_if_out_tokens describes how is input file covered
 # if no list specified the proc_line_$l() is called
 # Note: first element has index 0 (zero)!
-# SGo 2007-10-21: update fields taken for option -B.
-# SGo 2006-04-14: update fields taken for options -B, -q, -r, -R, -v.
+# SGo 2007-07-06: Add fields for option -S.
+# SGo 2007-10-21: Update fields taken for option -B.
+# SGo 2006-04-14: Update fields taken for options -B, -q, -r, -R, -v.
+# SGo 2008-06-15: Options -c and -w have been merged.
 set sag_if_out_tokens(b) [list 1 2 3 4]
 set sag_if_out_tokens2(b) ""
 set sag_if_out_tokens(B) [list 0 1 2 3 4 5 6 7]
 set sag_if_out_tokens2(B) ""
-set sag_if_out_tokens(c) [list 0]
-set sag_if_out_tokens2(c) ""
 set sag_if_out_tokens(q) [list 0 1 2 3 4]
 set sag_if_out_tokens2(q) ""
-set sag_if_out_tokens(r) [list 0 1 3 4 5 6 8]
+set sag_if_out_tokens(r) [list 0 1 3 4 5]
 set sag_if_out_tokens2(r) ""
 set sag_if_out_tokens(R) [list 0 1 2]
 set sag_if_out_tokens2(R) ""
+set sag_if_out_tokens(S) [list 0 1 3]
+set sag_if_out_tokens2(S) ""
 # CPU needs special computation, following list must be empty
 # if no list is entered then following functions must be defined
 # __output_zero_metrics_$l & proc_line_$l (see: proc_line_u())
@@ -484,13 +489,14 @@ set sag_if_out_tokens(u) ""
 set sag_if_out_tokens2(u) ""
 set sag_if_out_tokens(v) [list 0 1 2 3 5 7]
 set sag_if_out_tokens2(v) ""
-set sag_if_out_tokens(w) [list 0]
+set sag_if_out_tokens(w) [list 0 1]
 set sag_if_out_tokens2(w) ""
 set sag_if_out_tokens(W) [list 0 1]
 set sag_if_out_tokens2(W) ""
 
 #
 # The sar_elim() array contains string which have to be eliminated from sar's output
+# SGo 2008-07-06: Add string for option -S.
 #
 set sar_elim(b) "tps"
 set sar_elim(B) "pgpgin"
@@ -498,6 +504,7 @@ set sar_elim(c) "proc"
 set sar_elim(q) "runq-sz"
 set sar_elim(r) "kbmemfree"
 set sar_elim(R) "frmpg"
+set sar_elim(S) "kbswpfree"
 set sar_elim(u) "user"
 set sar_elim(v) "dentunusd"
 set sar_elim(w) "cswch"
@@ -998,19 +1005,21 @@ set fngr_tmpdir  [exec mktemp -d "/tmp/isag.XXXXXX"]
 
 # plotstr array
 # in future - this string will not be fixed but functions will coming
-# SGo 2007-10-21: update fields for option -B.
-# SGo 2006-04-14: update fields for options -B, -q, -r, -R, -u, -v.
-# SGo 2007-07-31: update fields for option -v.
+# SGo 2008-07-06: Added fields for option -S.
+# SGo 2008-06-15: Update fields for option -w (options -c and -w have been merged).
+# SGo 2007-10-21: Update fields for option -B.
+# SGo 2006-04-14: Update fields for options -B, -q, -r, -R, -u, -v.
+# SGo 2007-07-31: Update fields for option -v.
 set plotstr(b) "\"__FNGR__\" using 1:2 t \"rtps\" with line, \"__FNGR__\" using 1:3 t \"wtps\" with line, \"__FNGR__\" using 1:4 t \"bread/s\" with line,  \"__FNGR__\" using 1:5 t \"bwrtn/s\" with line"
 set plotstr(B) "\"__FNGR__\" using 1:2 t \"pgpgin/s\" with line, \"__FNGR__\" using 1:3 t \"pgpgout/s\" with line, \"__FNGR__\" using 1:4 t \"fault/s\" with line, \"__FNGR__\" using 1:5 t \"majflt/s\" with line, \"__FNGR__\" using 1:6 t \"pgfree/s\" with line, \"__FNGR__\" using 1:7 t \"pgscank/s\" with line, \"__FNGR__\" using 1:8 t \"pgscand/s\" with line, \"__FNGR__\" using 1:9 t \"pgsteal/s\" with line"
-set plotstr(c) "\"__FNGR__\" using 1:2 t \"proc/s\" with line"
 set plotstr(n) ""
 set plotstr(q) "\"__FNGR__\" using 1:2 t \"runq-sz\" with line, \"__FNGR__\" using 1:3 t \"plist-sz\" with line, \"__FNGR__\" using 1:4 t \"ldavg-1\" with line, \"__FNGR__\" using 1:5 t \"ldavg-5\" with line, \"__FNGR__\" using 1:6 t \"ldavg-15\" with line"
-set plotstr(r) "\"__FNGR__\" using 1:2 t \"kbmemfree\" with line, \"__FNGR__\" using 1:3 t \"kbmemused\" with line, \"__FNGR__\" using 1:4 t \"kbbuffers\" with line, \"__FNGR__\" using 1:5 t \"kbcached\" with line, \"__FNGR__\" using 1:6 t \"kbswpfree\" with line, \"__FNGR__\" using 1:7 t \"kbswpused\" with line, \"__FNGR__\" using 1:8 t \"kbswpcad\" with line"
+set plotstr(r) "\"__FNGR__\" using 1:2 t \"kbmemfree\" with line, \"__FNGR__\" using 1:3 t \"kbmemused\" with line, \"__FNGR__\" using 1:4 t \"kbbuffers\" with line, \"__FNGR__\" using 1:5 t \"kbcached\" with line, \"__FNGR__\" using 1:6 t \"kbcommit\" with line"
 set plotstr(R) "\"__FNGR__\" using 1:2 t \"frmpg/s\" with line, \"__FNGR__\" using 1:3 t \"bufpg/s\" with line, \"__FNGR__\" using 1:4 t \"campg/s\" with line"
+set plotstr(S) "\"__FNGR__\" using 1:2 t \"kbswpfree\" with line, \"__FNGR__\" using 1:3 t \"kbswpused\" with line, \"__FNGR__\" using 1:4 t \"kbswpcad\" with line"
 set plotstr(u) "\"__FNGR__\" using 1:2 t \"%user\" with line, \"__FNGR__\" using 1:3 t \"%nice\" with line, \"__FNGR__\" using 1:4 t \"%system\" with line, \"__FNGR__\" using 1:5 t \"%iowait\" with line, \"__FNGR__\" using 1:6 t \"%steal\" with line"
 set plotstr(v) "\"__FNGR__\" using 1:2 t \"dentunusd\" with line, \"__FNGR__\" using 1:3 t \"file-nr\" with line, \"__FNGR__\" using 1:4 t \"inode-nr\" with line, \"__FNGR__\" using 1:5 t \"pty-nr\" with line"
-set plotstr(w) "\"__FNGR__\" using 1:2 t \"cswch/s\" with line"
+set plotstr(w) "\"__FNGR__\" using 1:2 t \"proc/s\" with line, \"__FNGR__\" using 1:3 t \"cswch/s\" with line"
 set plotstr(W) "\"__FNGR__\" using 1:2 t \"pswpin/s\" with line, \"__FNGR__\" using 1:3 t \"pswpout/s\" with line"
 
 ###############################################################################

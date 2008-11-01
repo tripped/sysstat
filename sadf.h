@@ -1,19 +1,10 @@
 /*
  * sadf: System activity data formatter
- * (C) 1999-2007 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2008 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SADF_H
 #define _SADF_H
-
-
-#define PT_NOFLAG  0x0000	/* Prevent undescribed '0' in render calls */
-#define PT_USEINT  0x0001	/* Use the integer final arg, not double */
-#define PT_NEWLIN  0x0002	/* Terminate the current output line */
-
-#define NOVAL      0		/* For placeholder zeros */
-#define DNOVAL     0.0		/* Wilma!  */
-
 
 /* Output formats (O_= Output)  */
 #define S_O_HDR_OPTION		1
@@ -22,25 +13,7 @@
 #define S_O_XML_OPTION		4
 #define S_O_DBD_OPTION		5
 
-
 /* DTD version for XML output */
-#define XML_DTD_VERSION	"1.6"
-
-static char *seps[] =  {"\t", ";"};
-
-/*
- * Conses are used to type independent passing
- * of variable optional data into our rendering routine.
- */
-
-typedef enum e_tcons {iv, sv} tcons; /* Types of conses */
-
-typedef struct {
-	tcons t;		/* Type in {iv,sv} */
-	union {
-		unsigned long int i;
-		char *s;
-	} a, b;			/* Value pair, either ints or char *s */
-} Cons;
+#define XML_DTD_VERSION	"2.1"
 
 #endif  /* _SADF_H */

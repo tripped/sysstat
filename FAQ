@@ -379,15 +379,15 @@ Requested activities not available in file ...
 This error message means that you are trying to extract non-existent activities
 from the data file. Usually sadc reads all the available activities from the
 system and stores them in the data file. However, to prevent data files from
-taking too much space on disk, some activities must be explicitly set on the
-command line to be read by sadc. One example is -I option which must be used
-together with sadc to be able to extract statistics for individual interrupts
-from the data file. Another example is -d option for disks statistics.
-Other activities cannot be saved into a file at all even if you specify the
-relevant options on the command line. Process statistics (options -x and -X in
-older sysstat versions) are such activities.
-Please read sadc manual page to know exactly which activities may be extracted
-from a data file.
+taking too much space on disk, some activities (like interrupts or disks
+statistics) must be explicitly set on the command line to be read by sadc.
+To tell sadc that an optional activity should be collected, use switch -S
+followed by the keyword corresponding to that activity (see sadc(8) manual page).
+IMPORTANT NOTE: The list of activities that are saved in a file can no longer
+be modified once the file has been created. So it is important to use the proper
+options the first time sadc is called (whether via a crontab, a script like
+sa1 or even the script used to insert a RESTART message when the machine is
+rebooted).
 NB: If the sar command complains with the error message:
 "Requested activities not available" (without mentioning "in file"),
 please see question 2.18 below.
@@ -440,7 +440,7 @@ kernel itself is unable to provide.
 When this error message is displayed while trying to save the data into an
 existing file ("sar -o datafile ..."), this may also be because the target
 file cannot accept the requested activities. In this case, just try to use
-another file or create a new one.
+another file or create a new one. See also question 2.14 above.
 
 ~~~
 
@@ -470,7 +470,15 @@ load the data into the Oracle database.
 
 ~~~
 
-2.21. The sar command displays some weird output values...
+2.21. The sar command displays some weird CPU values...
+E.g.:
+10:50:01 AM       CPU     %user     %nice   %system   %iowait     %idle
+11:00:01 AM       all     90.90      0.00      5.17      3.93      0.00
+11:00:01 AM         0     39.40      0.00      2.37      2.07     56.17
+11:00:01 AM         1     29.71      0.00      1.73      1.17     67.39
+11:00:01 AM         2     42.69      0.00      2.34      1.11     53.85
+11:00:01 AM         3     26.24      0.00      1.41      1.61     70.74
+...
 
 Sysstat may have met an overflow condition while reading CPU usage from
 your /proc/stat file. This condition is all the more likely to happen as
@@ -531,7 +539,7 @@ providing that the kernel has been compiled with CONFIG_BLK_STATS=y.
 ~~~
 
 3.3. Why can't iostat display extended statistics for partitions with
-     2.6.x kernels?
+     some 2.6.x kernels?
 
 Because the kernel maintains these stats only for devices, and not for
 partitions! Here is an excerpt from the document iostats.txt written by
@@ -544,6 +552,8 @@ the host disk happens much earlier.  All merges and timings now happen
 at the disk level rather than at both the disk and partition level as
 in 2.4.  Consequently, you'll see a different statistics output on 2.6 for
 partitions from that for disks."
+Extended I/O statistics for partitions are available again with kernels
+2.6.25 and later.
 
 ~~~
 

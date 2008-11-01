@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2007 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -33,6 +33,7 @@
 #include "sa.h"
 #include "common.h"
 #include "ioconf.h"
+#include "rd_stats.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -44,144 +45,44 @@
 
 /*
  ***************************************************************************
- * Init a bitmap (CPU, IRQ, etc.)
+ * Init a bitmap (CPU, IRQ, etc.).
  *
  * IN:
  * @value	Value used to init bitmap.
- * @nr		Size of the bitmap in bits.
+ * @nr		Size of the bitmap in bytes.
  *
  * OUT:
  * @bitmap	Bitmap initialized.
  ***************************************************************************
  */
-void init_bitmap(unsigned char bitmap[], unsigned char value, unsigned int nr)
+void set_bitmap(unsigned char bitmap[], unsigned char value, unsigned int nr)
 {
 	register int i;
 
-	for (i = 0; i <= nr >> 3; i++)
+	for (i = 0; i < nr; i++) {
 		bitmap[i] = value;
-}
-
-/*
- ***************************************************************************
- * Init stats structures
- *
- * OUT:
- * @file_stats[]	Array of structures for general statisitcs initialized.
- * @interrupts[]	Array of structures for interrupts statistics
- *			initialized.
- ***************************************************************************
- */
-void init_stats(struct file_stats file_stats[],
-		unsigned int interrupts[][NR_IRQS])
-{
-	int i;
-
-	for (i = 0; i < 3; i++) {
-		memset(&file_stats[i], 0, FILE_STATS_SIZE);
-		memset(interrupts[i], 0, STATS_ONE_IRQ_SIZE);
 	}
 }
 
 /*
  ***************************************************************************
- * Allocate stats_one_cpu structures
- * (only on SMP machines)
+ * Allocate structures.
  *
  * IN:
- * @nr_cpu	Number of CPU for which a structure must be allocated.
- *
- * OUT:
- * @st_cpu[]	Array of structures that have been allocated.
+ * @act	Array of activities.
  ***************************************************************************
  */
-void salloc_cpu_array(struct stats_one_cpu *st_cpu[], unsigned int nr_cpu)
+void allocate_structures(struct activity *act[])
 {
-	int i;
-
-	for (i = 0; i < 3; i++)
-		SREALLOC(st_cpu[i], struct stats_one_cpu, STATS_ONE_CPU_SIZE * nr_cpu);
-}
-
-/*
- ***************************************************************************
- * Allocate stats_serial structures
- *
- * IN:
- * @nr_serial	Number of serial lines for which a structure must be allocated.
- *
- * OUT:
- * @st_serial[]	Array of structures that have been allocated.
- ***************************************************************************
- */
-void salloc_serial_array(struct stats_serial *st_serial[], int nr_serial)
-{
-	int i;
-
-	for (i = 0; i < 3; i++)
-		SREALLOC(st_serial[i], struct stats_serial, STATS_SERIAL_SIZE * nr_serial);
-}
-
-/*
- ***************************************************************************
- * Allocate stats_irq_cpu structures
- *
- * IN:
- * @nr_cpu		Number of processors.
- * @nr_irqcpu		Number of interrupts per processor.
- *
- * OUT:
- * @st_irq_cpu[]	Array of structures that have been allocated.
- ***************************************************************************
- */
-void salloc_irqcpu_array(struct stats_irq_cpu *st_irq_cpu[],
-			 unsigned int nr_cpu, unsigned int nr_irqcpu)
-{
-	int i;
-
-	for (i = 0; i < 3; i++)
-		SREALLOC(st_irq_cpu[i], struct stats_irq_cpu,
-			 STATS_IRQ_CPU_SIZE * nr_cpu * nr_irqcpu);
-}
-
-/*
- ***************************************************************************
- * Allocate stats_net_dev structures
- *
- * IN:
- * @nr_iface		Number of network interfaces for which a structure
- *			must be allocated.
- *
- * OUT:
- * @st_net_dev[]	Array of structures that have been allocated.
- ***************************************************************************
- */
-void salloc_net_dev_array(struct stats_net_dev *st_net_dev[],
-			  unsigned int nr_iface)
-{
-	int i;
-
-	for (i = 0; i < 3; i++)
-		SREALLOC(st_net_dev[i], struct stats_net_dev, STATS_NET_DEV_SIZE * nr_iface);
-}
-
-/*
- ***************************************************************************
- * Allocate disk_stats structures
- *
- * IN:
- * @nr_disk	Number of disks for which a structure must be allocated.
- *
- * OUT:
- * @st_disk[]	Array of structures that have been allocated.
- ***************************************************************************
- */
-void salloc_disk_array(struct disk_stats *st_disk[], int nr_disk)
-{
-	int i;
-
-	for (i = 0; i < 3; i++)
-		SREALLOC(st_disk[i], struct disk_stats, DISK_STATS_SIZE * nr_disk);
+	int i, j;
+	
+	for (i = 0; i < NR_ACT; i++) {
+		if (act[i]->nr > 0) {
+			for (j = 0; j < 3; j++) {
+				SREALLOC(act[i]->buf[j], void, act[i]->msize * act[i]->nr);
+			}
+		}
+	}
 }
 
 /*
@@ -220,7 +121,7 @@ char *get_devname(unsigned int major, unsigned int minor, int pretty)
 
 /*
  ***************************************************************************
- * Check if we are close enough to desired interval
+ * Check if we are close enough to desired interval.
  *
  * IN:
  * @uptime_ref	Uptime used as reference. This is the system uptime for the
@@ -242,35 +143,38 @@ int next_slice(unsigned long long uptime_ref, unsigned long long uptime,
 	int min, max, pt1, pt2;
 	double f;
 
-   /* uptime is expressed in jiffies (basis of 1 processor) */
-	if (!last_uptime || reset)
+	/* uptime is expressed in jiffies (basis of 1 processor) */
+	if (!last_uptime || reset) {
 		last_uptime = uptime_ref;
+	}
 
-   /* Interval cannot be greater than 0xffffffff here */
+	/* Interval cannot be greater than 0xffffffff here */
 	f = ((double) ((uptime - last_uptime) & 0xffffffff)) / HZ;
 	file_interval = (unsigned long) f;
-	if ((f * 10) - (file_interval * 10) >= 5)
+	if ((f * 10) - (file_interval * 10) >= 5) {
 		file_interval++; /* Rounding to correct value */
+	}
 
 	last_uptime = uptime;
 
-   /*
-    * A few notes about the "algorithm" used here to display selected entries
-    * from the system activity file (option -f with -i flag):
-    * Let 'Iu' be the interval value given by the user on the command line,
-    *     'If' the interval between current and previous line in the system
-    * activity file,
-    * and 'En' the nth entry (identified by its time stamp) of the file.
-    * We choose In = [ En - If/2, En + If/2 [ if If is even,
-    *        or In = [ En - If/2, En + If/2 ] if not.
-    * En will be displayed if
-    *       (Pn * Iu) or (P'n * Iu) belongs to In
-    * with  Pn = En / Iu and P'n = En / Iu + 1
-    */
+	/*
+	 * A few notes about the "algorithm" used here to display selected entries
+	 * from the system activity file (option -f with -i flag):
+	 * Let 'Iu' be the interval value given by the user on the command line,
+	 *     'If' the interval between current and previous line in the system
+	 * activity file,
+	 * and 'En' the nth entry (identified by its time stamp) of the file.
+	 * We choose In = [ En - If/2, En + If/2 [ if If is even,
+	 *        or In = [ En - If/2, En + If/2 ] if not.
+	 * En will be displayed if
+	 *       (Pn * Iu) or (P'n * Iu) belongs to In
+	 * with  Pn = En / Iu and P'n = En / Iu + 1
+	 */
 	f = ((double) ((uptime - uptime_ref) & 0xffffffff)) / HZ;
 	entry = (unsigned long) f;
-	if ((f * 10) - (entry * 10) >= 5)
+	if ((f * 10) - (entry * 10) >= 5) {
 		entry++;
+	}
 
 	min = entry - (file_interval / 2);
 	max = entry + (file_interval / 2) + (file_interval & 0x1);
@@ -282,7 +186,7 @@ int next_slice(unsigned long long uptime_ref, unsigned long long uptime,
 
 /*
  ***************************************************************************
- * Use time stamp to fill tstamp structure
+ * Use time stamp to fill tstamp structure.
  *
  * IN:
  * @timestamp	Timestamp to decode (format: HH:MM:SS).
@@ -313,7 +217,7 @@ int decode_timestamp(char timestamp[], struct tstamp *tse)
 
 /*
  ***************************************************************************
- * Compare two timestamps
+ * Compare two timestamps.
  *
  * IN:
  * @rectime	Date and time for current sample.
@@ -357,10 +261,12 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
 {
 	char timestamp[9];
 
-	if ((argv[++(*opt)]) && (strlen(argv[*opt]) == 8))
+	if ((argv[++(*opt)]) && (strlen(argv[*opt]) == 8)) {
 		strcpy(timestamp, argv[(*opt)++]);
-	else
+	}
+	else {
 		strcpy(timestamp, def_timestamp);
+	}
 
 	return decode_timestamp(timestamp, tse);
 }
@@ -387,34 +293,36 @@ void set_default_file(struct tm *rectime, char *datafile)
  * Set interval value.
  *
  * IN:
- * @file_stats_curr	Structure with current sample statistics.
- * @file_stats_prev	Structure with previous sample statistics.
- * @nr_proc		Number of CPU.
+ * @record_hdr_curr	Record with current sample statistics.
+ * @record_hdr_prev	Record with previous sample statistics.
+ * @nr_proc		Number of CPU, including CPU "all".
  *
  * OUT:
- * @g_itv		Interval in jiffies multiplied by the # of proc.
  * @itv			Interval in jiffies.
+ * @g_itv		Interval in jiffies multiplied by the # of proc.
  ***************************************************************************
  */
-void get_itv_value(struct file_stats *file_stats_curr,
-		   struct file_stats *file_stats_prev,
+void get_itv_value(struct record_header *record_hdr_curr,
+		   struct record_header *record_hdr_prev,
 		   unsigned int nr_proc,
 		   unsigned long long *itv, unsigned long long *g_itv)
 {
-   /* Interval value in jiffies */
-	*g_itv = get_interval(file_stats_prev->uptime,
-			      file_stats_curr->uptime);
+	/* Interval value in jiffies */
+	*g_itv = get_interval(record_hdr_prev->uptime,
+			      record_hdr_curr->uptime);
 
-	if (nr_proc > 1)
-		*itv = get_interval(file_stats_prev->uptime0,
-				    file_stats_curr->uptime0);
-	else
+	if (nr_proc > 2) {
+		*itv = get_interval(record_hdr_prev->uptime0,
+				    record_hdr_curr->uptime0);
+	}
+	else {
 		*itv = *g_itv;
+	}
 }
 
 /*
  ***************************************************************************
- * Fill rectime structure according to data saved in file header
+ * Fill rectime structure according to data saved in file header.
  *
  * IN:
  * @flags	Flags for common options and system state.
@@ -425,21 +333,21 @@ void get_itv_value(struct file_stats *file_stats_curr,
  ***************************************************************************
  */
 void set_hdr_rectime(unsigned int flags, struct tm *rectime,
-		     struct file_hdr *file_hdr)
+		     struct file_header *file_hdr)
 {
 	struct tm *loc_t;
 
 	if (PRINT_TRUE_TIME(flags)) {
-      /* Get local time */
+		/* Get local time */
 		get_time(rectime);
 
 		rectime->tm_mday = file_hdr->sa_day;
 		rectime->tm_mon  = file_hdr->sa_month;
 		rectime->tm_year = file_hdr->sa_year;
-      /*
-       * Call mktime() to set DST (Daylight Saving Time) flag.
-       * Has anyone a better way to do it?
-       */
+		/*
+		 * Call mktime() to set DST (Daylight Saving Time) flag.
+		 * Has anyone a better way to do it?
+		 */
 		rectime->tm_hour = rectime->tm_min = rectime->tm_sec = 0;
 		mktime(rectime);
 	}
@@ -451,24 +359,29 @@ void set_hdr_rectime(unsigned int flags, struct tm *rectime,
 
 /*
  ***************************************************************************
- * Print report header
+ * Print report header.
  *
  * IN:
  * @flags	Flags for common options and system state.
  * @file_hdr	System activity file standard header.
+ * @cpu_nr	Number of CPU (value in [1, NR_CPUS + 1]).
+ * 		1 means that there is only one proc and non SMP kernel.
+ * 		2 means one proc and SMP kernel.
+ * 		Etc.
  *
  * OUT:
  * @rectime	Date and time from file header.
  ***************************************************************************
  */
 void print_report_hdr(unsigned int flags, struct tm *rectime,
-		      struct file_hdr *file_hdr)
+		      struct file_header *file_hdr, int cpu_nr)
 {
 
 	set_hdr_rectime(flags, rectime, file_hdr);
 
 	print_gal_header(rectime, file_hdr->sa_sysname, file_hdr->sa_release,
-			 file_hdr->sa_nodename, file_hdr->sa_machine);
+			 file_hdr->sa_nodename, file_hdr->sa_machine,
+			 cpu_nr > 1 ? cpu_nr - 1 : 1);
 }
 
 /*
@@ -477,8 +390,7 @@ void print_report_hdr(unsigned int flags, struct tm *rectime,
  * This is what we try to guess here.
  *
  * IN:
- * @file_hdr	System activity file standard header.
- * @st_dev_dev	Structures with network interfaces statistics.
+ * @a		Activity structure with statistics.
  * @curr	Index in array for current sample statistics.
  * @ref		Index in array for sample statistics used as reference.
  * @pos		Index on current network interface.
@@ -488,77 +400,76 @@ void print_report_hdr(unsigned int flags, struct tm *rectime,
  * as reference.
  ***************************************************************************
  */
-unsigned int check_iface_reg(struct file_hdr *file_hdr,
-			     struct stats_net_dev *st_net_dev[], int curr,
-			     int ref, unsigned int pos)
+unsigned int check_net_dev_reg(struct activity *a, int curr, int ref,
+			       unsigned int pos)
 {
-	struct stats_net_dev *st_net_dev_i, *st_net_dev_j;
+	struct stats_net_dev *sndc, *sndp;
 	unsigned int index = 0;
 
-	st_net_dev_i = st_net_dev[curr] + pos;
+	sndc = (struct stats_net_dev *) a->buf[curr] + pos;
 
-	while (index < file_hdr->sa_iface) {
-		st_net_dev_j = st_net_dev[ref] + index;
-		if (!strcmp(st_net_dev_i->interface, st_net_dev_j->interface)) {
-	 /*
-	  * Network interface found.
-	  * If a counter has decreased, then we may assume that the
-	  * corresponding interface was unregistered, then registered again.
-	  */
-			if ((st_net_dev_i->rx_packets < st_net_dev_j->rx_packets) ||
-			    (st_net_dev_i->tx_packets < st_net_dev_j->tx_packets) ||
-			    (st_net_dev_i->rx_bytes < st_net_dev_j->rx_bytes) ||
-			    (st_net_dev_i->tx_bytes < st_net_dev_j->tx_bytes) ||
-			    (st_net_dev_i->rx_compressed < st_net_dev_j->rx_compressed) ||
-			    (st_net_dev_i->tx_compressed < st_net_dev_j->tx_compressed) ||
-			    (st_net_dev_i->multicast < st_net_dev_j->multicast) ||
-			    (st_net_dev_i->rx_errors < st_net_dev_j->rx_errors) ||
-			    (st_net_dev_i->tx_errors < st_net_dev_j->tx_errors) ||
-			    (st_net_dev_i->collisions < st_net_dev_j->collisions) ||
-			    (st_net_dev_i->rx_dropped < st_net_dev_j->rx_dropped) ||
-			    (st_net_dev_i->tx_dropped < st_net_dev_j->tx_dropped) ||
-			    (st_net_dev_i->tx_carrier_errors < st_net_dev_j->tx_carrier_errors) ||
-			    (st_net_dev_i->rx_frame_errors < st_net_dev_j->rx_frame_errors) ||
-			    (st_net_dev_i->rx_fifo_errors < st_net_dev_j->rx_fifo_errors) ||
-			    (st_net_dev_i->tx_fifo_errors < st_net_dev_j->tx_fifo_errors)) {
+	while (index < a->nr) {
+		sndp = (struct stats_net_dev *) a->buf[ref] + index;
+		if (!strcmp(sndc->interface, sndp->interface)) {
+			/*
+			 * Network interface found.
+			 * If a counter has decreased, then we may assume that the
+			 * corresponding interface was unregistered, then registered again.
+			 */
+			if ((sndc->rx_packets        < sndp->rx_packets)        ||
+			    (sndc->tx_packets        < sndp->tx_packets)        ||
+			    (sndc->rx_bytes          < sndp->rx_bytes)          ||
+			    (sndc->tx_bytes          < sndp->tx_bytes)          ||
+			    (sndc->rx_compressed     < sndp->rx_compressed)     ||
+			    (sndc->tx_compressed     < sndp->tx_compressed)     ||
+			    (sndc->multicast         < sndp->multicast)) {
 
-	    /*
-	     * Special processing for rx_bytes (_packets) and tx_bytes (_packets)
-	     * counters: If the number of bytes (packets) has decreased, whereas
-	     * the number of packets (bytes) has increased, then assume that the
-	     * relevant counter has met an overflow condition, and that the
-	     * interface was not unregistered, which is all the more plausible
-	     * that the previous value for the counter was > ULONG_MAX/2.
-	     * NB: the average value displayed will be wrong in this case...
-	     *
-	     * If such an overflow is detected, just set the flag. There is no
-	     * need to handle this in a special way: the difference is still
-	     * properly calculated if the result is of the same type (i.e.
-	     * unsigned long) as the two values.
-	     */
+				/*
+				 * Special processing for rx_bytes (_packets) and
+				 * tx_bytes (_packets) counters: If the number of
+				 * bytes (packets) has decreased, whereas the number of
+				 * packets (bytes) has increased, then assume that the
+				 * relevant counter has met an overflow condition, and that
+				 * the interface was not unregistered, which is all the
+				 * more plausible that the previous value for the counter
+				 * was > ULONG_MAX/2.
+				 * NB: the average value displayed will be wrong in this case...
+				 *
+				 * If such an overflow is detected, just set the flag. There is no
+				 * need to handle this in a special way: the difference is still
+				 * properly calculated if the result is of the same type (i.e.
+				 * unsigned long) as the two values.
+				 */
 				int ovfw = FALSE;
 
-				if ((st_net_dev_i->rx_bytes < st_net_dev_j->rx_bytes) &&
-				    (st_net_dev_i->rx_packets > st_net_dev_j->rx_packets) &&
-				    (st_net_dev_j->rx_bytes > (~0UL >> 1)))
+				if ((sndc->rx_bytes   < sndp->rx_bytes)   &&
+				    (sndc->rx_packets > sndp->rx_packets) &&
+				    (sndp->rx_bytes   > (~0UL >> 1))) {
 					ovfw = TRUE;
-				if ((st_net_dev_i->tx_bytes < st_net_dev_j->tx_bytes) &&
-				    (st_net_dev_i->tx_packets > st_net_dev_j->tx_packets) &&
-				    (st_net_dev_j->tx_bytes > (~0UL >> 1)))
+				}
+				if ((sndc->tx_bytes   < sndp->tx_bytes)   &&
+				    (sndc->tx_packets > sndp->tx_packets) &&
+				    (sndp->tx_bytes   > (~0UL >> 1))) {
 					ovfw = TRUE;
-				if ((st_net_dev_i->rx_packets < st_net_dev_j->rx_packets) &&
-				    (st_net_dev_i->rx_bytes > st_net_dev_j->rx_bytes) &&
-				    (st_net_dev_j->rx_packets > (~0UL >> 1)))
+				}
+				if ((sndc->rx_packets < sndp->rx_packets) &&
+				    (sndc->rx_bytes   > sndp->rx_bytes)   &&
+				    (sndp->rx_packets > (~0UL >> 1))) {
 					ovfw = TRUE;
-				if ((st_net_dev_i->tx_packets < st_net_dev_j->tx_packets) &&
-				    (st_net_dev_i->tx_bytes > st_net_dev_j->tx_bytes) &&
-				    (st_net_dev_j->tx_packets > (~0UL >> 1)))
+				}
+				if ((sndc->tx_packets < sndp->tx_packets) &&
+				    (sndc->tx_bytes   > sndp->tx_bytes)   &&
+				    (sndp->tx_packets > (~0UL >> 1))) {
 					ovfw = TRUE;
+				}
 
 				if (!ovfw) {
-	       /* OK: assume here that the device was actually unregistered */
-					memset(st_net_dev_j, 0, STATS_NET_DEV_SIZE);
-					strcpy(st_net_dev_j->interface, st_net_dev_i->interface);
+					/*
+					 * OK: assume here that the device was
+					 * actually unregistered.
+					 */
+					memset(sndp, 0, STATS_NET_DEV_SIZE);
+					strcpy(sndp->interface, sndc->interface);
 				}
 			}
 			return index;
@@ -566,23 +477,99 @@ unsigned int check_iface_reg(struct file_hdr *file_hdr,
 		index++;
 	}
 
-   /* Network interface not found: Look for the first free structure */
-	for (index = 0; index < file_hdr->sa_iface; index++) {
-		st_net_dev_j = st_net_dev[ref] + index;
-		if (!strcmp(st_net_dev_j->interface, "?")) {
-			memset(st_net_dev_j, 0, STATS_NET_DEV_SIZE);
-			strcpy(st_net_dev_j->interface, st_net_dev_i->interface);
+	/* Network interface not found: Look for the first free structure */
+	for (index = 0; index < a->nr; index++) {
+		sndp = (struct stats_net_dev *) a->buf[ref] + index;
+		if (!strcmp(sndp->interface, "?")) {
+			memset(sndp, 0, STATS_NET_DEV_SIZE);
+			strcpy(sndp->interface, sndc->interface);
 			break;
 		}
 	}
-	if (index >= file_hdr->sa_iface)
-      /* No free structure: Default is structure of same rank */
+	if (index >= a->nr) {
+		/* No free structure: Default is structure of same rank */
 		index = pos;
+	}
 
-	st_net_dev_j = st_net_dev[ref] + index;
-   /* Since the name is not the same, reset all the structure */
-	memset(st_net_dev_j, 0, STATS_NET_DEV_SIZE);
-	strcpy(st_net_dev_j->interface, st_net_dev_i->interface);
+	sndp = (struct stats_net_dev *) a->buf[ref] + index;
+	/* Since the name is not the same, reset all the structure */
+	memset(sndp, 0, STATS_NET_DEV_SIZE);
+	strcpy(sndp->interface, sndc->interface);
+
+	return  index;
+}
+
+/*
+ ***************************************************************************
+ * Network interfaces may now be registered (and unregistered) dynamically.
+ * This is what we try to guess here.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @ref		Index in array for sample statistics used as reference.
+ * @pos		Index on current network interface.
+ *
+ * RETURNS:
+ * Position of current network interface in array of sample statistics used
+ * as reference.
+ ***************************************************************************
+ */
+unsigned int check_net_edev_reg(struct activity *a, int curr, int ref,
+				unsigned int pos)
+{
+	struct stats_net_edev *snedc, *snedp;
+	unsigned int index = 0;
+
+	snedc = (struct stats_net_edev *) a->buf[curr] + pos;
+
+	while (index < a->nr) {
+		snedp = (struct stats_net_edev *) a->buf[ref] + index;
+		if (!strcmp(snedc->interface, snedp->interface)) {
+			/*
+			 * Network interface found.
+			 * If a counter has decreased, then we may assume that the
+			 * corresponding interface was unregistered, then registered again.
+			 */
+			if ((snedc->tx_errors         < snedp->tx_errors)         ||
+			    (snedc->collisions        < snedp->collisions)        ||
+			    (snedc->rx_dropped        < snedp->rx_dropped)        ||
+			    (snedc->tx_dropped        < snedp->tx_dropped)        ||
+			    (snedc->tx_carrier_errors < snedp->tx_carrier_errors) ||
+			    (snedc->rx_frame_errors   < snedp->rx_frame_errors)   ||
+			    (snedc->rx_fifo_errors    < snedp->rx_fifo_errors)    ||
+			    (snedc->tx_fifo_errors    < snedp->tx_fifo_errors)) {
+
+				/*
+				 * OK: assume here that the device was
+				 * actually unregistered.
+				 */
+				memset(snedp, 0, STATS_NET_EDEV_SIZE);
+				strcpy(snedp->interface, snedc->interface);
+			}
+			return index;
+		}
+		index++;
+	}
+
+	/* Network interface not found: Look for the first free structure */
+	for (index = 0; index < a->nr; index++) {
+		snedp = (struct stats_net_edev *) a->buf[ref] + index;
+		if (!strcmp(snedp->interface, "?")) {
+			memset(snedp, 0, STATS_NET_EDEV_SIZE);
+			strcpy(snedp->interface, snedc->interface);
+			break;
+		}
+	}
+	if (index >= a->nr) {
+		/* No free structure: Default is structure of same rank */
+		index = pos;
+	}
+
+	snedp = (struct stats_net_edev *) a->buf[ref] + index;
+	/* Since the name is not the same, reset all the structure */
+	memset(snedp, 0, STATS_NET_EDEV_SIZE);
+	strcpy(snedp->interface, snedc->interface);
 
 	return  index;
 }
@@ -593,8 +580,7 @@ unsigned int check_iface_reg(struct file_hdr *file_hdr,
  * This is what we try to guess here.
  *
  * IN:
- * @file_hdr	System activity file standard header.
- * @st_disk	Structures with disks statistics.
+ * @a		Activity structure with statistics.
  * @curr	Index in array for current sample statistics.
  * @ref		Index in array for sample statistics used as reference.
  * @pos		Index on current disk.
@@ -603,91 +589,202 @@ unsigned int check_iface_reg(struct file_hdr *file_hdr,
  * Position of current disk in array of sample statistics used as reference.
  ***************************************************************************
  */
-int check_disk_reg(struct file_hdr *file_hdr, struct disk_stats *st_disk[],
-		   int curr, int ref, int pos)
+int check_disk_reg(struct activity *a, int curr, int ref, int pos)
 {
-	struct disk_stats *st_disk_i, *st_disk_j;
+	struct stats_disk *sdc, *sdp;
 	int index = 0;
 
-	st_disk_i = st_disk[curr] + pos;
+	sdc = (struct stats_disk *) a->buf[curr] + pos;
 
-	while (index < file_hdr->sa_nr_disk) {
-		st_disk_j = st_disk[ref] + index;
-		if ((st_disk_i->major == st_disk_j->major) &&
-		    (st_disk_i->minor == st_disk_j->minor)) {
-	 /*
-	  * Disk found.
-	  * If a counter has decreased, then we may assume that the
-	  * corresponding device was unregistered, then registered again.
-	  * NB: AFAIK, such a device cannot be unregistered with current
-	  * kernels.
-	  */
-			if ((st_disk_i->nr_ios < st_disk_j->nr_ios) ||
-			    (st_disk_i->rd_sect < st_disk_j->rd_sect) ||
-			    (st_disk_i->wr_sect < st_disk_j->wr_sect)) {
+	while (index < a->nr) {
+		sdp = (struct stats_disk *) a->buf[ref] + index;
+		if ((sdc->major == sdp->major) &&
+		    (sdc->minor == sdp->minor)) {
+			/*
+			 * Disk found.
+			 * If a counter has decreased, then we may assume that the
+			 * corresponding device was unregistered, then registered again.
+			 * NB: AFAIK, such a device cannot be unregistered with current
+			 * kernels.
+			 */
+			if ((sdc->nr_ios < sdp->nr_ios) ||
+			    (sdc->rd_sect < sdp->rd_sect) ||
+			    (sdc->wr_sect < sdp->wr_sect)) {
 
-				memset(st_disk_j, 0, DISK_STATS_SIZE);
-				st_disk_j->major = st_disk_i->major;
-				st_disk_j->minor = st_disk_i->minor;
+				memset(sdp, 0, STATS_DISK_SIZE);
+				sdp->major = sdc->major;
+				sdp->minor = sdc->minor;
 			}
 			return index;
 		}
 		index++;
 	}
 
-   /* Disk not found: Look for the first free structure */
-	for (index = 0; index < file_hdr->sa_nr_disk; index++) {
-		st_disk_j = st_disk[ref] + index;
-		if (!(st_disk_j->major + st_disk_j->minor)) {
-			memset(st_disk_j, 0, DISK_STATS_SIZE);
-			st_disk_j->major = st_disk_i->major;
-			st_disk_j->minor = st_disk_i->minor;
+	/* Disk not found: Look for the first free structure */
+	for (index = 0; index < a->nr; index++) {
+		sdp = (struct stats_disk *) a->buf[ref] + index;
+		if (!(sdp->major + sdp->minor)) {
+			memset(sdp, 0, STATS_DISK_SIZE);
+			sdp->major = sdc->major;
+			sdp->minor = sdc->minor;
 			break;
 		}
 	}
-	if (index >= file_hdr->sa_nr_disk)
-      /* No free structure found: Default is structure of same rank */
+	if (index >= a->nr) {
+		/* No free structure found: Default is structure of same rank */
 		index = pos;
+	}
 
-	st_disk_j = st_disk[ref] + index;
-   /* Since the device is not the same, reset all the structure */
-	memset(st_disk_j, 0, DISK_STATS_SIZE);
-	st_disk_j->major = st_disk_i->major;
-	st_disk_j->minor = st_disk_i->minor;
+	sdp = (struct stats_disk *) a->buf[ref] + index;
+	/* Since the device is not the same, reset all the structure */
+	memset(sdp, 0, STATS_DISK_SIZE);
+	sdp->major = sdc->major;
+	sdp->minor = sdc->minor;
 
 	return index;
 }
 
 /*
  ***************************************************************************
- * Since ticks may vary slightly from CPU to CPU, we'll want
- * to recalculate itv based on this CPU's tick count, rather
- * than that reported by the "cpu" line. Otherwise we
- * occasionally end up with slightly skewed figures, with
- * the skew being greater as the time interval grows shorter.
+ * Allocate bitmaps for activities that have one.
  *
  * IN:
- * @st_cpu_i	Current sample statistics for current CPU.
- * @st_cpu_j	Previous sample statistics for current CPU.
- *
- * RETURNS:
- * Interval of time based on current CPU.
+ * @act		Array of activities.
  ***************************************************************************
  */
-unsigned long long get_per_cpu_interval(struct stats_one_cpu *st_cpu_i,
-					struct stats_one_cpu *st_cpu_j)
+void allocate_bitmaps(struct activity *act[])
 {
-	return ((st_cpu_i->per_cpu_user + st_cpu_i->per_cpu_nice +
-		 st_cpu_i->per_cpu_system + st_cpu_i->per_cpu_iowait +
-		 st_cpu_i->per_cpu_idle + st_cpu_i->per_cpu_steal) -
-		(st_cpu_j->per_cpu_user + st_cpu_j->per_cpu_nice +
-		 st_cpu_j->per_cpu_system + st_cpu_j->per_cpu_iowait +
-		 st_cpu_j->per_cpu_idle + st_cpu_j->per_cpu_steal));
+	int i;
+	
+	for (i = 0; i < NR_ACT; i++) {
+		if (act[i]->bitmap_size) {
+			SREALLOC(act[i]->bitmap, unsigned char,
+				 BITMAP_SIZE(act[i]->bitmap_size));
+		}
+	}
 }
 
 /*
  ***************************************************************************
- * Read data from a system activity data file
+ * Look for activity in array.
+ *
+ * IN:
+ * @act		Array of activities.
+ * @act_flag	Activity flag to look for.
+ *
+ * RETURNS:
+ * Position of activity in array, or -1 if not found (this may happen when
+ * reading data from a system activity file created by another version of
+ * sysstat).
+ ***************************************************************************
+ */
+int get_activity_position(struct activity *act[], unsigned int act_flag)
+{
+	int i;
+	
+	for (i = 0; i < NR_ACT; i++) {
+		if (act[i]->id == act_flag)
+			break;
+	}
+	
+	if (i == NR_ACT)
+		return -1;
+	
+	return i;
+}
+
+/*
+ ***************************************************************************
+ * Count number of activities with given option.
+ *
+ * IN:
+ * @act			Array of activities.
+ * @option		Option that activities should have to be counted
+ *			(eg. AO_COLLECTED...)
+ * @count_outputs	TRUE if each output should be counted for activities with
+ * 			multiple outputs.
+ *
+ * RETURNS:
+ * Number of selected activities
+ ***************************************************************************
+ */
+int get_activity_nr(struct activity *act[], unsigned int option, int count_outputs)
+{
+	int i, n = 0;
+	unsigned int msk;
+	
+	for (i = 0; i < NR_ACT; i++) {
+		if ((act[i]->options & option) == option) {
+			
+			if (HAS_MULTIPLE_OUTPUTS(act[i]->options) && count_outputs) {
+				for (msk = 1; msk < 0x10; msk <<= 1) {
+					if (act[i]->opt_flags & msk) {
+						n++;
+					}
+				}
+			}
+			else {
+				n++;
+			}
+		}
+	}
+	
+	return n;
+}
+
+/*
+ ***************************************************************************
+ * Select all activities, even if they have no associated items.
+ *
+ * IN:
+ * @act		Array of activities.
+ ***************************************************************************
+ */
+void select_all_activities(struct activity *act[])
+{
+	int i;
+	
+	for (i = 0; i < NR_ACT; i++) {
+		act[i]->options |= AO_SELECTED;
+	}
+}
+
+/*
+ ***************************************************************************
+ * Select CPU activity if no other activities have been explicitly selected.
+ *
+ * IN:
+ * @act	Array of activities.
+ *
+ * OUT:
+ * @act	Array of activities with CPU activity selected if needed.
+ ***************************************************************************
+ */
+void select_default_activity(struct activity *act[])
+{
+	int p;
+	
+	p = get_activity_position(act, A_CPU);
+	
+	/* Default is CPU activity... */
+	if (!get_activity_nr(act, AO_SELECTED, COUNT_ACTIVITIES)) {
+		/*
+		 * Still OK even when reading stats from a file
+		 * since A_CPU activity is always recorded.
+		 */
+		act[p]->options |= AO_SELECTED;
+	}
+
+	/* If no CPU's have been selected then select CPU "all" */
+	if (IS_SELECTED(act[p]->options) &&
+	    !count_bits(act[p]->bitmap, BITMAP_SIZE(act[p]->bitmap_size))) {
+		act[p]->bitmap[0] |= 0x01;
+	}
+}
+
+/*
+ ***************************************************************************
+ * Read data from a system activity data file.
  *
  * IN:
  * @ifd		Input file descriptor.
@@ -757,7 +854,8 @@ void display_sa_file_version(struct file_magic *file_magic)
  * @file	Name of the file being read.
  * @n		Number of bytes read while reading file magic header.
  * 		This function may also be called after failing to read file
- 		standard header. In this case, n is set to 0.
+ *		standard header, or if CPU activity has not been found in
+ *		file. In this case, n is set to 0.
  ***************************************************************************
  */
 void handle_invalid_sa_file(int *fd, struct file_magic *file_magic, char *file,
@@ -766,7 +864,7 @@ void handle_invalid_sa_file(int *fd, struct file_magic *file_magic, char *file,
 	fprintf(stderr, _("Invalid system activity file: %s\n"), file);
 
 	if ((n == FILE_MAGIC_SIZE) && (file_magic->sysstat_magic == SYSSTAT_MAGIC)) {
-      /* This is a sysstat file, but this file has an old format */
+		/* This is a sysstat file, but this file has an old format */
 		display_sa_file_version(file_magic);
 
 		fprintf(stderr,
@@ -780,13 +878,91 @@ void handle_invalid_sa_file(int *fd, struct file_magic *file_magic, char *file,
 
 /*
  ***************************************************************************
- * Open a data file, and perform various checks before reading
+ * Move structures data.
+ *
+ * IN:
+ * @act		Array of activities.
+ * @id_seq	Activity sequence in file.
+ * @record_hdr	Current record header.
+ * @dest	Index in array where stats have to be copied to.
+ * @src		Index in array where stats to copy are.
+ ***************************************************************************
+ */
+void copy_structures(struct activity *act[], unsigned int id_seq[],
+		     struct record_header record_hdr[], int dest, int src)
+{
+	int i, p;
+	
+	memcpy(&record_hdr[dest], &record_hdr[src], RECORD_HEADER_SIZE);
+	
+	for (i = 0; i < NR_ACT; i++) {
+
+		if (!id_seq[i])
+			continue;
+
+		if (((p = get_activity_position(act, id_seq[i])) < 0) ||
+		    (act[p]->nr < 1)) {
+			PANIC(1);
+		}
+
+		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * act[p]->nr);
+		
+	}
+}
+
+/*
+ ***************************************************************************
+ * Read varying part of the statistics from a daily data file.
+ *
+ * IN:
+ * @act		Array of activities.
+ * @curr	Index in array for current sample statistics.
+ * @ifd		Input file descriptor.
+ * @act_nr	Number of activities in file.
+ * @file_actlst	Activity list in file.
+ ***************************************************************************
+ */
+void read_file_stat_bunch(struct activity *act[], int curr, int ifd, int act_nr,
+			  struct file_activity *file_actlst)
+{
+	int i, j, p;
+	struct file_activity *fal = file_actlst;
+	
+	for (i = 0; i < act_nr; i++, fal++) {
+		
+		if ((p = get_activity_position(act, fal->id)) < 0) {
+			/*
+			 * Ignore current activity in file, which is unknown to
+			 * current sysstat version.
+			 */
+			if (lseek(ifd, fal->size * fal->nr, SEEK_CUR) < (fal->size * fal->nr)) {
+				close(ifd);
+				perror("lseek");
+				exit(2);
+			}
+		}
+		else if ((act[p]->nr > 1) && (act[p]->msize > act[p]->fsize)) {
+			for (j = 0; j < act[p]->nr; j++) {
+				sa_fread(ifd, (char *) act[p]->buf[curr] + j * act[p]->msize,
+					 act[p]->fsize, HARD_SIZE);
+			}
+		}
+		else if (act[p]->nr > 0) {
+			sa_fread(ifd, act[p]->buf[curr], act[p]->fsize * act[p]->nr, HARD_SIZE);
+		}
+		else {
+			PANIC(act[p]->nr);
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Open a data file, and perform various checks before reading.
  *
  * IN:
  * @dfile	Name of system activity data file
- * @actflag	Flag giving activities the user wants to display from the
- * 		file
- * @flags	Options other than activities entered on the command line
+ * @act		Array of activities.
  * @ignore	Set to 1 if a true sysstat activity file but with a bad
  * 		format should not yield an error message. Useful with
  * 		sadf -H.
@@ -797,21 +973,26 @@ void handle_invalid_sa_file(int *fd, struct file_magic *file_magic, char *file,
  *		header
  * @file_hdr	file_hdr structure containing data read from file standard
  * 		header
+ * @file_actlst	Acvtivity list in file.
+ * @id_seq	Activity sequence.
  ***************************************************************************
  */
-void prep_file_for_reading(int *ifd, char *dfile, struct file_magic *file_magic,
-			   struct file_hdr *file_hdr, unsigned int *actflag,
-			   unsigned int flags, int ignore)
+void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
+		       struct file_magic *file_magic, struct file_header *file_hdr,
+		       struct file_activity **file_actlst, unsigned int id_seq[],
+		       int ignore)
 {
-	int n;
+	int i, j, n, p;
+	unsigned int a_cpu = FALSE;
+	struct file_activity *fal;
 
-   /* Open sa data file */
+	/* Open sa data file */
 	if ((*ifd = open(dfile, O_RDONLY)) < 0) {
 		fprintf(stderr, _("Cannot open %s: %s\n"), dfile, strerror(errno));
 		exit(2);
 	}
 
-   /* Read file magic data */
+	/* Read file magic data */
 	n = read(*ifd, file_magic, FILE_MAGIC_SIZE);
 
 	if ((n != FILE_MAGIC_SIZE) ||
@@ -821,35 +1002,75 @@ void prep_file_for_reading(int *ifd, char *dfile, struct file_magic *file_magic,
 		if (ignore &&
 		    (n == FILE_MAGIC_SIZE) &&
 		    (file_magic->sysstat_magic == SYSSTAT_MAGIC))
-	 /* Don't display error message. This is for sadf -H */
+			/* Don't display error message. This is for sadf -H */
 			return;
 		else {
-	 /* Display error message and exit */
+			/* Display error message and exit */
 			handle_invalid_sa_file(ifd, file_magic, dfile, n);
 		}
 	}
 
-   /* Read sa data file standard header */
-	sa_fread(*ifd, file_hdr, FILE_HDR_SIZE, HARD_SIZE);
+	/* Read sa data file standard header and allocate activity list */
+	sa_fread(*ifd, file_hdr, FILE_HEADER_SIZE, HARD_SIZE);
+	
+	SREALLOC(*file_actlst, struct file_activity, FILE_ACTIVITY_SIZE * file_hdr->sa_nr_act);
+	fal = *file_actlst;
 
-	*actflag &= file_hdr->sa_actflag;
-	if (!(*actflag) ||
-	    (WANT_PER_PROC(flags) && !WANT_ALL_PROC(flags) && !file_hdr->sa_proc
-	     && !(*actflag & ~(A_CPU + A_IRQ)))) {
-      /*
-       * We want stats that are not available,
-       * maybe because this is an old version of the sa data file.
-       * Error message is displayed if:
-       * -> no activities remain in sar_actflag
-       * -> or if the user entered eg 'sar -u -P 0 -f file' or
-       * 'sar -I SUM -P 0 -f file', with file created on a UP machine.
-       * NOTE1: If A_ONE_IRQ stats are available, stats
-       * concerning _all_ the IRQs are available.
-       * NOTE2: If file_hdr.sa_proc > 0, stats
-       * concerning _all_ the CPUs are available.
-       * NOTE3: If file_hdr.sa_irqcpu != 0, stats
-       * concerning the IRQs per processor are available.
-       */
+	/* Read activity list */
+	j = 0;
+	for (i = 0; i < file_hdr->sa_nr_act; i++, fal++) {
+		
+		sa_fread(*ifd, fal, FILE_ACTIVITY_SIZE, HARD_SIZE);
+		
+		if (fal->nr < 1) {
+			/*
+			 * Every activity, known or unknown,
+			 * should have at least one item.
+			 */
+			handle_invalid_sa_file(ifd, file_magic, dfile, 0);
+		}
+
+		if (fal->id == A_CPU) {
+			a_cpu = TRUE;
+		}
+		
+		if ((p = get_activity_position(act, fal->id)) >= 0) {
+			if (fal->size > act[p]->msize) {
+				act[p]->msize = fal->size;
+			}
+			act[p]->fsize = fal->size;
+			act[p]->nr    = fal->nr;
+			id_seq[j++]   = fal->id;
+		}
+	}
+	
+	if (!a_cpu) {
+		/* CPU activity should always be in file */
+		handle_invalid_sa_file(ifd, file_magic, dfile, 0);
+	}
+	
+	while (j < NR_ACT) {
+		id_seq[j++] = 0;
+	}
+	
+	/* Check that at least one selected activity is available in file */
+	for (i = 0; i < NR_ACT; i++) {
+		
+		if (!IS_SELECTED(act[i]->options))
+			continue;
+		
+		/* Here is a selected activity: Does it exist in file? */
+		fal = *file_actlst;
+		for (j = 0; j < file_hdr->sa_nr_act; j++, fal++) {
+			if (act[i]->id == fal->id)
+				break;
+		}
+		if (j == file_hdr->sa_nr_act) {
+			/* No: Unselect it */
+			act[i]->options &= ~AO_SELECTED;
+		}
+	}
+	if (!get_activity_nr(act, AO_SELECTED, COUNT_ACTIVITIES)) {
 		fprintf(stderr, _("Requested activities not available in file %s\n"),
 			dfile);
 		close(*ifd);
@@ -859,7 +1080,7 @@ void prep_file_for_reading(int *ifd, char *dfile, struct file_magic *file_magic,
 
 /*
  ***************************************************************************
- * Parse sar activities options (also used by sadf)
+ * Parse sar activities options (also used by sadf).
  *
  * IN:
  * @argv	Arguments list.
@@ -867,87 +1088,121 @@ void prep_file_for_reading(int *ifd, char *dfile, struct file_magic *file_magic,
  * @caller	Indicate whether it's sar or sadf that called this function.
  *
  * OUT:
- * @actflag	Flag activities set.
+ * @act		Array of selected activities.
  * @flags	Common flags and system state.
- * @irq_bitmap	Bitmap for interrupts.
- * @cpu_bitmap	Bitmap for CPUs.
  *
  * RETURNS:
  * 0 on success, 1 otherwise.
  ***************************************************************************
  */
-int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
-		  unsigned int *flags, int caller,
-		  unsigned char irq_bitmap[], unsigned char cpu_bitmap[])
+int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
+		  unsigned int *flags, int caller)
 {
-	int i;
+	int i, p;
 
-	for (i = 1; *(argv[opt] + i); i++) {
+	for (i = 1; *(argv[*opt] + i); i++) {
 
-		switch (*(argv[opt] + i)) {
+		switch (*(argv[*opt] + i)) {
 
 		case 'A':
-			*actflag |= A_PROC + A_PAGE + A_IRQ + A_IO + A_CPU +
-				A_CTXSW + A_SWAP + A_MEMORY + A_SERIAL +
-				A_MEM_AMT + A_KTABLES + A_NET_DEV +
-				A_NET_EDEV + A_NET_SOCK + A_NET_NFS + A_NET_NFSD +
-				A_QUEUE + A_DISK + A_ONE_IRQ;
-	 /* Force '-P ALL -I XALL' */
-			*flags |= S_F_A_OPTION + S_F_ALL_PROC + S_F_PER_PROC;
-			init_bitmap(irq_bitmap, ~0, NR_IRQS);
-			init_bitmap(cpu_bitmap, ~0, NR_CPUS);
+			select_all_activities(act);
+
+			/* Force '-P ALL -I XALL' */
+			*flags |= S_F_PER_PROC;
+
+			p = get_activity_position(act, A_MEMORY);
+			act[p]->opt_flags |= AO_F_MEM_AMT + AO_F_MEM_DIA + AO_F_MEM_SWAP;
+			
+			p = get_activity_position(act, A_IRQ);
+			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
+			
+			p = get_activity_position(act, A_CPU);
+			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
+			act[p]->opt_flags = AO_F_CPU_ALL;
 			break;
+			
 		case 'B':
-			*actflag |= A_PAGE;
+			act[get_activity_position(act, A_PAGE)]->options |= AO_SELECTED;
 			break;
+			
 		case 'b':
-			*actflag |= A_IO;
+			act[get_activity_position(act, A_IO)]->options |= AO_SELECTED;
 			break;
+			
 		case 'C':
 			*flags |= S_F_COMMENT;
 			break;
-		case 'c':
-			*actflag |= A_PROC;
-			break;
+			
 		case 'd':
-			*actflag |= A_DISK;
+			act[get_activity_position(act, A_DISK)]->options |= AO_SELECTED;
 			break;
+			
 		case 'p':
 			*flags |= S_F_DEV_PRETTY;
 			break;
+			
 		case 'q':
-			*actflag |= A_QUEUE;
+			act[get_activity_position(act, A_QUEUE)]->options |= AO_SELECTED;
 			break;
+			
 		case 'r':
-			*actflag |= A_MEM_AMT;
+			p = get_activity_position(act, A_MEMORY);
+			act[p]->options   |= AO_SELECTED;
+			act[p]->opt_flags |= AO_F_MEM_AMT;
 			break;
+			
 		case 'R':
-			*actflag |= A_MEMORY;
+			p = get_activity_position(act, A_MEMORY);
+			act[p]->options   |= AO_SELECTED;
+			act[p]->opt_flags |= AO_F_MEM_DIA;
 			break;
+			
+		case 'S':
+			p = get_activity_position(act, A_MEMORY);
+			act[p]->options   |= AO_SELECTED;
+			act[p]->opt_flags |= AO_F_MEM_SWAP;
+			break;
+			
 		case 't':
-			if (caller == C_SAR)
+			if (caller == C_SAR) {
 				*flags |= S_F_TRUE_TIME;
+			}
 			else
 				return 1;
 			break;
+			
 		case 'u':
-			*actflag |= A_CPU;
-			break;
+			p = get_activity_position(act, A_CPU);
+			act[p]->options |= AO_SELECTED;
+			if (!(*(argv[*opt] + i + 1)) && argv[(*opt) + 1] && !strcmp(argv[(*opt) + 1], K_ALL)) {
+				(*opt)++;
+				act[p]->opt_flags = AO_F_CPU_ALL;
+			}
+			else {
+				act[p]->opt_flags = AO_F_CPU_DEF;
+			}
+			return 0;
+			
 		case 'v':
-			*actflag |= A_KTABLES;
+			act[get_activity_position(act, A_KTABLES)]->options |= AO_SELECTED;
 			break;
+			
 		case 'w':
-			*actflag |= A_CTXSW;
+			act[get_activity_position(act, A_PCSW)]->options |= AO_SELECTED;
 			break;
+			
 		case 'W':
-			*actflag |= A_SWAP;
+			act[get_activity_position(act, A_SWAP)]->options |= AO_SELECTED;
 			break;
+			
 		case 'y':
-			*actflag |= A_SERIAL;
+			act[get_activity_position(act, A_SERIAL)]->options |= AO_SELECTED;
 			break;
+			
 		case 'V':
 			print_version();
 			break;
+			
 		default:
 			return 1;
 		}
@@ -957,33 +1212,43 @@ int parse_sar_opt(char *argv[], int opt, unsigned int *actflag,
 
 /*
  ***************************************************************************
- * Parse sar "-n" option
+ * Parse sar "-n" option.
  *
  * IN:
  * @argv	Arguments list.
  * @opt		Index in list of arguments.
  *
  * OUT:
- * @actflag	Flag activities set.
+ * @act		Array of selected activities.
  *
  * RETURNS:
  * 0 on success, 1 otherwise.
  ***************************************************************************
  */
-int parse_sar_n_opt(char *argv[], int *opt, unsigned int *actflag)
+int parse_sar_n_opt(char *argv[], int *opt, struct activity *act[])
 {
-	if (!strcmp(argv[*opt], K_DEV))
-		*actflag |= A_NET_DEV;
-	else if (!strcmp(argv[*opt], K_EDEV))
-		*actflag |= A_NET_EDEV;
-	else if (!strcmp(argv[*opt], K_SOCK))
-		*actflag |= A_NET_SOCK;
-	else if (!strcmp(argv[*opt], K_NFS))
-		*actflag |= A_NET_NFS;
-	else if (!strcmp(argv[*opt], K_NFSD))
-		*actflag |= A_NET_NFSD;
-	else if (!strcmp(argv[*opt], K_ALL))
-		*actflag |= A_NET_DEV + A_NET_EDEV + A_NET_SOCK + A_NET_NFS + A_NET_NFSD;
+	if (!strcmp(argv[*opt], K_DEV)) {
+		act[get_activity_position(act, A_NET_DEV)]->options  |= AO_SELECTED;
+	}
+	else if (!strcmp(argv[*opt], K_EDEV)) {
+		act[get_activity_position(act, A_NET_EDEV)]->options |= AO_SELECTED;
+	}
+	else if (!strcmp(argv[*opt], K_SOCK)) {
+		act[get_activity_position(act, A_NET_SOCK)]->options |= AO_SELECTED;
+	}
+	else if (!strcmp(argv[*opt], K_NFS)) {
+		act[get_activity_position(act, A_NET_NFS)]->options  |= AO_SELECTED;
+	}
+	else if (!strcmp(argv[*opt], K_NFSD)) {
+		act[get_activity_position(act, A_NET_NFSD)]->options |= AO_SELECTED;
+	}
+	else if (!strcmp(argv[*opt], K_ALL)) {
+		act[get_activity_position(act, A_NET_DEV)]->options  |= AO_SELECTED;
+		act[get_activity_position(act, A_NET_EDEV)]->options |= AO_SELECTED;
+		act[get_activity_position(act, A_NET_SOCK)]->options |= AO_SELECTED;
+		act[get_activity_position(act, A_NET_NFS)]->options  |= AO_SELECTED;
+		act[get_activity_position(act, A_NET_NFSD)]->options |= AO_SELECTED;
+	}
 	else
 		return 1;
 
@@ -993,47 +1258,56 @@ int parse_sar_n_opt(char *argv[], int *opt, unsigned int *actflag)
 
 /*
  ***************************************************************************
- * Parse sar "-I" option
+ * Parse sar "-I" option.
  *
  * IN:
  * @argv	Arguments list.
  * @opt		Index in list of arguments.
+ * @act		Array of activities.
  *
  * OUT:
- * @actflag	Flag activities set.
- * @irq_bitmap	Bitmap for interrupts.
+ * @act		Array of activities, with interrupts activity selected.
  *
  * RETURNS:
  * 0 on success, 1 otherwise.
  ***************************************************************************
  */
-int parse_sar_I_opt(char *argv[], int *opt, unsigned int *actflag,
-		    unsigned char irq_bitmap[])
+int parse_sar_I_opt(char *argv[], int *opt, struct activity *act[])
 {
-	int i;
+	int i, p;
+	unsigned char c;
 
-	if (!strcmp(argv[*opt], K_SUM))
-		*actflag |= A_IRQ;
+	/* Select interrupt activity */
+	p = get_activity_position(act, A_IRQ);
+	act[p]->options |= AO_SELECTED;
+	
+	if (!strcmp(argv[*opt], K_SUM)) {
+		/* Select total number of interrupts */
+		act[p]->bitmap[0] |= 0x01;
+	}
 	else {
-		*actflag |= A_ONE_IRQ;
 		if (!strcmp(argv[*opt], K_ALL)) {
-	 /* Set bit for the first 16 irq */
-			irq_bitmap[0] = 0xff;
-			irq_bitmap[1] = 0xff;
+			/* Set bit for the first 16 individual interrupts */
+			act[p]->bitmap[0] |= 0xfe;
+			act[p]->bitmap[1] |= 0xff;
+			act[p]->bitmap[2] |= 0x01;
 		}
-		else if (!strcmp(argv[*opt], K_XALL))
-	 /* Set every bit */
-			init_bitmap(irq_bitmap, ~0, NR_IRQS);
+		else if (!strcmp(argv[*opt], K_XALL)) {
+			/* Set every bit except for total number of interrupts */
+			c = act[p]->bitmap[0];
+			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
+			act[p]->bitmap[0] = 0xfe | c;
+		}
 		else {
-	 /*
-	  * Get irq number.
-	  */
+			/*
+			 * Get irq number.
+			 */
 			if (strspn(argv[*opt], DIGITS) != strlen(argv[*opt]))
 				return 1;
 			i = atoi(argv[*opt]);
-			if ((i < 0) || (i >= NR_IRQS))
+			if ((i < 0) || (i >= act[p]->bitmap_size))
 				return 1;
-			irq_bitmap[i >> 3] |= 1 << (i & 0x07);
+			act[p]->bitmap[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
 		}
 	}
 	(*opt)++;
@@ -1042,43 +1316,44 @@ int parse_sar_I_opt(char *argv[], int *opt, unsigned int *actflag,
 
 /*
  ***************************************************************************
- * Parse sar and sadf "-P" option
+ * Parse sar and sadf "-P" option.
  *
  * IN:
  * @argv	Arguments list.
  * @opt		Index in list of arguments.
+ * @act		Array of activities.
  *
  * OUT:
  * @flags	Common flags and system state.
- * @cpu_bitmap	Bitmap for CPUs.
+ * @act		Array of activities, with CPUs selected.
  *
  * RETURNS:
  * 0 on success, 1 otherwise.
  ***************************************************************************
  */
-int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags,
-		   unsigned char cpu_bitmap[])
+int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags, struct activity *act[])
 {
-	int i;
+	int i, p;
 
+	p = get_activity_position(act, A_CPU);
+	
 	if (argv[++(*opt)]) {
 		*flags |= S_F_PER_PROC;
 		if (!strcmp(argv[*opt], K_ALL)) {
-	 /*
-	  * Set bit for every processor.
-	  * We still don't know if we are going to read stats
-	  * from a file or not...
-	  */
-			init_bitmap(cpu_bitmap, ~0, NR_CPUS);
-			*flags |= S_F_ALL_PROC;
+			/*
+			 * Set bit for every processor.
+			 * We still don't know if we are going to read stats
+			 * from a file or not...
+			 */
+			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
 		}
 		else {
 			if (strspn(argv[*opt], DIGITS) != strlen(argv[*opt]))
 				return 1;
 			i = atoi(argv[*opt]);	/* Get cpu number */
-			if ((i < 0) || (i >= NR_CPUS))
+			if ((i < 0) || (i >= act[p]->bitmap_size))
 				return 1;
-			cpu_bitmap[i >> 3] |= 1 << (i & 0x07);
+			act[p]->bitmap[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
 		}
 		(*opt)++;
 	}
@@ -1087,3 +1362,4 @@ int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags,
 
 	return 0;
 }
+

@@ -1,10 +1,10 @@
-.TH SAR 1 "OCTOBER 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
-.B sar [ -A ] [ -b ] [ -B ] [ -c ] [ -C ] [ -d ] [ -i
+.B sar [ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -i
 .I interval
-.B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
+.B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
 .B [ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]
 .B [ -I {
 .I irq
@@ -39,10 +39,11 @@ If the
 parameter is set to zero, the
 .B sar
 command displays the average statistics for the time
-since the system was started. The default value for the
+since the system was started. If the
+.I interval
+parameter is specified without the
 .I count
-parameter is 1. If its value is set to zero, then reports are
-generated continuously.
+parameter, then reports are generated continuously.
 The collected data can also
 be saved in the file specified by the
 .B -o
@@ -86,7 +87,7 @@ flags. Not specifying any flags selects only CPU activity.
 Specifying the
 .B -A
 flag is equivalent to specifying
-.BR "-bBcdqrRuvwWy -I SUM -I XALL -n ALL -P ALL".
+.BR "-bBdqrRSvwWy -I SUM -I XALL -n ALL -u ALL -P ALL".
 
 The default version of the
 .B sar
@@ -132,7 +133,7 @@ command only reports on local activities.
 .SH OPTIONS
 .IP -A
 This is equivalent to specifying
-.BR "-bBcdqrRuvwWy -I SUM -I XALL -n ALL -P ALL".
+.BR "-bBdqrRSuvwWy -I SUM -I XALL -n ALL -u ALL -P ALL".
 .IP -b
 Report I/O and transfer rate statistics.
 The following values are displayed:
@@ -230,15 +231,6 @@ tail of the inactive list is being reaped. If it gets too low (e.g. less
 than 30%) then the virtual memory is having some difficulty.
 This field is displayed as zero if no pages have been scanned during the
 interval of time.
-.RE
-.RE
-.IP -c
-Report task creation activity.
-
-.B proc/s
-.RS
-.RS
-Total number of tasks created per second.
 .RE
 .RE
 .IP -C
@@ -605,13 +597,7 @@ Specifying the
 .B ALL
 keyword reports statistics for each individual processor, and globally for
 all processors.
-Of the flags which specify the statistics to be reported, only the
-.B -u
-and
-.B -I SUM
-flags are meaningful with the
-.B -P
-flag. Note that processor 0 is the first processor.
+Note that processor 0 is the first processor.
 .IP -p
 Pretty-print device names. Use this option in conjunction with option -d.
 By default names are printed as
@@ -653,7 +639,7 @@ System load average for the past 15 minutes.
 .RE
 .RE
 .IP -r
-Report memory and swap space utilization statistics.
+Report memory utilization statistics.
 The following values are displayed:
 
 .B kbmemfree
@@ -683,28 +669,17 @@ Amount of memory used as buffers by the kernel in kilobytes.
 Amount of memory used to cache data by the kernel in kilobytes.
 .RE
 
-.B kbswpfree
+.B kbcommit
 .RS
-Amount of free swap space in kilobytes.
+Amount of memory in kilobytes needed for current workload. This is an estimate of how much
+RAM/swap is needed to guarantee that there never is out of memory.
 .RE
 
-.B kbswpused
+.B %commit
 .RS
-Amount of used swap space in kilobytes.
-.RE
+Percentage of memory needed for current workload in relation to the total amount of memory (RAM+swap).
+This number may be greater than 100% because the kernel usually overcommits memory.
 
-.B %swpused
-.RS
-Percentage of used swap space.
-.RE
-
-.B kbswpcad
-.RS
-Amount of cached swap memory in kilobytes.
-This is memory that once was swapped out, is swapped back in
-but still also is in the swap area (if memory is needed it doesn't need
-to be swapped out again because it is already in the swap area. This
-saves I/O).
 .RE
 .RE
 .IP -R
@@ -734,11 +709,45 @@ A negative value means fewer pages in the cache.
 Set the starting time of the data, causing the
 .B sar
 command to extract records time-tagged at, or following, the time
-specified. The default starting time is 08:00.
+specified. The default starting time is 08:00:00.
 Hours must be given in 24-hour format. This option can be
 used only when data are read from a file (option
 .B -f
 ).
+.IP -S
+Report swap space utilization statistics.
+The following values are displayed:
+
+.B kbswpfree
+.RS
+.RS
+Amount of free swap space in kilobytes.
+.RE
+
+.B kbswpused
+.RS
+Amount of used swap space in kilobytes.
+.RE
+
+.B %swpused
+.RS
+Percentage of used swap space.
+.RE
+
+.B kbswpcad
+.RS
+Amount of cached swap memory in kilobytes.
+This is memory that once was swapped out, is swapped back in
+but still also is in the swap area (if memory is needed it doesn't need
+to be swapped out again because it is already in the swap area. This
+saves I/O).
+.RE
+
+.B %swpcad
+.RS
+Percentage of cached swap memory in relation to the amount of used swap space.
+.RE
+.RE
 .IP -t
 When reading data from a daily data file, indicate that
 .B sar
@@ -746,14 +755,25 @@ should display the timestamps in the original locale time of
 the data file creator. Without this option, the
 .B sar
 command displays the timestamps in the user's locale time.
-.IP -u
-Report CPU utilization. The following values are displayed:
+.IP "-u [ ALL ]"
+Report CPU utilization. The
+.B ALL
+keyword indicates that all the CPU fields should be displayed.
+The report may show the following fields:
 
 .B %user
 .RS
 .RS
 Percentage of CPU utilization that occurred while executing at the user
-level (application).
+level (application). Note that this field includes time spent running
+virtual processors.
+.RE
+
+.B %usr
+.RS
+Percentage of CPU utilization that occurred while executing at the user
+level (application). Note that this field does NOT include time spent
+running virtual processors.
 .RE
 
 .B %nice
@@ -765,7 +785,15 @@ level with nice priority.
 .B %system
 .RS
 Percentage of CPU utilization that occurred while executing at the system
-level (kernel).
+level (kernel). Note that this field includes time spent servicing
+interrupts and softirqs.
+.RE
+
+.B %sys
+.RS
+Percentage of CPU utilization that occurred while executing at the system
+level (kernel). Note that this field does NOT include time spent servicing
+interrupts or softirqs.
 .RE
 
 .B %iowait
@@ -778,6 +806,22 @@ the system had an outstanding disk I/O request.
 .RS
 Percentage of time spent in involuntary wait by the virtual CPU
 or CPUs while the hypervisor was servicing another virtual processor.
+.RE
+
+.B %irq
+.RS
+Percentage of time spent by the CPU or CPUs to service interrupts.
+.RE
+
+.B %soft
+.RS
+Percentage of time spent by the CPU or CPUs to service softirqs
+(software interrupts).
+.RE
+
+.B %guest
+.RS
+Percentage of time spent by the CPU or CPUs to run a virtual processor.
 .RE
 
 .B %idle
@@ -817,10 +861,15 @@ Number of pseudo-terminals used by the system.
 .IP -V
 Print version number then exit.
 .IP -w
-Report system switching activity.
+Report task creation and system switching activity.
+
+.B proc/s
+.RS
+.RS
+Total number of tasks created per second.
+.RE
 
 .B cswch/s
-.RS
 .RS
 Total number of context switches per second.
 .RE
@@ -918,7 +967,7 @@ Data are stored in a file called
 
 .B sar -r -n DEV -f @SA_DIR@/sa16
 .RS
-Display memory, swap space and network statistics saved in daily data file 'sa16'.
+Display memory and network statistics saved in daily data file 'sa16'.
 .RE
 
 .B sar -A

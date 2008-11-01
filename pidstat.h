@@ -1,6 +1,6 @@
 /*
  * pidstat: Display per-process statistics.
- * (C) 2007 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 2007-2008 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _PIDSTAT_H
@@ -42,6 +42,7 @@
 #define P_F_COMMSTR	0x08
 #define P_D_ACTIVE_PID	0x10
 #define P_D_TID		0x20
+#define P_D_ONELINE	0x40
 
 #define DISPLAY_PID(m)		(((m) & P_D_PID) == P_D_PID)
 #define DISPLAY_ALL_PID(m)	(((m) & P_D_ALL_PID) == P_D_ALL_PID)
@@ -49,6 +50,7 @@
 #define COMMAND_STRING(m)	(((m) & P_F_COMMSTR) == P_F_COMMSTR)
 #define DISPLAY_ACTIVE_PID(m)	(((m) & P_D_ACTIVE_PID) == P_D_ACTIVE_PID)
 #define DISPLAY_TID(m)		(((m) & P_D_TID) == P_D_TID)
+#define DISPLAY_ONELINE(m)	(((m) & P_D_ONELINE) == P_D_ONELINE)
 
 #define F_NO_PID_IO	0x01
 
@@ -64,11 +66,14 @@
 #define TASK_STATUS	"/proc/%u/task/%u/status"
 #define TASK_IO		"/proc/%u/task/%u/io"
 
-#define PRINT_ID_HDR(_timestamp_, _flag_)	do {				\
-						printf("\n%-11s       PID",	\
-						       _timestamp_);		\
-   						if (DISPLAY_TID(_flag_))	\
-							printf("       TID");	\
+#define PRINT_ID_HDR(_timestamp_, _flag_)	do {						\
+							printf("\n%-11s", _timestamp_);		\
+   							if (DISPLAY_TID(_flag_)) {		\
+								printf("      TGID       TID");	\
+							}					\
+							else {					\
+								printf("       PID");		\
+							}					\
 						} while (0)
 
 #define PRINT_COMM(_psti_)	printf("  %s%s\n",			\
@@ -89,6 +94,8 @@ struct pid_stats {
 	unsigned long      cutime			__attribute__ ((packed));
 	unsigned long      stime			__attribute__ ((packed));
 	unsigned long      cstime			__attribute__ ((packed));
+	unsigned long      gtime			__attribute__ ((packed));
+	unsigned long      cgtime			__attribute__ ((packed));
 	unsigned long      vsz				__attribute__ ((packed));
 	unsigned long      rss				__attribute__ ((packed));
 	unsigned long      nvcsw			__attribute__ ((packed));

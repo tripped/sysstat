@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--DTD v1.6 for sysstat-->
+<!--DTD v2.1 for sysstat. See sadf.h -->
 <!ELEMENT boot EMPTY>
 <!ATTLIST boot
 	date CDATA #REQUIRED
@@ -15,11 +15,8 @@
 <!ELEMENT bufpg (#PCDATA)>
 <!ELEMENT cached (#PCDATA)>
 <!ELEMENT campg (#PCDATA)>
-<!ELEMENT context-switch EMPTY>
-<!ATTLIST context-switch
-	per CDATA #REQUIRED
-	cswch CDATA #REQUIRED
->
+<!ELEMENT commit (#PCDATA)>
+<!ELEMENT commit-percent (#PCDATA)>
 <!ELEMENT cpu EMPTY>
 <!ATTLIST cpu
 	number CDATA #REQUIRED
@@ -31,6 +28,20 @@
 	idle CDATA #REQUIRED
 >
 <!ELEMENT cpu-load (cpu+)>
+<!ELEMENT cpu-all EMPTY>
+<!ATTLIST cpu-all
+        number CDATA #REQUIRED
+        usr CDATA #REQUIRED
+        nice CDATA #REQUIRED
+        sys CDATA #REQUIRED
+        iowait CDATA #REQUIRED
+        steal CDATA #REQUIRED
+        irq CDATA #REQUIRED
+        soft CDATA #REQUIRED
+        guest CDATA #REQUIRED
+        idle CDATA #REQUIRED
+>
+<!ELEMENT cpu-load-all (cpu-all+)>
 <!ELEMENT dentunusd (#PCDATA)>
 <!ELEMENT disk (disk-device+)>
 <!ATTLIST disk
@@ -59,11 +70,7 @@
 <!ATTLIST int-global
 	per CDATA #REQUIRED
 >
-<!ELEMENT int-proc (irqcpu+)>
-<!ATTLIST int-proc
-	per CDATA #REQUIRED
->
-<!ELEMENT interrupts (int-global, int-proc)>
+<!ELEMENT interrupts (int-global)>
 <!ELEMENT io (tps, io-reads, io-writes)>
 <!ATTLIST io
 	per CDATA #REQUIRED
@@ -83,29 +90,19 @@
 	intr CDATA #REQUIRED
 	value CDATA #REQUIRED
 >
-<!ELEMENT irqcpu EMPTY>
-<!ATTLIST irqcpu
-	cpu CDATA #REQUIRED
-	intr CDATA #REQUIRED
-	value CDATA #REQUIRED
->
 <!ELEMENT kernel (dentunusd, file-nr, inode-nr, pty-nr)>
 <!ATTLIST kernel
 	per CDATA #REQUIRED
 >
 <!ELEMENT memfree (#PCDATA)>
-<!ELEMENT memory (memfree, memused, memused-percent, swpfree, swpused, swpused-percent, swpcad, buffers, cached, frmpg, bufpg, campg)>
+<!ELEMENT memory (memfree, memused, memused-percent, buffers, cached, commit, commit-percent, swpfree, swpused, swpused-percent, swpcad, swpcad-percent, frmpg, bufpg, campg)>
 <!ATTLIST memory
 	per CDATA #REQUIRED
 	unit CDATA #REQUIRED
 >
 <!ELEMENT memused (#PCDATA)>
 <!ELEMENT memused-percent (#PCDATA)>
-<!ELEMENT net-device (net-dev, net-edev)>
-<!ATTLIST net-device
-	iface CDATA #REQUIRED
->
-<!ELEMENT network (net-device+, net-nfs, net-nfsd, net-sock)>
+<!ELEMENT network (net-dev+, net-edev+, net-nfs, net-nfsd, net-sock)>
 <!ATTLIST network
 	per CDATA #REQUIRED
 >
@@ -122,10 +119,11 @@
 	pgsteal CDATA #REQUIRED
 	vmeff-percent CDATA #REQUIRED
 >
-<!ELEMENT processes EMPTY>
-<!ATTLIST processes
+<!ELEMENT process-and-context-switch EMPTY>
+<!ATTLIST process-and-context-switch
 	per CDATA #REQUIRED
 	proc CDATA #REQUIRED
+	cswch CDATA #REQUIRED
 >
 <!ELEMENT pty-nr (#PCDATA)>
 <!ELEMENT queue EMPTY>
@@ -140,6 +138,7 @@
 <!ELEMENT comments (comment+)>
 <!ELEMENT net-dev EMPTY>
 <!ATTLIST net-dev
+	iface CDATA #REQUIRED
 	rxpck CDATA #REQUIRED
 	txpck CDATA #REQUIRED
 	rxkB CDATA #REQUIRED
@@ -162,6 +161,29 @@
 	ip-frag CDATA #REQUIRED
 	tcp-tw CDATA #REQUIRED
 >
+<!ELEMENT net-nfs EMPTY>
+<!ATTLIST net-nfs
+	call CDATA #REQUIRED
+	retrans CDATA #REQUIRED
+	read CDATA #REQUIRED
+	write CDATA #REQUIRED
+	access CDATA #REQUIRED
+	getatt CDATA #REQUIRED
+>
+<!ELEMENT net-nfsd EMPTY>
+<!ATTLIST net-nfsd
+	scall CDATA #REQUIRED
+	badcall CDATA #REQUIRED
+	packet CDATA #REQUIRED
+	udp CDATA #REQUIRED
+	tcp CDATA #REQUIRED
+	hit CDATA #REQUIRED
+	miss CDATA #REQUIRED
+	sread CDATA #REQUIRED
+	swrite CDATA #REQUIRED
+	saccess CDATA #REQUIRED
+	sgetatt CDATA #REQUIRED
+>
 <!ELEMENT statistics (timestamp+)>
 <!ELEMENT swap-pages EMPTY>
 <!ATTLIST swap-pages
@@ -170,6 +192,7 @@
 	pswpout CDATA #REQUIRED
 >
 <!ELEMENT swpcad (#PCDATA)>
+<!ELEMENT swpcad-percent (#PCDATA)>
 <!ELEMENT swpfree (#PCDATA)>
 <!ELEMENT swpused (#PCDATA)>
 <!ELEMENT swpused-percent (#PCDATA)>
@@ -177,7 +200,7 @@
 <!ELEMENT sysname (#PCDATA)>
 <!ELEMENT machine (#PCDATA)>
 <!ELEMENT sysstat (sysdata-version, host)>
-<!ELEMENT timestamp (processes, context-switch, cpu-load, interrupts, swap-pages, io, disk, serial, network, paging, memory, kernel, queue)>
+<!ELEMENT timestamp (cpu-load, cpu-load-all, process-and-context-switch, interrupts, swap-pages, paging, io, memory, kernel, queue, serial, disk, network)>
 <!ATTLIST timestamp
 	date CDATA #REQUIRED
 	time CDATA #REQUIRED
@@ -186,6 +209,7 @@
 <!ELEMENT tps (#PCDATA)>
 <!ELEMENT net-edev EMPTY>
 <!ATTLIST net-edev
+	iface CDATA #REQUIRED
 	rxerr CDATA #REQUIRED
 	txerr CDATA #REQUIRED
 	coll CDATA #REQUIRED

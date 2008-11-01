@@ -1,8 +1,8 @@
-.TH SA1 8 "JULY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SA1 8 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sa1 \- Collect and store binary data in the system activity daily data file.
 .SH SYNOPSIS
-.B @SA_LIB_DIR@/sa1 [
+.B @SA_LIB_DIR@/sa1 [ --boot |
 .I interval
 .I count
 .B ]
@@ -13,7 +13,7 @@ command is a shell procedure variant of the
 .B sadc
 command and handles all of the flags and parameters of that command. The
 .B sa1
-command collects and store binary data in the
+command collects and stores binary data in the
 .IR @SA_DIR@/sa dd
 file, where the dd parameter indicates the current day. The
 .I interval
@@ -28,6 +28,19 @@ seconds. If you do not specify these parameters, a single record is written.
 The
 .B sa1
 command is designed to be started automatically by the cron command.
+
+.SH OPTIONS
+.IP --boot
+This option tells
+.B sa1
+that the
+.B sadc
+command should be called without specifying the
+.I interval
+and
+.I count
+parameters in order to insert a dummy record, marking the time when the counters
+restarts from 0.
 
 .SH EXAMPLES
 To create a daily record of

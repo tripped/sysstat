@@ -1,6 +1,7 @@
 sysstat (8.1.6-1) experimental; urgency=low
 
   * New upstream release:
+    + Daily data files format has changed again.
     + NFS v4 support added to sar -n (closes: #434442);
     + All sysstat commands are made consistent with how parameters are 
       interpreted: "COMMAND <interval>" now generates a report continusouly, 

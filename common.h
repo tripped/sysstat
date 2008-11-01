@@ -1,6 +1,6 @@
 /*
  * sysstat: System performance tools for Linux
- * (C) 1999-2007 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2008 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _COMMON_H
@@ -8,17 +8,29 @@
 
 #include <time.h>
 #include <sched.h>	/* For __CPU_SETSIZE */
+#include "rd_stats.h"
+
+
+/*
+ ***************************************************************************
+ * Various keywords and constants
+ ***************************************************************************
+ */
 
 #define FALSE	0
 #define TRUE	1
 
-#define MINIMUM(a,b)	((a) < (b) ? (a) : (b))
+#define DISP_HDR	1
 
+/* Maximum number of CPUs */
 #ifdef __CPU_SETSIZE
 #define NR_CPUS		__CPU_SETSIZE
 #else
 #define NR_CPUS		1024
 #endif
+
+/* Maximum number of interrupts */
+#define NR_IRQS			256
 
 /* Size of /proc/interrupts line, CPU data excluded */
 #define INTERRUPTS_LINE	128
@@ -44,20 +56,9 @@
 #define MAX_FILE_LEN	256
 #define MAX_PF_NAME	1024
 #define DEVMAP_MAJOR	253
+#define MAX_NAME_LEN	72
 
-#define NR_DEV_PREALLOC		4
-#define NR_DISK_PREALLOC	3
-#define NR_NFS_PREALLOC		2
-
-#define CNT_DEV		0
-#define CNT_PART	1
-#define CNT_ALL_DEV	0
-#define CNT_USED_DEV	1
-
-#define S_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * HZ)
-
-/* new define to normalize to %; HZ is 1024 on IA64 and % should be normalized to 100 */
-#define SP_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * 100)
+#define NR_DISKS	4
 
 /* Environment variables */
 #define ENV_TIME_FMT	"S_TIME_FORMAT"
@@ -65,11 +66,53 @@
 
 #define DIGITS		"0123456789"
 
-#define MAX_NAME_LEN	72
 
-#define NR_DISKS	4
+/*
+ ***************************************************************************
+ * Macro functions definitions.
+ ***************************************************************************
+ */
 
-#define DISP_HDR	1
+/* Allocate and init structure */
+#define SREALLOC(S, TYPE, SIZE)	do {								 \
+   					TYPE *_p_;						 \
+				   	_p_ = S;						 \
+   				   	if (SIZE) {						 \
+   				      		if ((S = (TYPE *) realloc(S, (SIZE))) == NULL) { \
+				         		perror("realloc");			 \
+				         		exit(4);				 \
+				      		}						 \
+				      		/* If the ptr was null, then it's a malloc() */	 \
+   				      		if (!_p_)					 \
+      				         		memset(S, 0, (SIZE));			 \
+				   	}							 \
+				} while (0)
+
+/*
+ * Macros used to display statistics values.
+ *
+ * NB: Define SP_VALUE() to normalize to %;
+ * HZ is 1024 on IA64 and % should be normalized to 100.
+ */
+#define S_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * HZ)
+#define SP_VALUE(m,n,p)	(((double) ((n) - (m))) / (p) * 100)
+
+/*
+ * Under very special circumstances, STDOUT may become unavailable.
+ * This is what we try to guess here
+ */
+#define TEST_STDOUT(_fd_)	do {					\
+					if (write(_fd_, "", 0) == -1) {	\
+				        	perror("stdout");	\
+				       		exit(6);		\
+				 	}				\
+				} while (0)
+
+
+#define MINIMUM(a,b)	((a) < (b) ? (a) : (b))
+
+#define PANIC(m)	sysstat_panic(__FUNCTION__, m)
+
 
 /* Number of ticks per second */
 #define HZ		hz
@@ -85,52 +128,63 @@ extern unsigned int kb_shift;
 #define KB_TO_PG(k)	((k) >> kb_shift)
 #define PG_TO_KB(k)	((k) << kb_shift)
 
-/* Memory data read from /proc/meminfo */
-struct meminf {
-	unsigned long frmkb;
-	unsigned long bufkb;
-	unsigned long camkb;
-	unsigned long tlmkb;
-	unsigned long frskb;
-	unsigned long tlskb;
-	unsigned long caskb;
+/*
+ ***************************************************************************
+ * Structures definitions
+ ***************************************************************************
+ */
+
+/* Structure used for extended disk statistics */
+struct ext_disk_stats {
+	double util;
+	double await;
+	double svctm;
+	double arqsz;
 };
 
 
 /*
- * Under very special circumstances, STDOUT may become unavailable,
- * This is what we try to guess here
+ ***************************************************************************
+ * Functions prototypes
+ ***************************************************************************
  */
-#define TEST_STDOUT(_fd_)	do {					\
-					if (write(_fd_, "", 0) == -1) {	\
-				        	perror("stdout");	\
-				       		exit(6);		\
-				 	}				\
-				} while (0)
 
-/* Functions */
-extern char 	*device_name(char *);
-extern void	get_HZ(void);
-extern unsigned int	get_disk_io_nr(void);
-extern unsigned long long 	get_interval(unsigned long long,
-					     unsigned long long);
-extern void	get_kb_shift(void);
-extern time_t	get_localtime(struct tm *);
-extern time_t	get_time(struct tm *);
-extern int	get_cpu_nr(unsigned int);
-extern int	get_sysfs_dev_nr(int);
-extern int	get_diskstats_dev_nr(int, int);
-extern int	get_ppartitions_dev_nr(int);
-extern int	get_nfs_mount_nr(void);
-extern int	get_win_height(void);
-extern void	init_nls(void);
-extern double	ll_s_value(unsigned long long, unsigned long long,
-			   unsigned long long);
-extern double	ll_sp_value(unsigned long long, unsigned long long,
-			    unsigned long long);
-extern int	print_gal_header(struct tm *, char *, char *, char *, char *);
-extern void	print_version(void);
-extern int	readp_meminfo(struct meminf *);
-extern void	readp_uptime(unsigned long long *);
+extern void
+	compute_ext_disk_stats(struct stats_disk *, struct stats_disk *,
+			       unsigned long long, struct ext_disk_stats *);
+extern int
+	count_bits(void *, int);
+extern char *
+	device_name(char *);
+extern void
+	get_HZ(void);
+extern unsigned long long
+	get_interval(unsigned long long, unsigned long long);
+extern void
+	get_kb_shift(void);
+extern time_t
+	get_localtime(struct tm *);
+extern time_t
+	get_time(struct tm *);
+extern int
+	get_nfs_mount_nr(void);
+unsigned long long
+	get_per_cpu_interval(struct stats_cpu *, struct stats_cpu *);
+extern int
+	get_sysfs_dev_nr(int);
+extern int
+	get_win_height(void);
+extern void
+	init_nls(void);
+extern double
+	ll_s_value(unsigned long long, unsigned long long, unsigned long long);
+extern double
+	ll_sp_value(unsigned long long, unsigned long long, unsigned long long);
+extern int
+	print_gal_header(struct tm *, char *, char *, char *, char *, int);
+extern void
+	print_version(void);
+extern void
+	sysstat_panic(const char *, int);
 
 #endif  /* _COMMON_H */

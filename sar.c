@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2007 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -30,6 +30,7 @@
 #include "sa.h"
 #include "common.h"
 #include "ioconf.h"
+#include "pr_stats.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -42,32 +43,42 @@
 #define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
 char *sccsid(void) { return (SCCSID); }
 
+/* Interval and count parameters */
 long interval = -1, count = 0;
-unsigned int sar_actflag = 0;
+
+/* TRUE if a header line must be printed */
+int dis = TRUE;
+
 unsigned int flags = 0;
-unsigned char irq_bitmap[(NR_IRQS / 8) + 1];
-unsigned char cpu_bitmap[(NR_CPUS / 8) + 1];
+char timestamp[2][TIMESTAMP_LEN];
 
 struct stats_sum asum;
-struct file_hdr file_hdr;
-struct file_stats file_stats[3];
-struct stats_one_cpu *st_cpu[3] = {NULL, NULL, NULL};
-struct stats_serial *st_serial[3] = {NULL, NULL, NULL};
-struct stats_irq_cpu *st_irq_cpu[3] = {NULL, NULL, NULL};
-struct stats_net_dev *st_net_dev[3] = {NULL, NULL, NULL};
-struct disk_stats *st_disk[3] = {NULL, NULL, NULL};
 
-/* Array members of common types are always packed */
-unsigned int interrupts[3][NR_IRQS];
+/* File header */
+struct file_header file_hdr;
+
+/* Current record header */
+struct record_header record_hdr[3];
+
+/*
+ * Activity sequence.
+ * This array must always be entirely filled (even with trailing zeros).
+ */
+unsigned int id_seq[NR_ACT];
 
 struct tm rectime;
+
 /* Contain the date specified by -s and -e options */
 struct tstamp tm_start, tm_end;
+
 char *args[MAX_ARGV_NR];
+
+extern struct activity *act[];
+
 
 /*
  ***************************************************************************
- * Print usage and exit
+ * Print usage and exit.
  *
  * IN:
  * @progname	Name of sysstat command
@@ -75,36 +86,37 @@ char *args[MAX_ARGV_NR];
  */
 void usage(char *progname)
 {
-	fprintf(stderr, "%s %s [ %s ] [ <%s> [ <%s> ] ]\n",
-		_("Usage:"), progname, _("options..."), _("interval"), _("count"));
+	fprintf(stderr, _("Usage: %s [ options ] [ <interval> [ <count> ] ]\n"),
+		progname);
 
-	fprintf(stderr, _("Options are:\n"));
-
-	fprintf(stderr, "[ -A ] [ -b ] [ -B ] [ -c ] [ -C ] [ -d ] [ -i <%s> ] [ -p ] [ -q ]\n"
-		"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-		"[ -I { <%s> | SUM | ALL | XALL } ] [ -P { <%s> | ALL } ]\n"
-		"[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
-		"[ -o [ <%s> ] | -f [ <%s> ] ]\n"
-		"[ -s [ <%s> ] ] [ -e [ <%s> ] ]\n",
-		_("interval"), _("int"), _("cpu"), _("filename"), _("filename"),
-		_("hh:mm:ss"), _("hh:mm:ss"));
+	fprintf(stderr, _("Options are:\n"
+			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
+			  "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+			  "[ -I { <int> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
+			  "[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
+			  "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
+			  "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"));
 	exit(1);
 }
 
 /*
  ***************************************************************************
- * Init stats structures
+ * Init some structures.
  ***************************************************************************
  */
-void init_all_stats(void)
+void init_structures(void)
 {
-	init_stats(file_stats, interrupts);
+	int i;
+	
+	for (i = 0; i < 3; i++)
+		memset(&record_hdr[i], 0, RECORD_HEADER_SIZE);
+
 	memset(&asum, 0, STATS_SUM_SIZE);
 }
 
 /*
  ***************************************************************************
- * Allocate memory for sadc args
+ * Allocate memory for sadc args.
  *
  * IN:
  * @i		Argument number.
@@ -122,81 +134,41 @@ void salloc(int i, char *ltemp)
 
 /*
  ***************************************************************************
- * Allocate structures
+ * Display an error message. Happens when the data collector doesn't send
+ * enough data.
  ***************************************************************************
  */
-void allocate_structures(void)
+void print_read_error(void)
 {
-	if (file_hdr.sa_proc)
-		salloc_cpu_array(st_cpu, file_hdr.sa_proc);
-	if (file_hdr.sa_serial)
-		salloc_serial_array(st_serial, file_hdr.sa_serial);
-	if (file_hdr.sa_irqcpu)
-		salloc_irqcpu_array(st_irq_cpu, file_hdr.sa_proc, file_hdr.sa_irqcpu);
-	if (file_hdr.sa_iface)
-		salloc_net_dev_array(st_net_dev, file_hdr.sa_iface);
-	if (file_hdr.sa_nr_disk)
-		salloc_disk_array(st_disk, file_hdr.sa_nr_disk);
+	fprintf(stderr, _("End of data collecting unexpected\n"));
+	exit(3);
 }
 
 /*
  ***************************************************************************
- * Check if the user has the right to use -P option.
- * Note that he may use this option when reading stats from a file,
- * even if his machine is not an SMP one...
- * This routine is called only if we are *not* reading stats from a file.
+ * Check that every selected activity actually belongs to the sequence list.
+ * If not, then the activity should be unselected since it will not be sent
+ * by sadc. An activity can be unsent if its number of items is null.
  *
  * IN:
- * @cpu_nr	Number of CPU.
- *		0 means 1 proc and non SMP machine.
- *		1 means 1 proc and SMP machine.
- *		2 means two proc, etc.
+ * @act_nr	Size of sequence list.
  ***************************************************************************
  */
-void check_smp_option(unsigned int cpu_nr)
+void reverse_check_act(unsigned int act_nr)
 {
-	unsigned int j = 0, i;
-
-	if (!cpu_nr) {
-		fprintf(stderr, _("Not an SMP machine...\n"));
-		exit(1);
-	}
-
-	for (i = cpu_nr; i < NR_CPUS; i++) {
-		j |= cpu_bitmap[i >> 3] & (1 << (i & 0x07));
-	}
-	if (j) {
-		fprintf(stderr, _("Not that many processors!\n"));
-		exit(1);
-	}
-}
-
-/*
- ***************************************************************************
- * Check the use of option -P.
- * Called only if reading stats sent by the data collector.
- *
- * IN:
- * @cpu_nr	Number of CPU.
- *		0 means 1 proc and non SMP machine.
- *		1 means 1 proc and SMP machine.
- *		2 means two proc, etc.
- ***************************************************************************
- */
-void prep_smp_option(unsigned int cpu_nr)
-{
-	unsigned int i;
-
-	if (WANT_PER_PROC(flags)) {
-		if (WANT_ALL_PROC(flags))
-			for (i = cpu_nr; i < ((NR_CPUS >> 3) + 1) << 3; i++) {
-				/*
-				 * Reset every bit for proc > cpu_nr
-				 * (only done when -P ALL entered on the command line)
-				 */
-				cpu_bitmap[i >> 3] &= ~(1 << (i & 0x07));
+	int i, j;
+	
+	for (i = 0; i < NR_ACT; i++) {
+		
+		if (IS_SELECTED(act[i]->options)) {
+			
+			for (j = 0; j < act_nr; j++) {
+				if (id_seq[j] == act[i]->id)
+					break;
 			}
-		check_smp_option(cpu_nr);
+			if (j == act_nr)
+				act[i]->options &= ~AO_SELECTED;
+		}
 	}
 }
 
@@ -209,85 +181,62 @@ void prep_smp_option(unsigned int cpu_nr)
  * @curr	Index in array for current sample statistics.
  ***************************************************************************
 */
-void set_rectime(int curr)
+void sar_set_rectime(int curr)
 {
 	struct tm *ltm;
 
 	/* Check if option -t was specified on the command line */
 	if (PRINT_TRUE_TIME(flags)) {
 		/* -t */
-		rectime.tm_hour = file_stats[curr].hour;
-		rectime.tm_min  = file_stats[curr].minute;
-		rectime.tm_sec  = file_stats[curr].second;
+		rectime.tm_hour = record_hdr[curr].hour;
+		rectime.tm_min  = record_hdr[curr].minute;
+		rectime.tm_sec  = record_hdr[curr].second;
 	}
 	else {
-		ltm = localtime((const time_t *) &file_stats[curr].ust_time);
+		ltm = localtime((const time_t *) &record_hdr[curr].ust_time);
 		rectime = *ltm;
 	}
 }
 
 /*
  ***************************************************************************
- * Count number of bits set in an array.
- *
- * IN:
- * @ptr		Pointer to array.
- * @size	Size of array in bytes.
+ * Determine if a stat header line has to be displayed.
  *
  * RETURNS:
- * Number of bits set in the array.
+ * TRUE if a header line has to be displayed.
  ***************************************************************************
 */
-int count_bits(void *ptr, int size)
+int check_line_hdr(void)
 {
-	int nr = 0, i, k;
-	char *p;
+	int i, rc = FALSE;
 
-	p = ptr;
-	for (i = 0; i < size; i++, p++) {
-		k = 0x80;
-		while (k) {
-			if ((*p) & k)
-				nr++;
-			k >>= 1;
+	/* Get number of options entered on the command line */
+	if (get_activity_nr(act, AO_SELECTED, COUNT_OUTPUTS) > 1)
+		return TRUE;
+	
+	for (i = 0; i < NR_ACT; i++) {
+		if (IS_SELECTED(act[i]->options)) {
+			/* Special processing for activities using a bitmap */
+			if (act[i]->bitmap_size) {
+				if (count_bits(act[i]->bitmap,
+					       BITMAP_SIZE(act[i]->bitmap_size)) > 1) {
+					rc = TRUE;
+				}
+			}
+			else if (act[i]->nr > 1) {
+				rc = TRUE;
+			}
+			/* Stop now since we have only one selected activity */
+			break;
 		}
 	}
 
-	return nr;
+	return rc;
 }
 
 /*
  ***************************************************************************
- * Determine if a stat header line has to be displayed
- *
- * OUT:
- * @dis_hdr	Set to TRUE if a header line has to be displayed.
- ***************************************************************************
-*/
-void check_line_hdr(int *dis_hdr)
-{
-	int nr_opt;
-
-	/* Get number of options entered on the command line */
-	nr_opt = count_bits(&sar_actflag, sizeof(unsigned int));
-
-	if ((nr_opt > 1) ||
-	    ((GET_NET_DEV(sar_actflag) || GET_NET_EDEV(sar_actflag)) && (file_hdr.sa_iface > 1)) ||
-	    (GET_DISK(sar_actflag) && (file_hdr.sa_nr_disk > 1)))
-		*dis_hdr = 1;
-	else if (GET_ONE_IRQ(sar_actflag)) {
-		if (count_bits(irq_bitmap, sizeof(irq_bitmap)) > 1)
-			*dis_hdr = 1;
-	}
-	else if ((GET_IRQ(sar_actflag) || GET_CPU(sar_actflag)) && WANT_PER_PROC(flags)) {
-		if (count_bits(cpu_bitmap, sizeof(cpu_bitmap)) > 1)
-			*dis_hdr = 1;
-	}
-}
-
-/*
- ***************************************************************************
- * Set timestamp string
+ * Set timestamp string.
  *
  * IN:
  * @curr	Index in array for current sample statistics.
@@ -299,7 +248,7 @@ void check_line_hdr(int *dis_hdr)
 */
 void set_timestamp(int curr, char *cur_time, int len)
 {
-	set_rectime(curr);
+	sar_set_rectime(curr);
 
 	/* Set cur_time date value */
 	strftime(cur_time, len, "%X", &rectime);
@@ -307,746 +256,76 @@ void set_timestamp(int curr, char *cur_time, int len)
 
 /*
  ***************************************************************************
- * Display CPU statistics
- *
- * IN:
- * @prev		Index in array where stats used as reference are.
- * @curr		Index in array for current sample statistics.
- * @dis			TRUE if a header line must be printed.
- * @prev_string		String displayed at the beginning of a header line.
- *			This is the timestamp of the previous sample, or
- *			"Average" when displaying average stats.
- * @curr_string		String displayed at the beginning of current sample
- *			stats. This is the timestamp of the current sample,
- *			or "Average" when displaying average stats.
- * @g_itv		Interval of time in jiffies multiplied by the number
- *			of processors.
- * @fsi			Structure with current sample statistics.
- * @fsj			Structure with previous sample statistics.
- ***************************************************************************
- */
-void write_sar_cpu_stats(int prev, int curr, int dis, char *prev_string,
-			 char *curr_string, unsigned long long g_itv,
-			 struct file_stats *fsi, struct file_stats *fsj)
-{
-	int i;
-
-	if (dis)
-		printf("\n%-11s     CPU     %%user     %%nice   %%system"
-		       "   %%iowait    %%steal     %%idle\n",
-		       prev_string);
-
-	if (!WANT_PER_PROC(flags) ||
-	    (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags))) {
-
-		printf("%-11s     all", curr_string);
-
-		printf("    %6.2f    %6.2f    %6.2f    %6.2f    %6.2f    %6.2f\n",
-		       ll_sp_value(fsj->cpu_user, fsi->cpu_user, g_itv),
-		       ll_sp_value(fsj->cpu_nice, fsi->cpu_nice, g_itv),
-		       ll_sp_value(fsj->cpu_system, fsi->cpu_system, g_itv),
-		       ll_sp_value(fsj->cpu_iowait, fsi->cpu_iowait, g_itv),
-		       ll_sp_value(fsj->cpu_steal, fsi->cpu_steal, g_itv),
-		       fsi->cpu_idle < fsj->cpu_idle ?
-		       0.0 :
-		       ll_sp_value(fsj->cpu_idle, fsi->cpu_idle, g_itv));
-	}
-
-	if (WANT_PER_PROC(flags) && file_hdr.sa_proc) {
-		unsigned long long pc_itv;
-		struct stats_one_cpu
-			*sci = st_cpu[curr],
-			*scj = st_cpu[prev];
-
-		for (i = 0; i < file_hdr.sa_proc; i++, sci++, scj++) {
-			if (cpu_bitmap[i >> 3] & (1 << (i & 0x07))) {
-
-				printf("%-11s     %3d", curr_string, i);
-
-					/* Recalculate itv for current proc */
-				pc_itv = get_per_cpu_interval(sci, scj);
-
-				if (!pc_itv)
-						/* Current CPU is offline */
-					printf("      0.00      0.00      0.00"
-					       "      0.00      0.00      0.00\n");
-				else {
-					printf("    %6.2f    %6.2f    %6.2f"
-					       "    %6.2f    %6.2f    %6.2f\n",
-					       ll_sp_value(scj->per_cpu_user,
-							   sci->per_cpu_user, pc_itv),
-					       ll_sp_value(scj->per_cpu_nice,
-							   sci->per_cpu_nice, pc_itv),
-					       ll_sp_value(scj->per_cpu_system,
-							   sci->per_cpu_system, pc_itv),
-					       ll_sp_value(scj->per_cpu_iowait,
-							   sci->per_cpu_iowait, pc_itv),
-					       ll_sp_value(scj->per_cpu_steal,
-							   sci->per_cpu_steal, pc_itv),
-					       sci->per_cpu_idle < scj->per_cpu_idle ?
-					       0.0 :
-					       ll_sp_value(scj->per_cpu_idle,
-							   sci->per_cpu_idle, pc_itv));
-				}
-			}
-		}
-	}
-}
-
-/*
- ***************************************************************************
- * Display serial line statistics
- *
- * IN:
- * @prev		Index in array where stats used as reference are.
- * @curr		Index in array for current sample statistics.
- * @dis			TRUE if a header line must be printed.
- * @prev_string		String displayed at the beginning of a header line.
- *			This is the timestamp of the previous sample, or
- *			"Average" when displaying average stats.
- * @curr_string		String displayed at the beginning of current sample
- *			stats. This is the timestamp of the current sample,
- *			or "Average" when displaying average stats.
- * @itv			Interval of time in jiffies.
- * @want_since_boot	Set to TRUE is stats are to be displayed for the
- * 			time since system restart.
- ***************************************************************************
- */
-void write_sar_serial_stats(int prev, int curr, int dis, char *prev_string,
-			    char *curr_string, unsigned long long itv,
-			    int want_since_boot)
-{
-	int i;
-	struct stats_serial
-		*ssi = st_serial[curr],
-		*ssj = st_serial[prev];
-
-	if (dis)
-		printf("\n%-11s       TTY   rcvin/s   xmtin/s framerr/s prtyerr/s"
-		       "     brk/s   ovrun/s\n", prev_string);
-
-	for (i = 0; i < file_hdr.sa_serial; i++, ssi++, ssj++) {
-
-		if (ssi->line == ~0)
-			continue;
-
-		printf("%-11s       %3d", curr_string, ssi->line);
-
-		if ((ssi->line == ssj->line) || want_since_boot) {
-			printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-			       S_VALUE(ssj->rx, ssi->rx, itv),
-			       S_VALUE(ssj->tx, ssi->tx, itv),
-			       S_VALUE(ssj->frame, ssi->frame, itv),
-			       S_VALUE(ssj->parity, ssi->parity, itv),
-			       S_VALUE(ssj->brk, ssi->brk, itv),
-			       S_VALUE(ssj->overrun, ssi->overrun, itv));
-		}
-		else
-			printf("       N/A       N/A       N/A       N/A"
-			       "       N/A       N/A\n");
-	}
-}
-
-/*
- ***************************************************************************
- * Display interrupts per processor statistics
- *
- * IN:
- * @prev		Index in array where stats used as reference are.
- * @curr		Index in array for current sample statistics.
- * @dis			TRUE if a header line must be printed.
- * @prev_string		String displayed at the beginning of a header line.
- *			This is the timestamp of the previous sample, or
- *			"Average" when displaying average stats.
- * @curr_string		String displayed at the beginning of current sample
- *			stats. This is the timestamp of the current sample,
- *			or "Average" when displaying average stats.
- * @itv			Interval of time in jiffies.
- * @disp_avg		TRUE if average stats are displayed.
- * @want_since_boot	Set to TRUE is stats are to be displayed for the
- * 			time since system restart.
- ***************************************************************************
- */
-void write_sar_cpu_irq_stats(int prev, int curr, int dis, char *prev_string,
-			     char *curr_string, unsigned long long itv,
-			     int disp_avg, int want_since_boot)
-{
-	int j = 0, k;
-	int offset;
-	struct stats_irq_cpu *p, *q, *p0, *q0;
-
-	/* Check if number of interrupts has changed */
-	if (!dis && !want_since_boot && !disp_avg) {
-		do {
-			p0 = st_irq_cpu[curr] + j;
-			if (p0->irq != ~0) {
-				q0 = st_irq_cpu[prev] + j;
-				if (p0->irq != q0->irq)
-					j = -2;
-			}
-			j++;
-		}
-		while ((j > 0) && (j <= file_hdr.sa_irqcpu));
-	}
-
-	if (dis || (j < 0)) {
-		/* Print header */
-		printf("\n%-11s  CPU", prev_string);
-		for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-			p0 = st_irq_cpu[curr] + j;
-			if (p0->irq != ~0)	/* Nb of irq per proc may have varied... */
-				printf("  i%03d/s", p0->irq);
-		}
-		printf("\n");
-	}
-
-	for (k = 0; k < file_hdr.sa_proc; k++) {
-		if (cpu_bitmap[k >> 3] & (1 << (k & 0x07))) {
-
-			printf("%-11s  %3d", curr_string, k);
-
-			for (j = 0; j < file_hdr.sa_irqcpu; j++) {
-				p0 = st_irq_cpu[curr] + j;	/* irq field set only for proc #0 */
-				/*
-				 * A value of ~0 means it is a remaining interrupt
-				 * which is no longer used, for example because the
-				 * number of interrupts has decreased in /proc/interrupts
-				 * or because we are appending data to an old sa file
-				 * with more interrupts than are actually available now.
-				 */
-				if (p0->irq != ~0) {
-					q0 = st_irq_cpu[prev] + j;
-					offset = j;
-
-					/*
-					 * If we want stats for the time since system startup,
-					 * we have p0->irq != q0->irq, since q0 structure is
-					 * completely set to zero.
-					 */
-					if ((p0->irq != q0->irq) && !want_since_boot) {
-						if (j)
-							offset = j - 1;
-						q0 = st_irq_cpu[prev] + offset;
-						if ((p0->irq != q0->irq) && (j + 1 < file_hdr.sa_irqcpu))
-							offset = j + 1;
-						q0 = st_irq_cpu[prev] + offset;
-					}
-					if ((p0->irq == q0->irq) || want_since_boot) {
-						p = st_irq_cpu[curr] + k * file_hdr.sa_irqcpu + j;
-						q = st_irq_cpu[prev] + k * file_hdr.sa_irqcpu + offset;
-						printf(" %7.2f",
-						       S_VALUE(q->interrupt, p->interrupt, itv));
-					}
-					else
-						printf("     N/A");
-				}
-			}
-			printf("\n");
-		}
-	}
-}
-
-/*
- ***************************************************************************
- * Display network interface statistics
- *
- * IN:
- * @prev		Index in array where stats used as reference are.
- * @curr		Index in array for current sample statistics.
- * @dis			TRUE if a header line must be printed.
- * @prev_string		String displayed at the beginning of a header line.
- *			This is the timestamp of the previous sample, or
- *			"Average" when displaying average stats.
- * @curr_string		String displayed at the beginning of current sample
- *			stats. This is the timestamp of the current sample,
- *			or "Average" when displaying average stats.
- * @itv			Interval of time in jiffies.
- ***************************************************************************
- */
-void write_sar_net_dev_stats(int prev, int curr, int dis, char *prev_string,
-			     char *curr_string, unsigned long long itv)
-{
-	int i, j;
-	struct stats_net_dev
-		*sndi = st_net_dev[curr],
-		*sndj;
-
-	if (dis)
-		printf("\n%-11s     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s"
-		       "   rxcmp/s   txcmp/s  rxmcst/s\n", prev_string);
-
-	for (i = 0; i < file_hdr.sa_iface; i++, sndi++) {
-
-		if (!strcmp(sndi->interface, "?"))
-			continue;
-		j = check_iface_reg(&file_hdr, st_net_dev, curr, prev, i);
-		sndj = st_net_dev[prev] + j;
-		printf("%-11s %9s", curr_string, sndi->interface);
-
-		printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-		       S_VALUE(sndj->rx_packets, sndi->rx_packets, itv),
-		       S_VALUE(sndj->tx_packets, sndi->tx_packets, itv),
-		       S_VALUE(sndj->rx_bytes, sndi->rx_bytes, itv) / 1024,
-		       S_VALUE(sndj->tx_bytes, sndi->tx_bytes, itv) / 1024,
-		       S_VALUE(sndj->rx_compressed, sndi->rx_compressed, itv),
-		       S_VALUE(sndj->tx_compressed, sndi->tx_compressed, itv),
-		       S_VALUE(sndj->multicast, sndi->multicast, itv));
-	}
-}
-
-/*
- ***************************************************************************
- * Display network interface error statistics
- *
- * IN:
- * @prev		Index in array where stats used as reference are.
- * @curr		Index in array for current sample statistics.
- * @dis			TRUE if a header line must be printed.
- * @prev_string		String displayed at the beginning of a header line.
- *			This is the timestamp of the previous sample, or
- *			"Average" when displaying average stats.
- * @curr_string		String displayed at the beginning of current sample
- *			stats. This is the timestamp of the current sample,
- *			or "Average" when displaying average stats.
- * @itv			Interval of time in jiffies.
- ***************************************************************************
- */
-void write_sar_net_edev_stats(int prev, int curr, int dis, char *prev_string,
-			      char *curr_string, unsigned long long itv)
-{
-	int i, j;
-	struct stats_net_dev
-		*sndi = st_net_dev[curr],
-		*sndj;
-
-	if (dis)
-		printf("\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s"
-		       "  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n",
-		       prev_string);
-
-	for (i = 0; i < file_hdr.sa_iface; i++, sndi++) {
-
-		if (!strcmp(sndi->interface, "?"))
-			continue;
-		j = check_iface_reg(&file_hdr, st_net_dev, curr, prev, i);
-		sndj = st_net_dev[prev] + j;
-
-		printf("%-11s %9s", curr_string, sndi->interface);
-
-		printf(" %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-		       S_VALUE(sndj->rx_errors, sndi->rx_errors, itv),
-		       S_VALUE(sndj->tx_errors, sndi->tx_errors, itv),
-		       S_VALUE(sndj->collisions, sndi->collisions, itv),
-		       S_VALUE(sndj->rx_dropped, sndi->rx_dropped, itv),
-		       S_VALUE(sndj->tx_dropped, sndi->tx_dropped, itv),
-		       S_VALUE(sndj->tx_carrier_errors, sndi->tx_carrier_errors, itv),
-		       S_VALUE(sndj->rx_frame_errors, sndi->rx_frame_errors, itv),
-		       S_VALUE(sndj->rx_fifo_errors, sndi->rx_fifo_errors, itv),
-		       S_VALUE(sndj->tx_fifo_errors, sndi->tx_fifo_errors, itv));
-	}
-}
-
-/*
- ***************************************************************************
- * Display disk statistics
- *
- * IN:
- * @prev		Index in array where stats used as reference are.
- * @curr		Index in array for current sample statistics.
- * @dis			TRUE if a header line must be printed.
- * @prev_string		String displayed at the beginning of a header line.
- *			This is the timestamp of the previous sample, or
- *			"Average" when displaying average stats.
- * @curr_string		String displayed at the beginning of current sample
- *			stats. This is the timestamp of the current sample,
- *			or "Average" when displaying average stats.
- * @itv			Interval of time in jiffies.
- ***************************************************************************
- */
-void write_sar_disk_stats(int prev, int curr, int dis, char *prev_string,
-			  char *curr_string, unsigned long long itv)
-{
-	int i, j;
-	double tput, util, await, svctm, arqsz;
-	struct disk_stats
-		*sdi = st_disk[curr],
-		*sdj;
-	char *dev_name;
-
-	if (dis)
-		printf("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz"
-		       "  avgqu-sz     await     svctm     %%util\n",
-		       prev_string);
-
-	for (i = 0; i < file_hdr.sa_nr_disk; i++, ++sdi) {
-
-		if (!(sdi->major + sdi->minor))
-			continue;
-
-		j = check_disk_reg(&file_hdr, st_disk, curr, prev, i);
-		sdj = st_disk[prev] + j;
-
-		tput = ((double) (sdi->nr_ios - sdj->nr_ios)) * HZ / itv;
-		util = S_VALUE(sdj->tot_ticks, sdi->tot_ticks, itv);
-		svctm = tput ? util / tput : 0.0;
-		await = (sdi->nr_ios - sdj->nr_ios) ?
-			((sdi->rd_ticks - sdj->rd_ticks) +
-			 (sdi->wr_ticks - sdj->wr_ticks)) /
-			((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
-		arqsz  = (sdi->nr_ios - sdj->nr_ios) ?
-			((sdi->rd_sect - sdj->rd_sect) + (sdi->wr_sect - sdj->wr_sect)) /
-			((double) (sdi->nr_ios - sdj->nr_ios)) : 0.0;
-
-		dev_name = NULL;
-
-		if ((USE_PRETTY_OPTION(flags)) && (sdi->major == DEVMAP_MAJOR))
-			dev_name = transform_devmapname(sdi->major, sdi->minor);
-
-		if (!dev_name)
-			dev_name = get_devname(sdi->major, sdi->minor,
-					       USE_PRETTY_OPTION(flags));
-
-		printf("%-11s %9s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-		       curr_string,
-		       /* Confusion possible here between index and minor numbers */
-		       dev_name,
-		       S_VALUE(sdj->nr_ios, sdi->nr_ios,  itv),
-		       ll_s_value(sdj->rd_sect, sdi->rd_sect, itv),
-		       ll_s_value(sdj->wr_sect, sdi->wr_sect, itv),
-		       /* See iostat for explanations */
-		       arqsz,
-		       S_VALUE(sdj->rq_ticks, sdi->rq_ticks, itv) / 1000.0,
-		       await,
-		       svctm,
-		       util / 10.0);
-	}
-}
-
-/*
- ***************************************************************************
- * Core function used to display statistics
- *
- * IN:
- * @prev		Index in array where stats used as reference are.
- * @curr		Index in array for current sample statistics.
- * @dis			TRUE if a header line must be printed.
- * @prev_string		String displayed at the beginning of a header line.
- *			This is the timestamp of the previous sample, or
- *			"Average" when displaying average stats.
- * @curr_string		String displayed at the beginning of current sample
- *			stats. This is the timestamp of the current sample,
- *			or "Average" when displaying average stats.
- * @act			Activity(ies) to display.
- * @itv			Interval of time in jiffies.
- * @g_itv		Interval of time in jiffies multiplied by the number
- *			of processors.
- * @disp_avg		TRUE if average stats are displayed.
- * @want_since_boot	Set to TRUE is stats are to be displayed for the
- * 			time since system restart.
- ***************************************************************************
- */
-void write_stats_core(int prev, int curr, int dis, char *prev_string,
-		      char *curr_string, unsigned int act,
-		      unsigned long long itv, unsigned long long g_itv,
-		      int disp_avg, int want_since_boot)
-{
-	int i;
-	struct file_stats
-		*fsi = &file_stats[curr],
-		*fsj = &file_stats[prev];
-
-	/* Test stdout */
-	TEST_STDOUT(STDOUT_FILENO);
-
-	/* Print number of processes created per second */
-	if (GET_PROC(act)) {
-		if (dis)
-			printf("\n%-11s    proc/s\n", prev_string);
-
-		printf("%-11s %9.2f\n", curr_string,
-		       S_VALUE(fsj->processes, fsi->processes, itv));
-	}
-
-	/* Print number of context switches per second */
-	if (GET_CTXSW(act)) {
-		if (dis)
-			printf("\n%-11s   cswch/s\n", prev_string);
-
-		printf("%-11s %9.2f\n", curr_string,
-		       ll_s_value(fsj->context_swtch, fsi->context_swtch, itv));
-	}
-
-	/* Print CPU usage */
-	if (GET_CPU(act))
-		write_sar_cpu_stats(prev, curr, dis, prev_string, curr_string,
-				    g_itv, fsi, fsj);
-
-	if (GET_IRQ(act) &&
-	    (!WANT_PER_PROC(flags) ||
-	     (WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)))) {
-
-		if (dis)
-			printf("\n%-11s      INTR    intr/s\n", prev_string);
-
-		/* Print number of interrupts per second */
-		printf("%-11s       sum", curr_string);
-
-		printf(" %9.2f\n",
-		       ll_s_value(fsj->irq_sum, fsi->irq_sum, itv));
-	}
-
-	if (GET_ONE_IRQ(act)) {
-		if (dis)
-			printf("\n%-11s      INTR    intr/s\n", prev_string);
-
-		/* Print number of interrupts per second */
-		for (i = 0; i < NR_IRQS; i++) {
-			if (irq_bitmap[i >> 3] & (1 << (i & 0x07))) {
-
-				printf("%-11s       %3d", curr_string, i);
-
-				printf(" %9.2f\n",
-				       S_VALUE(interrupts[prev][i], interrupts[curr][i], itv));
-			}
-		}
-	}
-
-	/* Print paging statistics */
-	if (GET_PAGE(act)) {
-		if (dis)
-			printf("\n%-11s  pgpgin/s pgpgout/s   fault/s  majflt/s  pgfree/s"
-			       " pgscank/s pgscand/s pgsteal/s    %%vmeff\n",
-			       prev_string);
-
-		printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-		       curr_string,
-		       S_VALUE(fsj->pgpgin, fsi->pgpgin, itv),
-		       S_VALUE(fsj->pgpgout, fsi->pgpgout, itv),
-		       S_VALUE(fsj->pgfault, fsi->pgfault, itv),
-		       S_VALUE(fsj->pgmajfault, fsi->pgmajfault, itv),
-		       S_VALUE(fsj->pgfree, fsi->pgfree, itv),
-		       S_VALUE(fsj->pgscan_kswapd, fsi->pgscan_kswapd, itv),
-		       S_VALUE(fsj->pgscan_direct, fsi->pgscan_direct, itv),
-		       S_VALUE(fsj->pgsteal, fsi->pgsteal, itv),
-		       (fsi->pgscan_kswapd + fsi->pgscan_direct -
-			fsj->pgscan_kswapd - fsj->pgscan_direct) ?
-		       SP_VALUE(fsj->pgsteal, fsi->pgsteal,
-				fsi->pgscan_kswapd + fsi->pgscan_direct -
-				fsj->pgscan_kswapd - fsj->pgscan_direct) : 0.0);
-	}
-
-	/* Print number of swap pages brought in and out */
-	if (GET_SWAP(act)) {
-		if (dis)
-			printf("\n%-11s  pswpin/s pswpout/s\n", prev_string);
-
-		printf("%-11s %9.2f %9.2f\n", curr_string,
-		       S_VALUE(fsj->pswpin, fsi->pswpin, itv),
-		       S_VALUE(fsj->pswpout, fsi->pswpout, itv));
-	}
-
-	/* Print I/O stats (no distinction made between disks) */
-	if (GET_IO(act)) {
-		if (dis)
-			printf("\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n",
-			       prev_string);
-
-		printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f\n", curr_string,
-		       S_VALUE(fsj->dk_drive, fsi->dk_drive, itv),
-		       S_VALUE(fsj->dk_drive_rio, fsi->dk_drive_rio, itv),
-		       S_VALUE(fsj->dk_drive_wio, fsi->dk_drive_wio, itv),
-		       S_VALUE(fsj->dk_drive_rblk, fsi->dk_drive_rblk, itv),
-		       S_VALUE(fsj->dk_drive_wblk, fsi->dk_drive_wblk, itv));
-	}
-
-	/* Print memory stats */
-	if (GET_MEMORY(act)) {
-		if (dis)
-			printf("\n%-11s   frmpg/s   bufpg/s   campg/s\n", prev_string);
-
-		printf("%-11s %9.2f %9.2f %9.2f\n", curr_string,
-		       S_VALUE((double) KB_TO_PG(fsj->frmkb), (double) KB_TO_PG(fsi->frmkb), itv),
-		       S_VALUE((double) KB_TO_PG(fsj->bufkb), (double) KB_TO_PG(fsi->bufkb), itv),
-		       S_VALUE((double) KB_TO_PG(fsj->camkb), (double) KB_TO_PG(fsi->camkb), itv));
-	}
-
-	/* Print TTY statistics (serial lines) */
-	if (GET_SERIAL(act))
-		write_sar_serial_stats(prev, curr, dis, prev_string, curr_string,
-				       itv, want_since_boot);
-
-	if (GET_IRQ(act) && WANT_PER_PROC(flags) && file_hdr.sa_irqcpu)
-		write_sar_cpu_irq_stats(prev, curr, dis, prev_string, curr_string,
-					itv, disp_avg, want_since_boot);
-
-	/* Print network interface statistics */
-	if (GET_NET_DEV(act))
-		write_sar_net_dev_stats(prev, curr, dis, prev_string,
-					curr_string, itv);
-
-	/* Print network interface statistics (errors) */
-	if (GET_NET_EDEV(act))
-		write_sar_net_edev_stats(prev, curr, dis, prev_string,
-					 curr_string, itv);
-
-	/* Print disk statistics */
-	if (GET_DISK(act))
-		write_sar_disk_stats(prev, curr, dis, prev_string, curr_string, itv);
-
-	/* Print NFS client stats */
-	if (GET_NET_NFS(act)) {
-		if (dis)
-			printf("\n%-11s    call/s retrans/s    read/s   write/s  access/s"
-			       "  getatt/s\n",
-			       prev_string);
-
-		printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n", curr_string,
-		       S_VALUE(fsj->nfs_rpccnt, fsi->nfs_rpccnt, itv),
-		       S_VALUE(fsj->nfs_rpcretrans, fsi->nfs_rpcretrans, itv),
-		       S_VALUE(fsj->nfs_readcnt, fsi->nfs_readcnt, itv),
-		       S_VALUE(fsj->nfs_writecnt, fsi->nfs_writecnt, itv),
-		       S_VALUE(fsj->nfs_accesscnt, fsi->nfs_accesscnt, itv),
-		       S_VALUE(fsj->nfs_getattcnt, fsi->nfs_getattcnt, itv));
-	}
-
-	/* Print NFS server stats */
-	if (GET_NET_NFSD(act)) {
-		if (dis)
-			printf("\n%-11s   scall/s badcall/s  packet/s     udp/s     tcp/s     "
-			       "hit/s    miss/s   sread/s  swrite/s saccess/s sgetatt/s\n",
-			       prev_string);
-
-		printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
-		       curr_string,
-		       S_VALUE(fsj->nfsd_rpccnt, fsi->nfsd_rpccnt, itv),
-		       S_VALUE(fsj->nfsd_rpcbad, fsi->nfsd_rpcbad, itv),
-		       S_VALUE(fsj->nfsd_netcnt, fsi->nfsd_netcnt, itv),
-		       S_VALUE(fsj->nfsd_netudpcnt, fsi->nfsd_netudpcnt, itv),
-		       S_VALUE(fsj->nfsd_nettcpcnt, fsi->nfsd_nettcpcnt, itv),
-		       S_VALUE(fsj->nfsd_rchits, fsi->nfsd_rchits, itv),
-		       S_VALUE(fsj->nfsd_rcmisses, fsi->nfsd_rcmisses, itv),
-		       S_VALUE(fsj->nfsd_readcnt, fsi->nfsd_readcnt, itv),
-		       S_VALUE(fsj->nfsd_writecnt, fsi->nfsd_writecnt, itv),
-		       S_VALUE(fsj->nfsd_accesscnt, fsi->nfsd_accesscnt, itv),
-		       S_VALUE(fsj->nfsd_getattcnt, fsi->nfsd_getattcnt, itv));
-	}
-}
-
-/*
- ***************************************************************************
- * Print statistics average
+ * Print statistics average.
  *
  * IN:
  * @curr		Index in array for current sample statistics.
- * @dis			TRUE if a header line must be printed.
- * @act			Activity(ies) to display.
  * @read_from_file	Set to TRUE if stats are read from a system activity
  * 			data file.
+ * @act_id		Activity that can be displayed, or ~0 for all.
+ *			Remember that when reading stats from a file, only
+ *			one activity can be displayed at a time.
  ***************************************************************************
  */
-void write_stats_avg(int curr, int dis, unsigned int act, int read_from_file)
+void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 {
+	int i;
 	unsigned long long itv, g_itv;
-	char string[16];
-	struct file_stats
-		*fsi = &file_stats[curr];
+	static __nr_t cpu_nr = -1;
+	
+	if (cpu_nr < 0)
+		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 
 	/* Interval value in jiffies */
-	g_itv = get_interval(file_stats[2].uptime, file_stats[curr].uptime);
+	g_itv = get_interval(record_hdr[2].uptime, record_hdr[curr].uptime);
 
-	if (file_hdr.sa_proc)
-		itv = get_interval(file_stats[2].uptime0, file_stats[curr].uptime0);
+	if (cpu_nr > 1)
+		itv = get_interval(record_hdr[2].uptime0, record_hdr[curr].uptime0);
 	else
 		itv = g_itv;
 
-	strcpy(string, _("Average:"));
-	write_stats_core(2, curr, dis, string, string, act, itv, g_itv, TRUE, FALSE);
-
-	if (GET_MEM_AMT(act)) {
-		if (dis)
-			printf("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached"
-			       " kbswpfree kbswpused  %%swpused  kbswpcad\n",
-			       string);
-
-		printf("%-11s %9.0f %9.0f    %6.2f %9.0f %9.0f %9.0f %9.0f    %6.2f %9.0f\n",
-		       string,
-		       (double) asum.frmkb / asum.count,
-		       (double) fsi->tlmkb - ((double) asum.frmkb / asum.count),
-		       fsi->tlmkb ?
-		       SP_VALUE(asum.frmkb / asum.count, fsi->tlmkb, fsi->tlmkb) : 0.0,
-		       (double) asum.bufkb / asum.count,
-		       (double) asum.camkb / asum.count,
-		       (double) asum.frskb / asum.count,
-		       ((double) asum.tlskb / asum.count) - ((double) asum.frskb / asum.count),
-		       (asum.tlskb / asum.count) ?
-		       SP_VALUE(asum.frskb / asum.count,
-				asum.tlskb / asum.count, asum.tlskb / asum.count)
-		       : 0.0,
-		       (double) asum.caskb / asum.count);
+	strcpy(timestamp[curr], _("Average:"));
+	strcpy(timestamp[!curr], timestamp[curr]);
+	
+	/* Test stdout */
+	TEST_STDOUT(STDOUT_FILENO);
+	
+	for (i = 0; i < NR_ACT; i++) {
+		
+		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
+			continue;
+		
+		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
+			/* Display current average activity statistics */
+			if (NEEDS_GLOBAL_ITV(act[i]->options))
+				(*act[i]->f_print_avg)(act[i], 2, curr, g_itv);
+			else
+				(*act[i]->f_print_avg)(act[i], 2, curr, itv);
+		}
 	}
 
-	if (GET_KTABLES(act)) {
-		if (dis)
-			printf("\n%-11s dentunusd   file-nr  inode-nr    pty-nr\n",
-			       string);
-
-		printf("%-11s %9.0f %9.0f %9.0f %9.0f\n",
-		       string,
-		       (double) asum.dentry_stat / asum.count,
-		       (double) asum.file_used / asum.count,
-		       (double) asum.inode_used / asum.count,
-		       (double) asum.pty_nr / asum.count);
-	}
-
-	if (GET_NET_SOCK(act)) {
-		if (dis)
-			printf("\n%-11s    totsck    tcpsck    udpsck    rawsck"
-			       "   ip-frag    tcp-tw\n",
-			       string);
-
-		printf("%-11s %9.0f %9.0f %9.0f %9.0f %9.0f %9.0f\n", string,
-		       (double) asum.sock_inuse / asum.count,
-		       (double) asum.tcp_inuse / asum.count,
-		       (double) asum.udp_inuse / asum.count,
-		       (double) asum.raw_inuse / asum.count,
-		       (double) asum.frag_inuse / asum.count,
-		       (double) asum.tcp_tw / asum.count);
-	}
-
-	if (GET_QUEUE(act)) {
-		if (dis)
-			printf("\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n",
-			       string);
-
-		printf("%-11s %9.0f %9.0f %9.2f %9.2f %9.2f\n", string,
-		       (double) asum.nr_running / asum.count,
-		       (double) asum.nr_threads / asum.count,
-		       (double) asum.load_avg_1 / (asum.count * 100),
-		       (double) asum.load_avg_5 / (asum.count * 100),
-		       (double) asum.load_avg_15 / (asum.count * 100));
-	}
-
-	if (read_from_file)
+	if (read_from_file) {
 		/* Reset counters only if we read stats from a system activity file */
 		memset(&asum, 0, STATS_SUM_SIZE);
+	}
 }
 
 /*
  ***************************************************************************
- * Print system statistics
+ * Print system statistics.
  *
  * IN:
  * @curr		Index in array for current sample statistics.
- * @dis			TRUE if a header line must be printed.
- * @act			Activity(ies) to display.
  * @read_from_file	Set to TRUE if stats are read from a system activity
  * 			data file.
  * @use_tm_start	Set to TRUE if option -s has been used.
  * @use_tm_end		Set to TRUE if option -e has been used.
  * @reset		Set to TRUE if last_uptime variable should be
  * 			reinitialized (used in next_slice() function).
- * @want_since_boot	Set to TRUE is stats are to be displayed for the
- * 			time since system restart.
+ * @act_id		Activity that can be displayed or ~0 for all.
+ *			Remember that when reading stats from a file, only
+ *			one activity can be displayed at a time.
+ *
  * OUT:
  * @cnt			Number of remaining lines to display.
  *
@@ -1054,42 +333,45 @@ void write_stats_avg(int curr, int dis, unsigned int act, int read_from_file)
  * 1 if stats have been successfully displayed.
  ***************************************************************************
  */
-int write_stats(int curr, int dis, unsigned int act, int read_from_file,
-		long *cnt, int use_tm_start, int use_tm_end, int reset,
-		int want_since_boot)
+int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
+		int use_tm_end, int reset, unsigned int act_id)
 {
-	char cur_time[2][16];
+	int i;
 	unsigned long long itv, g_itv;
-	struct file_stats
-		*fsi = &file_stats[curr];
 	static int cross_day = 0;
+	static __nr_t cpu_nr = -1;
+
+	if (cpu_nr < 0)
+		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 
 	/* Check time (1) */
 	if (read_from_file) {
-		if (!next_slice(file_stats[2].uptime0, file_stats[curr].uptime0,
+		if (!next_slice(record_hdr[2].uptime0, record_hdr[curr].uptime0,
 				reset, interval))
 			/* Not close enough to desired interval */
 			return 0;
 	}
 
 	/* Set previous timestamp */
-	set_timestamp(!curr, cur_time[!curr], 16);
+	set_timestamp(!curr, timestamp[!curr], 16);
 	/* Set current timestamp */
-	set_timestamp(curr, cur_time[curr], 16);
+	set_timestamp(curr,  timestamp[curr],  16);
 
 	/* Check if we are beginning a new day */
-	if (use_tm_start && file_stats[!curr].ust_time &&
-	    (file_stats[curr].ust_time > file_stats[!curr].ust_time) &&
-	    (file_stats[curr].hour < file_stats[!curr].hour))
+	if (use_tm_start && record_hdr[!curr].ust_time &&
+	    (record_hdr[curr].ust_time > record_hdr[!curr].ust_time) &&
+	    (record_hdr[curr].hour < record_hdr[!curr].hour)) {
 		cross_day = 1;
+	}
 
-	if (cross_day)
+	if (cross_day) {
 		/*
 		 * This is necessary if we want to properly handle something like:
 		 * sar -s time_start -e time_end with
 		 * time_start(day D) > time_end(day D+1)
 		 */
 		rectime.tm_hour +=24;
+	}
 
 	/* Check time (2) */
 	if (use_tm_start && (datecmp(&rectime, &tm_start) < 0))
@@ -1097,8 +379,8 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
 		return 0;
 
 	/* Get interval values */
-	get_itv_value(&file_stats[curr], &file_stats[!curr],
-		      file_hdr.sa_proc, &itv, &g_itv);
+	get_itv_value(&record_hdr[curr], &record_hdr[!curr],
+		      cpu_nr, &itv, &g_itv);
 
 	/* Check time (3) */
 	if (use_tm_end && (datecmp(&rectime, &tm_end) > 0)) {
@@ -1108,106 +390,22 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
 	}
 
 	(asum.count)++;	/* Nb of lines printed */
+	
+	/* Test stdout */
+	TEST_STDOUT(STDOUT_FILENO);
 
-	write_stats_core(!curr, curr, dis, cur_time[!curr], cur_time[curr], act,
-			 itv, g_itv, FALSE, want_since_boot);
+	for (i = 0; i < NR_ACT; i++) {
 
-	/* Print amount and usage of memory */
-	if (GET_MEM_AMT(act)) {
-		if (dis)
-			printf("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached "
-			       "kbswpfree kbswpused  %%swpused  kbswpcad\n",
-			       cur_time[!curr]);
+		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
+			continue;
 
-		printf("%-11s %9lu %9lu    %6.2f %9lu %9lu %9lu %9lu    %6.2f %9lu\n",
-		       cur_time[curr],
-		       fsi->frmkb,
-		       fsi->tlmkb - fsi->frmkb,
-		       fsi->tlmkb ?
-		       SP_VALUE(fsi->frmkb, fsi->tlmkb, fsi->tlmkb) : 0.0,
-		       fsi->bufkb,
-		       fsi->camkb,
-		       fsi->frskb,
-		       fsi->tlskb - fsi->frskb,
-		       fsi->tlskb ?
-		       SP_VALUE(fsi->frskb, fsi->tlskb, fsi->tlskb) : 0.0,
-		       fsi->caskb);
-
-		/*
-		 * Will be used to compute the average.
-		 * We assume that the total amount of memory installed can not vary
-		 * during the interval given on the command line, whereas the total
-		 * amount of swap space may.
-		 */
-		asum.frmkb += fsi->frmkb;
-		asum.bufkb += fsi->bufkb;
-		asum.camkb += fsi->camkb;
-		asum.frskb += fsi->frskb;
-		asum.tlskb += fsi->tlskb;
-		asum.caskb += fsi->caskb;
-	}
-
-	/* Print values of some kernel tables */
-	if (GET_KTABLES(act)) {
-		if (dis)
-			printf("\n%-11s dentunusd   file-nr  inode-nr    pty-nr\n",
-			       cur_time[!curr]);
-
-		printf("%-11s %9u %9u %9u %9u\n",
-		       cur_time[curr],
-		       fsi->dentry_stat,
-		       fsi->file_used,
-		       fsi->inode_used,
-		       fsi->pty_nr);
-
-		/*
-		 * Will be used to compute the average.
-		 * Note: overflow unlikely to happen but not impossible...
-		 * We assume that *_max values can not vary during the interval.
-		 */
-		asum.dentry_stat += fsi->dentry_stat;
-		asum.file_used += fsi->file_used;
-		asum.inode_used += fsi->inode_used;
-		asum.pty_nr += fsi->pty_nr;
-	}
-
-	/* Print number of sockets in use */
-	if (GET_NET_SOCK(act)) {
-		if (dis)
-			printf("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag    tcp-tw\n",
-			       cur_time[!curr]);
-
-		printf("%-11s %9u %9u %9u %9u %9u %9u\n", cur_time[curr],
-		       fsi->sock_inuse, fsi->tcp_inuse, fsi->udp_inuse,
-		       fsi->raw_inuse, fsi->frag_inuse, fsi->tcp_tw);
-
-		/* Will be used to compute the average */
-		asum.sock_inuse += fsi->sock_inuse;
-		asum.tcp_inuse += fsi->tcp_inuse;
-		asum.udp_inuse += fsi->udp_inuse;
-		asum.raw_inuse += fsi->raw_inuse;
-		asum.frag_inuse += fsi->frag_inuse;
-		asum.tcp_tw += fsi->tcp_tw;
-	}
-
-	/* Print load averages and queue length */
-	if (GET_QUEUE(act)) {
-		if (dis)
-			printf("\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15\n",
-			       cur_time[!curr]);
-
-		printf("%-11s %9lu %9u %9.2f %9.2f %9.2f\n", cur_time[curr],
-		       fsi->nr_running, fsi->nr_threads,
-		       (double) fsi->load_avg_1 / 100,
-		       (double) fsi->load_avg_5 / 100,
-		       (double) fsi->load_avg_15 / 100);
-
-		/* Will be used to compute the average */
-		asum.nr_running += fsi->nr_running;
-		asum.nr_threads += fsi->nr_threads;
-		asum.load_avg_1 += fsi->load_avg_1;
-		asum.load_avg_5 += fsi->load_avg_5;
-		asum.load_avg_15 += fsi->load_avg_15;
+		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
+			/* Display current activity statistics */
+			if (NEEDS_GLOBAL_ITV(act[i]->options))
+				(*act[i]->f_print)(act[i], !curr, curr, g_itv);
+			else
+				(*act[i]->f_print)(act[i], !curr, curr, itv);
+		}
 	}
 
 	return 1;
@@ -1215,7 +413,7 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
 
 /*
  ***************************************************************************
- * Display stats since system startup
+ * Display stats since system startup.
  *
  * IN:
  * @curr	Index in array for current sample statistics.
@@ -1223,35 +421,32 @@ int write_stats(int curr, int dis, unsigned int act, int read_from_file,
  */
 void write_stats_startup(int curr)
 {
-	/* Set to 0 previous structures corresponding to boot time */
-	memset(&file_stats[!curr], 0, FILE_STATS_SIZE);
-	file_stats[!curr].record_type = R_STATS;
-	file_stats[!curr].hour        = file_stats[curr].hour;
-	file_stats[!curr].minute      = file_stats[curr].minute;
-	file_stats[!curr].second      = file_stats[curr].second;
-	file_stats[!curr].ust_time    = file_stats[curr].ust_time;
-	if (file_hdr.sa_proc)
-		memset(st_cpu[!curr], 0, STATS_ONE_CPU_SIZE * file_hdr.sa_proc);
-	memset(interrupts[!curr], 0, STATS_ONE_IRQ_SIZE);
-	if (file_hdr.sa_serial)
-		memset(st_serial[!curr], 0, STATS_SERIAL_SIZE * file_hdr.sa_serial);
-	if (file_hdr.sa_irqcpu)
-		memset(st_irq_cpu[!curr], 0,
-		       STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu);
-	if (file_hdr.sa_iface)
-		memset(st_net_dev[!curr], 0, STATS_NET_DEV_SIZE * file_hdr.sa_iface);
-	if (file_hdr.sa_nr_disk)
-		memset(st_disk[!curr], 0, DISK_STATS_SIZE * file_hdr.sa_nr_disk);
+	int i;
 
-	/* Display stats since boot time */
-	write_stats(curr, DISP_HDR, sar_actflag, USE_SADC, &count,
-		    NO_TM_START, NO_TM_END, NO_RESET, ST_SINCE_BOOT);
+	/* Set to 0 previous structures corresponding to boot time */
+	memset(&record_hdr[!curr], 0, RECORD_HEADER_SIZE);
+	record_hdr[!curr].record_type = R_STATS;
+	record_hdr[!curr].hour        = record_hdr[curr].hour;
+	record_hdr[!curr].minute      = record_hdr[curr].minute;
+	record_hdr[!curr].second      = record_hdr[curr].second;
+	record_hdr[!curr].ust_time    = record_hdr[curr].ust_time;
+
+	for (i = 0; i < NR_ACT; i++) {
+		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0))
+			memset(act[i]->buf[!curr], 0, act[i]->msize * act[i]->nr);
+	}
+	
+	flags |= S_F_SINCE_BOOT;
+	dis = TRUE;
+	
+	write_stats(curr, USE_SADC, &count, NO_TM_START, NO_TM_END, NO_RESET, ALL_ACTIVITIES);
+	
 	exit(0);
 }
 
 /*
  ***************************************************************************
- * Read data sent by the data collector
+ * Read data sent by the data collector.
  *
  * IN:
  * @size	Number of bytes of data to read.
@@ -1294,32 +489,42 @@ int sa_read(void *buffer, int size)
  * @use_tm_start	Set to TRUE if option -s has been used.
  * @use_tm_end		Set to TRUE if option -e has been used.
  * @rtype		Record type to display.
+ * @ifd			Input file descriptor.
  *
  * RETURNS:
  * 1 if the record has been successfully displayed.
  ***************************************************************************
  */
-int write_special(int curr, int use_tm_start, int use_tm_end, int rtype)
+int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, int ifd)
 {
 	char cur_time[26];
+	int dp = 1;
 
 	set_timestamp(curr, cur_time, 26);
 
-   /* The record must be in the interval specified by -s/-e options */
+	/* The record must be in the interval specified by -s/-e options */
 	if ((use_tm_start && (datecmp(&rectime, &tm_start) < 0)) ||
-	    (use_tm_end && (datecmp(&rectime, &tm_end) > 0)))
-		return 0;
+	    (use_tm_end && (datecmp(&rectime, &tm_end) > 0))) {
+		dp = 0;
+	}
 
 	if (rtype == R_RESTART) {
-		printf("\n%-11s       LINUX RESTART\n", cur_time);
-		return 1;
+		if (dp) {
+			printf("\n%-11s       LINUX RESTART\n", cur_time);
+			return 1;
+		}
 	}
-	else if ((rtype == R_COMMENT) && DISPLAY_COMMENT(flags)) {
-		struct file_comment *file_comment;
+	else if (rtype == R_COMMENT) {
+		char file_comment[MAX_COMMENT_LEN];
 
-		file_comment = (struct file_comment *) &(file_stats[curr]);
-		printf("%-11s  COM %s\n", cur_time, file_comment->comment);
-		return 1;
+		/* Don't forget to read comment record even if it won't be displayed... */
+		sa_fread(ifd, file_comment, MAX_COMMENT_LEN, HARD_SIZE);
+		file_comment[MAX_COMMENT_LEN - 1] = '\0';
+
+		if (dp && DISPLAY_COMMENT(flags)) {
+			printf("%-11s  COM %s\n", cur_time, file_comment);
+			return 1;
+		}
 	}
 
 	return 0;
@@ -1327,97 +532,33 @@ int write_special(int curr, int use_tm_start, int use_tm_end, int rtype)
 
 /*
  ***************************************************************************
- * Move structures data
- *
- * IN:
- * @dest	Index in array where stats have to be copied to.
- * @src		Index in array where stats to copy are.
- ***************************************************************************
- */
-void copy_structures(int dest, int src)
-{
-	memcpy(&file_stats[dest], &file_stats[src], FILE_STATS_SIZE);
-	if (file_hdr.sa_proc)
-		memcpy(st_cpu[dest], st_cpu[src],
-		       STATS_ONE_CPU_SIZE * file_hdr.sa_proc);
-	if (GET_ONE_IRQ(file_hdr.sa_actflag))
-		memcpy(interrupts[dest], interrupts[src],
-		       STATS_ONE_IRQ_SIZE);
-	if (file_hdr.sa_serial)
-		memcpy(st_serial[dest], st_serial[src],
-		       STATS_SERIAL_SIZE * file_hdr.sa_serial);
-	if (file_hdr.sa_irqcpu)
-		memcpy(st_irq_cpu[dest], st_irq_cpu[src],
-		       STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu);
-	if (file_hdr.sa_iface)
-		memcpy(st_net_dev[dest], st_net_dev[src],
-		       STATS_NET_DEV_SIZE * file_hdr.sa_iface);
-	if (file_hdr.sa_nr_disk)
-		memcpy(st_disk[dest], st_disk[src],
-		       DISK_STATS_SIZE * file_hdr.sa_nr_disk);
-}
-
-/*
- ***************************************************************************
- * Read varying part of the statistics from a daily data file
- *
- * IN:
- * @curr	Index in array for current sample statistics.
- * @ifd		Input file descriptor.
- ***************************************************************************
- */
-void read_extra_stats(int curr, int ifd)
-{
-	if (file_hdr.sa_proc)
-		sa_fread(ifd, st_cpu[curr],
-			 STATS_ONE_CPU_SIZE * file_hdr.sa_proc, HARD_SIZE);
-	if (GET_ONE_IRQ(file_hdr.sa_actflag))
-		sa_fread(ifd, interrupts[curr],
-			 STATS_ONE_IRQ_SIZE, HARD_SIZE);
-	if (file_hdr.sa_serial)
-		sa_fread(ifd, st_serial[curr],
-			 STATS_SERIAL_SIZE * file_hdr.sa_serial, HARD_SIZE);
-	if (file_hdr.sa_irqcpu)
-		sa_fread(ifd, st_irq_cpu[curr],
-			 STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu, HARD_SIZE);
-	if (file_hdr.sa_iface)
-		sa_fread(ifd, st_net_dev[curr],
-			 STATS_NET_DEV_SIZE * file_hdr.sa_iface, HARD_SIZE);
-	if (file_hdr.sa_nr_disk)
-		sa_fread(ifd, st_disk[curr],
-			 DISK_STATS_SIZE * file_hdr.sa_nr_disk, HARD_SIZE);
-}
-
-/*
- ***************************************************************************
- * Read a bunch of statistics sent by the data collector (sadc)
+ * Read the various statistics sent by the data collector (sadc).
  *
  * IN:
  * @curr	Index in array for current sample statistics.
  ***************************************************************************
  */
-void read_stat_bunch(int curr)
+void read_sadc_stat_bunch(int curr)
 {
-	if (sa_read(&file_stats[curr], file_hdr.sa_st_size))
-		exit(0);
-	if ((file_hdr.sa_proc) &&
-	    sa_read(st_cpu[curr], STATS_ONE_CPU_SIZE * file_hdr.sa_proc))
-		exit(0);
-	if (GET_ONE_IRQ(file_hdr.sa_actflag) &&
-	    sa_read(interrupts[curr], STATS_ONE_IRQ_SIZE))
-		exit(0);
-	if (file_hdr.sa_serial &&
-	    sa_read(st_serial[curr], STATS_SERIAL_SIZE * file_hdr.sa_serial))
-		exit(0);
-	if (file_hdr.sa_irqcpu &&
-	    sa_read(st_irq_cpu[curr], STATS_IRQ_CPU_SIZE * file_hdr.sa_proc * file_hdr.sa_irqcpu))
-		exit(0);
-	if (file_hdr.sa_iface &&
-	    sa_read(st_net_dev[curr], STATS_NET_DEV_SIZE * file_hdr.sa_iface))
-		exit(0);
-	if (file_hdr.sa_nr_disk &&
-	    sa_read(st_disk[curr], DISK_STATS_SIZE * file_hdr.sa_nr_disk))
-		exit(0);
+	int i, p;
+	
+	/* Read record header (type is always R_STATS since it is read from sadc) */
+	if (sa_read(&record_hdr[curr], RECORD_HEADER_SIZE)) {
+		print_read_error();
+	}
+	
+	for (i = 0; i < NR_ACT; i++) {
+		
+		if (!id_seq[i])
+			continue;
+		if ((p = get_activity_position(act, id_seq[i])) < 0) {
+			PANIC(1);
+		}
+		
+		if (sa_read(act[p]->buf[curr], act[p]->fsize * act[p]->nr)) {
+			print_read_error();
+		}
+	}
 }
 
 /*
@@ -1429,9 +570,8 @@ void read_stat_bunch(int curr)
  * @fpos	Position in file where reading must start.
  * @curr	Index in array for current sample statistics.
  * @rows	Number of rows of screen.
- * @act		Activity to display.
- * @nr_cpu	Number of CPU lines to display.
- * @nr_irq	Number of interrupts to display.
+ * @act_id	Activity to display.
+ * @file_actlst	List of activities in file.
  *
  * OUT:
  * @curr	Index in array for next sample statistics.
@@ -1442,12 +582,13 @@ void read_stat_bunch(int curr)
  ***************************************************************************
  */
 void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
-			   int rows, unsigned int act, int *reset, int nr_cpu, int nr_irq)
+			   int rows, unsigned int act_id, int *reset,
+			   struct file_activity *file_actlst)
 {
-	int dis = 1;
+	int p;
 	unsigned long lines = 0;
 	unsigned char rtype;
-	int davg = 0, next, inc = 1;
+	int davg = 0, next, inc = -2;
 
 	if (lseek(ifd, fpos, SEEK_SET) < fpos) {
 		perror("lseek");
@@ -1458,33 +599,34 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 	 * Restore the first stats collected.
 	 * Used to compute the rate displayed on the first line.
 	 */
-	copy_structures(!(*curr), 2);
+	copy_structures(act, id_seq, record_hdr, !(*curr), 2);
 
 	*cnt  = count;
 
-	if (GET_NET_DEV(act) || GET_NET_EDEV(act))
-		inc = file_hdr.sa_iface;
-	else if (GET_DISK(act))
-		inc = file_hdr.sa_nr_disk;
-	else if (GET_CPU(act) && WANT_PER_PROC(flags)) {
-		inc = nr_cpu;
-		if (WANT_ALL_PROC(flags))
-			inc++;	/* Nb of proc + "all" */
+	/* Assess number of lines printed */
+	if ((p = get_activity_position(act, act_id)) >= 0) {
+		if (act[p]->bitmap_size) {
+			inc = count_bits(act[p]->bitmap, BITMAP_SIZE(act[p]->bitmap_size));
+		}
+		else {
+			inc = act[p]->nr;
+		}
 	}
-	else if (GET_IRQ(act) && WANT_PER_PROC(flags))
-		inc = nr_cpu;
-	else if (GET_ONE_IRQ(act))
-		inc = nr_irq;
+	if (inc < 0) {
+		/* Should never happen */
+		PANIC(inc);
+	}
 
 	do {
 		/* Display count lines of stats */
-		*eosaf = sa_fread(ifd, &file_stats[*curr],
-				  file_hdr.sa_st_size, SOFT_SIZE);
-		rtype = file_stats[*curr].record_type;
+		*eosaf = sa_fread(ifd, &record_hdr[*curr],
+				  RECORD_HEADER_SIZE, SOFT_SIZE);
+		rtype = record_hdr[*curr].record_type;
 
-		if (!(*eosaf) && (rtype != R_RESTART) && (rtype != R_COMMENT))
+		if (!(*eosaf) && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
 			/* Read the extra fields since it's not a special record */
-			read_extra_stats(*curr, ifd);
+			read_file_stat_bunch(act, *curr, ifd, file_hdr.sa_nr_act, file_actlst);
+		}
 
 		if ((lines >= rows) || !lines) {
 			lines = 0;
@@ -1497,18 +639,21 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 
 			if (rtype == R_COMMENT) {
 				/* Display comment */
-				next = write_special(*curr, tm_start.use, tm_end.use, R_COMMENT);
-				if (next)
+				next = sar_print_special(*curr, tm_start.use, tm_end.use,
+						     R_COMMENT, ifd);
+				if (next) {
 					/* A line of comment was actually displayed */
 					lines++;
+				}
 				continue;
 			}
 
 			/* next is set to 1 when we were close enough to desired interval */
-			next = write_stats(*curr, dis, act, USE_SA_FILE, cnt,
-					   tm_start.use, tm_end.use, *reset, ST_IMMEDIATE);
-			if (next && ((*cnt) > 0))
+			next = write_stats(*curr, USE_SA_FILE, cnt, tm_start.use, tm_end.use,
+					   *reset, act_id);
+			if (next && ((*cnt) > 0)) {
 				(*cnt)--;
+			}
 			if (next) {
 				davg++;
 				*curr ^=1;
@@ -1519,27 +664,40 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 	}
 	while ((*cnt) && !(*eosaf) && (rtype != R_RESTART));
 
-	if (davg)
-		write_stats_avg(!(*curr), dis, act, USE_SA_FILE);
+	if (davg) {
+		write_stats_avg(!(*curr), USE_SA_FILE, act_id);
+	}
 
 	*reset = TRUE;
 }
 
 /*
  ***************************************************************************
- * Read header data sent by sadc
+ * Read header data sent by sadc.
  ***************************************************************************
  */
 void read_header_data(void)
 {
 	struct file_magic file_magic;
-	int rc;
+	struct file_activity file_act;
+	int rc, i, p;
+	char version[16];
 
-	/* Read stats header */
+	/* Read magic header */
 	rc = sa_read(&file_magic, FILE_MAGIC_SIZE);
 
+	sprintf(version, "%d.%d.%d.%d",
+		file_magic.sysstat_version,
+		file_magic.sysstat_patchlevel,
+		file_magic.sysstat_sublevel,
+		file_magic.sysstat_extraversion);
+	if (!file_magic.sysstat_extraversion) {
+		version[strlen(version) - 2] = '\0';
+	}
+
 	if (rc || (file_magic.sysstat_magic != SYSSTAT_MAGIC) ||
-	    (file_magic.format_magic != FORMAT_MAGIC)) {
+	    (file_magic.format_magic != FORMAT_MAGIC) ||
+	    strcmp(version, VERSION)) {
 
 		/* sar and sadc commands are not consistent */
 		fprintf(stderr, _("Invalid data format\n"));
@@ -1551,13 +709,40 @@ void read_header_data(void)
 		exit(3);
 	}
 
-	if (sa_read(&file_hdr, FILE_HDR_SIZE))
-		exit(0);
+	/* Read header data */
+	if (sa_read(&file_hdr, FILE_HEADER_SIZE)) {
+		print_read_error();
+	}
+	
+	/* Read activity list */
+	for (i = 0; i < file_hdr.sa_nr_act; i++) {
+		
+		if (sa_read(&file_act, FILE_ACTIVITY_SIZE)) {
+			print_read_error();
+		}
+
+		p = get_activity_position(act, file_act.id);
+
+		if ((p < 0) || (act[p]->fsize != file_act.size) || !file_act.nr) {
+			fprintf(stderr, _("Inconsistent input data\n"));
+			exit(3);
+		}
+
+		id_seq[i]  = file_act.id;	/* We necessarily have "i < NR_ACT" */
+		act[p]->nr = file_act.nr;
+	}
+
+	while (i < NR_ACT) {
+		id_seq[i++] = 0;
+	}
+	
+	/* Check that all selected activties are actually sent by sadc */
+	reverse_check_act(file_hdr.sa_nr_act);
 }
 
 /*
  ***************************************************************************
- * Read statistics from a system activity data file
+ * Read statistics from a system activity data file.
  *
  * IN:
  * @from_file	Input file name.
@@ -1566,9 +751,9 @@ void read_header_data(void)
 void read_stats_from_file(char from_file[])
 {
 	struct file_magic file_magic;
-	int curr = 1;
-	unsigned int act;
-	int ifd, nr_cpu, nr_irq, rtype;
+	struct file_activity *file_actlst = NULL;
+	int curr = 1, i, p;
+	int ifd, rtype;
 	int rows, eosaf = TRUE, reset = FALSE;
 	long cnt = 1;
 	off_t fpos;
@@ -1576,44 +761,40 @@ void read_stats_from_file(char from_file[])
 	/* Get window size */
 	rows = get_win_height();
 
-	/* Prepare file for reading */
-	prep_file_for_reading(&ifd, from_file, &file_magic, &file_hdr,
-			      &sar_actflag, flags, FALSE);
-
-	nr_irq = count_bits(irq_bitmap, sizeof(irq_bitmap));
-	if (WANT_ALL_PROC(flags))
-		nr_cpu = file_hdr.sa_proc;
-	else
-		nr_cpu = count_bits(cpu_bitmap, sizeof(cpu_bitmap));
+	/* Read file headers and activity list */
+	check_file_actlst(&ifd, from_file, act, &file_magic, &file_hdr,
+			  &file_actlst, id_seq, FALSE);
 
 	/* Perform required allocations */
-	allocate_structures();
+	allocate_structures(act);
 
 	/* Print report header */
-	print_report_hdr(flags, &rectime, &file_hdr);
+	print_report_hdr(flags, &rectime, &file_hdr,
+			 act[get_activity_position(act, A_CPU)]->nr);
 
 	/* Read system statistics from file */
 	do {
 		/*
 		 * If this record is a special (RESTART or COMMENT) one, print it and
 		 * (try to) get another one.
-		 * We must be sure that we have real stats in file_stats[2].
 		 */
 		do {
-			if (sa_fread(ifd, &file_stats[0], file_hdr.sa_st_size, SOFT_SIZE))
+			if (sa_fread(ifd, &record_hdr[0], RECORD_HEADER_SIZE, SOFT_SIZE))
 				/* End of sa data file */
 				return;
 
-			rtype = file_stats[0].record_type;
-			if ((rtype == R_RESTART) || (rtype == R_COMMENT))
-				write_special(0, tm_start.use, tm_end.use, rtype);
+			rtype = record_hdr[0].record_type;
+			if ((rtype == R_RESTART) || (rtype == R_COMMENT)) {
+				sar_print_special(0, tm_start.use, tm_end.use, rtype, ifd);
+			}
 			else {
 				/*
-				 * Ok: previous record was not a special one.
+				 * OK: Previous record was not a special one.
 				 * So read now the extra fields.
 				 */
-				read_extra_stats(0, ifd);
-				set_rectime(0);
+				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
+						     file_actlst);
+				sar_set_rectime(0);
 			}
 		}
 		while ((rtype == R_RESTART) || (rtype == R_COMMENT) ||
@@ -1621,7 +802,7 @@ void read_stats_from_file(char from_file[])
 		       (tm_end.use && (datecmp(&rectime, &tm_end) >=0)));
 
 		/* Save the first stats collected. Will be used to compute the average */
-		copy_structures(2, 0);
+		copy_structures(act, id_seq, record_hdr, 2, 0);
 
 		reset = TRUE;	/* Set flag to reset last_uptime variable */
 
@@ -1632,47 +813,58 @@ void read_stats_from_file(char from_file[])
 		}
 
 		/* Read and write stats located between two possible Linux restarts */
-
-		/* For each requested activity... */
-		for (act = 1; act <= A_LAST; act <<= 1) {
-
-			if (sar_actflag & act) {
-				if ((act == A_IRQ) &&
-				    WANT_PER_PROC(flags) && WANT_ALL_PROC(flags)) {
-					/*
-					 * Distinguish -I SUM activity from
-					 * interrupts per processor activity
-					 */
-					flags &= ~S_F_PER_PROC;
-					handle_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
-							      rows, act, &reset, nr_cpu, nr_irq);
-					flags |= S_F_PER_PROC;
-					flags &= ~S_F_ALL_PROC;
-					handle_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
-							      rows, act, &reset, nr_cpu, nr_irq);
-					flags |= S_F_ALL_PROC;
+		for (i = 0; i < NR_ACT; i++) {
+			
+			if (!id_seq[i])
+				continue;
+			
+			if ((p = get_activity_position(act, id_seq[i])) < 0) {
+				/* Should never happen */
+				PANIC(1);
+			}
+			if (!IS_SELECTED(act[p]->options))
+				continue;
+			
+			if (!HAS_MULTIPLE_OUTPUTS(act[p]->options)) {
+				handle_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows,
+						      act[p]->id, &reset, file_actlst);
+			}
+			else {
+				unsigned int optf, msk;
+				
+				optf = act[p]->opt_flags;
+				
+				for (msk = 1; msk < 0x10; msk <<= 1) {
+					if (act[p]->opt_flags & msk) {
+						act[p]->opt_flags &= msk;
+						
+						handle_curr_act_stats(ifd, fpos, &curr, &cnt,
+								      &eosaf, rows, act[p]->id,
+								      &reset, file_actlst);
+						act[p]->opt_flags = optf;
+					}
 				}
-				else
-					handle_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
-							      rows, act, &reset, nr_cpu, nr_irq);
 			}
 		}
 
 		if (!cnt) {
 			/* Go to next Linux restart, if possible */
 			do {
-				eosaf = sa_fread(ifd, &file_stats[curr],
-						 file_hdr.sa_st_size, SOFT_SIZE);
-				rtype = file_stats[curr].record_type;
-				if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT))
-					read_extra_stats(curr, ifd);
+				eosaf = sa_fread(ifd, &record_hdr[curr], RECORD_HEADER_SIZE,
+						 SOFT_SIZE);
+				rtype = record_hdr[curr].record_type;
+				if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
+					read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
+							     file_actlst);
+				}
 			}
 			while (!eosaf && (rtype != R_RESTART));
 		}
 
 		/* The last record we read was a RESTART one: Print it */
-		if (!eosaf && (file_stats[curr].record_type == R_RESTART))
-			write_special(curr, tm_start.use, tm_end.use, R_RESTART);
+		if (!eosaf && (record_hdr[curr].record_type == R_RESTART)) {
+			sar_print_special(curr, tm_start.use, tm_end.use, R_RESTART, ifd);
+		}
 	}
 	while (!eosaf);
 
@@ -1686,7 +878,7 @@ void read_stats_from_file(char from_file[])
  */
 void read_stats(void)
 {
-	int curr = 1, dis = 1;
+	int curr = 1;
 	unsigned long lines;
 	unsigned int rows = 23;
 	int dis_hdr = 0;
@@ -1697,95 +889,74 @@ void read_stats(void)
 	/* Read stats header */
 	read_header_data();
 
-	/* Force '-P ALL' flag if -A option is used on SMP machines */
-	if (USE_A_OPTION(flags) && file_hdr.sa_proc) {
-		init_bitmap(cpu_bitmap, ~0, NR_CPUS);
-		flags |= S_F_ALL_PROC + S_F_PER_PROC;
-	}
-
-	/*
-	 * Check that data corresponding to requested activities
-	 * are sent by the data collector.
-	 */
-	if (GET_SERIAL(sar_actflag) && !file_hdr.sa_serial)
-		sar_actflag &= ~A_SERIAL;
-
-	if ((GET_NET_DEV(sar_actflag) || GET_NET_EDEV(sar_actflag)) && !file_hdr.sa_iface)
-		sar_actflag &= ~(A_NET_DEV + A_NET_EDEV);
-
-	if (GET_DISK(sar_actflag) && !file_hdr.sa_nr_disk) {
-		sar_actflag &= ~A_DISK;
-	}
-	if (!sar_actflag) {
+	if (!get_activity_nr(act, AO_SELECTED, COUNT_ACTIVITIES)) {
 		fprintf(stderr, _("Requested activities not available\n"));
 		exit(1);
 	}
 
 	/* Determine if a stat line header has to be displayed */
-	check_line_hdr(&dis_hdr);
+	dis_hdr = check_line_hdr();
 
 	lines = rows = get_win_height();
 
-	/* Check use of -P option */
-	prep_smp_option(file_hdr.sa_proc);
-
-	/*
-	 * No need to force sar_actflag to file_hdr.sa_actflag
-	 * since we are not reading stats from a file.
-	 */
-
 	/* Perform required allocations */
-	allocate_structures();
+	allocate_structures(act);
 
 	/* Print report header */
-	print_report_hdr(flags, &rectime, &file_hdr);
+	print_report_hdr(flags, &rectime, &file_hdr,
+			 act[get_activity_position(act, A_CPU)]->nr);
 
 	/* Read system statistics sent by the data collector */
-	read_stat_bunch(0);
+	read_sadc_stat_bunch(0);
 
-	if (!interval)
+	if (!interval) {
 		/* Display stats since boot time and exit */
 		write_stats_startup(0);
+	}
 
 	/* Save the first stats collected. Will be used to compute the average */
-	copy_structures(2, 0);
+	copy_structures(act, id_seq, record_hdr, 2, 0);
 
 	/* Main loop */
 	do {
 
 		/* Get stats */
-		read_stat_bunch(curr);
+		read_sadc_stat_bunch(curr);
 
 		/* Print results */
 		if (!dis_hdr) {
 			dis = lines / rows;
-			if (dis)
+			if (dis) {
 				lines %= rows;
+			}
 			lines++;
 		}
-		write_stats(curr, dis, sar_actflag, USE_SADC, &count, NO_TM_START,
-			    tm_end.use, NO_RESET, ST_IMMEDIATE);
+		write_stats(curr, USE_SADC, &count, NO_TM_START, tm_end.use,
+			    NO_RESET, ALL_ACTIVITIES);
 
-		if (file_stats[curr].record_type == R_LAST_STATS) {
+		if (record_hdr[curr].record_type == R_LAST_STATS) {
 			/* File rotation is happening: re-read header data sent by sadc */
 			read_header_data();
-			allocate_structures();
+			allocate_structures(act);
 		}
 
-		if (count > 0)
+		if (count > 0) {
 			count--;
-		if (count)
+		}
+		if (count) {
 			curr ^= 1;
+		}
 	}
 	while (count);
 
 	/* Print statistics average */
-	write_stats_avg(curr, dis_hdr, sar_actflag, USE_SADC);
+	dis = dis_hdr;
+	write_stats_avg(curr, USE_SADC, ALL_ACTIVITIES);
 }
 
 /*
  ***************************************************************************
- * Main entry to the sar program
+ * Main entry to the sar program.
  ***************************************************************************
  */
 int main(int argc, char **argv)
@@ -1809,9 +980,11 @@ int main(int argc, char **argv)
 #endif
 
 	tm_start.use = tm_end.use = FALSE;
-	init_bitmap(irq_bitmap, 0, NR_IRQS);
-	init_bitmap(cpu_bitmap, 0, NR_CPUS);
-	init_all_stats();
+	
+	/* Allocate and init activity bitmaps */
+	allocate_bitmaps(act);
+
+	init_structures();
 
 	/* Process options */
 	while (opt < argc) {
@@ -1819,17 +992,20 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[opt], "-I")) {
 			if (argv[++opt]) {
 				/* Parse -I option */
-				if (parse_sar_I_opt(argv, &opt, &sar_actflag, irq_bitmap))
+				if (parse_sar_I_opt(argv, &opt, act)) {
 					usage(argv[0]);
+				}
 			}
-			else
+			else {
 				usage(argv[0]);
+			}
 		}
 
 		else if (!strcmp(argv[opt], "-P")) {
 			/* Parse -P option */
-			if (parse_sa_P_opt(argv, &opt, &flags, cpu_bitmap))
+			if (parse_sa_P_opt(argv, &opt, &flags, act)) {
 				usage(argv[0]);
+			}
 		}
 
 		else if (!strcmp(argv[opt], "-o")) {
@@ -1839,8 +1015,9 @@ int main(int argc, char **argv)
 				strncpy(to_file, argv[opt++], MAX_FILE_LEN);
 				to_file[MAX_FILE_LEN - 1] = '\0';
 			}
-			else
+			else {
 				strcpy(to_file, "-");
+			}
 		}
 
 		else if (!strcmp(argv[opt], "-f")) {
@@ -1850,84 +1027,96 @@ int main(int argc, char **argv)
 				strncpy(from_file, argv[opt++], MAX_FILE_LEN);
 				from_file[MAX_FILE_LEN - 1] = '\0';
 			}
-			else
+			else {
 				set_default_file(&rectime, from_file);
+			}
 		}
 
 		else if (!strcmp(argv[opt], "-s")) {
 			/* Get time start */
-			if (parse_timestamp(argv, &opt, &tm_start, DEF_TMSTART))
+			if (parse_timestamp(argv, &opt, &tm_start, DEF_TMSTART)) {
 				usage(argv[0]);
+			}
 		}
 
 		else if (!strcmp(argv[opt], "-e")) {
 			/* Get time end */
-			if (parse_timestamp(argv, &opt, &tm_end, DEF_TMEND))
+			if (parse_timestamp(argv, &opt, &tm_end, DEF_TMEND)) {
 				usage(argv[0]);
+			}
 		}
 
 		else if (!strcmp(argv[opt], "-i")) {
-			if (!argv[++opt] || (strspn(argv[opt], DIGITS) != strlen(argv[opt])))
+			if (!argv[++opt] || (strspn(argv[opt], DIGITS) != strlen(argv[opt]))) {
 				usage(argv[0]);
+			}
 			interval = atol(argv[opt++]);
-			if (interval < 1)
+			if (interval < 1) {
 				usage(argv[0]);
-			flags |= S_F_I_OPTION;
+			}
+			flags |= S_F_INTERVAL_SET;
 		}
 
 		else if (!strcmp(argv[opt], "-n")) {
 			if (argv[++opt]) {
 				/* Parse option -n */
-				if (parse_sar_n_opt(argv, &opt, &sar_actflag))
+				if (parse_sar_n_opt(argv, &opt, act)) {
 					usage(argv[0]);
+				}
 			}
-			else
+			else {
 				usage(argv[0]);
+			}
 		}
 
 		else if (!strncmp(argv[opt], "-", 1)) {
 			/* Other options not previously tested */
-			if (parse_sar_opt(argv, opt, &sar_actflag, &flags, C_SAR,
-					  irq_bitmap, cpu_bitmap))
+			if (parse_sar_opt(argv, &opt, act, &flags, C_SAR)) {
 				usage(argv[0]);
+			}
 			opt++;
 		}
 
 		else if (interval < 0) {
 			/* Get interval */
-			if (strspn(argv[opt], DIGITS) != strlen(argv[opt]))
+			if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
 				usage(argv[0]);
+			}
 			interval = atol(argv[opt++]);
-			if (interval < 0)
+			if (interval < 0) {
 				usage(argv[0]);
+			}
 		}
 
 		else {
 			/* Get count value */
 			if ((strspn(argv[opt], DIGITS) != strlen(argv[opt])) ||
-			    !interval)
+			    !interval) {
 				usage(argv[0]);
-			if (count)
+			}
+			if (count) {
 				/* Count parameter already set */
 				usage(argv[0]);
+			}
 			count = atol(argv[opt++]);
-			if (count < 0)
+			if (count < 1) {
 				usage(argv[0]);
-			else if (!count)
-				count = -1;	/* To generate a report continuously */
+			}
 		}
 	}
 
 	/* 'sar' is equivalent to 'sar -f' */
 	if ((argc == 1) ||
-	    ((interval < 0) && !from_file[0] && !to_file[0]))
+	    ((interval < 0) && !from_file[0] && !to_file[0])) {
 		set_default_file(&rectime, from_file);
+	}
 
-	if (tm_start.use && tm_end.use && (tm_end.tm_hour < tm_start.tm_hour))
+	if (tm_start.use && tm_end.use && (tm_end.tm_hour < tm_start.tm_hour)) {
 		tm_end.tm_hour += 24;
+	}
 
 	/*
-	 * Check option dependencies
+	 * Check option dependencies.
 	 */
 	/* You read from a file OR you write to it... */
 	if (from_file[0] && to_file[0]) {
@@ -1935,37 +1124,32 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	/* Use time start or option -i only when reading stats from a file */
-	if ((tm_start.use || USE_I_OPTION(flags)) && !from_file[0]) {
+	if ((tm_start.use || INTERVAL_SET(flags)) && !from_file[0]) {
 		fprintf(stderr,
 			_("Not reading from a system activity file (use -f option)\n"));
 		exit(1);
 	}
 	/* Don't print stats since boot time if -o or -f options are used */
-	if (!interval && (from_file[0] || to_file[0]))
+	if (!interval && (from_file[0] || to_file[0])) {
 		usage(argv[0]);
+	}
 
 	if (!count) {
-		/* count parameter not set */
-		if (from_file[0])
-			/* Display all the contents of the daily data file */
-			count = -1;
-		else
-			/* Default value for the count parameter is 1 */
-			count = 1;
+		/*
+		 * count parameter not set: Display all the contents of the file
+		 * or generate a report continuously.
+		 */
+		count = -1;
 	}
 
 	/* Default is CPU activity... */
-	if (!sar_actflag)
-		/*
-		 * Still OK even when reading stats from a file
-		 * since A_CPU activity is always recorded.
-		 */
-		sar_actflag |= A_CPU;
-
-	/* ---Reading stats from file */
+	select_default_activity(act);
+	
+	/* Reading stats from file: */
 	if (from_file[0]) {
-		if (interval < 0)
+		if (interval < 0) {
 			interval = 1;
+		}
 
 		/* Read stats from file */
 		read_stats_from_file(from_file);
@@ -1973,7 +1157,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	/* ---Reading stats from sadc */
+	/* Reading stats from sadc: */
 
 	/* Create anonymous pipe */
 	if (pipe(fd) == -1) {
@@ -1996,18 +1180,21 @@ int main(int argc, char **argv)
 		CLOSE_ALL(fd);
 
 		/*
-		 * Prepare options for sadc
+		 * Prepare options for sadc.
 		 */
 		/* Program name */
 		salloc(0, SADC);
 
 		/* Interval value */
-		if (interval < 0)
+		if (interval < 0) {
 			usage(argv[0]);
-		else if (!interval)
+		}
+		else if (!interval) {
 			strcpy(ltemp, "1");
-		else
+		}
+		else {
 			sprintf(ltemp, "%ld", interval);
+		}
 		salloc(1, ltemp);
 
 		/* Count number */
@@ -2018,12 +1205,13 @@ int main(int argc, char **argv)
 
 		/* Flags to be passed to sadc */
 		salloc(args_idx++, "-z");
-		salloc(args_idx++, "-I");
-		salloc(args_idx++, "-d");
+		salloc(args_idx++, "-S");
+		salloc(args_idx++, K_ALL);
 
 		/* Outfile arg */
-		if (to_file[0])
+		if (to_file[0]) {
 			salloc(args_idx++, to_file);
+		}
 
 		/* Last arg is NULL */
 		args[args_idx] = NULL;
@@ -2032,7 +1220,7 @@ int main(int argc, char **argv)
 		execv(SADC_PATH, args);
 		execvp(SADC, args);
 		/*
-		 * Note: don't use execl/execlp since we don't have a fixed number of
+		 * Note: Don't use execl/execlp since we don't have a fixed number of
 		 * args to give to sadc.
 		 */
 		fprintf(stderr, _("Cannot find the data collector (%s)\n"), SADC);

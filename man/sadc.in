@@ -1,10 +1,10 @@
-.TH SADC 8 "JULY 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
 .B @SA_LIB_DIR@/sadc [ -C
 .I comment
-.B ] [ -d ] [ -F ] [ -I ] [ -L ] [ -V ] [
+.B ] [ -S { INT | DISK | ALL } ] [ -F ] [ -L ] [ -V ] [
 .I interval
 .B [
 .I count
@@ -14,13 +14,11 @@ sadc \- System activity data collector.
 .SH DESCRIPTION
 The
 .B sadc
-command samples system data a specified number of times (
-.I count
-) at a specified interval measured in seconds (
-.I interval
-). It writes in binary format to the specified
+command samples system data a specified number of times
+(\fIcount\fR) at a specified interval measured in seconds
+(\fIinterval\fR). It writes in binary format to the specified
 .I outfile
-or to the standard output. If
+or to standard output. If
 .I outfile
 is set to -, then
 .B sadc
@@ -30,7 +28,7 @@ file, where the dd parameter indicates the current day.
 By default
 .B sadc
 collects all the data available from the kernel.
-Exceptions are interrupts and disks data, for which the
+Exceptions are interrupts and disk data, for which the
 relevant options must be explicitly passed to
 .B sadc
 (see options below).
@@ -64,35 +62,26 @@ command only reports on local activities.
 
 .SH OPTIONS
 .IP "-C comment"
-When both the
+When neither the
 .I interval
-and
+nor the
 .I count
-parameters are not specified, tell sadc to write a dummy record containing
-a comment specified by the string
-.IR comment .
+parameters are specified, this option tells
+.B sadc
+to write a dummy record containing the specified
+.I comment
+string.
 This comment can then be displayed with option -C of
 .BR sar .
-.IP -d
-Tell
-.B sadc
-to report statistics for disks. By default
-.B sadc
-does not report disks activity to prevent data files from growing too large.
 .IP -F
 The creation of
 .I outfile
 will be forced. If the file already exists and has not the format expected by
 .B sadc
-then it will be truncated. This may be particularly useful for daily data files
-created by an older version of sadc and whose format is no longer compatible
-with current one.
-.IP -I
-Tell
+then it will be truncated. This may be useful for daily data files
+created by an older version of
 .B sadc
-to report statistics for all system interrupts. By default
-.B sadc
-only reports statistics for the total number of interrupts.
+and whose format is no longer compatible with current one.
 .IP -L
 .B sadc
 will try to get an exclusive lock on the
@@ -111,6 +100,24 @@ If the system is under heavy load, an old
 .B sadc
 might still be running when cron starts a new one. Without locking,
 this situation can result in a corrupted system activity file.
+.IP "-S { INT | DISK | ALL }"
+Specify which optional activities should be collected by
+.BR sadc .
+Some activities are optional to prevent data files from growing too large.
+The
+.B INT
+keyword indicates that
+.B sadc
+should collect data for system interrupts.
+The
+.B DISK
+keyword indicates that
+.B sadc
+should collect data for block devices.
+The
+.B ALL
+keyword is equivalent to specifying all the keywords above and therefore
+all possible activities are collected.
 .IP -V
 Print version number then exit.
 
@@ -141,6 +148,7 @@ Write 10 records of one second intervals to the /tmp/datafile binary file.
 Insert the comment Backup_Start into the file /tmp/datafile.
 .RE
 .SH BUGS
+The
 .I /proc
 filesystem must be mounted for the
 .B sadc

@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1999-2007 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2008 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _IOSTAT_H
@@ -53,21 +53,14 @@
 #define DT_DEVICE	0
 #define DT_PARTITION	1
 
+/* Preallocation constats */
+#define NR_DEV_PREALLOC		4
+#define NR_DISK_PREALLOC	3
+#define NR_NFS_PREALLOC		2
+
 /* Device name for old kernels */
 #define K_HDISK	"hdisk"
 
-struct comm_stats {
-	unsigned long long uptime;
-	unsigned long long uptime0;
-	unsigned long long cpu_iowait;
-	unsigned long long cpu_idle;
-	unsigned long long cpu_user;
-	unsigned long long cpu_nice;
-	unsigned long long cpu_system;
-	unsigned long long cpu_steal;
-};
-
-#define COMM_STATS_SIZE	(sizeof(struct comm_stats))
 
 /*
  * Structures for I/O stats.
@@ -124,7 +117,8 @@ struct io_nfs_stats {
 	unsigned long long rd_server_bytes	__attribute__ ((packed));
 	unsigned long long wr_server_bytes	__attribute__ ((packed));
 	unsigned long rpc_sends			__attribute__ ((packed));
-	unsigned long rpc_recvs			__attribute__ ((packed));
+	unsigned long nfs_rops			__attribute__ ((packed));
+	unsigned long nfs_wops			__attribute__ ((packed));
 };
 
 #define IO_NFS_STATS_SIZE	(sizeof(struct io_nfs_stats))

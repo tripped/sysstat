@@ -1,4 +1,4 @@
-.TH IOSTAT 1 "MARCH 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "JULY 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices, partitions and network filesystems (NFS).
@@ -80,26 +80,31 @@ The report has the following format:
 Show the percentage of CPU utilization that occurred while
 executing at the user level (application).
 .RE
+
 .B %nice
 .RS
 Show the percentage of CPU utilization that occurred while
 executing at the user level with nice priority.
 .RE
+
 .B %system
 .RS
 Show the percentage of CPU utilization that occurred while
 executing at the system level (kernel).
 .RE
+
 .B %iowait
 .RS
 Show the percentage of time that the CPU or CPUs were idle during which
 the system had an outstanding disk I/O request.
 .RE
+
 .B %steal
 .RS
 Show the percentage of time spent in involuntary wait by the virtual CPU
 or CPUs while the hypervisor was servicing another virtual processor.
 .RE
+
 .B %idle
 .RS
 Show the percentage of time that the CPU or CPUs were idle and the system
@@ -411,15 +416,20 @@ Indicate the number of megabytes written to the server by the NFS client via an
 NFS WRITE request.
 
 .RE
+.B ops/s
+.RS
+Indicate the number of operations that were issued to the filesystem per second.
+
+.RE
 .B rops/s
 .RS
-Indicate the number of read operations that were issued to the filesystem 
+Indicate the number of 'read' operations that were issued to the filesystem 
 per second.
 
 .RE
 .B wops/s
 .RS
-Indicate the number of write operations that were issued to the filesystem
+Indicate the number of 'write' operations that were issued to the filesystem
 per second.
 .RE
 .RE

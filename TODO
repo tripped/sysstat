@@ -9,3 +9,4 @@ Here are the things I would like (or I should) do for the next releases:
 
 * Dynamically allocate structures for IRQs (just like for CPUs).
 
+* Add SNMP statistics to sar.

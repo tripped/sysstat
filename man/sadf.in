@@ -1,4 +1,4 @@
-.TH SADF 1 "FEBRUARY 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
@@ -54,7 +54,7 @@ to select
 .I count
 records at
 .I interval
-second intervals. If the
+seconds apart. If the
 .I count
 parameter is not set, then all the records saved in the data file will be
 displayed.
@@ -90,8 +90,8 @@ Set the ending time of the report, given in local time. The default ending
 time is 18:00:00. Hours must be given in 24-hour format.
 This option is ignored when option -x is used.
 .IP -h
-When used in conjunction with options -d or -D, indicate that all activities
-should be displayed horizontally on a single line of data.
+When used in conjunction with option -d or -D, all activities
+will be displayed horizontally on a single line.
 .IP -H
 Display the header of the data file.
 .IP "-P { cpu | ALL }"
@@ -114,7 +114,7 @@ the field name and its value.
 Set the starting time of the data (given in local time), causing the
 .B sadf
 command to extract records time-tagged at, or following, the time
-specified. The default starting time is 08:00.
+specified. The default starting time is 08:00:00.
 Hours must be given in 24-hour format. This option is ignored when
 option -x is used.
 .IP -t
@@ -124,16 +124,13 @@ This option is ignored when options -p or -D are used.
 .IP -V
 Print version number then exit.
 .IP -x
-Print the contents of the data file in XML format. Every activity and the whole
-file contents will be displayed.
+Print the contents of the data file in XML format.
 Timestamps are displayed in UTC (Coordinated Universal Time)
 unless option -t is used, in which case they are displayed
 in local time. The corresponding
 DTD (Document Type Definition) and XML Schema are included in the sysstat
 source package. They are also available at
-.I http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd
-and
-.I http://pagesperso-orange.fr/sebastien.godard/sysstat.xsd
+.I http://pagesperso-orange.fr/sebastien.godard/download.html
 
 .SH ENVIRONMENT
 The

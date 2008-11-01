@@ -1,141 +1,141 @@
 /*
- * sar/sadc: report system activity
- * (C) 1999-2007 by Sebastien Godard (sysstat <at> orange.fr)
+ * sar/sadc: Report system activity
+ * (C) 1999-2008 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SA_H
 #define _SA_H
 
-/* Get IFNAMSIZ */
-#include <net/if.h>
-#ifndef IFNAMSIZ
-#define IFNAMSIZ	16
-#endif
-
 #include "common.h"
+#include "rd_stats.h"
 
-/* Define activities */
-#define A_PROC		0x000001
-#define A_CTXSW		0x000002
-#define A_CPU		0x000004
-#define A_IRQ		0x000008
-#define A_ONE_IRQ	0x000010
-#define A_SWAP		0x000020
-#define A_IO		0x000040
-#define A_MEMORY	0x000080
-#define A_SERIAL	0x000100
-#define A_NET_DEV	0x000200
-#define A_NET_EDEV	0x000400
-#define A_DISK		0x000800
-/* Unused		0x001000 */
-/* Unused		0x002000 */
-#define A_NET_NFS	0x004000
-#define A_NET_NFSD	0x008000
-#define A_PAGE		0x010000
-#define A_MEM_AMT	0x020000
-#define A_KTABLES	0x040000
-#define A_NET_SOCK	0x080000
-#define A_QUEUE		0x100000
 
-#define A_LAST		0x100000
+/*
+ ***************************************************************************
+ * Activity identification values.
+ ***************************************************************************
+ */
 
-#define GET_PROC(m)	(((m) & A_PROC) == A_PROC)
-#define GET_CTXSW(m)	(((m) & A_CTXSW) == A_CTXSW)
-#define GET_CPU(m)	(((m) & A_CPU) == A_CPU)
-#define GET_IRQ(m)	(((m) & A_IRQ) == A_IRQ)
-#define GET_PAGE(m)	(((m) & A_PAGE) == A_PAGE)
-#define GET_SWAP(m)	(((m) & A_SWAP) == A_SWAP)
-#define GET_IO(m)	(((m) & A_IO) == A_IO)
-#define GET_ONE_IRQ(m)	(((m) & A_ONE_IRQ) == A_ONE_IRQ)
-#define GET_MEMORY(m)	(((m) & A_MEMORY) == A_MEMORY)
-#define GET_SERIAL(m)	(((m) & A_SERIAL) == A_SERIAL)
-#define GET_MEM_AMT(m)	(((m) & A_MEM_AMT) == A_MEM_AMT)
-#define GET_KTABLES(m)	(((m) & A_KTABLES) == A_KTABLES)
-#define GET_NET_DEV(m)	(((m) & A_NET_DEV) == A_NET_DEV)
-#define GET_NET_EDEV(m)	(((m) & A_NET_EDEV) == A_NET_EDEV)
-#define GET_NET_SOCK(m)	(((m) & A_NET_SOCK) == A_NET_SOCK)
-#define GET_NET_NFS(m)	(((m) & A_NET_NFS) == A_NET_NFS)
-#define GET_NET_NFSD(m)	(((m) & A_NET_NFSD) == A_NET_NFSD)
-#define GET_QUEUE(m)	(((m) & A_QUEUE) == A_QUEUE)
-#define GET_DISK(m)	(((m) & A_DISK) == A_DISK)
+/* Number of activities */
+#define NR_ACT	16
+
+/* Activities */
+#define A_CPU		1
+#define A_PCSW		2
+#define A_IRQ		3
+#define A_SWAP		4
+#define A_PAGE		5
+#define A_IO		6
+#define A_MEMORY	7
+#define A_KTABLES	8
+#define A_QUEUE		9
+#define A_SERIAL	10
+#define A_DISK		11
+#define A_NET_DEV	12
+#define A_NET_EDEV	13
+#define A_NET_NFS	14
+#define A_NET_NFSD	15
+#define A_NET_SOCK	16
+
+
+/*
+ ***************************************************************************
+ * Flags.
+ ***************************************************************************
+ */
+
+#define S_F_SINCE_BOOT		0x00000001
+#define S_F_SA_ROTAT      	0x00000002
+#define S_F_DEV_PRETTY		0x00000004
+#define S_F_FORCE_FILE		0x00000008
+#define S_F_INTERVAL_SET	0x00000010
+#define S_F_TRUE_TIME		0x00000020
+#define S_F_LOCK_FILE		0x00000040
+#define S_F_HAS_PPARTITIONS	0x00000080
+#define S_F_HAS_DISKSTATS	0x00000100
+#define S_F_FILE_LOCKED		0x00000200
+#define S_F_PER_PROC		0x00000400
+#define S_F_HORIZONTALLY	0x00000800
+#define S_F_COMMENT		0x00001000
+
+#define WANT_SINCE_BOOT(m)	(((m) & S_F_SINCE_BOOT)      == S_F_SINCE_BOOT)
+#define WANT_SA_ROTAT(m)	(((m) & S_F_SA_ROTAT)        == S_F_SA_ROTAT)
+#define USE_PRETTY_OPTION(m)	(((m) & S_F_DEV_PRETTY)      == S_F_DEV_PRETTY)
+#define FORCE_FILE(m)		(((m) & S_F_FORCE_FILE)      == S_F_FORCE_FILE)
+#define INTERVAL_SET(m)		(((m) & S_F_INTERVAL_SET)    == S_F_INTERVAL_SET)
+#define PRINT_TRUE_TIME(m)	(((m) & S_F_TRUE_TIME)       == S_F_TRUE_TIME)
+#define LOCK_FILE(m)		(((m) & S_F_LOCK_FILE)       == S_F_LOCK_FILE)
+#define HAS_PPARTITIONS(m)	(((m) & S_F_HAS_PPARTITIONS) == S_F_HAS_PPARTITIONS)
+#define HAS_DISKSTATS(m)	(((m) & S_F_HAS_DISKSTATS)   == S_F_HAS_DISKSTATS)
+#define FILE_LOCKED(m)		(((m) & S_F_FILE_LOCKED)     == S_F_FILE_LOCKED)
+#define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC)        == S_F_PER_PROC)
+#define DISPLAY_HORIZONTALLY(m)	(((m) & S_F_HORIZONTALLY)    == S_F_HORIZONTALLY)
+#define DISPLAY_COMMENT(m)	(((m) & S_F_COMMENT)         == S_F_COMMENT)
+
+/* Output flags for options -R / -r / -S */
+#define AO_F_MEM_DIA		0x00000001
+#define AO_F_MEM_AMT		0x00000002
+#define AO_F_MEM_SWAP		0x00000004
+
+#define DISPLAY_MEMORY(m)	(((m) & AO_F_MEM_DIA)        == AO_F_MEM_DIA)
+#define DISPLAY_MEM_AMT(m)	(((m) & AO_F_MEM_AMT)        == AO_F_MEM_AMT)
+#define DISPLAY_SWAP(m)		(((m) & AO_F_MEM_SWAP)       == AO_F_MEM_SWAP)
+
+/* Output flags for option -u [ ALL ] */
+#define AO_F_CPU_DEF		0x00000001
+#define AO_F_CPU_ALL		0x00000002
+
+#define DISPLAY_CPU_DEF(m)	(((m) & AO_F_CPU_DEF)        == AO_F_CPU_DEF)
+#define DISPLAY_CPU_ALL(m)	(((m) & AO_F_CPU_ALL)        == AO_F_CPU_ALL)
+
+
+/*
+ ***************************************************************************
+ * Various keywords and constants.
+ ***************************************************************************
+ */
 
 /* Keywords */
-#define K_XALL	"XALL"
-#define K_SUM	"SUM"
-#define K_DEV	"DEV"
-#define K_EDEV	"EDEV"
-#define K_NFS	"NFS"
-#define K_NFSD	"NFSD"
-#define K_SOCK	"SOCK"
+#define K_XALL		"XALL"
+#define K_SUM		"SUM"
+#define K_DEV		"DEV"
+#define K_EDEV		"EDEV"
+#define K_NFS		"NFS"
+#define K_NFSD		"NFSD"
+#define K_SOCK		"SOCK"
+#define K_DISK		"DISK"
+#define K_INT		"INT"
 
-/* S_= sar/sadc/sadf - F_= Flag */
-#define S_F_ALL_PROC      	0x0001
-#define S_F_SA_ROTAT      	0x0002
-#define S_F_DEV_PRETTY		0x0004
-#define S_F_A_OPTION		0x0008
-#define S_F_F_OPTION		0x0010
-#define S_F_I_OPTION		0x0020
-#define S_F_TRUE_TIME		0x0040
-#define S_F_L_OPTION		0x0080
-#define S_F_HAS_PPARTITIONS	0x0100
-#define S_F_HAS_DISKSTATS	0x0200
-#define S_F_FILE_LCK		0X0400
-#define S_F_PER_PROC		0x0800
-#define S_F_HORIZONTALLY	0x1000
-#define S_F_COMMENT		0x2000
-
-#define WANT_ALL_PROC(m)	(((m) & S_F_ALL_PROC) == S_F_ALL_PROC)
-#define WANT_SA_ROTAT(m)	(((m) & S_F_SA_ROTAT) == S_F_SA_ROTAT)
-#define USE_PRETTY_OPTION(m)	(((m) & S_F_DEV_PRETTY) == S_F_DEV_PRETTY)
-#define USE_A_OPTION(m)		(((m) & S_F_A_OPTION) == S_F_A_OPTION)
-#define USE_F_OPTION(m)		(((m) & S_F_F_OPTION) == S_F_F_OPTION)
-#define USE_I_OPTION(m)		(((m) & S_F_I_OPTION) == S_F_I_OPTION)
-#define PRINT_TRUE_TIME(m)	(((m) & S_F_TRUE_TIME) == S_F_TRUE_TIME)
-#define USE_L_OPTION(m)		(((m) & S_F_L_OPTION) == S_F_L_OPTION)
-#define HAS_PPARTITIONS(m)	(((m) & S_F_HAS_PPARTITIONS) == S_F_HAS_PPARTITIONS)
-#define HAS_DISKSTATS(m)	(((m) & S_F_HAS_DISKSTATS) == S_F_HAS_DISKSTATS)
-#define FILE_LOCKED(m)		(((m) & S_F_FILE_LCK) == S_F_FILE_LCK)
-#define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC) == S_F_PER_PROC)
-#define DISPLAY_HORIZONTALLY(m)	(((m) & S_F_HORIZONTALLY) == S_F_HORIZONTALLY)
-#define DISPLAY_COMMENT(m)	(((m) & S_F_COMMENT) == S_F_COMMENT)
-
-/* Files */
-#define PROC		"/proc"
-#define PSTAT		"stat"
-#define SERIAL		"/proc/tty/driver/serial"
-#define FDENTRY_STATE	"/proc/sys/fs/dentry-state"
-#define FFILE_NR	"/proc/sys/fs/file-nr"
-#define FINODE_STATE	"/proc/sys/fs/inode-state"
-#define PTY_NR		"/proc/sys/kernel/pty/nr"
-#define NET_DEV		"/proc/net/dev"
-#define NET_SOCKSTAT	"/proc/net/sockstat"
-#define NET_RPC_NFS	"/proc/net/rpc/nfs"
-#define NET_RPC_NFSD	"/proc/net/rpc/nfsd"
+/* sadc program */
 #define SADC		"sadc"
-#define LOADAVG		"/proc/loadavg"
-#define VMSTAT		"/proc/vmstat"
 
+/* Time must have the format HH:MM:SS with HH in 24-hour format */
+#define DEF_TMSTART	"08:00:00"
+#define DEF_TMEND	"18:00:00"
+
+/*
+ * Macro used to define activity bitmap size.
+ * All those bitmaps have an additional bit used for global activity
+ * (eg. CPU "all" or total number of interrupts). That's why we do "(m) + 1".
+ */
+#define BITMAP_SIZE(m)	((((m) + 1) / 8) + 1)
+
+/* Pre-allocation constants */
 #define NR_IFACE_PREALLOC	2
 #define NR_SERIAL_PREALLOC	2
-#define NR_IRQPROC_PREALLOC	3
+#define NR_DISK_PREALLOC	3
 
-#define NR_IRQS			256
-
-/* Maximum length of network interface name */
-#define MAX_IFACE_LEN	IFNAMSIZ
-
-#define UTSNAME_LEN	65
-
-/* Maximum length of a comment */
-#define MAX_COMMENT_LEN	64
+#define UTSNAME_LEN		65
+#define TIMESTAMP_LEN		16
+#define XML_TIMESTAMP_LEN	64
+#define HEADER_LINE_LEN		192
 
 /* Maximum number of args that can be passed to sadc */
 #define MAX_ARGV_NR	32
 
+/* Miscellaneous constants */
 #define USE_SADC	0
 #define USE_SA_FILE	1
-#define ST_IMMEDIATE	0
-#define ST_SINCE_BOOT	1
 #define NO_TM_START	0
 #define NO_TM_END	0
 #define NO_RESET	0
@@ -143,27 +143,230 @@
 #define FATAL		1
 #define C_SAR		0
 #define C_SADF		1
-
-/* Record type */
-#define R_STATS		1
-#define R_RESTART	2	/* Special record */
-#define R_LAST_STATS	3
-#define R_COMMENT	4	/* Special record */
+#define ALL_ACTIVITIES	~0U
 
 #define SOFT_SIZE	0
 #define HARD_SIZE	1
 
-/* Sysstat magic number */
-#define SYSSTAT_MAGIC	0xd596
-/* Datafile format magic number */
-#define FORMAT_MAGIC	0x216f
+#define CLOSE_XML_MARKUP	0
+#define OPEN_XML_MARKUP		1
 
+#define COUNT_ACTIVITIES	0
+#define COUNT_OUTPUTS		1
+
+
+/*
+ ***************************************************************************
+ * Generic description of an activity.
+ ***************************************************************************
+ */
+
+/* Activity options */
+#define AO_NULL			0x00
+/*
+ * Indicate that corresponding activity should be collected by sadc.
+ */
+#define AO_COLLECTED		0x01
+/*
+ * Indicate that corresponding activity should be displayed by sar.
+ */
+#define AO_SELECTED		0x02
+/*
+ * Indicate that, when registered again, activity counters will get back
+ * the values they had when they were unregistered (eg. CPUs, which can
+ * be disabled/enabled on the fly).
+ */
+#define AO_REMANENT		0x04
+/*
+ * Indicate that the interval of time, given to f_print() function
+ * displaying statistics, should be the interval of time in jiffies
+ * multiplied by the number of processors.
+ */
+#define AO_GLOBAL_ITV		0x08
+/*
+ * This flag should be set for every activity closing a markup used
+ * by several activities. Used by sadf f_xml_print() functions to
+ * display XML output.
+ */
+#define AO_CLOSE_MARKUP		0x10
+/*
+ * Indicate that corresponding activity has multiple different
+ * output formats. This is the case for example for memory activity
+ * with options -r and -R.
+ */
+#define AO_MULTIPLE_OUTPUTS	0x20
+
+#define IS_COLLECTED(m)		(((m) & AO_COLLECTED)        == AO_COLLECTED)
+#define IS_SELECTED(m)		(((m) & AO_SELECTED)         == AO_SELECTED)
+#define IS_REMANENT(m)		(((m) & AO_REMANENT)         == AO_REMANENT)
+#define NEEDS_GLOBAL_ITV(m)	(((m) & AO_GLOBAL_ITV)       == AO_GLOBAL_ITV)
+#define CLOSE_MARKUP(m)		(((m) & AO_CLOSE_MARKUP)     == AO_CLOSE_MARKUP)
+#define HAS_MULTIPLE_OUTPUTS(m)	(((m) & AO_MULTIPLE_OUTPUTS) == AO_MULTIPLE_OUTPUTS)
+
+
+/* Type for all functions counting items */
+#define __nr_t		int
+/* Type for all functions reading statistics */
+#define __read_funct_t	void
+/* Type for all functions displaying statistics */
+#define __print_funct_t void
+
+#define _buf0	buf[0]
+
+struct activity {
+	/*
+	 * This variable contains the identification value (A_...) for this activity.
+	 */
+	unsigned int id;
+	/*
+	 * Activity options (AO_SELECTED, ...)
+	 */
+	unsigned int options;
+	/*
+	 * The f_count() function is used to count the number of
+	 * items (serial lines, network interfaces, etc.).
+	 * Such a function should _always_ return a value greater than
+	 * or equal to 0.
+	 *
+	 * A NULL value for this function pointer indicates that the number of items
+	 * is a constant (and @nr is set to this value).
+	 *
+	 * This function is called even if activity has not been selected, to make
+	 * sure that all items have been calculated (including #CPU, etc.)
+	 */
+	__nr_t (*f_count) (struct activity *);
+	/*
+	 * This function reads the relevant file and fill the buffer
+	 * with statistics corresponding to given activity.
+	 */
+	__read_funct_t (*f_read) (struct activity *);
+	/*
+	 * This function displays activity statistics onto the screen.
+	 */
+	__print_funct_t (*f_print) (struct activity *, int, int, unsigned long long);
+	/*
+	 * This function displays average activity statistics onto the screen.
+	 */
+	__print_funct_t (*f_print_avg) (struct activity *, int, int, unsigned long long);
+	/*
+	 * This function is used by sadf to display activity in a format that can
+	 * easily be ingested by a relational database, or a format that can be
+	 * handled by pattern processing commands like "awk".
+	 */
+	__print_funct_t (*f_render) (struct activity *, int, char *, int, unsigned long long);
+	/*
+	 * This function is used by sadf to display activity statistics in XML.
+	 */
+	__print_funct_t (*f_xml_print) (struct activity *, int, int, unsigned long long);
+	/*
+	 * Number of items on the system.
+	 * A negative value (-1) is the default value and indicates that this number
+	 * has still not been calculated by the f_count() function.
+	 * A value of 0 means that this number has been calculated, but no items have
+	 * been found.
+	 */
+	__nr_t nr;
+	/*
+	 * Size of an item.
+	 * This is the size of the corresponding structure, as read from or written
+	 * to a file, or read from or written by the data collector.
+	 */
+	int fsize;
+	/*
+	 * Size of an item.
+	 * This is the size of the corresponding structure as mapped into memory.
+	 * @msize can be different from @fsize when data are read from or written to
+	 * a data file from a different sysstat version.
+	 */
+	int msize;
+	/*
+	 * Optional flags for activity. This is eg. used when AO_MULTIPLE_OUTPUTS
+	 * option is set.
+	 */
+	unsigned int opt_flags;
+	/*
+	 * Buffers that will contain the statistics read. Its size is @nr * @size each.
+	 * [0]: used by sadc. Used by sar to save first collected stats (used later to
+	 * compute average).
+	 * [1] and [2]: current/previous statistics values (used by sar).
+	 */
+	void *buf[3];
+	/*
+	 * Bitmap for activities that need one. Such a bitmap is needed by activity if
+	 * @bitmap_size has a non zero value. Bitmap should be allocated before use!
+	 */
+	unsigned char *bitmap;
+	/*
+	 * Size of the bitmap in bits. In fact, bitmap is sized to bitmap_size + 1
+	 * to take into account CPU "all"
+	 */
+	int bitmap_size;
+	/*
+	 * Header string displayed by sadf -d/-D.
+	 */
+	char hdr_line[HEADER_LINE_LEN];
+};
+
+
+/*
+ ***************************************************************************
+ * Definitions of header structures.
+ *
+ * Format of system activity data files:
+ *	 __
+ *	|
+ *	| file_magic structure
+ *	|
+ * 	|--
+ *	|
+ * 	| file_header structure
+ * 	|
+ * 	|--                         --|
+ * 	|                             |
+ * 	| file_activity structure     | * sa_nr_act
+ * 	|                             |
+ * 	|--                         --|
+ * 	|                             |
+ * 	| record_header structure     |
+ * 	|                             |
+ * 	|--                           | * <count>
+ * 	|                             |
+ * 	| Statistics structures...(*) |
+ * 	|                             |
+ * 	|--                         --|
+ *
+ * (*)Note: If it's a special record, we may find a comment instead of
+ * statistics (R_COMMENT record type) or even nothing at all (R_RESTART
+ * record type).
+ ***************************************************************************
+ */
+
+/*
+ * Sysstat magic number. Should never be modified.
+ * Indicate that the file was created by sysstat.
+ */
+#define SYSSTAT_MAGIC	0xd596
+
+/*
+ * Datafile format magic number.
+ * Modified to indicate that the format of the file is
+ * no longer compatible with that of previous sysstat versions.
+ */
+#define FORMAT_MAGIC	0x2170
+
+/* Structure for file magic header data */
 struct file_magic {
-	/* This field identifies the file as a file created by sysstat */
+	/*
+	 * This field identifies the file as a file created by sysstat.
+	 */
 	unsigned short sysstat_magic;
-	/* The value of this field varies whenever datafile format changes */
+	/*
+	 * The value of this field varies whenever datafile format changes.
+	 */
 	unsigned short format_magic;
-	/* Sysstat version used to create the file */
+	/*
+	 * Sysstat version used to create the file.
+	 */
 	unsigned char  sysstat_version;
 	unsigned char  sysstat_patchlevel;
 	unsigned char  sysstat_sublevel;
@@ -172,271 +375,155 @@ struct file_magic {
 
 #define FILE_MAGIC_SIZE	(sizeof(struct file_magic))
 
-/*
- * IMPORTANT NOTE:
- * Attributes such as 'aligned' and 'packed' have been defined for every
- * members of the following structures, so that:
- * 1) structures have a fixed size whether on 32 or 64-bit systems,
- * 2) we don't have variable gap between members.
- * Indeed, we want to be able to read daily data files recorded on
- * 32 and 64-bit systems, even if we are not on the same architecture.
- * Moreover, we are sure that sizeof(struct) is a constant for every
- * struct of same type, so that expressions like
- * struct *foo2 = struct *foo1 + i;
- * can be safely used.
- *
- * Structures are padded so that their length be a multiple of 8 bytes.
- * It is better (although not compulsory) for structures written
- * contiguously into daily data files and accessed the following way once
- * they are read into memory:
- * struct *foo2 = struct *foo1 + i;  (since i <=> sizeof(struct foo))
- */
 
-/* System activity data file header */
-struct file_hdr {
-	/* --- LONG --- */
-	/* Time stamp in seconds since the epoch */
-	unsigned long  sa_ust_time	__attribute__ ((aligned (8)));
-	/* --- INT --- */
-	/* Activity flag */
-	unsigned int	  sa_actflag	__attribute__ ((aligned (8)));
-	/* Number of interrupts per processor: 2 means two interrupts */
-	unsigned int   sa_irqcpu	__attribute__ ((packed));
-	/* Number of disks */
-	unsigned int   sa_nr_disk	__attribute__ ((packed));
+/* Header structure for system activity data file */
+struct file_header {
 	/*
-	 * Number of processors:
-	 * 0 means 1 proc and non SMP machine
-	 * 1 means 1 proc and SMP machine
-	 * 2 means two proc, etc.
+	 * Timestamp in seconds since the epoch.
 	 */
-	unsigned int   sa_proc 		__attribute__ ((packed));
-	/* Number of serial lines: 2 means two lines (ttyS00 and ttyS01) */
-	unsigned int   sa_serial 	__attribute__ ((packed));
-	/* Number of network devices (interfaces): 2 means two lines */
-	unsigned int   sa_iface 	__attribute__ ((packed));
-	/* --- SHORT --- */
-	/* file_stats structure size */
-	unsigned short sa_st_size	__attribute__ ((packed));
-	/* --- CHAR --- */
+	unsigned long sa_ust_time	__attribute__ ((aligned (8)));
+	/*
+	 * Number of activities saved in the file
+	 */
+	unsigned int sa_nr_act		__attribute__ ((aligned (8)));
 	/*
 	 * Current day, month and year.
 	 * No need to save DST (daylight saving time) flag, since it is not taken
 	 * into account by the strftime() function used to print the timestamp.
 	 */
-	unsigned char  sa_day;
-	unsigned char  sa_month;
-	unsigned char  sa_year;
+	unsigned char sa_day;
+	unsigned char sa_month;
+	unsigned char sa_year;
 	/*
 	 * Size of a long integer. Useful to know the architecture on which
 	 * the datafile was created.
 	 */
-	char		  sa_sizeof_long;
-	/* Operating system name */
-	char           sa_sysname[UTSNAME_LEN];
-	/* Machine hostname */
-	char           sa_nodename[UTSNAME_LEN];
-	/* Operating system release number */
-	char           sa_release[UTSNAME_LEN];
-	/* Machine architecture */
-	char           sa_machine[UTSNAME_LEN];
+	char sa_sizeof_long;
+	/*
+	 * Operating system name.
+	 */
+	char sa_sysname[UTSNAME_LEN];
+	/*
+	 * Machine hostname.
+	 */
+	char sa_nodename[UTSNAME_LEN];
+	/*
+	 * Operating system release number.
+	 */
+	char sa_release[UTSNAME_LEN];
+	/*
+	 * Machine architecture.
+	 */
+	char sa_machine[UTSNAME_LEN];
 };
 
-#define FILE_HDR_SIZE	(sizeof(struct file_hdr))
+#define FILE_HEADER_SIZE	(sizeof(struct file_header))
 
-struct file_stats {
-	/* ALSO SEE FILE_COMMENT STRUCTURE BELOW */
-	/* --- LONG LONG --- */
-	/* Machine uptime (multiplied by the # of proc) */
-	unsigned long long uptime		__attribute__ ((aligned (16)));
-	/* Uptime reduced to one processor. Always set, even on UP machines */
-	unsigned long long uptime0		__attribute__ ((aligned (16)));
-	unsigned long long context_swtch	__attribute__ ((aligned (16)));
-	unsigned long long cpu_user		__attribute__ ((aligned (16)));
-	unsigned long long cpu_nice		__attribute__ ((aligned (16)));
-	unsigned long long cpu_system		__attribute__ ((aligned (16)));
-	unsigned long long cpu_idle		__attribute__ ((aligned (16)));
-	unsigned long long cpu_iowait		__attribute__ ((aligned (16)));
-	unsigned long long cpu_steal		__attribute__ ((aligned (16)));
-	unsigned long long reserved_1		__attribute__ ((aligned (16)));
-	unsigned long long reserved_2		__attribute__ ((aligned (16)));
-	unsigned long long reserved_3		__attribute__ ((aligned (16)));
-	unsigned long long irq_sum		__attribute__ ((aligned (16)));
-	/* --- LONG --- */
-	/* Time stamp (number of seconds since the epoch) */
-	unsigned long ust_time			__attribute__ ((aligned (16)));
-	unsigned long processes			__attribute__ ((aligned (8)));
-	unsigned long pgpgin			__attribute__ ((aligned (8)));
-	unsigned long pgpgout			__attribute__ ((aligned (8)));
-	unsigned long pswpin			__attribute__ ((aligned (8)));
-	unsigned long pswpout			__attribute__ ((aligned (8)));
-	/* Memory stats in kB */
-	unsigned long frmkb			__attribute__ ((aligned (8)));
-	unsigned long bufkb			__attribute__ ((aligned (8)));
-	unsigned long camkb			__attribute__ ((aligned (8)));
-	unsigned long tlmkb			__attribute__ ((aligned (8)));
-	unsigned long frskb			__attribute__ ((aligned (8)));
-	unsigned long tlskb			__attribute__ ((aligned (8)));
-	unsigned long caskb			__attribute__ ((aligned (8)));
-	unsigned long reserved_4		__attribute__ ((aligned (8)));
-	unsigned long nr_running		__attribute__ ((aligned (8)));
-	unsigned long pgfault			__attribute__ ((aligned (8)));
-	unsigned long pgmajfault		__attribute__ ((aligned (8)));
-	unsigned long pgfree			__attribute__ ((aligned (8)));
-	unsigned long pgscan_kswapd		__attribute__ ((aligned (8)));
-	unsigned long pgscan_direct		__attribute__ ((aligned (8)));
-	unsigned long pgsteal			__attribute__ ((aligned (8)));
-	/* --- INT --- */
-	unsigned int  dk_drive			__attribute__ ((aligned (8)));
-	unsigned int  dk_drive_rio		__attribute__ ((packed));
-	unsigned int  dk_drive_wio		__attribute__ ((packed));
-	unsigned int  dk_drive_rblk		__attribute__ ((packed));
-	unsigned int  dk_drive_wblk		__attribute__ ((packed));
-	unsigned int  file_used			__attribute__ ((packed));
-	unsigned int  inode_used		__attribute__ ((packed));
-	unsigned int  sock_inuse		__attribute__ ((packed));
-	unsigned int  tcp_inuse			__attribute__ ((packed));
-	unsigned int  tcp_tw			__attribute__ ((packed));
-	unsigned int  udp_inuse			__attribute__ ((packed));
-	unsigned int  raw_inuse			__attribute__ ((packed));
-	unsigned int  frag_inuse		__attribute__ ((packed));
-	unsigned int  dentry_stat		__attribute__ ((packed));
-	unsigned int  pty_nr			__attribute__ ((packed));
-	unsigned int  load_avg_1		__attribute__ ((packed));
-	unsigned int  load_avg_5		__attribute__ ((packed));
-	unsigned int  load_avg_15		__attribute__ ((packed));
-	unsigned int  nr_threads		__attribute__ ((packed));
-	unsigned int  nfs_rpccnt		__attribute__ ((packed));
-	unsigned int  nfs_rpcretrans		__attribute__ ((packed));
-	unsigned int  nfs_readcnt		__attribute__ ((packed));
-	unsigned int  nfs_writecnt		__attribute__ ((packed));
-	unsigned int  nfs_accesscnt		__attribute__ ((packed));
-	unsigned int  nfs_getattcnt		__attribute__ ((packed));
-	unsigned int  nfsd_rpccnt		__attribute__ ((packed));
-	unsigned int  nfsd_rpcbad		__attribute__ ((packed));
-	unsigned int  nfsd_netcnt		__attribute__ ((packed));
-	unsigned int  nfsd_netudpcnt		__attribute__ ((packed));
-	unsigned int  nfsd_nettcpcnt		__attribute__ ((packed));
-	unsigned int  nfsd_rchits		__attribute__ ((packed));
-	unsigned int  nfsd_rcmisses		__attribute__ ((packed));
-	unsigned int  nfsd_readcnt		__attribute__ ((packed));
-	unsigned int  nfsd_writecnt		__attribute__ ((packed));
-	unsigned int  nfsd_accesscnt		__attribute__ ((packed));
-	unsigned int  nfsd_getattcnt		__attribute__ ((packed));
-	/* --- CHAR --- */
-	/* Record type: R_STATS, R_RESTART,... */
-	unsigned char record_type;
+
+/* List of activities saved in file */
+struct file_activity {
 	/*
-	 * Time stamp: hour, minute and second.
+	 * Identification value of activity.
+	 */
+	unsigned int id		__attribute__ ((aligned (4)));
+	/*
+	 * Number of items for this activity.
+	 */
+	__nr_t nr		__attribute__ ((packed));
+	/*
+	 * Size of an item structure.
+	 */
+	int size		__attribute__ ((packed));
+};
+
+#define FILE_ACTIVITY_SIZE	(sizeof(struct file_activity))
+
+
+/* Record type */
+/*
+ * R_STATS means that this is a record of statistics.
+ */
+#define R_STATS		1
+/*
+ * R_RESTART means that this is a special record containing
+ * a LINUX RESTART message.
+ */
+#define R_RESTART	2
+/*
+ * R_LAST_STATS warns sar that this is the last record to be written
+ * to file before a file rotation, and that the next data to come will
+ * be a header file.
+ * Such a record is tagged R_STATS anyway before being written to file.
+ */
+#define R_LAST_STATS	3
+/*
+ * R_COMMENT means that this is a special record containing
+ * a comment.
+ */
+#define R_COMMENT	4
+
+/* Maximum length of a comment */
+#define MAX_COMMENT_LEN	64
+
+/* Header structure for every record */
+struct record_header {
+	/*
+	 * Machine uptime (multiplied by the # of proc).
+	 */
+	unsigned long long uptime	__attribute__ ((aligned (16)));
+	/*
+	 * Uptime reduced to one processor. Always set, even on UP machines.
+	 */
+	unsigned long long uptime0	__attribute__ ((aligned (16)));
+	/*
+	 * Timestamp (number of seconds since the epoch).
+	 */
+	unsigned long ust_time		__attribute__ ((aligned (16)));
+	/*
+	 * Record type: R_STATS, R_RESTART,...
+	 */
+	unsigned char record_type	__attribute__ ((aligned (8)));
+	/*
+	 * Timestamp: Hour (0-23), minute (0-59) and second (0-59).
 	 * Used to determine TRUE time (immutable, non locale dependent time).
 	 */
-	unsigned char hour;		/* (0-23) */
-	unsigned char minute;	/* (0-59) */
-	unsigned char second;	/* (0-59) */
+	unsigned char hour;
+	unsigned char minute;
+	unsigned char second;
 };
 
-#define FILE_STATS_SIZE	(sizeof(struct file_stats))
-
-/* Ugly hack: This structure must remain consistent with file_stats structure */
-struct file_comment {
-	/* --- LONG LONG --- */
-	unsigned long long pad_uptime		__attribute__ ((aligned (16)));
-	unsigned long long pad_uptime0		__attribute__ ((aligned (16)));
-	unsigned long long pad_context_swtch	__attribute__ ((aligned (16)));
-	unsigned long long pad_cpu_user		__attribute__ ((aligned (16)));
-	unsigned long long pad_cpu_nice		__attribute__ ((aligned (16)));
-	unsigned long long pad_cpu_system	__attribute__ ((aligned (16)));
-	unsigned long long pad_cpu_idle		__attribute__ ((aligned (16)));
-	unsigned long long pad_cpu_iowait	__attribute__ ((aligned (16)));
-	unsigned long long pad_cpu_steal	__attribute__ ((aligned (16)));
-	unsigned long long pad_irq_sum		__attribute__ ((aligned (16)));
-	/* --- LONG --- */
-	unsigned long pad_ust_time		__attribute__ ((aligned (16)));
-	/* Here is the real field... */
-	char comment[MAX_COMMENT_LEN];
-};
-
-
-struct stats_one_cpu {
-	unsigned long long per_cpu_idle		__attribute__ ((aligned (16)));
-	unsigned long long per_cpu_iowait	__attribute__ ((aligned (16)));
-	unsigned long long per_cpu_user		__attribute__ ((aligned (16)));
-	unsigned long long per_cpu_nice		__attribute__ ((aligned (16)));
-	unsigned long long per_cpu_system	__attribute__ ((aligned (16)));
-	unsigned long long per_cpu_steal	__attribute__ ((aligned (16)));
-};
-
-#define STATS_ONE_CPU_SIZE	(sizeof(struct stats_one_cpu))
-
-struct stats_serial {
-	unsigned int rx		__attribute__ ((aligned (4)));
-	unsigned int tx		__attribute__ ((packed));
-	unsigned int frame	__attribute__ ((packed));
-	unsigned int parity	__attribute__ ((packed));
-	unsigned int brk	__attribute__ ((packed));
-	unsigned int overrun	__attribute__ ((packed));
-	unsigned int line	__attribute__ ((packed));
-};
-
-#define STATS_SERIAL_SIZE	(sizeof(struct stats_serial))
-
-struct stats_net_dev {
-	unsigned long rx_packets		__attribute__ ((aligned (8)));
-	unsigned long tx_packets		__attribute__ ((aligned (8)));
-	unsigned long rx_bytes			__attribute__ ((aligned (8)));
-	unsigned long tx_bytes			__attribute__ ((aligned (8)));
-	unsigned long rx_compressed		__attribute__ ((aligned (8)));
-	unsigned long tx_compressed		__attribute__ ((aligned (8)));
-	unsigned long multicast			__attribute__ ((aligned (8)));
-	unsigned long collisions		__attribute__ ((aligned (8)));
-	unsigned long rx_errors			__attribute__ ((aligned (8)));
-	unsigned long tx_errors			__attribute__ ((aligned (8)));
-	unsigned long rx_dropped		__attribute__ ((aligned (8)));
-	unsigned long tx_dropped		__attribute__ ((aligned (8)));
-	unsigned long rx_fifo_errors		__attribute__ ((aligned (8)));
-	unsigned long tx_fifo_errors		__attribute__ ((aligned (8)));
-	unsigned long rx_frame_errors		__attribute__ ((aligned (8)));
-	unsigned long tx_carrier_errors		__attribute__ ((aligned (8)));
-	char	      interface[MAX_IFACE_LEN]	__attribute__ ((aligned (8)));
-};
-
-#define STATS_NET_DEV_SIZE	(sizeof(struct stats_net_dev))
+#define RECORD_HEADER_SIZE	(sizeof(struct record_header))
 
 
 /*
- * stats_irq_cpu->irq:       IRQ#-A
- * stats_irq_cpu->interrupt: number of IRQ#-A for proc 0
- * stats_irq_cpu->irq:       IRQ#-B
- * stats_irq_cpu->interrupt: number of IRQ#-B for proc 0
- * ...
- * stats_irq_cpu->irq:       (undef'd)
- * stats_irq_cpu->interrupt: number of IRQ#-A for proc 1
- * stats_irq_cpu->irq:       (undef'd)
- * stats_irq_cpu->interrupt: number of IRQ#-B for proc 1
- * ...
+ ***************************************************************************
+ * Macro functions definitions.
+ *
+ * Note: Using 'do ... while' makes the macros safer to use
+ * (remember that macro use are followed by a semicolon).
+ ***************************************************************************
  */
-struct stats_irq_cpu {
-	unsigned int interrupt	__attribute__ ((aligned (4)));
-	unsigned int irq	__attribute__ ((packed));
-};
 
-#define STATS_IRQ_CPU_SIZE	(sizeof(struct stats_irq_cpu))
-#define STATS_ONE_IRQ_SIZE	(sizeof(int) * NR_IRQS)
+/* Close file descriptors */
+#define CLOSE_ALL(_fd_)		do {			\
+					close(_fd_[0]); \
+					close(_fd_[1]); \
+				} while (0)
 
-struct disk_stats {
-	unsigned long long rd_sect	__attribute__ ((aligned (16)));
-	unsigned long long wr_sect	__attribute__ ((aligned (16)));
-	unsigned long rd_ticks		__attribute__ ((aligned (16)));
-	unsigned long wr_ticks		__attribute__ ((aligned (8)));
-	unsigned long tot_ticks		__attribute__ ((aligned (8)));
-	unsigned long rq_ticks		__attribute__ ((aligned (8)));
-	unsigned long nr_ios		__attribute__ ((aligned (8)));
-	unsigned int  major		__attribute__ ((aligned (8)));
-	unsigned int  minor		__attribute__ ((packed));
-};
+#define CLOSE(_fd_)		if (_fd_ >= 0)		\
+					close(_fd_)
 
-#define DISK_STATS_SIZE		(sizeof(struct disk_stats))
 
+/*
+ ***************************************************************************
+ * Various structure definitions.
+ ***************************************************************************
+ */
+
+/*
+ * Structure used to compute statistics average
+ * for counters which are not cumulative.
+ */
 struct stats_sum {
 	unsigned long long frmkb;
 	unsigned long long bufkb;
@@ -444,6 +531,7 @@ struct stats_sum {
 	unsigned long long frskb;
 	unsigned long long tlskb;
 	unsigned long long caskb;
+	unsigned long long comkb;
 	unsigned long long dentry_stat;
 	unsigned long long file_used;
 	unsigned long long inode_used;
@@ -464,6 +552,7 @@ struct stats_sum {
 
 #define STATS_SUM_SIZE	(sizeof(struct stats_sum))
 
+/* Structure for timestamps */
 struct tstamp {
 	int tm_sec;
 	int tm_min;
@@ -471,79 +560,119 @@ struct tstamp {
 	int use;
 };
 
-/* Time must have the format HH:MM:SS with HH in 24-hour format */
-#define DEF_TMSTART	"08:00:00"
-#define DEF_TMEND	"18:00:00"
 
+/*
+ ***************************************************************************
+ * Functions prototypes.
+ ***************************************************************************
+ */
 
-/* Using 'do ... while' makes this macro safer to use (trailing semicolon) */
-#define CLOSE_ALL(_fd_)		do {			\
-					close(_fd_[0]); \
-					close(_fd_[1]); \
-				} while (0)
+/* Functions used to count number of items */
+extern __nr_t
+	wrap_get_cpu_nr(struct activity *);
+extern __nr_t
+	wrap_get_irq_nr(struct activity *);
+extern __nr_t
+	wrap_get_serial_nr(struct activity *);
+extern __nr_t
+	wrap_get_disk_nr(struct activity *);
+extern __nr_t
+	wrap_get_iface_nr(struct activity *);
 
-#define CLOSE(_fd_)		if (_fd_ >= 0)	\
-					close(_fd_)
+/* Functions used to read activities statistics */
+extern __read_funct_t
+	wrap_read_stat_cpu(struct activity *);
+extern __read_funct_t
+	wrap_read_stat_pcsw(struct activity *);
+extern __read_funct_t
+	wrap_read_stat_irq(struct activity *);
+extern __read_funct_t
+	wrap_read_swap(struct activity *);
+extern __read_funct_t
+	wrap_read_paging(struct activity *);
+extern __read_funct_t
+	wrap_read_io(struct activity *);
+extern __read_funct_t
+	wrap_read_meminfo(struct activity *);
+extern __read_funct_t
+	wrap_read_kernel_tables(struct activity *);
+extern __read_funct_t
+	wrap_read_loadavg(struct activity *);
+extern __read_funct_t
+	wrap_read_tty_driver_serial(struct activity *);
+extern __read_funct_t
+	wrap_read_disk(struct activity *);
+extern __read_funct_t
+	wrap_read_net_dev(struct activity *);
+extern __read_funct_t
+	wrap_read_net_edev(struct activity *);
+extern __read_funct_t
+	wrap_read_net_nfs(struct activity *);
+extern __read_funct_t
+	wrap_read_net_nfsd(struct activity *);
+extern __read_funct_t
+	wrap_read_net_sock(struct activity *);
 
-#define SREALLOC(S, TYPE, SIZE)	do {								 \
-   					TYPE *p;						 \
-				   	p = S;							 \
-   				   	if (SIZE) {						 \
-   				      		if ((S = (TYPE *) realloc(S, (SIZE))) == NULL) { \
-				         		perror("realloc");			 \
-				         		exit(4);				 \
-				      		}						 \
-				      		/* If the ptr was null, then it's a malloc() */	 \
-   				      		if (!p)						 \
-      				         		memset(S, 0, (SIZE));			 \
-				   	}							 \
-				} while (0)
-
-/* Functions */
-extern int   check_disk_reg(struct file_hdr *, struct disk_stats * [],
-			    int, int, int);
-extern unsigned int check_iface_reg(struct file_hdr *,
-				    struct stats_net_dev * [],
-				    int, int, unsigned int);
-extern int   datecmp(struct tm *, struct tstamp *);
-extern void  display_sa_file_version(struct file_magic *);
-unsigned long long  get_per_cpu_interval(struct stats_one_cpu *,
-					 struct stats_one_cpu *);
-extern char *get_devname(unsigned int, unsigned int, int);
-extern void  handle_invalid_sa_file(int *, struct file_magic *, char *,
-				    int);
-extern void  init_bitmap(unsigned char [], unsigned char, unsigned int);
-extern void  init_stats(struct file_stats [], unsigned int [][NR_IRQS]);
-extern int   next_slice(unsigned long long, unsigned long long,
-			int, long);
-extern int   parse_sar_opt(char * [], int, unsigned int *,
-			   unsigned int *, int,
-			   unsigned char [], unsigned char []);
-extern int   parse_sar_I_opt(char * [], int *, unsigned int *,
-			     unsigned char []);
-extern int   parse_sa_P_opt(char * [], int *, unsigned int *,
-			    unsigned char []);
-extern int   parse_sar_n_opt(char * [], int *, unsigned int *);
-extern int   parse_timestamp(char * [], int *, struct tstamp *,
-			     const char *);
-extern void  prep_file_for_reading(int *, char *, struct file_magic *,
-				   struct file_hdr *, unsigned int *,
-				   unsigned int, int);
-extern void  get_itv_value(struct file_stats *, struct file_stats *,
-			   unsigned int, unsigned long long *,
-			   unsigned long long *);
-extern void  print_report_hdr(unsigned int, struct tm *,
-			      struct file_hdr *);
-extern int   sa_fread(int, void *, int, int);
-extern void  salloc_cpu_array(struct stats_one_cpu * [], unsigned int);
-extern void  salloc_disk_array(struct disk_stats * [], int);
-extern void  salloc_irqcpu_array(struct stats_irq_cpu * [],
-				 unsigned int, unsigned int);
-extern void  salloc_net_dev_array(struct stats_net_dev * [],
-				  unsigned int);
-extern void  salloc_serial_array(struct stats_serial * [], int);
-extern void  set_default_file(struct tm *, char *);
-extern void  set_hdr_rectime(unsigned int, struct tm *,
-			     struct file_hdr *);
+/* Other functions */
+extern void
+	allocate_bitmaps(struct activity * []);
+extern void
+	allocate_structures(struct activity * []);
+extern int
+	check_disk_reg(struct activity *, int, int, int);
+extern void
+	check_file_actlst(int *, char *, struct activity * [], struct file_magic *,
+			  struct file_header *, struct file_activity **,
+			  unsigned int [], int);
+extern unsigned int
+	check_net_dev_reg(struct activity *, int, int, unsigned int);
+extern unsigned int
+	check_net_edev_reg(struct activity *, int, int, unsigned int);
+extern void
+	copy_structures(struct activity * [], unsigned int [],
+			struct record_header [], int, int);
+extern int
+	datecmp(struct tm *, struct tstamp *);
+extern void
+	display_sa_file_version(struct file_magic *);
+extern int
+	get_activity_nr(struct activity * [], unsigned int, int);
+extern int
+	get_activity_position(struct activity * [], unsigned int);
+extern char *
+	get_devname(unsigned int, unsigned int, int);
+extern void
+	get_itv_value(struct record_header *, struct record_header *,
+		      unsigned int, unsigned long long *, unsigned long long *);
+extern void
+	handle_invalid_sa_file(int *, struct file_magic *, char *, int);
+extern int
+	next_slice(unsigned long long, unsigned long long, int, long);
+extern int
+	parse_sar_opt(char * [], int *, struct activity * [], unsigned int *, int);
+extern int
+	parse_sar_I_opt(char * [], int *, struct activity * []);
+extern int
+	parse_sa_P_opt(char * [], int *, unsigned int *, struct activity * []);
+extern int
+	parse_sar_n_opt(char * [], int *, struct activity * []);
+extern int
+	parse_timestamp(char * [], int *, struct tstamp *, const char *);
+extern void
+	print_report_hdr(unsigned int, struct tm *, struct file_header *, int);
+extern void
+	read_file_stat_bunch(struct activity * [], int, int, int, struct file_activity *);
+extern int
+	sa_fread(int, void *, int, int);
+extern void
+	select_all_activities(struct activity * []);
+extern void
+	select_default_activity(struct activity * []);
+extern void
+	set_bitmap(unsigned char [], unsigned char, unsigned int);
+extern void
+	set_default_file(struct tm *, char *);
+extern void
+	set_hdr_rectime(unsigned int, struct tm *, struct file_header *);
 
 #endif  /* _SA_H */

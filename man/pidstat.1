@@ -1,10 +1,10 @@
-.TH PIDSTAT 1 "OCTOBER 2007" Linux "Linux User's Manual" -*- nroff -*-
+.TH PIDSTAT 1 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 pidstat \- Report statistics for Linux tasks.
 .SH SYNOPSIS
 .B pidstat [ -C
 .I comm
-.B ] [ -d ] [ -I ] [ -p {
+.B ] [ -d ] [ -h ] [ -I ] [ -p {
 .I pid
 .B | SELF | ALL } ] [ -r ] [ -t ] [ -T { TASK | CHILD | ALL } ] [ -u ] [ -V ] [ -w ] [
 .I interval
@@ -95,6 +95,9 @@ been accounted for will not be happening.
 The command name of the task.
 .RE
 .RE
+.IP -h
+Display all activities horizontally on a single line. This is
+intended to make it easier to be parsed by other programs.
 .IP -I
 In an SMP environment, indicate that tasks CPU usage
 (as displayed by option
@@ -181,10 +184,15 @@ together with its children.
 .IP -t
 Also display statistics for threads associated with selected tasks.
 
-This option adds the following value to the reports:
+This option adds the following values to the reports:
+
+.B TGID
+.RS
+.RS
+The identification number of the thread group leader.
+.RE
 
 .B TID
-.RS
 .RS
 The identification number of the thread being monitored.
 .RE
@@ -222,16 +230,23 @@ the following values are displayed:
 The identification number of the task being monitored.
 .RE
 
-.B %user
+.B %usr
 .RS
 Percentage of CPU used by the task while executing at the user level
-(application), with or without nice priority.
+(application), with or without nice priority. Note that this field
+does NOT include time spent running a virtual processor.
 .RE
 
 .B %system
 .RS
 Percentage of CPU used by the task while executing at the system level
 (kernel).
+.RE
+
+.B %guest
+.RS
+Percentage of CPU spent by the task in virtual machine (running a virtual
+processor).
 .RE
 
 .B %CPU
@@ -262,12 +277,13 @@ The identification number of the task which is being monitored
 together with its children.
 .RE
 
-.B user-ms
+.B usr-ms
 .RS
 Total number of milliseconds spent
 by the task and all its children while executing at the
 user level (application), with or without nice priority, and
-collected during the interval of time.
+collected during the interval of time. Note that this field does
+NOT include time spent running a virtual processor.
 .RE
 
 .B system-ms
@@ -275,6 +291,13 @@ collected during the interval of time.
 Total number of milliseconds spent
 by the task and all its children while executing at the
 system level (kernel), and collected during the interval of time.
+.RE
+
+.B guest-ms
+.RS
+Total number of milliseconds spent
+by the task and all its children in virtual machine (running a virtual
+processor).
 .RE
 
 .B Command

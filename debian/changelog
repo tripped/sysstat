@@ -1,3 +1,9 @@
+sysstat (8.1.6-2) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 09 Nov 2008 09:11:06 +0100
+
 sysstat (8.1.6-1) experimental; urgency=low
 
   * New upstream release:

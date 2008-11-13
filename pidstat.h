@@ -16,6 +16,7 @@
 #define NR_PID_PREALLOC	10
 
 #define MAX_COMM_LEN	16
+#define MAX_CMDLINE_LEN	128
 
 /* Activities */
 #define P_A_CPU		0x01
@@ -43,6 +44,7 @@
 #define P_D_ACTIVE_PID	0x10
 #define P_D_TID		0x20
 #define P_D_ONELINE	0x40
+#define P_D_CMDLINE	0x80
 
 #define DISPLAY_PID(m)		(((m) & P_D_PID) == P_D_PID)
 #define DISPLAY_ALL_PID(m)	(((m) & P_D_ALL_PID) == P_D_ALL_PID)
@@ -51,20 +53,25 @@
 #define DISPLAY_ACTIVE_PID(m)	(((m) & P_D_ACTIVE_PID) == P_D_ACTIVE_PID)
 #define DISPLAY_TID(m)		(((m) & P_D_TID) == P_D_TID)
 #define DISPLAY_ONELINE(m)	(((m) & P_D_ONELINE) == P_D_ONELINE)
+#define DISPLAY_CMDLINE(m)	(((m) & P_D_CMDLINE) == P_D_CMDLINE)
 
 #define F_NO_PID_IO	0x01
 
 #define NO_PID_IO(m)		(((m) & F_NO_PID_IO) == F_NO_PID_IO)
 
 #define PROC		"/proc"
+
 #define PROC_PID	"/proc/%u"
 #define PID_STAT	"/proc/%u/stat"
 #define PID_STATUS	"/proc/%u/status"
 #define PID_IO		"/proc/%u/io"
+#define PID_CMDLINE	"/proc/%u/cmdline"
+
 #define PROC_TASK	"/proc/%u/task"
 #define TASK_STAT	"/proc/%u/task/%u/stat"
 #define TASK_STATUS	"/proc/%u/task/%u/status"
 #define TASK_IO		"/proc/%u/task/%u/io"
+#define TASK_CMDLINE	"/proc/%u/task/%u/cmdline"
 
 #define PRINT_ID_HDR(_timestamp_, _flag_)	do {						\
 							printf("\n%-11s", _timestamp_);		\
@@ -75,10 +82,6 @@
 								printf("       PID");		\
 							}					\
 						} while (0)
-
-#define PRINT_COMM(_psti_)	printf("  %s%s\n",			\
-				      (_psti_->tgid ? "|__" : ""),	\
-				       _psti_->comm)
 
 struct pid_stats {
 	unsigned long long read_bytes			__attribute__ ((aligned (8)));
@@ -110,6 +113,7 @@ struct pid_stats {
 	unsigned int       processor			__attribute__ ((packed));
 	unsigned int       flags			__attribute__ ((packed));
 	char               comm[MAX_COMM_LEN];
+	char               cmdline[MAX_CMDLINE_LEN];
 };
 
 #define PID_STATS_SIZE	(sizeof(struct pid_stats))

@@ -1,13 +1,13 @@
-.TH SAR 1 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "NOVEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
-.B sar [ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -i
+.B sar [ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -i
 .I interval
 .B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
-.B [ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]
+.B [ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]
 .B [ -I {
-.I irq
+.I int
 .B | SUM | ALL | XALL } ] [ -P {
 .I cpu
 .B | ALL } ] [ -o [
@@ -321,16 +321,18 @@ flag). The default value of the
 parameter is the current daily data file, the
 .IR @SA_DIR@/sa dd
 file. The -f option is exclusive of the -o option.
+.IP -h
+Display a short help message then exit.
 .IP "-i interval"
 Select data records at seconds as close as possible to the number specified
 by the
 .I interval
 parameter.
-.IP "-I { irq | SUM | ALL | XALL }"
+.IP "-I { int | SUM | ALL | XALL }"
 Report statistics for a given interrupt.
-.B irq
+.B int
 is the interrupt number. Specifying multiple
-.B -I irq
+.B -I int
 parameters on the command line will look at multiple independent interrupts.
 The
 .B SUM
@@ -342,7 +344,7 @@ the first 16 interrupts are to be reported, whereas the
 .B XALL
 keyword indicates that statistics from all interrupts, including potential
 APIC interrupt sources, are to be reported.
-.IP "-n { DEV | EDEV | NFS | NFSD | SOCK | ALL }"
+.IP "-n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }"
 Report network statistics.
 
 With the
@@ -576,6 +578,392 @@ Number of IP fragments currently in use.
 .B tcp-tw
 .RS
 Number of TCP sockets in TIME_WAIT state.
+.RE
+
+With the
+.B IP
+keyword, statistics about IP network traffic are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B irec/s
+.RS
+The total number of input datagrams received from interfaces
+per second, including those received in error [ipInReceives].
+.RE
+
+.B fwddgm/s
+.RS
+The number of input datagrams per second, for which this entity was not
+their final IP destination, as a result of which an attempt
+was made to find a route to forward them to that final
+destination [ipForwDatagrams].
+.RE
+
+.B idel/s
+.RS
+The total number of input datagrams successfully delivered per second
+to IP user-protocols (including ICMP) [ipInDelivers].
+.RE
+
+.B orq/s
+.RS
+The total number of IP datagrams which local IP user-protocols (including ICMP)
+supplied per second to IP in requests for transmission [ipOutRequests].
+Note that this counter does not include any datagrams counted in fwddgm/s.
+.RE
+
+.B asmrq/s
+.RS
+The number of IP fragments received per second which needed to be
+reassembled at this entity [ipReasmReqds].
+.RE
+
+.B asmok/s
+.RS
+The number of IP datagrams successfully re-assembled per second [ipReasmOKs].
+.RE
+
+.B fragok/s
+.RS
+The number of IP datagrams that have been successfully
+fragmented at this entity per second [ipFragOKs].
+.RE
+
+.B fragcrt/s
+.RS
+The number of IP datagram fragments that have been
+generated per second as a result of fragmentation at this entity [ipFragCreates].
+.RE
+
+With the
+.B EIP
+keyword, statistics about IP network errors are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B ihdrerr/s
+.RS
+The number of input datagrams discarded per second due to errors in
+their IP headers, including bad checksums, version number
+mismatch, other format errors, time-to-live exceeded, errors
+discovered in processing their IP options, etc. [ipInHdrErrors]
+.RE
+
+.B iadrerr/s
+.RS
+The number of input datagrams discarded per second because the IP
+address in their IP header's destination field was not a
+valid address to be received at this entity. This count
+includes invalid addresses (e.g., 0.0.0.0) and addresses of
+unsupported Classes (e.g., Class E). For entities which are
+not IP routers and therefore do not forward datagrams, this
+counter includes datagrams discarded because the destination
+address was not a local address [ipInAddrErrors].
+.RE
+
+.B iukwnpr/s
+.RS
+The number of locally-addressed datagrams received
+successfully but discarded per second because of an unknown or
+unsupported protocol [ipInUnknownProtos].
+.RE
+
+.B idisc/s
+.RS
+The number of input IP datagrams per second for which no problems were
+encountered to prevent their continued processing, but which
+were discarded (e.g., for lack of buffer space) [ipInDiscards].
+Note that this counter does not include any datagrams discarded while
+awaiting re-assembly.
+.RE
+
+.B odisc/s
+.RS
+The number of output IP datagrams per second for which no problem was
+encountered to prevent their transmission to their
+destination, but which were discarded (e.g., for lack of
+buffer space) [ipOutDiscards].
+Note that this counter would include
+datagrams counted in fwddgm/s if any such packets met
+this (discretionary) discard criterion.
+.RE
+
+.B onort/s
+.RS
+The number of IP datagrams discarded per second because no route could
+be found to transmit them to their destination [ipOutNoRoutes].
+Note that this counter includes any packets counted in fwddgm/s
+which meet this 'no-route' criterion.
+Note that this includes any datagrams which a host cannot route because all
+of its default routers are down.
+.RE
+
+.B asmf/s
+.RS
+The number of failures detected per second by the IP re-assembly
+algorithm (for whatever reason: timed out, errors, etc) [ipReasmFails].
+Note that this is not necessarily a count of discarded IP
+fragments since some algorithms can lose track of the number of
+fragments by combining them as they are received.
+.RE
+
+.B fragf/s
+.RS
+The number of IP datagrams that have been discarded per second because
+they needed to be fragmented at this entity but could not
+be, e.g., because their Don't Fragment flag was set [ipFragFails].
+.RE
+
+With the
+.B ICMP
+keyword, statistics about ICMP network traffic are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B imsg/s
+.RS
+The total number of ICMP messages which the entity
+received per second [icmpInMsgs].
+Note that this counter includes all those counted by ierr/s.
+.RE
+
+.B omsg/s
+.RS
+The total number of ICMP messages which this entity
+attempted to send per second [icmpOutMsgs].
+Note that this counter includes all those counted by oerr/s.
+.RE
+
+.B iech/s
+.RS
+The number of ICMP Echo (request) messages received per second [icmpInEchos].
+.RE
+
+.B iechr/s
+.RS
+The number of ICMP Echo Reply messages received per second [icmpInEchoReps].
+.RE
+
+.B oech/s
+.RS
+The number of ICMP Echo (request) messages sent per second [icmpOutEchos].
+.RE
+
+.B oechr/s
+.RS
+The number of ICMP Echo Reply messages sent per second [icmpOutEchoReps].
+.RE
+
+.B itm/s
+.RS
+The number of ICMP Timestamp (request) messages received per second [icmpInTimestamps].
+.RE
+
+.B itmr/s
+.RS
+The number of ICMP Timestamp Reply messages received per second [icmpInTimestampReps].
+.RE
+
+.B otm/s
+.RS
+The number of ICMP Timestamp (request) messages sent per second [icmpOutTimestamps].
+.RE
+
+.B otmr/s
+.RS
+The number of ICMP Timestamp Reply messages sent per second [icmpOutTimestampReps].
+.RE
+
+.B iadrmk/s
+.RS
+The number of ICMP Address Mask Request messages received per second [icmpInAddrMasks].
+.RE
+
+.B iadrmkr/s
+.RS
+The number of ICMP Address Mask Reply messages received per second [icmpInAddrMaskReps].
+.RE
+
+.B oadrmk/s
+.RS
+The number of ICMP Address Mask Request messages sent per second [icmpOutAddrMasks].
+.RE
+
+.B oadrmkr/s
+.RS
+The number of ICMP Address Mask Reply messages sent per second [icmpOutAddrMaskReps].
+.RE
+
+With the
+.B EICMP
+keyword, statistics about ICMP error messages are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B ierr/s
+.RS
+The number of ICMP messages per second which the entity received but
+determined as having ICMP-specific errors (bad ICMP
+checksums, bad length, etc.) [icmpInErrors].
+.RE
+
+.B oerr/s
+.RS
+The number of ICMP messages per second which this entity did not send
+due to problems discovered within ICMP such as a lack of buffers [icmpOutErrors].
+.RE
+
+.B idstunr/s
+.RS
+The number of ICMP Destination Unreachable messages
+received per second [icmpInDestUnreachs].
+.RE
+
+.B odstunr/s
+.RS
+The number of ICMP Destination Unreachable messages sent per second [icmpOutDestUnreachs].
+.RE
+
+.B itmex/s
+.RS
+The number of ICMP Time Exceeded messages received per second [icmpInTimeExcds].
+.RE
+
+.B otmex/s
+.RS
+The number of ICMP Time Exceeded messages sent per second [icmpOutTimeExcds].
+.RE
+
+.B iparmpb/s
+.RS
+The number of ICMP Parameter Problem messages received per second [icmpInParmProbs].
+.RE
+
+.B oparmpb/s
+.RS
+The number of ICMP Parameter Problem messages sent per second [icmpOutParmProbs].
+.RE
+
+.B isrcq/s
+.RS
+The number of ICMP Source Quench messages received per second [icmpInSrcQuenchs].
+.RE
+
+.B osrcq/s
+.RS
+The number of ICMP Source Quench messages sent per second [icmpOutSrcQuenchs].
+.RE
+
+.B iredir/s
+.RS
+The number of ICMP Redirect messages received per second [icmpInRedirects].
+.RE
+
+.B oredir/s
+.RS
+The number of ICMP Redirect messages sent per second [icmpOutRedirects].
+.RE
+
+With the
+.B TCP
+keyword, statistics about TCP network traffic are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B active/s
+.RS
+The number of times TCP connections have made a direct
+transition to the SYN-SENT state from the CLOSED state per second [tcpActiveOpens].
+.RE
+
+.B passive/s
+.RS
+The number of times TCP connections have made a direct
+transition to the SYN-RCVD state from the LISTEN state per second [tcpPassiveOpens].
+.RE
+
+.B iseg/s
+.RS
+The total number of segments received per second, including those
+received in error [tcpInSegs].  This count includes segments received on
+currently established connections.
+.RE
+
+.B oseg/s
+.RS
+The total number of segments sent per second, including those on
+current connections but excluding those containing only
+retransmitted octets [tcpOutSegs].
+.RE
+
+With the
+.B ETCP
+keyword, statistics about TCP network errors are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B atmptf/s
+.RS
+The number of times per second TCP connections have made a direct
+transition to the CLOSED state from either the SYN-SENT
+state or the SYN-RCVD state, plus the number of times per second TCP
+connections have made a direct transition to the LISTEN
+state from the SYN-RCVD state [tcpAttemptFails].
+.RE
+
+.B estres/s
+.RS
+The number of times per second TCP connections have made a direct
+transition to the CLOSED state from either the ESTABLISHED
+state or the CLOSE-WAIT state [tcpEstabResets].
+.RE
+
+.B retrans/s
+.RS
+The total number of segments retransmitted per second - that is, the
+number of TCP segments transmitted containing one or more
+previously transmitted octets [tcpRetransSegs].
+.RE
+
+.B isegerr/s
+.RS
+The total number of segments received in error (e.g., bad
+TCP checksums) per second [tcpInErrs].
+.RE
+
+.B orsts/s
+.RS
+The number of TCP segments sent per second containing the RST flag [tcpOutRsts].
+.RE
+
+With the
+.B UDP
+keyword, statistics about UDP network traffic are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B idgm/s
+.RS
+The total number of UDP datagrams delivered per second to UDP users [udpInDatagrams].
+.RE
+
+.B odgm/s
+.RS
+The total number of UDP datagrams sent per second from this entity [udpOutDatagrams].
+.RE
+
+.B noport/s
+.RS
+The total number of received UDP datagrams per second for which there
+was no application at the destination port [udpNoPorts].
+.RE
+
+.B idgmerr/s
+.RS
+The number of received UDP datagrams per second that could not be
+delivered for reasons other than the lack of an application
+at the destination port [udpInErrors].
 .RE
 
 The

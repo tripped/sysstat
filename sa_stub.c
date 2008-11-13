@@ -164,7 +164,7 @@ __read_funct_t wrap_read_stat_cpu(struct activity *a)
 		= (struct stats_cpu *) a->_buf0;
 	
 	/* Read CPU statistics */
-	read_stat_cpu(st_cpu, a->nr, &(record_hdr.uptime), &(record_hdr.uptime0));
+	read_stat_cpu(st_cpu, *a->nr, &record_hdr.uptime, &record_hdr.uptime0);
 	
 	return;
 }
@@ -208,7 +208,7 @@ __read_funct_t wrap_read_stat_irq(struct activity *a)
 		= (struct stats_irq *) a->_buf0;
 
 	/* Read interrupts stats */
-	read_stat_irq(st_irq, a->nr);
+	read_stat_irq(st_irq, *a->nr);
 	
 	return;
 }
@@ -353,13 +353,13 @@ __read_funct_t wrap_read_disk(struct activity *a)
 
 	/* Try to read stats from /proc/diskstats, /proc/partitions or /proc/stat */
 	if (HAS_DISKSTATS(flags)) {
-		read_diskstats_disk(st_disk, a->nr);
+		read_diskstats_disk(st_disk, *a->nr);
 	}
 	else if (HAS_PPARTITIONS(flags)) {
-		read_partitions_disk(st_disk, a->nr);
+		read_partitions_disk(st_disk, *a->nr);
 	}
 	else {
-		read_stat_disk(st_disk, a->nr);
+		read_stat_disk(st_disk, *a->nr);
 	}
 
 	return;
@@ -382,7 +382,7 @@ __read_funct_t wrap_read_tty_driver_serial(struct activity *a)
 		= (struct stats_serial *) a->_buf0;
 
 	/* Read serial lines stats */
-	read_tty_driver_serial(st_serial, a->nr);
+	read_tty_driver_serial(st_serial, *a->nr);
 	
 	return;
 }
@@ -426,7 +426,7 @@ __read_funct_t wrap_read_net_dev(struct activity *a)
 		= (struct stats_net_dev *) a->_buf0;
 
 	/* Read network interfaces stats */
-	read_net_dev(st_net_dev, a->nr);
+	read_net_dev(st_net_dev, *a->nr);
 	
 	return;
 }
@@ -448,7 +448,7 @@ __read_funct_t wrap_read_net_edev(struct activity *a)
 		= (struct stats_net_edev *) a->_buf0;
 
 	/* Read network interfaces errors stats */
-	read_net_edev(st_net_edev, a->nr);
+	read_net_edev(st_net_edev, *a->nr);
 	
 	return;
 }
@@ -519,3 +519,156 @@ __read_funct_t wrap_read_net_sock(struct activity *a)
 	return;
 }
 
+/*
+ ***************************************************************************
+ * Read IP statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_ip(struct activity *a)
+{
+	struct stats_net_ip *st_net_ip
+		= (struct stats_net_ip *) a->_buf0;
+
+	/* Read IP stats */
+	read_net_ip(st_net_ip);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read IP error statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_eip(struct activity *a)
+{
+	struct stats_net_eip *st_net_eip
+		= (struct stats_net_eip *) a->_buf0;
+
+	/* Read IP error stats */
+	read_net_eip(st_net_eip);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read ICMP statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_icmp(struct activity *a)
+{
+	struct stats_net_icmp *st_net_icmp
+		= (struct stats_net_icmp *) a->_buf0;
+
+	/* Read ICMP stats */
+	read_net_icmp(st_net_icmp);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read ICMP error statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_eicmp(struct activity *a)
+{
+	struct stats_net_eicmp *st_net_eicmp
+		= (struct stats_net_eicmp *) a->_buf0;
+
+	/* Read ICMP error stats */
+	read_net_eicmp(st_net_eicmp);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read TCP statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_tcp(struct activity *a)
+{
+	struct stats_net_tcp *st_net_tcp
+		= (struct stats_net_tcp *) a->_buf0;
+
+	/* Read TCP stats */
+	read_net_tcp(st_net_tcp);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read TCP error statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_etcp(struct activity *a)
+{
+	struct stats_net_etcp *st_net_etcp
+		= (struct stats_net_etcp *) a->_buf0;
+
+	/* Read TCP error stats */
+	read_net_etcp(st_net_etcp);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read UDP statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_udp(struct activity *a)
+{
+	struct stats_net_udp *st_net_udp
+		= (struct stats_net_udp *) a->_buf0;
+
+	/* Read UDP stats */
+	read_net_udp(st_net_udp);
+	
+	return;
+}

@@ -72,7 +72,7 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 		}
 	}
 	
-	for (i = 0; (i < a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
 		
 		/*
 		 * The size of a->buf[...] CPU structure may be different from the default
@@ -84,7 +84,7 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 		scp = (struct stats_cpu *) ((char *) a->buf[prev] + i * a->msize);
 
 		/*
-		 * Note: a->nr is in [1, NR_CPUS + 1].
+		 * Note: *a->nr is in [1, NR_CPUS + 1].
 		 * Bitmap size is provided for (NR_CPUS + 1) CPUs.
 		 * Anyway, NR_CPUS may vary between the version of sysstat
 		 * used by sadc to create a file, and the version of sysstat
@@ -199,13 +199,13 @@ __print_funct_t print_irq_stats(struct activity *a, int prev, int curr,
 		printf("\n%-11s      INTR    intr/s\n", timestamp[!curr]);
 	}
 	
-	for (i = 0; (i < a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
 
 		sic = (struct stats_irq *) ((char *) a->buf[curr] + i * a->msize);
 		sip = (struct stats_irq *) ((char *) a->buf[prev] + i * a->msize);
 		
 		/*
-		 * Note: a->nr is in [0, NR_IRQS + 1].
+		 * Note: *a->nr is in [0, NR_IRQS + 1].
 		 * Bitmap size is provided for (NR_IRQS + 1) interrupts.
 		 * Anyway, NR_IRQS may vary between the version of sysstat
 		 * used by sadc to create a file, and the version of sysstat
@@ -688,7 +688,7 @@ __print_funct_t print_serial_stats(struct activity *a, int prev, int curr,
 		       "     brk/s   ovrun/s\n", timestamp[!curr]);
 	}
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		ssc = (struct stats_serial *) ((char *) a->buf[curr] + i * a->msize);
 		ssp = (struct stats_serial *) ((char *) a->buf[prev] + i * a->msize);
@@ -739,7 +739,7 @@ __print_funct_t print_disk_stats(struct activity *a, int prev, int curr,
 		       timestamp[!curr]);
 	}
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		sdc = (struct stats_disk *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -801,7 +801,7 @@ __print_funct_t print_net_dev_stats(struct activity *a, int prev, int curr,
 		       "   rxcmp/s   txcmp/s  rxmcst/s\n", timestamp[!curr]);
 	}
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		sndc = (struct stats_net_dev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -847,7 +847,7 @@ __print_funct_t print_net_edev_stats(struct activity *a, int prev, int curr,
 		       timestamp[!curr]);
 	}
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		snedc = (struct stats_net_edev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -1031,3 +1031,248 @@ __print_funct_t print_avg_net_sock_stats(struct activity *a, int prev, int curr,
 	stub_print_net_sock_stats(a, prev, curr, itv, TRUE);
 }
 
+/*
+ ***************************************************************************
+ * Display IP network traffic statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_ip_stats(struct activity *a, int prev, int curr,
+				   unsigned long long itv)
+{
+	struct stats_net_ip
+		*snic = (struct stats_net_ip *) a->buf[curr],
+		*snip = (struct stats_net_ip *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s    irec/s  fwddgm/s    idel/s     orq/s   asmrq/s"
+		       "   asmok/s  fragok/s fragcrt/s\n", timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+	       timestamp[curr],
+	       S_VALUE(snip->InReceives,    snic->InReceives,    itv),
+	       S_VALUE(snip->ForwDatagrams, snic->ForwDatagrams, itv),
+	       S_VALUE(snip->InDelivers,    snic->InDelivers,    itv),
+	       S_VALUE(snip->OutRequests,   snic->OutRequests,   itv),
+	       S_VALUE(snip->ReasmReqds,    snic->ReasmReqds,    itv),
+	       S_VALUE(snip->ReasmOKs,      snic->ReasmOKs,      itv),
+	       S_VALUE(snip->FragOKs,       snic->FragOKs,       itv),
+	       S_VALUE(snip->FragCreates,   snic->FragCreates,   itv));
+}
+
+/*
+ ***************************************************************************
+ * Display IP network error statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_eip_stats(struct activity *a, int prev, int curr,
+				    unsigned long long itv)
+{
+	struct stats_net_eip
+		*sneic = (struct stats_net_eip *) a->buf[curr],
+		*sneip = (struct stats_net_eip *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s ihdrerr/s iadrerr/s iukwnpr/s   idisc/s   odisc/s"
+		       "   onort/s    asmf/s   fragf/s\n", timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+	       timestamp[curr],
+	       S_VALUE(sneip->InHdrErrors,     sneic->InHdrErrors,     itv),
+	       S_VALUE(sneip->InAddrErrors,    sneic->InAddrErrors,    itv),
+	       S_VALUE(sneip->InUnknownProtos, sneic->InUnknownProtos, itv),
+	       S_VALUE(sneip->InDiscards,      sneic->InDiscards,      itv),
+	       S_VALUE(sneip->OutDiscards,     sneic->OutDiscards,     itv),
+	       S_VALUE(sneip->OutNoRoutes,     sneic->OutNoRoutes,     itv),
+	       S_VALUE(sneip->ReasmFails,      sneic->ReasmFails,      itv),
+	       S_VALUE(sneip->FragFails,       sneic->FragFails,       itv));
+}
+
+/*
+ ***************************************************************************
+ * Display ICMP network traffic statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_icmp_stats(struct activity *a, int prev, int curr,
+				     unsigned long long itv)
+{
+	struct stats_net_icmp
+		*snic = (struct stats_net_icmp *) a->buf[curr],
+		*snip = (struct stats_net_icmp *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s    imsg/s    omsg/s    iech/s   iechr/s    oech/s"
+		       "   oechr/s     itm/s    itmr/s     otm/s    otmr/s"
+		       "  iadrmk/s iadrmkr/s  oadrmk/s oadrmkr/s\n", timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f"
+	       " %9.2f %9.2f %9.2f %9.2f\n", timestamp[curr],
+	       S_VALUE(snip->InMsgs,           snic->InMsgs,           itv),
+	       S_VALUE(snip->OutMsgs,          snic->OutMsgs,          itv),
+	       S_VALUE(snip->InEchos,          snic->InEchos,          itv),
+	       S_VALUE(snip->InEchoReps,       snic->InEchoReps,       itv),
+	       S_VALUE(snip->OutEchos,         snic->OutEchos,         itv),
+	       S_VALUE(snip->OutEchoReps,      snic->OutEchoReps,      itv),
+	       S_VALUE(snip->InTimestamps,     snic->InTimestamps,     itv),
+	       S_VALUE(snip->InTimestampReps,  snic->InTimestampReps,  itv),
+	       S_VALUE(snip->OutTimestamps,    snic->OutTimestamps,    itv),
+	       S_VALUE(snip->OutTimestampReps, snic->OutTimestampReps, itv),
+	       S_VALUE(snip->InAddrMasks,      snic->InAddrMasks,      itv),
+	       S_VALUE(snip->InAddrMaskReps,   snic->InAddrMaskReps,   itv),
+	       S_VALUE(snip->OutAddrMasks,     snic->OutAddrMasks,     itv),
+	       S_VALUE(snip->OutAddrMaskReps,  snic->OutAddrMaskReps,  itv));
+}
+
+/*
+ ***************************************************************************
+ * Display ICMP network error statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_eicmp_stats(struct activity *a, int prev, int curr,
+				      unsigned long long itv)
+{
+	struct stats_net_eicmp
+		*sneic = (struct stats_net_eicmp *) a->buf[curr],
+		*sneip = (struct stats_net_eicmp *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s    ierr/s    oerr/s idstunr/s odstunr/s   itmex/s"
+		       "   otmex/s iparmpb/s oparmpb/s   isrcq/s   osrcq/s"
+		       "  iredir/s  oredir/s\n", timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f"
+	       " %9.2f %9.2f\n", timestamp[curr],
+	       S_VALUE(sneip->InErrors,        sneic->InErrors,        itv),
+	       S_VALUE(sneip->OutErrors,       sneic->OutErrors,       itv),
+	       S_VALUE(sneip->InDestUnreachs,  sneic->InDestUnreachs,  itv),
+	       S_VALUE(sneip->OutDestUnreachs, sneic->OutDestUnreachs, itv),
+	       S_VALUE(sneip->InTimeExcds,     sneic->InTimeExcds,     itv),
+	       S_VALUE(sneip->OutTimeExcds,    sneic->OutTimeExcds,    itv),
+	       S_VALUE(sneip->InParmProbs,     sneic->InParmProbs,     itv),
+	       S_VALUE(sneip->OutParmProbs,    sneic->OutParmProbs,    itv),
+	       S_VALUE(sneip->InSrcQuenchs,    sneic->InSrcQuenchs,    itv),
+	       S_VALUE(sneip->OutSrcQuenchs,   sneic->OutSrcQuenchs,   itv),
+	       S_VALUE(sneip->InRedirects,     sneic->InRedirects,     itv),
+	       S_VALUE(sneip->OutRedirects,    sneic->OutRedirects,    itv));
+}
+
+/*
+ ***************************************************************************
+ * Display TCP network traffic statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_tcp_stats(struct activity *a, int prev, int curr,
+				    unsigned long long itv)
+{
+	struct stats_net_tcp
+		*sntc = (struct stats_net_tcp *) a->buf[curr],
+		*sntp = (struct stats_net_tcp *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s  active/s passive/s    iseg/s    oseg/s\n",
+		       timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f\n",
+	       timestamp[curr],
+	       S_VALUE(sntp->ActiveOpens,  sntc->ActiveOpens,  itv),
+	       S_VALUE(sntp->PassiveOpens, sntc->PassiveOpens, itv),
+	       S_VALUE(sntp->InSegs,       sntc->InSegs,       itv),
+	       S_VALUE(sntp->OutSegs,      sntc->OutSegs,      itv));
+}
+
+/*
+ ***************************************************************************
+ * Display TCP network error statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_etcp_stats(struct activity *a, int prev, int curr,
+				     unsigned long long itv)
+{
+	struct stats_net_etcp
+		*snetc = (struct stats_net_etcp *) a->buf[curr],
+		*snetp = (struct stats_net_etcp *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s  atmptf/s  estres/s retrans/s isegerr/s   orsts/s\n",
+		       timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+	       timestamp[curr],
+	       S_VALUE(snetp->AttemptFails, snetc->AttemptFails, itv),
+	       S_VALUE(snetp->EstabResets,  snetc->EstabResets,  itv),
+	       S_VALUE(snetp->RetransSegs,  snetc->RetransSegs,  itv),
+	       S_VALUE(snetp->InErrs,       snetc->InErrs,       itv),
+	       S_VALUE(snetp->OutRsts,      snetc->OutRsts,      itv));
+}
+
+/*
+ ***************************************************************************
+ * Display UDP network traffic statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_udp_stats(struct activity *a, int prev, int curr,
+				    unsigned long long itv)
+{
+	struct stats_net_udp
+		*snuc = (struct stats_net_udp *) a->buf[curr],
+		*snup = (struct stats_net_udp *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s    idgm/s    odgm/s  noport/s idgmerr/s\n",
+		       timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f\n",
+	       timestamp[curr],
+	       S_VALUE(snup->InDatagrams,  snuc->InDatagrams,  itv),
+	       S_VALUE(snup->OutDatagrams, snuc->OutDatagrams, itv),
+	       S_VALUE(snup->NoPorts,      snuc->NoPorts,      itv),
+	       S_VALUE(snup->InErrors,     snuc->InErrors,     itv));
+}

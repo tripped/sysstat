@@ -545,7 +545,7 @@ int count_bits(void *ptr, int size)
 	for (i = 0; i < size; i++, p++) {
 		k = 0x80;
 		while (k) {
-			if ((*p) & k)
+			if (*p & k)
 				nr++;
 			k >>= 1;
 		}

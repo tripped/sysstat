@@ -75,6 +75,19 @@ char *args[MAX_ARGV_NR];
 
 extern struct activity *act[];
 
+/*
+ ***************************************************************************
+ * Print usage title message.
+ *
+ * IN:
+ * @progname	Name of sysstat command
+ ***************************************************************************
+ */
+void print_usage_title(char *progname)
+{
+	fprintf(stderr, _("Usage: %s [ options ] [ <interval> [ <count> ] ]\n"),
+		progname);
+}
 
 /*
  ***************************************************************************
@@ -86,16 +99,49 @@ extern struct activity *act[];
  */
 void usage(char *progname)
 {
-	fprintf(stderr, _("Usage: %s [ options ] [ <interval> [ <count> ] ]\n"),
-		progname);
 
+	print_usage_title(progname);
 	fprintf(stderr, _("Options are:\n"
-			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
+			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 			  "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 			  "[ -I { <int> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-			  "[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
+			  "[ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]\n"
 			  "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 			  "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"));
+	exit(1);
+}
+
+/*
+ ***************************************************************************
+ * Display a short help message and exit.
+ *
+ * IN:
+ * @progname	Name of sysstat command
+ ***************************************************************************
+ */
+void display_help(char *progname)
+{
+
+	print_usage_title(progname);
+	fprintf(stderr, _("\nMain options and reports:\n"));
+	fprintf(stderr, _("\t-b\tI/O and transfer rate statistics\n"));
+	fprintf(stderr, _("\t-B\tPaging statistics\n"));
+	fprintf(stderr, _("\t-d\tBlock device statistics\n"));
+	fprintf(stderr, _("\t-I { <int> | SUM | ALL | XALL }\n"
+			  "\t\tInterrupts statistics\n"));
+	fprintf(stderr, _("\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
+			  "\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
+			  "\t\tNetwork statistics\n"));
+	fprintf(stderr, _("\t-q\tQueue length and load average statistics\n"));
+	fprintf(stderr, _("\t-r\tMemory utilization statistics\n"));
+	fprintf(stderr, _("\t-R\tMemory statistics\n"));
+	fprintf(stderr, _("\t-S\tSwap space utilization statistics\n"));
+	fprintf(stderr, _("\t-u [ ALL ]\n"
+			  "\t\tCPU utilization statistics\n"));
+	fprintf(stderr, _("\t-v\tKernel table statistics\n"));
+	fprintf(stderr, _("\t-w\tTask creation and system switching statistics\n"));
+	fprintf(stderr, _("\t-W\tSwapping statistics\n"));
+	fprintf(stderr, _("\t-y\tTTY device statistics\n"));
 	exit(1);
 }
 
@@ -223,7 +269,7 @@ int check_line_hdr(void)
 					rc = TRUE;
 				}
 			}
-			else if (act[i]->nr > 1) {
+			else if (*act[i]->nr > 1) {
 				rc = TRUE;
 			}
 			/* Stop now since we have only one selected activity */
@@ -274,7 +320,7 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 	static __nr_t cpu_nr = -1;
 	
 	if (cpu_nr < 0)
-		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
 
 	/* Interval value in jiffies */
 	g_itv = get_interval(record_hdr[2].uptime, record_hdr[curr].uptime);
@@ -295,7 +341,7 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
 			continue;
 		
-		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
+		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0)) {
 			/* Display current average activity statistics */
 			if (NEEDS_GLOBAL_ITV(act[i]->options))
 				(*act[i]->f_print_avg)(act[i], 2, curr, g_itv);
@@ -342,7 +388,7 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 	static __nr_t cpu_nr = -1;
 
 	if (cpu_nr < 0)
-		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
 
 	/* Check time (1) */
 	if (read_from_file) {
@@ -399,7 +445,7 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
 			continue;
 
-		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
+		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0)) {
 			/* Display current activity statistics */
 			if (NEEDS_GLOBAL_ITV(act[i]->options))
 				(*act[i]->f_print)(act[i], !curr, curr, g_itv);
@@ -432,8 +478,8 @@ void write_stats_startup(int curr)
 	record_hdr[!curr].ust_time    = record_hdr[curr].ust_time;
 
 	for (i = 0; i < NR_ACT; i++) {
-		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0))
-			memset(act[i]->buf[!curr], 0, act[i]->msize * act[i]->nr);
+		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0))
+			memset(act[i]->buf[!curr], 0, act[i]->msize * *act[i]->nr);
 	}
 	
 	flags |= S_F_SINCE_BOOT;
@@ -555,7 +601,7 @@ void read_sadc_stat_bunch(int curr)
 			PANIC(1);
 		}
 		
-		if (sa_read(act[p]->buf[curr], act[p]->fsize * act[p]->nr)) {
+		if (sa_read(act[p]->buf[curr], act[p]->fsize * *act[p]->nr)) {
 			print_read_error();
 		}
 	}
@@ -599,7 +645,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 	 * Restore the first stats collected.
 	 * Used to compute the rate displayed on the first line.
 	 */
-	copy_structures(act, id_seq, record_hdr, !(*curr), 2);
+	copy_structures(act, id_seq, record_hdr, !*curr, 2);
 
 	*cnt  = count;
 
@@ -609,7 +655,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 			inc = count_bits(act[p]->bitmap, BITMAP_SIZE(act[p]->bitmap_size));
 		}
 		else {
-			inc = act[p]->nr;
+			inc = *act[p]->nr;
 		}
 	}
 	if (inc < 0) {
@@ -623,7 +669,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 				  RECORD_HEADER_SIZE, SOFT_SIZE);
 		rtype = record_hdr[*curr].record_type;
 
-		if (!(*eosaf) && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
+		if (!*eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
 			/* Read the extra fields since it's not a special record */
 			read_file_stat_bunch(act, *curr, ifd, file_hdr.sa_nr_act, file_actlst);
 		}
@@ -635,7 +681,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 		else
 			dis = 0;
 
-		if (!(*eosaf) && (rtype != R_RESTART)) {
+		if (!*eosaf && (rtype != R_RESTART)) {
 
 			if (rtype == R_COMMENT) {
 				/* Display comment */
@@ -651,7 +697,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 			/* next is set to 1 when we were close enough to desired interval */
 			next = write_stats(*curr, USE_SA_FILE, cnt, tm_start.use, tm_end.use,
 					   *reset, act_id);
-			if (next && ((*cnt) > 0)) {
+			if (next && (*cnt > 0)) {
 				(*cnt)--;
 			}
 			if (next) {
@@ -662,10 +708,10 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 			*reset = FALSE;
 		}
 	}
-	while ((*cnt) && !(*eosaf) && (rtype != R_RESTART));
+	while (*cnt && !*eosaf && (rtype != R_RESTART));
 
 	if (davg) {
-		write_stats_avg(!(*curr), USE_SA_FILE, act_id);
+		write_stats_avg(!*curr, USE_SA_FILE, act_id);
 	}
 
 	*reset = TRUE;
@@ -728,8 +774,8 @@ void read_header_data(void)
 			exit(3);
 		}
 
-		id_seq[i]  = file_act.id;	/* We necessarily have "i < NR_ACT" */
-		act[p]->nr = file_act.nr;
+		id_seq[i]   = file_act.id;	/* We necessarily have "i < NR_ACT" */
+		*act[p]->nr = file_act.nr;
 	}
 
 	while (i < NR_ACT) {
@@ -770,7 +816,7 @@ void read_stats_from_file(char from_file[])
 
 	/* Print report header */
 	print_report_hdr(flags, &rectime, &file_hdr,
-			 act[get_activity_position(act, A_CPU)]->nr);
+			 *act[get_activity_position(act, A_CPU)]->nr);
 
 	/* Read system statistics from file */
 	do {
@@ -869,6 +915,10 @@ void read_stats_from_file(char from_file[])
 	while (!eosaf);
 
 	close(ifd);
+	
+	if (file_actlst) {
+		free(file_actlst);
+	}
 }
 
 /*
@@ -904,7 +954,7 @@ void read_stats(void)
 
 	/* Print report header */
 	print_report_hdr(flags, &rectime, &file_hdr,
-			 act[get_activity_position(act, A_CPU)]->nr);
+			 *act[get_activity_position(act, A_CPU)]->nr);
 
 	/* Read system statistics sent by the data collector */
 	read_sadc_stat_bunch(0);
@@ -1046,6 +1096,11 @@ int main(int argc, char **argv)
 			}
 		}
 
+		else if (!strcmp(argv[opt], "-h")) {
+			/* Display help message */
+			display_help(argv[0]);
+		}
+
 		else if (!strcmp(argv[opt], "-i")) {
 			if (!argv[++opt] || (strspn(argv[opt], DIGITS) != strlen(argv[opt]))) {
 				usage(argv[0]);
@@ -1153,6 +1208,10 @@ int main(int argc, char **argv)
 
 		/* Read stats from file */
 		read_stats_from_file(from_file);
+		
+		/* Free stuctures and activity bitmaps */
+		free_bitmaps(act);
+		free_structures(act);
 
 		return 0;
 	}
@@ -1237,7 +1296,13 @@ int main(int argc, char **argv)
 
 		/* Get now the statistics */
 		read_stats();
+
 		break;
 	}
+
+	/* Free structures and activity bitmaps */
+	free_bitmaps(act);
+	free_structures(act);
+
 	return 0;
 }

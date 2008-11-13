@@ -149,6 +149,33 @@ void salloc_mp_struct(int nr_cpus)
 
 /*
  ***************************************************************************
+ * Free structures and bitmap.
+ ***************************************************************************
+ */
+void sfree_mp_struct(void)
+{
+	int i;
+
+	for (i = 0; i < 3; i++) {
+
+		if (st_cpu[i]) {
+			free(st_cpu[i]);
+		}
+		if (st_irq[i]) {
+			free(st_irq[i]);
+		}
+		if (st_irqcpu[i]) {
+			free(st_irqcpu[i]);
+		}
+	}
+
+	if (cpu_bitmap) {
+		free(cpu_bitmap);
+	}
+}
+
+/*
+ ***************************************************************************
  * Core function used to display statistics
  *
  * IN:
@@ -443,7 +470,7 @@ void read_interrupts_stat(int curr)
 	FILE *fp;
 	struct stats_irq *st_irq_i;
 	struct stats_irqcpu *p;
-	static char *line = NULL;
+	char *line = NULL;
 	unsigned long irq = 0;
 	unsigned int cpu;
 	int cpu_index[cpu_nr], index = 0, dgt, len;
@@ -456,13 +483,7 @@ void read_interrupts_stat(int curr)
 
 	if ((fp = fopen(INTERRUPTS, "r")) != NULL) {
 
-		if (!line) {
-			if ((line = (char *) malloc(INTERRUPTS_LINE + 11 * cpu_nr))
-			    == NULL) {
-				perror("malloc");
-				exit(4);
-			}
-		}
+		SREALLOC(line, char, INTERRUPTS_LINE + 11 * cpu_nr);
 
 		/*
 		 * Parse header line to see which CPUs are online
@@ -513,6 +534,10 @@ void read_interrupts_stat(int curr)
 		}
 
 		fclose(fp);
+		
+		if (line) {
+			free(line);
+		}
 	}
 
 	while (irq < irqcpu_nr) {
@@ -818,6 +843,9 @@ int main(int argc, char **argv)
 
 	/* Main loop */
 	rw_mpstat_loop(dis_hdr, rows);
+
+	/* Free structures */
+	sfree_mp_struct();
 
 	return 0;
 }

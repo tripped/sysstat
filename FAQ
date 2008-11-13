@@ -166,6 +166,13 @@ remove by hand all the files located in the /var/log/sa directory:
 
 # rm /var/log/sa/sa??
 
+With recent versions of sysstat (8.1.1 and later), it is now possible to
+know which version of sar or sadc has been used to create a data file.
+Just enter the following command:
+
+$ sadf -H /your/datafile | grep sysstat
+File created using sar/sadc from sysstat version 8.1.7
+
 ~~~
 
 2.2. The sar command complains with the following message:
@@ -379,7 +386,7 @@ Requested activities not available in file ...
 This error message means that you are trying to extract non-existent activities
 from the data file. Usually sadc reads all the available activities from the
 system and stores them in the data file. However, to prevent data files from
-taking too much space on disk, some activities (like interrupts or disks
+taking too much space on disk, some activities (like interrupts, disks and SNMP
 statistics) must be explicitly set on the command line to be read by sadc.
 To tell sadc that an optional activity should be collected, use switch -S
 followed by the keyword corresponding to that activity (see sadc(8) manual page).
@@ -390,7 +397,7 @@ sa1 or even the script used to insert a RESTART message when the machine is
 rebooted).
 NB: If the sar command complains with the error message:
 "Requested activities not available" (without mentioning "in file"),
-please see question 2.18 below.
+then see question 2.18 below.
 
 ~~~
 

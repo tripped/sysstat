@@ -163,7 +163,7 @@ void free_inactive_entries(int ioln_nr, struct io_hdr_stats *st_hdr_ioln)
 
 /*
  ***************************************************************************
- * Allocate and init I/O devices structures
+ * Allocate and init I/O device structures.
  *
  * IN:
  * @iodev_nr	Number of devices and partitions.
@@ -221,7 +221,7 @@ void salloc_nfs(int ionfs_nr)
 
 /*
  ***************************************************************************
- * Allocate structures for devices entered on the command line
+ * Allocate structures for devices entered on the command line.
  *
  * IN:
  * @list_len	Number of arguments on the command line.
@@ -234,6 +234,18 @@ void salloc_dev_list(int list_len)
 		exit(4);
 	}
 	memset(st_dev_list, 0, IO_DLIST_SIZE * list_len);
+}
+
+/*
+ ***************************************************************************
+ * Free structures used for devices entered on the command line.
+ ***************************************************************************
+ */
+void sfree_dev_list(void)
+{
+	if (st_dev_list) {
+		free(st_dev_list);
+	}
 }
 
 /*
@@ -355,6 +367,41 @@ void io_sys_init(int *flags)
 
 		/* Allocate structures for number of NFS directories found */
 		salloc_nfs(ionfs_nr);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Free various structures.
+ ***************************************************************************
+*/
+void io_sys_free(void)
+{
+	int i;
+	
+	for (i = 0; i < 2; i++) {
+
+		/* Free CPU structures */
+		if (st_cpu[i]) {
+			free(st_cpu[i]);
+		}
+
+		/* Free I/O device structures */
+		if (st_iodev[i]) {
+			free(st_iodev[i]);
+		}
+		
+		/* Free I/O NFS directories structures */
+		if (st_ionfs[i]) {
+			free(st_ionfs[i]);
+		}
+	}
+	
+	if (st_hdr_iodev) {
+		free(st_hdr_iodev);
+	}
+	if (st_hdr_ionfs) {
+		free(st_hdr_ionfs);
 	}
 }
 
@@ -1670,5 +1717,9 @@ int main(int argc, char **argv)
 	/* Main loop */
 	rw_io_stat_loop(flags, count, &rectime);
 
+	/* Free structures */
+	io_sys_free();
+	sfree_dev_list();
+	
 	return 0;
 }

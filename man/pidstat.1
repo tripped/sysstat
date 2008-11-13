@@ -1,10 +1,10 @@
-.TH PIDSTAT 1 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH PIDSTAT 1 "NOVEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 pidstat \- Report statistics for Linux tasks.
 .SH SYNOPSIS
 .B pidstat [ -C
 .I comm
-.B ] [ -d ] [ -h ] [ -I ] [ -p {
+.B ] [ -d ] [ -h ] [ -I ] [ -l ] [ -p {
 .I pid
 .B | SELF | ALL } ] [ -r ] [ -t ] [ -T { TASK | CHILD | ALL } ] [ -u ] [ -V ] [ -w ] [
 .I interval
@@ -103,6 +103,8 @@ In an SMP environment, indicate that tasks CPU usage
 (as displayed by option
 .B -u
 ) should be divided by the total number of processors.
+.IP -l
+Display the process command name and all its arguments.
 .IP "-p { pid | SELF | ALL }"
 Select tasks (processes) for which statistics are to be reported.
 .B pid

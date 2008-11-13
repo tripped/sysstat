@@ -17,7 +17,7 @@
  */
 
 /* Number of activities */
-#define NR_ACT	16
+#define NR_ACT	23
 
 /* Activities */
 #define A_CPU		1
@@ -36,6 +36,19 @@
 #define A_NET_NFS	14
 #define A_NET_NFSD	15
 #define A_NET_SOCK	16
+#define A_NET_IP	17
+#define A_NET_EIP	18
+#define A_NET_ICMP	19
+#define A_NET_EICMP	20
+#define A_NET_TCP	21
+#define A_NET_ETCP	22
+#define A_NET_UDP	23
+
+/* Macro used to flag an activity that should be collected */
+#define COLLECT_ACTIVITY(m)	act[get_activity_position(act, m)]->options |= AO_COLLECTED
+
+/* Macro used to flag an activity that should be selected */
+#define SELECT_ACTIVITY(m)	act[get_activity_position(act, m)]->options |= AO_SELECTED
 
 
 /*
@@ -103,8 +116,16 @@
 #define K_NFS		"NFS"
 #define K_NFSD		"NFSD"
 #define K_SOCK		"SOCK"
+#define K_IP		"IP"
+#define K_EIP		"EIP"
+#define K_ICMP		"ICMP"
+#define K_EICMP		"EICMP"
+#define K_TCP		"TCP"
+#define K_ETCP		"ETCP"
+#define K_UDP		"UDP"
 #define K_DISK		"DISK"
 #define K_INT		"INT"
+#define K_SNMP		"SNMP"
 
 /* sadc program */
 #define SADC		"sadc"
@@ -128,7 +149,7 @@
 #define UTSNAME_LEN		65
 #define TIMESTAMP_LEN		16
 #define XML_TIMESTAMP_LEN	64
-#define HEADER_LINE_LEN		192
+#define HEADER_LINE_LEN		512
 
 /* Maximum number of args that can be passed to sadc */
 #define MAX_ARGV_NR	32
@@ -259,13 +280,17 @@ struct activity {
 	 */
 	__print_funct_t (*f_xml_print) (struct activity *, int, int, unsigned long long);
 	/*
-	 * Number of items on the system.
-	 * A negative value (-1) is the default value and indicates that this number
-	 * has still not been calculated by the f_count() function.
-	 * A value of 0 means that this number has been calculated, but no items have
-	 * been found.
+	 * Header string displayed by sadf -d/-D.
 	 */
-	__nr_t nr;
+	char *hdr_line;
+	/*
+	 * Name of activity.
+	 */
+	char *name;
+	/*
+	 * Number of item.
+	 */
+	__nr_t *nr;
 	/*
 	 * Size of an item.
 	 * This is the size of the corresponding structure, as read from or written
@@ -301,10 +326,6 @@ struct activity {
 	 * to take into account CPU "all"
 	 */
 	int bitmap_size;
-	/*
-	 * Header string displayed by sadf -d/-D.
-	 */
-	char hdr_line[HEADER_LINE_LEN];
 };
 
 
@@ -612,6 +633,20 @@ extern __read_funct_t
 	wrap_read_net_nfsd(struct activity *);
 extern __read_funct_t
 	wrap_read_net_sock(struct activity *);
+extern __read_funct_t
+	wrap_read_net_ip(struct activity *);
+extern __read_funct_t
+	wrap_read_net_eip(struct activity *);
+extern __read_funct_t
+	wrap_read_net_icmp(struct activity *);
+extern __read_funct_t
+	wrap_read_net_eicmp(struct activity *);
+extern __read_funct_t
+	wrap_read_net_tcp(struct activity *);
+extern __read_funct_t
+	wrap_read_net_etcp(struct activity *);
+extern __read_funct_t
+	wrap_read_net_udp(struct activity *);
 
 /* Other functions */
 extern void
@@ -635,6 +670,10 @@ extern int
 	datecmp(struct tm *, struct tstamp *);
 extern void
 	display_sa_file_version(struct file_magic *);
+extern void
+	free_bitmaps(struct activity * []);
+extern void
+	free_structures(struct activity * []);
 extern int
 	get_activity_nr(struct activity * [], unsigned int, int);
 extern int

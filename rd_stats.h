@@ -51,6 +51,7 @@
 #define NET_RPC_NFSD	"/proc/net/rpc/nfsd"
 #define LOADAVG		"/proc/loadavg"
 #define VMSTAT		"/proc/vmstat"
+#define NET_SNMP	"/proc/net/snmp"
 
 
 /*
@@ -275,6 +276,102 @@ struct stats_net_sock {
 
 #define STATS_NET_SOCK_SIZE	(sizeof(struct stats_net_sock))
 
+/* Structure for IP statistics */
+struct stats_net_ip {
+	unsigned long InReceives	__attribute__ ((aligned (8)));
+	unsigned long ForwDatagrams	__attribute__ ((aligned (8)));
+	unsigned long InDelivers	__attribute__ ((aligned (8)));
+	unsigned long OutRequests	__attribute__ ((aligned (8)));
+	unsigned long ReasmReqds	__attribute__ ((aligned (8)));
+	unsigned long ReasmOKs		__attribute__ ((aligned (8)));
+	unsigned long FragOKs		__attribute__ ((aligned (8)));
+	unsigned long FragCreates	__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_IP_SIZE	(sizeof(struct stats_net_ip))
+
+/* Structure for IP errors statistics */
+struct stats_net_eip {
+	unsigned long InHdrErrors	__attribute__ ((aligned (8)));
+	unsigned long InAddrErrors	__attribute__ ((aligned (8)));
+	unsigned long InUnknownProtos	__attribute__ ((aligned (8)));
+	unsigned long InDiscards	__attribute__ ((aligned (8)));
+	unsigned long OutDiscards	__attribute__ ((aligned (8)));
+	unsigned long OutNoRoutes	__attribute__ ((aligned (8)));
+	unsigned long ReasmFails	__attribute__ ((aligned (8)));
+	unsigned long FragFails		__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_EIP_SIZE	(sizeof(struct stats_net_eip))
+
+/* Structure for ICMP statistics */
+struct stats_net_icmp {
+	unsigned long InMsgs		__attribute__ ((aligned (8)));
+	unsigned long OutMsgs		__attribute__ ((aligned (8)));
+	unsigned long InEchos		__attribute__ ((aligned (8)));
+	unsigned long InEchoReps	__attribute__ ((aligned (8)));
+	unsigned long OutEchos		__attribute__ ((aligned (8)));
+	unsigned long OutEchoReps	__attribute__ ((aligned (8)));
+	unsigned long InTimestamps	__attribute__ ((aligned (8)));
+	unsigned long InTimestampReps	__attribute__ ((aligned (8)));
+	unsigned long OutTimestamps	__attribute__ ((aligned (8)));
+	unsigned long OutTimestampReps	__attribute__ ((aligned (8)));
+	unsigned long InAddrMasks	__attribute__ ((aligned (8)));
+	unsigned long InAddrMaskReps	__attribute__ ((aligned (8)));
+	unsigned long OutAddrMasks	__attribute__ ((aligned (8)));
+	unsigned long OutAddrMaskReps	__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_ICMP_SIZE	(sizeof(struct stats_net_icmp))
+
+/* Structure for ICMP error message statistics */
+struct stats_net_eicmp {
+	unsigned long InErrors		__attribute__ ((aligned (8)));
+	unsigned long OutErrors		__attribute__ ((aligned (8)));
+	unsigned long InDestUnreachs	__attribute__ ((aligned (8)));
+	unsigned long OutDestUnreachs	__attribute__ ((aligned (8)));
+	unsigned long InTimeExcds	__attribute__ ((aligned (8)));
+	unsigned long OutTimeExcds	__attribute__ ((aligned (8)));
+	unsigned long InParmProbs	__attribute__ ((aligned (8)));
+	unsigned long OutParmProbs	__attribute__ ((aligned (8)));
+	unsigned long InSrcQuenchs	__attribute__ ((aligned (8)));
+	unsigned long OutSrcQuenchs	__attribute__ ((aligned (8)));
+	unsigned long InRedirects	__attribute__ ((aligned (8)));
+	unsigned long OutRedirects	__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_EICMP_SIZE	(sizeof(struct stats_net_eicmp))
+
+/* Structure for TCP statistics */
+struct stats_net_tcp {
+	unsigned long ActiveOpens	__attribute__ ((aligned (8)));
+	unsigned long PassiveOpens	__attribute__ ((aligned (8)));
+	unsigned long InSegs		__attribute__ ((aligned (8)));
+	unsigned long OutSegs		__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_TCP_SIZE	(sizeof(struct stats_net_tcp))
+
+/* Structure for TCP errors statistics */
+struct stats_net_etcp {
+	unsigned long AttemptFails	__attribute__ ((aligned (8)));
+	unsigned long EstabResets	__attribute__ ((aligned (8)));
+	unsigned long RetransSegs	__attribute__ ((aligned (8)));
+	unsigned long InErrs		__attribute__ ((aligned (8)));
+	unsigned long OutRsts		__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_ETCP_SIZE	(sizeof(struct stats_net_etcp))
+
+/* Structure for UDP statistics */
+struct stats_net_udp {
+	unsigned long InDatagrams	__attribute__ ((aligned (8)));
+	unsigned long OutDatagrams	__attribute__ ((aligned (8)));
+	unsigned long NoPorts		__attribute__ ((aligned (8)));
+	unsigned long InErrors		__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_UDP_SIZE	(sizeof(struct stats_net_udp))
 
 /*
  ***************************************************************************
@@ -327,6 +424,20 @@ extern void
 	read_net_nfsd(struct stats_net_nfsd *);
 extern void
 	read_net_sock(struct stats_net_sock *);
+extern void
+	read_net_ip(struct stats_net_ip *);
+extern void
+	read_net_eip(struct stats_net_eip *);
+extern void
+	read_net_icmp(struct stats_net_icmp *);
+extern void
+	read_net_eicmp(struct stats_net_eicmp *);
+extern void
+	read_net_tcp(struct stats_net_tcp *);
+extern void
+	read_net_etcp(struct stats_net_etcp *);
+extern void
+	read_net_udp(struct stats_net_udp *);
 extern void
 	read_uptime(unsigned long long *);
 

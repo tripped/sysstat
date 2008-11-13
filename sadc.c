@@ -79,7 +79,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C <comment> ] [ -S { INT | DISK | ALL } ] [ -F ] [ -L ] [ -V ]\n"));
+			  "[ -C <comment> ] [ -S { INT | DISK | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"));
 	exit(1);
 }
 
@@ -126,8 +126,8 @@ void reset_stats(void)
 	int i;
 	
 	for (i = 0; i < NR_ACT; i++) {
- 		if ((act[i]->nr > 0) && (act[i]->_buf0) && (!IS_REMANENT(act[i]->options))) {
-			memset(act[i]->_buf0, 0, act[i]->msize * act[i]->nr);
+ 		if ((*act[i]->nr > 0) && act[i]->_buf0 && !IS_REMANENT(act[i]->options)) {
+			memset(act[i]->_buf0, 0, act[i]->msize * *act[i]->nr);
 		}
 	}
 }
@@ -145,12 +145,14 @@ void sa_sys_init(void)
 		
 		if (act[i]->f_count) {
 			/* Number of items is not a constant and should be calculated */
-			act[i]->nr = (*act[i]->f_count)(act[i]);
+			if (*act[i]->nr < 0) {
+				*act[i]->nr = (*act[i]->f_count)(act[i]);
+			}
 		}
 		
-		if (act[i]->nr > 0) {
+		if (*act[i]->nr > 0) {
 			/* Allocate structures for current activity */
-			SREALLOC(act[i]->_buf0, void, act[i]->msize * act[i]->nr);
+			SREALLOC(act[i]->_buf0, void, act[i]->msize * *act[i]->nr);
 		}
 		else {
 			/* No items found: Invalidate current activity */
@@ -159,6 +161,25 @@ void sa_sys_init(void)
 		
 		/* Set default activity list */
 		id_seq[i] = act[i]->id;
+	}
+}
+
+/*
+ ***************************************************************************
+ * Free structures.
+ ***************************************************************************
+ */
+void sa_sys_free(void)
+{
+	int i;
+		
+	for (i = 0; i < NR_ACT; i++) {
+		
+		if (*act[i]->nr > 0) {
+			if (act[i]->_buf0) {
+				free(act[i]->_buf0);
+			}
+		}
 	}
 }
 
@@ -348,7 +369,7 @@ void setup_file_hdr(int fd)
 
 		if (IS_COLLECTED(act[p]->options)) {
 			file_act.id   = act[p]->id;
-			file_act.nr   = act[p]->nr;
+			file_act.nr   = *act[p]->nr;
 			file_act.size = act[p]->fsize;
 			
 			if ((n = write_all(fd, &file_act, FILE_ACTIVITY_SIZE))
@@ -451,8 +472,8 @@ void write_stats(int ofd)
 			continue;
 		
 		if (IS_COLLECTED(act[p]->options)) {
-			if ((n = write_all(ofd, act[p]->_buf0, act[p]->fsize * act[p]->nr)) !=
-			    (act[p]->fsize * act[p]->nr)) {
+			if ((n = write_all(ofd, act[p]->_buf0, act[p]->fsize * *act[p]->nr)) !=
+			    (act[p]->fsize * *act[p]->nr)) {
 				p_write_error();
 			}
 		}
@@ -604,7 +625,7 @@ void open_ofile(int *ofd, char ofile[])
 					/* Unknown activity in list or item size has changed */
 					goto append_error;
 
-				if (act[p]->nr != file_act.nr) {
+				if (*act[p]->nr != file_act.nr) {
 					if (IS_REMANENT(act[p]->options) || !file_act.nr)
 						/*
 						 * Remanent structures cannot have a different number of items.
@@ -616,8 +637,8 @@ void open_ofile(int *ofd, char ofile[])
 						 * Force number of items (serial lines, network interfaces...)
 						 * to that of the file, and reallocate structures.
 						 */
-						act[p]->nr = file_act.nr;
-						SREALLOC(act[p]->_buf0, void, act[p]->msize * act[p]->nr);
+						*act[p]->nr = file_act.nr;
+						SREALLOC(act[p]->_buf0, void, act[p]->msize * *act[p]->nr);
 					}
 				}
 				/* Save activity sequence */
@@ -650,7 +671,7 @@ append_error:
 void read_stats(void)
 {
 	int i;
-	__nr_t cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
+	__nr_t cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
 	
 	/*
 	 * Init uptime0. So if /proc/uptime cannot fill it,
@@ -843,11 +864,21 @@ int main(int argc, char **argv)
 			if (argv[++opt]) {
 				if (!strcmp(argv[opt], K_INT)) {
 					/* Select interrupt activity */
-					act[get_activity_position(act, A_IRQ)]->options |= AO_COLLECTED;
+					COLLECT_ACTIVITY(A_IRQ);
 				}
 				else if (!strcmp(argv[opt], K_DISK)) {
 					/* Select disk activity */
-					act[get_activity_position(act, A_DISK)]->options |= AO_COLLECTED;
+					COLLECT_ACTIVITY(A_DISK);
+				}
+				else if (!strcmp(argv[opt], K_SNMP)) {
+					/* Select SNMP activities */
+					COLLECT_ACTIVITY(A_NET_IP);
+					COLLECT_ACTIVITY(A_NET_EIP);
+					COLLECT_ACTIVITY(A_NET_ICMP);
+					COLLECT_ACTIVITY(A_NET_EICMP);
+					COLLECT_ACTIVITY(A_NET_TCP);
+					COLLECT_ACTIVITY(A_NET_ETCP);
+					COLLECT_ACTIVITY(A_NET_UDP);
 				}
 				else if (!strcmp(argv[opt], K_ALL)) {
 					/* Select all activities */
@@ -872,11 +903,11 @@ int main(int argc, char **argv)
 						for (i = 0; i < NR_ACT; i++) {
 							act[i]->options &= ~AO_COLLECTED;
 						}
-						act[get_activity_position(act, A_CPU)]->options |= AO_COLLECTED;
+						COLLECT_ACTIVITY(A_CPU);
 					}
 					else {
 						/* Select chosen activity */
-						act[get_activity_position(act, act_id)]->options |= AO_COLLECTED;
+						COLLECT_ACTIVITY(act_id);
 					}
 				}
 				else {
@@ -1007,6 +1038,9 @@ int main(int argc, char **argv)
 			/* Close file descriptor */
 			CLOSE(ofd);
 		}
+
+		/* Free structures */
+		sa_sys_free();
 		exit(0);
 	}
 
@@ -1015,6 +1049,9 @@ int main(int argc, char **argv)
 
 	/* Main loop */
 	rw_sa_stat_loop(count, &rectime, stdfd, ofd, ofile);
+
+	/* Free structures */
+	sa_sys_free();
 
 	return 0;
 }

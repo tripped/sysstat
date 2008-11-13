@@ -1,5 +1,29 @@
 Changes:
 
+2008/11/13: Version 8.1.7 - Sebastien Godard (sysstat <at> orange.fr)
+	* Support for SNMP statistics added to sar. Several keywords
+	  have been added to option "-n". The user can now display
+	  statistics about IP, ICMP, TCP and UDP network traffic.
+	* sadc updated: Option "-S SNMP" tells sadc to collect SNMP
+	  statistics.
+	* sadf command updated to take into account SNMP statistics.
+	* sadf -x now also displays number of CPU.
+	* DTD and XSD files updated.
+	* sar/sadc: Each item (like network interfaces) is now counted
+	  once.
+	* [Eduardo Ferro Aldama]: Option -l added to pidstat. This
+	  option enables the user to display the whole command line for
+	  each process.
+	* Option -h added to sar. This option displays a short help message.
+	* Cosmetic change in sadf -x output for network statistics.
+	* sadf -H now displays the real name of each activity saved in file.
+	* Fixed some memory leaks detected by valgrind.
+	* pidstat, sar and sadc manual pages updated.
+	* FAQ updated.
+	* NLS updated.
+	* CREDITS file updated.
+	* Code cleaned.
+
 2008/09/30: Version 8.1.6 - Sebastien Godard (sysstat <at> orange.fr)
 	* [David Alan Gilbert]: Option -h added to pidstat. This
 	  option is used to display all activities horizontally on a

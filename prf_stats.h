@@ -75,6 +75,20 @@ extern __print_funct_t render_net_nfsd_stats
 	(struct activity *, int, char *, int, unsigned long long);
 extern __print_funct_t render_net_sock_stats
 	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_net_ip_stats
+	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_net_eip_stats
+	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_net_icmp_stats
+	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_net_eicmp_stats
+	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_net_tcp_stats
+	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_net_etcp_stats
+	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_net_udp_stats
+	(struct activity *, int, char *, int, unsigned long long);
 
 /* Functions used to display statistics in XML */
 extern void xprintf
@@ -110,6 +124,20 @@ extern __print_funct_t xml_print_net_nfs_stats
 extern __print_funct_t xml_print_net_nfsd_stats
 	(struct activity *, int, int, unsigned long long);
 extern __print_funct_t xml_print_net_sock_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_net_ip_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_net_eip_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_net_icmp_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_net_eicmp_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_net_tcp_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_net_etcp_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_net_udp_stats
 	(struct activity *, int, int, unsigned long long);
 
 #endif /* _PRF_STATS_H */

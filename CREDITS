@@ -116,6 +116,10 @@ The following people have contributed to 'sysstat' in one way or another:
 	Emil Glatz <Emil.Glatz [at] wescoglobal.com> wrote the XML Schema
 	to be used with sadf option -x.
 
+	Eduardo Ferro Aldama <eduardo.ferro.aldama [at] gmail.com> added
+	option -l to pidstat to display the process command name and
+	arguments.
+
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
@@ -150,6 +154,7 @@ I would also thank the following people for their hints or bug reports
 	Alan Matsuoka <alanm@red[...].com>
 	Rodney J. Mertz <rjm@elv[...].com>
 	Roy Millar <100044.14@com[...].com>
+	Chris Minshull <CMinshull@nyx[...].com>
 	Pascal Monschein <ext.astek.monschein@snc[...].fr>
 	David J. Morse <David_J_Morse@Del[...].com>
 	Hariprasad Nellitheertha <hari@in.[...].com>

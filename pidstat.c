@@ -78,7 +78,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
+			  "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 			  "[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"));
 	exit(1);
 }
@@ -142,6 +142,22 @@ void salloc_pid(unsigned int len)
 			exit(4);
 		}
 		memset(st_pid_list[i], 0, PID_STATS_SIZE * len);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Free PID list structures.
+ ***************************************************************************
+ */
+void sfree_pid(void)
+{
+	int i;
+	
+	for (i = 0; i < 3; i++) {
+		if (st_pid_list[i]) {
+			free(st_pid_list[i]);
+		}
 	}
 }
 
@@ -219,6 +235,28 @@ int update_pid_array(unsigned int *pid_array_nr, unsigned int pid)
 
 /*
  ***************************************************************************
+ * Display process command name or command line.
+ * 
+ * IN:
+ * @pst		Pointer on structure with process stats and command line.
+ ***************************************************************************
+ */
+void print_comm(struct pid_stats *pst)
+{
+	char *p;
+	
+	if (DISPLAY_CMDLINE(pidflag) && strlen(pst->cmdline)) {
+		p = pst->cmdline;
+	}
+	else {
+		p = pst->comm;
+	}
+
+	printf("  %s%s\n", pst->tgid ? "|__" : "", p);
+}
+
+/*
+ ***************************************************************************
  * Read /proc/meminfo.
  ***************************************************************************
  */
@@ -272,10 +310,10 @@ int read_proc_pid_stat(unsigned int pid, struct pid_stats *pst,
 		" %%*u %%u %%*u %%*u %%*u %%lu %%lu\\n", MAX_COMM_LEN);
 
 	fscanf(fp, format, comm,
-	       &(pst->minflt), &(pst->cminflt), &(pst->majflt), &(pst->cmajflt),
-	       &(pst->utime),  &(pst->stime), &(pst->cutime), &(pst->cstime),
-	       thread_nr, &(pst->vsz), &(pst->rss), &(pst->processor),
-	       &(pst->gtime), &(pst->cgtime));
+	       &pst->minflt, &pst->cminflt, &pst->majflt, &pst->cmajflt,
+	       &pst->utime,  &pst->stime, &pst->cutime, &pst->cstime,
+	       thread_nr, &pst->vsz, &pst->rss, &pst->processor,
+	       &pst->gtime, &pst->cgtime);
 
 	fclose(fp);
 
@@ -333,10 +371,10 @@ int read_proc_pid_status(unsigned int pid, struct pid_stats *pst,
 	while (fgets(line, 256, fp) != NULL) {
 
 		if (!strncmp(line, "voluntary_ctxt_switches:", 24)) {
-			sscanf(line + 25, "%lu", &(pst->nvcsw));
+			sscanf(line + 25, "%lu", &pst->nvcsw);
 		}
 		else if (!strncmp(line, "nonvoluntary_ctxt_switches:", 27)) {
-			sscanf(line + 28, "%lu", &(pst->nivcsw));
+			sscanf(line + 28, "%lu", &pst->nivcsw);
 		}
 	}
 
@@ -344,6 +382,57 @@ int read_proc_pid_status(unsigned int pid, struct pid_stats *pst,
 
 	pst->pid = pid;
 	pst->tgid = tgid;
+	return 0;
+}
+
+/*
+ *****************************************************************************
+ * Read process command line from /proc/#[/task/##]/cmdline.
+ *
+ * IN:
+ * @pid		Process whose command line is to be read.
+ * @pst		Pointer on structure where command line will be saved.
+ * @tgid	If !=0, thread whose command line is to be read.
+ *
+ * OUT:
+ * @pst		Pointer on structure where command line has been saved.
+ *
+ * RETURNS:
+ * 0 if command line has been successfully read, and 1 otherwise.
+ *****************************************************************************
+ */
+int read_proc_pid_cmdline(unsigned int pid, struct pid_stats *pst,
+			  unsigned int tgid)
+{
+	FILE *fp;
+	char filename[128], line[MAX_CMDLINE_LEN];
+	size_t len;
+	int i;
+
+	if (tgid) {
+		sprintf(filename, TASK_CMDLINE, tgid, pid);
+	}
+	else {
+		sprintf(filename, PID_CMDLINE, pid);
+	}
+
+	if ((fp = fopen(filename, "r")) == NULL)
+		/* No such process */
+		return 1;
+
+	memset(line, 0, MAX_CMDLINE_LEN);
+	
+	if ((len = fread(line, 1, MAX_CMDLINE_LEN - 1, fp)) < 0)
+		return 1;
+	
+	for (i = 0; i < len; i++) {
+		if (line[i] == '\0') {
+			line[i] = ' ';
+		}
+	}
+
+	fclose(fp);
+	strncpy(pst->cmdline, line, MAX_CMDLINE_LEN);
 	return 0;
 }
 
@@ -392,13 +481,13 @@ int read_proc_pid_io(unsigned int pid, struct pid_stats *pst,
 	while (fgets(line, 256, fp) != NULL) {
 
 		if (!strncmp(line, "read_bytes:", 11)) {
-			sscanf(line + 12, "%llu", &(pst->read_bytes));
+			sscanf(line + 12, "%llu", &pst->read_bytes);
 		}
 		else if (!strncmp(line, "write_bytes:", 12)) {
-			sscanf(line + 13, "%llu", &(pst->write_bytes));
+			sscanf(line + 13, "%llu", &pst->write_bytes);
 		}
 		else if (!strncmp(line, "cancelled_write_bytes:", 22)) {
-			sscanf(line + 23, "%llu", &(pst->cancelled_write_bytes));
+			sscanf(line + 23, "%llu", &pst->cancelled_write_bytes);
 		}
 	}
 
@@ -433,6 +522,11 @@ int read_pid_stats(unsigned int pid, struct pid_stats *pst,
 	if (read_proc_pid_stat(pid, pst, thread_nr, tgid))
 		return 1;
 
+	if (DISPLAY_CMDLINE(pidflag)) {
+		if (read_proc_pid_cmdline(pid, pst, tgid))
+			return 1;
+	}
+	
 	if (read_proc_pid_status(pid, pst, tgid))
 		return 1;
 
@@ -636,7 +730,8 @@ void read_stats(int curr)
 		exit(4);
 	}
 	/* Read statistics for CPUs "all" and 0 */
-	read_stat_cpu(st_cpu, 2, &(uptime[curr]), &(uptime0[curr]));
+	read_stat_cpu(st_cpu, 2, &uptime[curr], &uptime0[curr]);
+	free(st_cpu);
 
 	if (DISPLAY_ALL_PID(pidflag)) {
 
@@ -998,7 +1093,7 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 			       S_VALUE(pstj->nivcsw, psti->nivcsw, itv));
 		}
 		
-		PRINT_COMM(psti);
+		print_comm(psti);
 		again = 1;
 	}
 
@@ -1064,7 +1159,7 @@ int write_pid_child_all_stats(int prev, int curr, int dis,
 			       (psti->majflt + psti->cmajflt) - (pstj->majflt + pstj->cmajflt));
 		}
 
-		PRINT_COMM(psti);
+		print_comm(psti);
 		again = 1;
 	}
 
@@ -1134,7 +1229,7 @@ int write_pid_task_cpu_stats(int prev, int curr, int dis, int disp_avg,
 		else {
 			printf("     -");
 		}
-		PRINT_COMM(psti);
+		print_comm(psti);
 		again = 1;
 	}
 
@@ -1213,7 +1308,7 @@ int write_pid_child_cpu_stats(int prev, int curr, int dis, int disp_avg,
 			       (double) ((psti->gtime + psti->cgtime) -
 					 (pstj->gtime + pstj->cgtime)) / HZ * 1000);
 		}
-		PRINT_COMM(psti);
+		print_comm(psti);
 		again = 1;
 	}
 	
@@ -1291,7 +1386,7 @@ int write_pid_task_memory_stats(int prev, int curr, int dis, int disp_avg,
 			       psti->rss,
 			       tlmkb ? SP_VALUE(0, psti->rss, tlmkb) : 0.0);
 		}
-		PRINT_COMM(psti);
+		print_comm(psti);
 		again = 1;
 	}
 
@@ -1360,7 +1455,7 @@ int write_pid_child_memory_stats(int prev, int curr, int dis, int disp_avg,
 			       (psti->minflt + psti->cminflt) - (pstj->minflt + pstj->cminflt),
 			       (psti->majflt + psti->cmajflt) - (pstj->majflt + pstj->cmajflt));
 		}
-		PRINT_COMM(psti);
+		print_comm(psti);
 		again = 1;
 	}
 
@@ -1413,7 +1508,7 @@ int write_pid_io_stats(int prev, int curr, int dis,
 		       S_VALUE(pstj->write_bytes, psti->write_bytes, itv) / 1024,
 		       S_VALUE(pstj->cancelled_write_bytes,
 			       psti->cancelled_write_bytes, itv) / 1024);
-		PRINT_COMM(psti);
+		print_comm(psti);
 		again = 1;
 	}
 
@@ -1464,7 +1559,7 @@ int write_pid_ctxswitch_stats(int prev, int curr, int dis,
 		printf(" %9.2f %9.2f",
 		       S_VALUE(pstj->nvcsw, psti->nvcsw, itv),
 		       S_VALUE(pstj->nivcsw, psti->nivcsw, itv));
-		PRINT_COMM(psti);
+		print_comm(psti);
 		again = 1;
 	}
 
@@ -1605,10 +1700,10 @@ int write_stats(int curr, int dis)
 	char cur_time[2][16];
 
 	/* Get previous timestamp */
-	strftime(cur_time[!curr], 16, "%X", &(ps_tstamp[!curr]));
+	strftime(cur_time[!curr], 16, "%X", &ps_tstamp[!curr]);
 
 	/* Get current timestamp */
-	strftime(cur_time[curr], 16, "%X", &(ps_tstamp[curr]));
+	strftime(cur_time[curr], 16, "%X", &ps_tstamp[curr]);
 
 	return (write_stats_core(!curr, curr, dis, FALSE,
 				 cur_time[!curr], cur_time[curr]));
@@ -1639,7 +1734,7 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 		 * done by /proc/stat.
 		 */
 		uptime0[0] = 0;
-		read_uptime(&(uptime0[0]));
+		read_uptime(&uptime0[0]);
 	}
 	read_stats(0);
 
@@ -1669,7 +1764,7 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 
 	do {
 		/* Get time */
-		get_localtime(&(ps_tstamp[curr]));
+		get_localtime(&ps_tstamp[curr]);
 
 		if (cpu_nr > 1) {
 			/*
@@ -1839,6 +1934,11 @@ int main(int argc, char **argv)
 					/* IRIX mode off */
 					pidflag |= P_F_IRIX_MODE;
 					break;
+					
+				case 'l':
+					/* Display whole command line */
+					pidflag |= P_D_CMDLINE;
+					break;
 	
 				case 'r':
 					/* Display memory usage */
@@ -1934,6 +2034,12 @@ int main(int argc, char **argv)
 
 	/* Main loop */
 	rw_pidstat_loop(dis_hdr, rows);
+	
+	/* Free structures */
+	if (pid_array) {
+		free(pid_array);
+	}
+	sfree_pid();
 
 	return 0;
 }

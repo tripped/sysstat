@@ -49,17 +49,17 @@
  *
  * IN:
  * @value	Value used to init bitmap.
- * @nr		Size of the bitmap in bytes.
+ * @sz		Size of the bitmap in bytes.
  *
  * OUT:
  * @bitmap	Bitmap initialized.
  ***************************************************************************
  */
-void set_bitmap(unsigned char bitmap[], unsigned char value, unsigned int nr)
+void set_bitmap(unsigned char bitmap[], unsigned char value, unsigned int sz)
 {
 	register int i;
 
-	for (i = 0; i < nr; i++) {
+	for (i = 0; i < sz; i++) {
 		bitmap[i] = value;
 	}
 }
@@ -77,9 +77,32 @@ void allocate_structures(struct activity *act[])
 	int i, j;
 	
 	for (i = 0; i < NR_ACT; i++) {
-		if (act[i]->nr > 0) {
+		if (*act[i]->nr > 0) {
 			for (j = 0; j < 3; j++) {
-				SREALLOC(act[i]->buf[j], void, act[i]->msize * act[i]->nr);
+				SREALLOC(act[i]->buf[j], void, act[i]->msize * *act[i]->nr);
+			}
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Free structures.
+ *
+ * IN:
+ * @act	Array of activities.
+ ***************************************************************************
+ */
+void free_structures(struct activity *act[])
+{
+	int i, j;
+	
+	for (i = 0; i < NR_ACT; i++) {
+		if (*act[i]->nr > 0) {
+			for (j = 0; j < 3; j++) {
+				if (act[i]->buf[j]) {
+					free(act[i]->buf[j]);
+				}
 			}
 		}
 	}
@@ -201,8 +224,8 @@ int next_slice(unsigned long long uptime_ref, unsigned long long uptime,
 int decode_timestamp(char timestamp[], struct tstamp *tse)
 {
 	timestamp[2] = timestamp[5] = '\0';
-	tse->tm_sec  = atoi(&(timestamp[6]));
-	tse->tm_min  = atoi(&(timestamp[3]));
+	tse->tm_sec  = atoi(&timestamp[6]);
+	tse->tm_min  = atoi(&timestamp[3]);
 	tse->tm_hour = atoi(timestamp);
 
 	if ((tse->tm_sec < 0) || (tse->tm_sec > 59) ||
@@ -352,7 +375,7 @@ void set_hdr_rectime(unsigned int flags, struct tm *rectime,
 		mktime(rectime);
 	}
 	else {
-		loc_t = localtime((const time_t *) &(file_hdr->sa_ust_time));
+		loc_t = localtime((const time_t *) &file_hdr->sa_ust_time);
 		*rectime = *loc_t;
 	}
 }
@@ -408,7 +431,7 @@ unsigned int check_net_dev_reg(struct activity *a, int curr, int ref,
 
 	sndc = (struct stats_net_dev *) a->buf[curr] + pos;
 
-	while (index < a->nr) {
+	while (index < *a->nr) {
 		sndp = (struct stats_net_dev *) a->buf[ref] + index;
 		if (!strcmp(sndc->interface, sndp->interface)) {
 			/*
@@ -478,7 +501,7 @@ unsigned int check_net_dev_reg(struct activity *a, int curr, int ref,
 	}
 
 	/* Network interface not found: Look for the first free structure */
-	for (index = 0; index < a->nr; index++) {
+	for (index = 0; index < *a->nr; index++) {
 		sndp = (struct stats_net_dev *) a->buf[ref] + index;
 		if (!strcmp(sndp->interface, "?")) {
 			memset(sndp, 0, STATS_NET_DEV_SIZE);
@@ -486,7 +509,7 @@ unsigned int check_net_dev_reg(struct activity *a, int curr, int ref,
 			break;
 		}
 	}
-	if (index >= a->nr) {
+	if (index >= *a->nr) {
 		/* No free structure: Default is structure of same rank */
 		index = pos;
 	}
@@ -523,7 +546,7 @@ unsigned int check_net_edev_reg(struct activity *a, int curr, int ref,
 
 	snedc = (struct stats_net_edev *) a->buf[curr] + pos;
 
-	while (index < a->nr) {
+	while (index < *a->nr) {
 		snedp = (struct stats_net_edev *) a->buf[ref] + index;
 		if (!strcmp(snedc->interface, snedp->interface)) {
 			/*
@@ -553,7 +576,7 @@ unsigned int check_net_edev_reg(struct activity *a, int curr, int ref,
 	}
 
 	/* Network interface not found: Look for the first free structure */
-	for (index = 0; index < a->nr; index++) {
+	for (index = 0; index < *a->nr; index++) {
 		snedp = (struct stats_net_edev *) a->buf[ref] + index;
 		if (!strcmp(snedp->interface, "?")) {
 			memset(snedp, 0, STATS_NET_EDEV_SIZE);
@@ -561,7 +584,7 @@ unsigned int check_net_edev_reg(struct activity *a, int curr, int ref,
 			break;
 		}
 	}
-	if (index >= a->nr) {
+	if (index >= *a->nr) {
 		/* No free structure: Default is structure of same rank */
 		index = pos;
 	}
@@ -596,7 +619,7 @@ int check_disk_reg(struct activity *a, int curr, int ref, int pos)
 
 	sdc = (struct stats_disk *) a->buf[curr] + pos;
 
-	while (index < a->nr) {
+	while (index < *a->nr) {
 		sdp = (struct stats_disk *) a->buf[ref] + index;
 		if ((sdc->major == sdp->major) &&
 		    (sdc->minor == sdp->minor)) {
@@ -621,7 +644,7 @@ int check_disk_reg(struct activity *a, int curr, int ref, int pos)
 	}
 
 	/* Disk not found: Look for the first free structure */
-	for (index = 0; index < a->nr; index++) {
+	for (index = 0; index < *a->nr; index++) {
 		sdp = (struct stats_disk *) a->buf[ref] + index;
 		if (!(sdp->major + sdp->minor)) {
 			memset(sdp, 0, STATS_DISK_SIZE);
@@ -630,7 +653,7 @@ int check_disk_reg(struct activity *a, int curr, int ref, int pos)
 			break;
 		}
 	}
-	if (index >= a->nr) {
+	if (index >= *a->nr) {
 		/* No free structure found: Default is structure of same rank */
 		index = pos;
 	}
@@ -660,6 +683,25 @@ void allocate_bitmaps(struct activity *act[])
 		if (act[i]->bitmap_size) {
 			SREALLOC(act[i]->bitmap, unsigned char,
 				 BITMAP_SIZE(act[i]->bitmap_size));
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Free bitmaps for activities that have one.
+ *
+ * IN:
+ * @act		Array of activities.
+ ***************************************************************************
+ */
+void free_bitmaps(struct activity *act[])
+{
+	int i;
+	
+	for (i = 0; i < NR_ACT; i++) {
+		if (act[i]->bitmap_size) {
+			free(act[i]->bitmap);
 		}
 	}
 }
@@ -901,11 +943,11 @@ void copy_structures(struct activity *act[], unsigned int id_seq[],
 			continue;
 
 		if (((p = get_activity_position(act, id_seq[i])) < 0) ||
-		    (act[p]->nr < 1)) {
+		    (*act[p]->nr < 1)) {
 			PANIC(1);
 		}
 
-		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * act[p]->nr);
+		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * *act[p]->nr);
 		
 	}
 }
@@ -941,17 +983,17 @@ void read_file_stat_bunch(struct activity *act[], int curr, int ifd, int act_nr,
 				exit(2);
 			}
 		}
-		else if ((act[p]->nr > 1) && (act[p]->msize > act[p]->fsize)) {
-			for (j = 0; j < act[p]->nr; j++) {
+		else if ((*act[p]->nr > 1) && (act[p]->msize > act[p]->fsize)) {
+			for (j = 0; j < *act[p]->nr; j++) {
 				sa_fread(ifd, (char *) act[p]->buf[curr] + j * act[p]->msize,
 					 act[p]->fsize, HARD_SIZE);
 			}
 		}
-		else if (act[p]->nr > 0) {
-			sa_fread(ifd, act[p]->buf[curr], act[p]->fsize * act[p]->nr, HARD_SIZE);
+		else if (*act[p]->nr > 0) {
+			sa_fread(ifd, act[p]->buf[curr], act[p]->fsize * *act[p]->nr, HARD_SIZE);
 		}
 		else {
-			PANIC(act[p]->nr);
+			PANIC(*act[p]->nr);
 		}
 	}
 }
@@ -1039,7 +1081,7 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 				act[p]->msize = fal->size;
 			}
 			act[p]->fsize = fal->size;
-			act[p]->nr    = fal->nr;
+			*act[p]->nr   = fal->nr;
 			id_seq[j++]   = fal->id;
 		}
 	}
@@ -1122,11 +1164,11 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			break;
 			
 		case 'B':
-			act[get_activity_position(act, A_PAGE)]->options |= AO_SELECTED;
+			SELECT_ACTIVITY(A_PAGE);
 			break;
 			
 		case 'b':
-			act[get_activity_position(act, A_IO)]->options |= AO_SELECTED;
+			SELECT_ACTIVITY(A_IO);
 			break;
 			
 		case 'C':
@@ -1134,7 +1176,7 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			break;
 			
 		case 'd':
-			act[get_activity_position(act, A_DISK)]->options |= AO_SELECTED;
+			SELECT_ACTIVITY(A_DISK);
 			break;
 			
 		case 'p':
@@ -1142,7 +1184,7 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			break;
 			
 		case 'q':
-			act[get_activity_position(act, A_QUEUE)]->options |= AO_SELECTED;
+			SELECT_ACTIVITY(A_QUEUE);
 			break;
 			
 		case 'r':
@@ -1174,7 +1216,7 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 		case 'u':
 			p = get_activity_position(act, A_CPU);
 			act[p]->options |= AO_SELECTED;
-			if (!(*(argv[*opt] + i + 1)) && argv[(*opt) + 1] && !strcmp(argv[(*opt) + 1], K_ALL)) {
+			if (!*(argv[*opt] + i + 1) && argv[*opt + 1] && !strcmp(argv[*opt + 1], K_ALL)) {
 				(*opt)++;
 				act[p]->opt_flags = AO_F_CPU_ALL;
 			}
@@ -1184,19 +1226,19 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			return 0;
 			
 		case 'v':
-			act[get_activity_position(act, A_KTABLES)]->options |= AO_SELECTED;
+			SELECT_ACTIVITY(A_KTABLES);
 			break;
 			
 		case 'w':
-			act[get_activity_position(act, A_PCSW)]->options |= AO_SELECTED;
+			SELECT_ACTIVITY(A_PCSW);
 			break;
 			
 		case 'W':
-			act[get_activity_position(act, A_SWAP)]->options |= AO_SELECTED;
+			SELECT_ACTIVITY(A_SWAP);
 			break;
 			
 		case 'y':
-			act[get_activity_position(act, A_SERIAL)]->options |= AO_SELECTED;
+			SELECT_ACTIVITY(A_SERIAL);
 			break;
 			
 		case 'V':
@@ -1228,26 +1270,54 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 int parse_sar_n_opt(char *argv[], int *opt, struct activity *act[])
 {
 	if (!strcmp(argv[*opt], K_DEV)) {
-		act[get_activity_position(act, A_NET_DEV)]->options  |= AO_SELECTED;
+		SELECT_ACTIVITY(A_NET_DEV);
 	}
 	else if (!strcmp(argv[*opt], K_EDEV)) {
-		act[get_activity_position(act, A_NET_EDEV)]->options |= AO_SELECTED;
+		SELECT_ACTIVITY(A_NET_EDEV);
 	}
 	else if (!strcmp(argv[*opt], K_SOCK)) {
-		act[get_activity_position(act, A_NET_SOCK)]->options |= AO_SELECTED;
+		SELECT_ACTIVITY(A_NET_SOCK);
 	}
 	else if (!strcmp(argv[*opt], K_NFS)) {
-		act[get_activity_position(act, A_NET_NFS)]->options  |= AO_SELECTED;
+		SELECT_ACTIVITY(A_NET_NFS);
 	}
 	else if (!strcmp(argv[*opt], K_NFSD)) {
-		act[get_activity_position(act, A_NET_NFSD)]->options |= AO_SELECTED;
+		SELECT_ACTIVITY(A_NET_NFSD);
+	}
+	else if (!strcmp(argv[*opt], K_IP)) {
+		SELECT_ACTIVITY(A_NET_IP);
+	}
+	else if (!strcmp(argv[*opt], K_EIP)) {
+		SELECT_ACTIVITY(A_NET_EIP);
+	}
+	else if (!strcmp(argv[*opt], K_ICMP)) {
+		SELECT_ACTIVITY(A_NET_ICMP);
+	}
+	else if (!strcmp(argv[*opt], K_EICMP)) {
+		SELECT_ACTIVITY(A_NET_EICMP);
+	}
+	else if (!strcmp(argv[*opt], K_TCP)) {
+		SELECT_ACTIVITY(A_NET_TCP);
+	}
+	else if (!strcmp(argv[*opt], K_ETCP)) {
+		SELECT_ACTIVITY(A_NET_ETCP);
+	}
+	else if (!strcmp(argv[*opt], K_UDP)) {
+		SELECT_ACTIVITY(A_NET_UDP);
 	}
 	else if (!strcmp(argv[*opt], K_ALL)) {
-		act[get_activity_position(act, A_NET_DEV)]->options  |= AO_SELECTED;
-		act[get_activity_position(act, A_NET_EDEV)]->options |= AO_SELECTED;
-		act[get_activity_position(act, A_NET_SOCK)]->options |= AO_SELECTED;
-		act[get_activity_position(act, A_NET_NFS)]->options  |= AO_SELECTED;
-		act[get_activity_position(act, A_NET_NFSD)]->options |= AO_SELECTED;
+		SELECT_ACTIVITY(A_NET_DEV);
+		SELECT_ACTIVITY(A_NET_EDEV);
+		SELECT_ACTIVITY(A_NET_SOCK);
+		SELECT_ACTIVITY(A_NET_NFS);
+		SELECT_ACTIVITY(A_NET_NFSD);
+		SELECT_ACTIVITY(A_NET_IP);
+		SELECT_ACTIVITY(A_NET_EIP);
+		SELECT_ACTIVITY(A_NET_ICMP);
+		SELECT_ACTIVITY(A_NET_EICMP);
+		SELECT_ACTIVITY(A_NET_TCP);
+		SELECT_ACTIVITY(A_NET_ETCP);
+		SELECT_ACTIVITY(A_NET_UDP);
 	}
 	else
 		return 1;

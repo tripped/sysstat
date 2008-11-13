@@ -185,10 +185,10 @@ void list_fields(unsigned int act_id)
 		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
 			continue;
 		
-		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
+		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0)) {
 			if (!HAS_MULTIPLE_OUTPUTS(act[i]->options)) {
 				printf(";%s", act[i]->hdr_line);
-				if ((act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {
+				if ((*act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {
 					printf("[...]");
 				}
 			}
@@ -198,7 +198,7 @@ void list_fields(unsigned int act_id)
 				for (hl = strtok(hline, "|"); hl ; hl = strtok(NULL, "|"), msk <<= 1) {
 					if ((hl != NULL) && (act[i]->opt_flags & msk)) {
 						printf(";%s", hl);
-						if ((act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {
+						if ((*act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {
 							printf("[...]");
 						}
 					}
@@ -247,7 +247,7 @@ void write_mech_stats(int curr, unsigned long dt, unsigned long long itv,
 		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
 			continue;
 		
-		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
+		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0)) {
 			
 			if (NEEDS_GLOBAL_ITV(act[i]->options)) {
 				(*act[i]->f_render)(act[i], isdb, pre, curr, g_itv);
@@ -292,7 +292,7 @@ int write_parsable_stats(int curr, int reset, long *cnt, int use_tm_start,
 	static __nr_t cpu_nr = -1;
 	
 	if (cpu_nr < 0) {
-		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
 	}
 
 	/* Check time (1) */
@@ -354,18 +354,14 @@ int write_parsable_stats(int curr, int reset, long *cnt, int use_tm_start,
  * IN:
  * @curr	Index in array for current sample statistics.
  * @tab		Number of tabulations to print.
+ * @cpu_nr	Number of processors.
  ***************************************************************************
  */
-void write_xml_stats(int curr, int tab)
+void write_xml_stats(int curr, int tab, __nr_t cpu_nr)
 {
 	int i;
 	unsigned long long dt, itv, g_itv;
 	char cur_time[XML_TIMESTAMP_LEN];
-	static __nr_t cpu_nr = -1;
-	
-	if (cpu_nr < 0) {
-		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
-	}
 
 	/* Set timestamp for current data */
 	sadf_set_rectime(curr);
@@ -391,7 +387,7 @@ void write_xml_stats(int curr, int tab)
 	for (i = 0; i < NR_ACT; i++) {
 		
 		if (CLOSE_MARKUP(act[i]->options) ||
-		    (IS_SELECTED(act[i]->options) && (act[i]->nr > 0))) {
+		    (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0))) {
 			
 			if (NEEDS_GLOBAL_ITV(act[i]->options)) {
 				(*act[i]->f_xml_print)(act[i], curr, tab, g_itv);
@@ -510,7 +506,7 @@ void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, i
 
 /*
  ***************************************************************************
- * Display data file header
+ * Display data file header.
  *
  * IN:
  * @dfile	Name of system activity data file
@@ -525,10 +521,10 @@ void display_file_header(char *dfile, struct file_magic *file_magic,
 	static __nr_t cpu_nr = -1;
 	
 	if (cpu_nr < 0) {
-		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
 	}
 	
-	fprintf(stderr, _("System activity data file: %s (%#x)\n"),
+	printf(_("System activity data file: %s (%#x)\n"),
 		dfile, file_magic->format_magic);
 
 	display_sa_file_version(file_magic);
@@ -537,22 +533,22 @@ void display_file_header(char *dfile, struct file_magic *file_magic,
 		exit(0);
 	}
 
-	fprintf(stderr, _("Host: "));
+	printf(_("Host: "));
 	print_gal_header(localtime((const time_t *) &(file_hdr->sa_ust_time)),
 			 file_hdr->sa_sysname, file_hdr->sa_release,
 			 file_hdr->sa_nodename, file_hdr->sa_machine,
 			 cpu_nr > 1 ? cpu_nr - 1 : 1);
 
-	fprintf(stderr, _("Size of a long int: %d\n"), file_hdr->sa_sizeof_long);
+	printf(_("Size of a long int: %d\n"), file_hdr->sa_sizeof_long);
 	
-	fprintf(stderr, _("List of activities:\n"));
+	printf(_("List of activities:\n"));
 	for (i = 0; i < NR_ACT; i++) {
 		if (!id_seq[i])
 			continue;
 		if ((p = get_activity_position(act, id_seq[i])) < 0) {
 			PANIC(id_seq[i]);
 		}
-		fprintf(stderr, "%d (%d)\n", act[p]->id, act[p]->nr);
+		printf("%02d: %s\t(x%d)\n", act[p]->id,	act[p]->name, *act[p]->nr);
 	}
 
 	exit(0);
@@ -564,12 +560,13 @@ void display_file_header(char *dfile, struct file_magic *file_magic,
  *
  * IN:
  * @tab		Number of tabulations to print.
+ * @cpu_nr	Number of processors.
  *
  * OUT:
  * @tab		Number of tabulations to print.
  ***************************************************************************
  */
-void display_xml_header(int *tab)
+void display_xml_header(int *tab, __nr_t cpu_nr)
 {
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	printf("<!DOCTYPE Configure PUBLIC \"DTD v%s sysstat //EN\"\n", XML_DTD_VERSION);
@@ -582,6 +579,7 @@ void display_xml_header(int *tab)
 	xprintf(++(*tab), "<sysname>%s</sysname>", file_hdr.sa_sysname);
 	xprintf(*tab, "<release>%s</release>", file_hdr.sa_release);
 	xprintf(*tab, "<machine>%s</machine>", file_hdr.sa_machine);
+	xprintf(*tab, "<number-of-cpus>%d</number-of-cpus>", cpu_nr > 1 ? cpu_nr - 1 : 1);
 }
 
 /*
@@ -623,7 +621,7 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 	 * Restore the first stats collected.
 	 * Used to compute the rate displayed on the first line.
 	 */
-	copy_structures(act, id_seq, record_hdr, !(*curr), 2);
+	copy_structures(act, id_seq, record_hdr, !*curr, 2);
 
 	*cnt  = count;
 
@@ -633,13 +631,13 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 				  SOFT_SIZE);
 		rtype = record_hdr[*curr].record_type;
 
-		if (!(*eosaf) && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
+		if (!*eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
 			/* Read the extra fields since it's not a RESTART record */
 			read_file_stat_bunch(act, *curr, ifd, file_hdr.sa_nr_act,
 					     file_actlst);
 		}
 
-		if (!(*eosaf) && (rtype != R_RESTART)) {
+		if (!*eosaf && (rtype != R_RESTART)) {
 
 			if (rtype == R_COMMENT) {
 				sadf_print_special(*curr, tm_start.use, tm_end.use,
@@ -657,7 +655,7 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 				 * displayed a line of stats.
 				 */
 				*curr ^=1;
-				if ((*cnt) > 0) {
+				if (*cnt > 0) {
 					(*cnt)--;
 				}
 			}
@@ -665,7 +663,7 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 			*reset = FALSE;
 		}
 	}
-	while ((*cnt) && !(*eosaf) && (rtype != R_RESTART));
+	while (*cnt && !*eosaf && (rtype != R_RESTART));
 
 	*reset = TRUE;
 }
@@ -684,6 +682,11 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 	int curr, tab = 0, rtype;
 	int eosaf = TRUE;
 	off_t fpos;
+	static __nr_t cpu_nr = -1;
+	
+	if (cpu_nr < 0) {
+		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
+	}
 
 	/* Save current file position */
 	if ((fpos = lseek(ifd, 0, SEEK_CUR)) < 0) {
@@ -692,7 +695,7 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 	}
 
 	/* Print XML header */
-	display_xml_header(&tab);
+	display_xml_header(&tab, cpu_nr);
 
 	/* Process activities */
 	xprintf(tab++, "<statistics>");
@@ -736,7 +739,7 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 					read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
 							     file_actlst);
 
-					write_xml_stats(curr, tab);
+					write_xml_stats(curr, tab, cpu_nr);
 					curr ^= 1;
 				}
 
@@ -976,6 +979,11 @@ void read_stats_from_file(char dfile[])
 	}
 
 	close(ifd);
+	
+	if (file_actlst) {
+		free(file_actlst);
+	}
+	free_structures(act);
 }
 
 /*
@@ -1222,6 +1230,9 @@ int main(int argc, char **argv)
 
 	/* Read stats from file */
 	read_stats_from_file(dfile);
+
+	/* Free bitmaps */
+	free_bitmaps(act);
 
 	return 0;
 }

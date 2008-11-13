@@ -1,10 +1,10 @@
-.TH SADC 8 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "NOVEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
 .B @SA_LIB_DIR@/sadc [ -C
 .I comment
-.B ] [ -S { INT | DISK | ALL } ] [ -F ] [ -L ] [ -V ] [
+.B ] [ -S { INT | DISK | SNMP | ALL } ] [ -F ] [ -L ] [ -V ] [
 .I interval
 .B [
 .I count
@@ -100,7 +100,7 @@ If the system is under heavy load, an old
 .B sadc
 might still be running when cron starts a new one. Without locking,
 this situation can result in a corrupted system activity file.
-.IP "-S { INT | DISK | ALL }"
+.IP "-S { INT | DISK | SNMP | ALL }"
 Specify which optional activities should be collected by
 .BR sadc .
 Some activities are optional to prevent data files from growing too large.
@@ -114,6 +114,10 @@ The
 keyword indicates that
 .B sadc
 should collect data for block devices.
+The
+.B SNMP
+keyword indicates that SNMP statistics should be collected by
+.BR sadc .
 The
 .B ALL
 keyword is equivalent to specifying all the keywords above and therefore

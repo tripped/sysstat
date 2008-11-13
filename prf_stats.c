@@ -167,7 +167,7 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; (i < a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
 		
 		scc = (struct stats_cpu *) ((char *) a->buf[curr]  + i * a->msize);
 		scp = (struct stats_cpu *) ((char *) a->buf[!curr] + i * a->msize);
@@ -414,7 +414,7 @@ __print_funct_t render_irq_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 	
-	for (i = 0; (i < a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
 
 		sic = (struct stats_irq *) ((char *) a->buf[curr]  + i * a->msize);
 		sip = (struct stats_irq *) ((char *) a->buf[!curr] + i * a->msize);
@@ -795,7 +795,7 @@ __print_funct_t render_serial_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		ssc = (struct stats_serial *) ((char *) a->buf[curr]  + i * a->msize);
 		ssp = (struct stats_serial *) ((char *) a->buf[!curr] + i * a->msize);
@@ -866,7 +866,7 @@ __print_funct_t render_disk_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		sdc = (struct stats_disk *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -960,7 +960,7 @@ __print_funct_t render_net_dev_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		sndc = (struct stats_net_dev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -1034,7 +1034,7 @@ __print_funct_t render_net_edev_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		snedc = (struct stats_net_edev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -1276,6 +1276,435 @@ __print_funct_t render_net_sock_stats(struct activity *a, int isdb, char *pre,
 
 /*
  ***************************************************************************
+ * Display IP network statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_ip_stats(struct activity *a, int isdb, char *pre,
+				    int curr, unsigned long long itv)
+{
+	struct stats_net_ip
+		*snic = (struct stats_net_ip *) a->buf[curr],
+		*snip = (struct stats_net_ip *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tirec/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InReceives, snic->InReceives, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tfwddgm/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->ForwDatagrams, snic->ForwDatagrams, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tidel/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InDelivers, snic->InDelivers, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\torq/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutRequests, snic->OutRequests, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tasmrq/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->ReasmReqds, snic->ReasmReqds, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tasmok/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->ReasmOKs, snic->ReasmOKs, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tfragok/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->FragOKs, snic->FragOKs, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\tfragcrt/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->FragCreates, snic->FragCreates, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display IP network error statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_eip_stats(struct activity *a, int isdb, char *pre,
+				     int curr, unsigned long long itv)
+{
+	struct stats_net_eip
+		*sneic = (struct stats_net_eip *) a->buf[curr],
+		*sneip = (struct stats_net_eip *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tihdrerr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InHdrErrors, sneic->InHdrErrors, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiadrerr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InAddrErrors, sneic->InAddrErrors, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiukwnpr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InUnknownProtos, sneic->InUnknownProtos, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tidisc/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InDiscards, sneic->InDiscards, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\todisc/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutDiscards, sneic->OutDiscards, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tonort/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutNoRoutes, sneic->OutNoRoutes, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tasmf/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->ReasmFails, sneic->ReasmFails, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\tfragf/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->FragFails, sneic->FragFails, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display ICMP network statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_icmp_stats(struct activity *a, int isdb, char *pre,
+				      int curr, unsigned long long itv)
+{
+	struct stats_net_icmp
+		*snic = (struct stats_net_icmp *) a->buf[curr],
+		*snip = (struct stats_net_icmp *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\timsg/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InMsgs, snic->InMsgs, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tomsg/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutMsgs, snic->OutMsgs, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiech/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InEchos, snic->InEchos, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiechr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InEchoReps, snic->InEchoReps, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\toech/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutEchos, snic->OutEchos, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\toechr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutEchoReps, snic->OutEchoReps, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\titm/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InTimestamps, snic->InTimestamps, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\titmr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InTimestampReps, snic->InTimestampReps, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\totm/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutTimestamps, snic->OutTimestamps, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\totmr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutTimestampReps, snic->OutTimestampReps, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiadrmk/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InAddrMasks, snic->InAddrMasks, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiadrmkr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InAddrMaskReps, snic->InAddrMaskReps, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\toadrmk/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutAddrMasks, snic->OutAddrMasks, itv));
+	
+	render(isdb, pre, pt_newlin,
+	       "-\toadrmkr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutAddrMaskReps, snic->OutAddrMaskReps, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display ICMP error message statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_eicmp_stats(struct activity *a, int isdb, char *pre,
+				       int curr, unsigned long long itv)
+{
+	struct stats_net_eicmp
+		*sneic = (struct stats_net_eicmp *) a->buf[curr],
+		*sneip = (struct stats_net_eicmp *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tierr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InErrors, sneic->InErrors, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\toerr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutErrors, sneic->OutErrors, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tidstunr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InDestUnreachs, sneic->InDestUnreachs, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\todstunr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutDestUnreachs, sneic->OutDestUnreachs, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\titmex/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InTimeExcds, sneic->InTimeExcds, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\totmex/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutTimeExcds, sneic->OutTimeExcds, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiparmpb/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InParmProbs, sneic->InParmProbs, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\toparmpb/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutParmProbs, sneic->OutParmProbs, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tisrcq/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InSrcQuenchs, sneic->InSrcQuenchs, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tosrcq/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutSrcQuenchs, sneic->OutSrcQuenchs, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiredir/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InRedirects, sneic->InRedirects, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\toredir/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutRedirects, sneic->OutRedirects, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display TCP network statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_tcp_stats(struct activity *a, int isdb, char *pre,
+				     int curr, unsigned long long itv)
+{
+	struct stats_net_tcp
+		*sntc = (struct stats_net_tcp *) a->buf[curr],
+		*sntp = (struct stats_net_tcp *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tactive/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sntp->ActiveOpens, sntc->ActiveOpens, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tpassive/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sntp->PassiveOpens, sntc->PassiveOpens, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiseg/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sntp->InSegs, sntc->InSegs, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\toseg/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sntp->OutSegs, sntc->OutSegs, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display TCP network error statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_etcp_stats(struct activity *a, int isdb, char *pre,
+				      int curr, unsigned long long itv)
+{
+	struct stats_net_etcp
+		*snetc = (struct stats_net_etcp *) a->buf[curr],
+		*snetp = (struct stats_net_etcp *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tatmptf/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snetp->AttemptFails, snetc->AttemptFails, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\testres/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snetp->EstabResets, snetc->EstabResets, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tretrans/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snetp->RetransSegs, snetc->RetransSegs, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tisegerr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snetp->InErrs, snetc->InErrs, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\torsts/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snetp->OutRsts, snetc->OutRsts, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display UDP network statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_udp_stats(struct activity *a, int isdb, char *pre,
+				     int curr, unsigned long long itv)
+{
+	struct stats_net_udp
+		*snuc = (struct stats_net_udp *) a->buf[curr],
+		*snup = (struct stats_net_udp *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tidgm/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snup->InDatagrams, snuc->InDatagrams, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\todgm/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snup->OutDatagrams, snuc->OutDatagrams, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tnoport/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snup->NoPorts, snuc->NoPorts, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\tidgmerr/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snup->InErrors, snuc->InErrors, itv));
+}
+
+/*
+ ***************************************************************************
  * Print tabulations
  *
  * IN:
@@ -1336,7 +1765,7 @@ void xml_markup_network(int tab, int action)
 	}
 	else {
 		/* Close markup */
-		xprintf(--tab, "</network>");
+		xprintf(tab, "</network>");
 	}
 }
 
@@ -1366,7 +1795,7 @@ __print_funct_t xml_print_cpu_stats(struct activity *a, int curr, int tab,
 		xprintf(tab++, "<cpu-load-all>");
 	}
 
-	for (i = 0; (i < a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
 		
 		scc = (struct stats_cpu *) ((char *) a->buf[curr]  + i * a->msize);
 		scp = (struct stats_cpu *) ((char *) a->buf[!curr] + i * a->msize);
@@ -1517,7 +1946,7 @@ __print_funct_t xml_print_irq_stats(struct activity *a, int curr, int tab,
 	xprintf(tab++, "<interrupts>");
 	xprintf(tab++, "<int-global per=\"second\">");
 
-	for (i = 0; (i < a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
 
 		sic = (struct stats_irq *) ((char *) a->buf[curr]  + i * a->msize);
 		sip = (struct stats_irq *) ((char *) a->buf[!curr] + i * a->msize);
@@ -1817,7 +2246,7 @@ __print_funct_t xml_print_serial_stats(struct activity *a, int curr, int tab,
 	xprintf(tab, "<serial per=\"second\">");
 	tab++;
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		ssc = (struct stats_serial *) ((char *) a->buf[curr]  + i * a->msize);
 		ssp = (struct stats_serial *) ((char *) a->buf[!curr] + i * a->msize);
@@ -1869,7 +2298,7 @@ __print_funct_t xml_print_disk_stats(struct activity *a, int curr, int tab,
 	xprintf(tab, "<disk per=\"second\">");
 	tab++;
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		sdc = (struct stats_disk *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -1935,13 +2364,13 @@ __print_funct_t xml_print_net_dev_stats(struct activity *a, int curr, int tab,
 	int i, j;
 	struct stats_net_dev *sndc, *sndp;
 
-	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
 	tab++;
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		sndc = (struct stats_net_dev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -1968,6 +2397,7 @@ __print_funct_t xml_print_net_dev_stats(struct activity *a, int curr, int tab,
 			S_VALUE(sndp->tx_compressed, sndc->tx_compressed, itv),
 			S_VALUE(sndp->multicast,     sndc->multicast,     itv));
 	}
+	tab--;
 
 close_xml_markup:
 	if (CLOSE_MARKUP(a->options)) {
@@ -1992,13 +2422,13 @@ __print_funct_t xml_print_net_edev_stats(struct activity *a, int curr, int tab,
 	int i, j;
 	struct stats_net_edev *snedc, *snedp;
 
-	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
 	tab++;
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < *a->nr; i++) {
 
 		snedc = (struct stats_net_edev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -2029,6 +2459,7 @@ __print_funct_t xml_print_net_edev_stats(struct activity *a, int curr, int tab,
 			S_VALUE(snedp->rx_fifo_errors,    snedc->rx_fifo_errors,    itv),
 			S_VALUE(snedp->tx_fifo_errors,    snedc->tx_fifo_errors,    itv));
 	}
+	tab--;
 
 close_xml_markup:
 	if (CLOSE_MARKUP(a->options)) {
@@ -2054,7 +2485,7 @@ __print_funct_t xml_print_net_nfs_stats(struct activity *a, int curr, int tab,
 		*snnc = (struct stats_net_nfs *) a->buf[curr],
 		*snnp = (struct stats_net_nfs *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -2073,6 +2504,7 @@ __print_funct_t xml_print_net_nfs_stats(struct activity *a, int curr, int tab,
 		S_VALUE(snnp->nfs_writecnt,   snnc->nfs_writecnt,   itv),
 		S_VALUE(snnp->nfs_accesscnt,  snnc->nfs_accesscnt,  itv),
 		S_VALUE(snnp->nfs_getattcnt,  snnc->nfs_getattcnt,  itv));
+	tab--;
 
 close_xml_markup:
 	if (CLOSE_MARKUP(a->options)) {
@@ -2098,7 +2530,7 @@ __print_funct_t xml_print_net_nfsd_stats(struct activity *a, int curr, int tab,
 		*snndc = (struct stats_net_nfsd *) a->buf[curr],
 		*snndp = (struct stats_net_nfsd *) a->buf[!curr];
 
-	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -2127,6 +2559,7 @@ __print_funct_t xml_print_net_nfsd_stats(struct activity *a, int curr, int tab,
 		S_VALUE(snndp->nfsd_writecnt,  snndc->nfsd_writecnt,  itv),
 		S_VALUE(snndp->nfsd_accesscnt, snndc->nfsd_accesscnt, itv),
 		S_VALUE(snndp->nfsd_getattcnt, snndc->nfsd_getattcnt, itv));
+	tab--;
 
 close_xml_markup:
 	if (CLOSE_MARKUP(a->options)) {
@@ -2151,7 +2584,7 @@ __print_funct_t xml_print_net_sock_stats(struct activity *a, int curr, int tab,
 	struct stats_net_sock
 		*snsc = (struct stats_net_sock *) a->buf[curr];
 	
-	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -2170,6 +2603,7 @@ __print_funct_t xml_print_net_sock_stats(struct activity *a, int curr, int tab,
        		snsc->raw_inuse,
 	       	snsc->frag_inuse,
 	       	snsc->tcp_tw);
+	tab--;
 
 close_xml_markup:
 	if (CLOSE_MARKUP(a->options)) {
@@ -2177,3 +2611,343 @@ close_xml_markup:
 	}
 }
 
+/*
+ ***************************************************************************
+ * Display IP network statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_ip_stats(struct activity *a, int curr, int tab,
+				       unsigned long long itv)
+{
+	struct stats_net_ip
+		*snic = (struct stats_net_ip *) a->buf[curr],
+		*snip = (struct stats_net_ip *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-ip "
+		"irec=\"%.2f\" "
+		"fwddgm=\"%.2f\" "
+		"idel=\"%.2f\" "
+		"orq=\"%.2f\" "
+		"asmrq=\"%.2f\" "
+		"asmok=\"%.2f\" "
+		"fragok=\"%.2f\" "
+		"fragcrt=\"%.2f\"/>",
+		S_VALUE(snip->InReceives,    snic->InReceives,    itv),
+		S_VALUE(snip->ForwDatagrams, snic->ForwDatagrams, itv),
+		S_VALUE(snip->InDelivers,    snic->InDelivers,    itv),
+		S_VALUE(snip->OutRequests,   snic->OutRequests,   itv),
+		S_VALUE(snip->ReasmReqds,    snic->ReasmReqds,    itv),
+		S_VALUE(snip->ReasmOKs,      snic->ReasmOKs,      itv),
+		S_VALUE(snip->FragOKs,       snic->FragOKs,       itv),
+		S_VALUE(snip->FragCreates,   snic->FragCreates,   itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display IP network error statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_eip_stats(struct activity *a, int curr, int tab,
+					unsigned long long itv)
+{
+	struct stats_net_eip
+		*sneic = (struct stats_net_eip *) a->buf[curr],
+		*sneip = (struct stats_net_eip *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-eip "
+		"ihdrerr=\"%.2f\" "
+		"iadrerr=\"%.2f\" "
+		"iukwnpr=\"%.2f\" "
+		"idisc=\"%.2f\" "
+		"odisc=\"%.2f\" "
+		"onort=\"%.2f\" "
+		"asmf=\"%.2f\" "
+		"fragf=\"%.2f\"/>",
+		S_VALUE(sneip->InHdrErrors,     sneic->InHdrErrors,     itv),
+		S_VALUE(sneip->InAddrErrors,    sneic->InAddrErrors,    itv),
+		S_VALUE(sneip->InUnknownProtos, sneic->InUnknownProtos, itv),
+		S_VALUE(sneip->InDiscards,      sneic->InDiscards,      itv),
+		S_VALUE(sneip->OutDiscards,     sneic->OutDiscards,     itv),
+		S_VALUE(sneip->OutNoRoutes,     sneic->OutNoRoutes,     itv),
+		S_VALUE(sneip->ReasmFails,      sneic->ReasmFails,      itv),
+		S_VALUE(sneip->FragFails,       sneic->FragFails,       itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display ICMP network statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_icmp_stats(struct activity *a, int curr, int tab,
+					 unsigned long long itv)
+{
+	struct stats_net_icmp
+		*snic = (struct stats_net_icmp *) a->buf[curr],
+		*snip = (struct stats_net_icmp *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-icmp "
+		"imsg=\"%.2f\" "
+		"omsg=\"%.2f\" "
+		"iech=\"%.2f\" "
+		"iechr=\"%.2f\" "
+		"oech=\"%.2f\" "
+		"oechr=\"%.2f\" "
+		"itm=\"%.2f\" "
+		"itmr=\"%.2f\" "
+		"otm=\"%.2f\" "
+		"otmr=\"%.2f\" "
+		"iadrmk=\"%.2f\" "
+		"iadrmkr=\"%.2f\" "
+		"oadrmk=\"%.2f\" "
+		"oadrmkr=\"%.2f\"/>",
+		S_VALUE(snip->InMsgs,           snic->InMsgs,           itv),
+		S_VALUE(snip->OutMsgs,          snic->OutMsgs,          itv),
+		S_VALUE(snip->InEchos,          snic->InEchos,          itv),
+		S_VALUE(snip->InEchoReps,       snic->InEchoReps,       itv),
+		S_VALUE(snip->OutEchos,         snic->OutEchos,         itv),
+		S_VALUE(snip->OutEchoReps,      snic->OutEchoReps,      itv),
+		S_VALUE(snip->InTimestamps,     snic->InTimestamps,     itv),
+		S_VALUE(snip->InTimestampReps,  snic->InTimestampReps,  itv),
+		S_VALUE(snip->OutTimestamps,    snic->OutTimestamps,    itv),
+		S_VALUE(snip->OutTimestampReps, snic->OutTimestampReps, itv),
+		S_VALUE(snip->InAddrMasks,      snic->InAddrMasks,      itv),
+		S_VALUE(snip->InAddrMaskReps,   snic->InAddrMaskReps,   itv),
+		S_VALUE(snip->OutAddrMasks,     snic->OutAddrMasks,     itv),
+		S_VALUE(snip->OutAddrMaskReps,  snic->OutAddrMaskReps,  itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display ICMP error message statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_eicmp_stats(struct activity *a, int curr, int tab,
+					  unsigned long long itv)
+{
+	struct stats_net_eicmp
+		*sneic = (struct stats_net_eicmp *) a->buf[curr],
+		*sneip = (struct stats_net_eicmp *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-eicmp "
+		"ierr=\"%.2f\" "
+		"oerr=\"%.2f\" "
+		"idstunr=\"%.2f\" "
+		"odstunr=\"%.2f\" "
+		"itmex=\"%.2f\" "
+		"otmex=\"%.2f\" "
+		"iparmpb=\"%.2f\" "
+		"oparmpb=\"%.2f\" "
+		"isrcq=\"%.2f\" "
+		"osrcq=\"%.2f\" "
+		"iredir=\"%.2f\" "
+		"oredir=\"%.2f\"/>",
+		S_VALUE(sneip->InErrors,        sneic->InErrors,        itv),
+		S_VALUE(sneip->OutErrors,       sneic->OutErrors,       itv),
+		S_VALUE(sneip->InDestUnreachs,  sneic->InDestUnreachs,  itv),
+		S_VALUE(sneip->OutDestUnreachs, sneic->OutDestUnreachs, itv),
+		S_VALUE(sneip->InTimeExcds,     sneic->InTimeExcds,     itv),
+		S_VALUE(sneip->OutTimeExcds,    sneic->OutTimeExcds,    itv),
+		S_VALUE(sneip->InParmProbs,     sneic->InParmProbs,     itv),
+		S_VALUE(sneip->OutParmProbs,    sneic->OutParmProbs,    itv),
+		S_VALUE(sneip->InSrcQuenchs,    sneic->InSrcQuenchs,    itv),
+		S_VALUE(sneip->OutSrcQuenchs,   sneic->OutSrcQuenchs,   itv),
+		S_VALUE(sneip->InRedirects,     sneic->InRedirects,     itv),
+		S_VALUE(sneip->OutRedirects,    sneic->OutRedirects,    itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display TCP network statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_tcp_stats(struct activity *a, int curr, int tab,
+					unsigned long long itv)
+{
+	struct stats_net_tcp
+		*sntc = (struct stats_net_tcp *) a->buf[curr],
+		*sntp = (struct stats_net_tcp *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-tcp "
+		"active=\"%.2f\" "
+		"passive=\"%.2f\" "
+		"iseg=\"%.2f\" "
+		"oseg=\"%.2f\"/>",
+		S_VALUE(sntp->ActiveOpens,  sntc->ActiveOpens,  itv),
+		S_VALUE(sntp->PassiveOpens, sntc->PassiveOpens, itv),
+		S_VALUE(sntp->InSegs,       sntc->InSegs,       itv),
+		S_VALUE(sntp->OutSegs,      sntc->OutSegs,      itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display TCP network error statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_etcp_stats(struct activity *a, int curr, int tab,
+					 unsigned long long itv)
+{
+	struct stats_net_etcp
+		*snetc = (struct stats_net_etcp *) a->buf[curr],
+		*snetp = (struct stats_net_etcp *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-etcp "
+		"atmptf=\"%.2f\" "
+		"estres=\"%.2f\" "
+		"retrans=\"%.2f\" "
+		"isegerr=\"%.2f\" "
+		"orsts=\"%.2f\"/>",
+		S_VALUE(snetp->AttemptFails, snetc->AttemptFails,  itv),
+		S_VALUE(snetp->EstabResets,  snetc->EstabResets,  itv),
+		S_VALUE(snetp->RetransSegs,  snetc->RetransSegs,  itv),
+		S_VALUE(snetp->InErrs,       snetc->InErrs,  itv),
+		S_VALUE(snetp->OutRsts,      snetc->OutRsts,  itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display UDP network statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_udp_stats(struct activity *a, int curr, int tab,
+					unsigned long long itv)
+{
+	struct stats_net_udp
+		*snuc = (struct stats_net_udp *) a->buf[curr],
+		*snup = (struct stats_net_udp *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-udp "
+		"idgm=\"%.2f\" "
+		"odgm=\"%.2f\" "
+		"noport=\"%.2f\" "
+		"idgmerr=\"%.2f\"/>",
+		S_VALUE(snup->InDatagrams,  snuc->InDatagrams,  itv),
+		S_VALUE(snup->OutDatagrams, snuc->OutDatagrams, itv),
+		S_VALUE(snup->NoPorts,      snuc->NoPorts,      itv),
+		S_VALUE(snup->InErrors,     snuc->InErrors,     itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}

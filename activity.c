@@ -1,5 +1,5 @@
 /*
- * activity.c: Define system activities
+ * activity.c: Define system activities available for sar/sadc.
  * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
@@ -33,6 +33,32 @@
  */
 
 /*
+ * Array of item numbers (CPUs, network interfaces, etc.)
+ * A negative value (-1) is the default value and indicates that this number
+ * has still not been calculated by the f_count() function from the corresponding
+ * activity.
+ * A value of 0 means that this number has been calculated, but no items have
+ * been found.
+ */
+__nr_t item_nr[] = {
+	-1,	/*  [0] Filled by wrap_get_cpu_nr() for A_CPU				*/
+	 1,	/*  [1] Constant for A_PCSW						*/
+	-1,	/*  [2] Filled by wrap_get_irq_nr() for A_IRQ				*/
+	-1,	/*  [3] Filled by wrap_get_serial_nr() for A_SERIAL			*/
+	-1,	/*  [4] Filled by wrap_get_disk_nr() for A_DISK				*/
+	-1,	/*  [5] Filled by wrap_get_iface_nr() for A_NET_DEV and A_NET_EDEV	*/
+	 1,	/*  [6] Constant for A_SWAP						*/
+	 1,	/*  [7] Constant for A_PAGE						*/
+	 1,	/*  [8] Constant for A_IO						*/
+	 1,	/*  [9] Constant for A_MEMORY						*/
+	 1,	/* [10] Constant for A_KTABLES						*/
+	 1,	/* [11] Constant for A_QUEUE						*/
+	 1,	/* [12] Constant for A_NET_NFS and A_NET_NFSD				*/
+	 1,	/* [13] Constant for A_NET_SOCK						*/
+	 1	/* [14] Constant for SNMP statistics (A_NET_IP, etc.)			*/
+};
+
+/*
  * CPU statistics.
  * This is the only activity which *must* be collected by sadc
  * so that uptime can be filled.
@@ -51,15 +77,17 @@ struct activity cpu_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_cpu_stats,
 	.f_xml_print	= xml_print_cpu_stats,
+	.hdr_line	= "CPU;%user;%nice;%system;%iowait;%steal;%idle|"
+		          "CPU;%usr;%nice;%sys;%iowait;%steal;%irq;%soft;%guest;%idle",
+	.name		= "A_CPU",
 #endif
-	.nr		= -1,
+	.nr		= &item_nr[0],
 	.fsize		= STATS_CPU_SIZE,
 	.msize		= STATS_CPU_SIZE,
 	.opt_flags	= AO_F_CPU_DEF,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= NR_CPUS,
-	.hdr_line	= "CPU;%user;%nice;%system;%iowait;%steal;%idle|CPU;%usr;%nice;%sys;%iowait;%steal;%irq;%soft;%guest;%idle"
+	.bitmap_size	= NR_CPUS
 };
 
 /* Process (task) creation and context switch activity */
@@ -77,15 +105,16 @@ struct activity pcsw_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_pcsw_stats,
 	.f_xml_print	= xml_print_pcsw_stats,
+	.hdr_line	= "proc/s;cswch/s",
+	.name		= "A_PCSW",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[1],
 	.fsize		= STATS_PCSW_SIZE,
 	.msize		= STATS_PCSW_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "proc/s;cswch/s"
+	.bitmap_size	= 0
 };
 
 /* Interrupts statistics */
@@ -103,15 +132,16 @@ struct activity irq_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_irq_stats,
 	.f_xml_print	= xml_print_irq_stats,
+	.hdr_line	= "INTR;intr/s",
+	.name		= "A_IRQ",
 #endif
-	.nr		= -1,
+	.nr		= &item_nr[2],
 	.fsize		= STATS_IRQ_SIZE,
 	.msize		= STATS_IRQ_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= NR_IRQS,
-	.hdr_line	= "INTR;intr/s"
+	.bitmap_size	= NR_IRQS
 };
 
 /* Swapping activity */
@@ -129,15 +159,16 @@ struct activity swap_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_swap_stats,
 	.f_xml_print	= xml_print_swap_stats,
+	.hdr_line	= "pswpin/s;pswpout/s",
+	.name		= "A_SWAP",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[6],
 	.fsize		= STATS_SWAP_SIZE,
 	.msize		= STATS_SWAP_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "pswpin/s;pswpout/s"
+	.bitmap_size	= 0
 };
 
 /* Paging activity */
@@ -155,15 +186,17 @@ struct activity paging_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_paging_stats,
 	.f_xml_print	= xml_print_paging_stats,
+	.hdr_line	= "pgpgin/s;pgpgout/s;fault/s;majflt/s;"
+		          "pgfree/s;pgscank/s;pgscand/s;pgsteal/s;%vmeff",
+	.name		= "A_PAGE",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[7],
 	.fsize		= STATS_PAGING_SIZE,
 	.msize		= STATS_PAGING_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "pgpgin/s;pgpgout/s;fault/s;majflt/s;pgfree/s;pgscank/s;pgscand/s;pgsteal/s;%vmeff"
+	.bitmap_size	= 0
 };
 
 /* I/O and transfer rate activity */
@@ -181,15 +214,16 @@ struct activity io_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_io_stats,
 	.f_xml_print	= xml_print_io_stats,
+	.hdr_line	= "tps;rtps;wtps;bread/s;bwrtn/s",
+	.name		= "A_IO",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[8],
 	.fsize		= STATS_IO_SIZE,
 	.msize		= STATS_IO_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "tps;rtps;wtps;bread/s;bwrtn/s"
+	.bitmap_size	= 0
 };
 
 /* Memory and swap space utilization activity */
@@ -207,15 +241,18 @@ struct activity memory_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_memory_stats,
 	.f_xml_print	= xml_print_memory_stats,
+	.hdr_line	= "frmpg/s;bufpg/s;campg/s|"
+		          "kbmemfree;kbmemused;%memused;kbbuffers;kbcached;kbcommit;%commit|"
+		          "kbswpfree;kbswpused;%swpused;kbswpcad;%swpcad",
+	.name		= "A_MEMORY",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[9],
 	.fsize		= STATS_MEMORY_SIZE,
 	.msize		= STATS_MEMORY_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "frmpg/s;bufpg/s;campg/s|kbmemfree;kbmemused;%memused;kbbuffers;kbcached;kbcommit;%commit|kbswpfree;kbswpused;%swpused;kbswpcad;%swpcad"
+	.bitmap_size	= 0
 };
 
 /* Kernel tables activity */
@@ -233,15 +270,16 @@ struct activity ktables_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_ktables_stats,
 	.f_xml_print	= xml_print_ktables_stats,
+	.hdr_line	= "dentunusd;file-nr;inode-nr;pty-nr",
+	.name		= "A_KTABLES",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[10],
 	.fsize		= STATS_KTABLES_SIZE,
 	.msize		= STATS_KTABLES_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "dentunusd;file-nr;inode-nr;pty-nr"
+	.bitmap_size	= 0
 };
 
 /* Queue and load activity */
@@ -259,15 +297,16 @@ struct activity queue_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_queue_stats,
 	.f_xml_print	= xml_print_queue_stats,
+	.hdr_line	= "runq-sz;plist-sz;ldavg-1;ldavg-5;ldavg-15",
+	.name		= "A_QUEUE",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[11],
 	.fsize		= STATS_QUEUE_SIZE,
 	.msize		= STATS_QUEUE_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "runq-sz;plist-sz;ldavg-1;ldavg-5;ldavg-15"
+	.bitmap_size	= 0
 };
 
 /* Serial lines activity */
@@ -285,15 +324,16 @@ struct activity serial_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_serial_stats,
 	.f_xml_print	= xml_print_serial_stats,
+	.hdr_line	= "TTY;rcvin/s;txmtin/s;framerr/s;prtyerr/s;brk/s;ovrun/s",
+	.name		= "A_SERIAL",
 #endif
-	.nr		= -1,
+	.nr		= &item_nr[3],
 	.fsize		= STATS_SERIAL_SIZE,
 	.msize		= STATS_SERIAL_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "TTY;rcvin/s;txmtin/s;framerr/s;prtyerr/s;brk/s;ovrun/s"
+	.bitmap_size	= 0
 };
 
 /* Block devices activity */
@@ -311,15 +351,16 @@ struct activity disk_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_disk_stats,
 	.f_xml_print	= xml_print_disk_stats,
+	.hdr_line	= "DEV;tps;rd_sec/s;wr_sec/s;avgrq-sz;avgqu-sz;await;svctm;%util",
+	.name		= "A_DISK",
 #endif
-	.nr		= -1,
+	.nr		= &item_nr[4],
 	.fsize		= STATS_DISK_SIZE,
 	.msize		= STATS_DISK_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "DEV;tps;rd_sec/s;wr_sec/s;avgrq-sz;avgqu-sz;await;svctm;%util"
+	.bitmap_size	= 0
 };
 
 /* Network interfaces activity */
@@ -337,15 +378,16 @@ struct activity net_dev_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_net_dev_stats,
 	.f_xml_print	= xml_print_net_dev_stats,
+	.hdr_line	= "IFACE;rxpck/s;txpck/s;rxkB/s;txkB/s;rxcmp/s;txcmp/s;rxmcst/s",
+	.name		= "A_NET_DEV",
 #endif
-	.nr		= -1,
+	.nr		= &item_nr[5],
 	.fsize		= STATS_NET_DEV_SIZE,
 	.msize		= STATS_NET_DEV_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "IFACE;rxpck/s;txpck/s;rxkB/s;txkB/s;rxcmp/s;txcmp/s;rxmcst/s"
+	.bitmap_size	= 0
 };
 
 /* Network interfaces activity */
@@ -363,15 +405,17 @@ struct activity net_edev_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_net_edev_stats,
 	.f_xml_print	= xml_print_net_edev_stats,
+	.hdr_line	= "IFACE;rxerr/s;txerr/s;coll/s;rxdrop/s;txdrop/s;"
+		          "txcarr/s;rxfram/s;rxfifo/s;txfifo/s",
+	.name		= "A_NET_EDEV",
 #endif
-	.nr		= -1,
+	.nr		= &item_nr[5],
 	.fsize		= STATS_NET_EDEV_SIZE,
 	.msize		= STATS_NET_EDEV_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "IFACE;rxerr/s;txerr/s;coll/s;rxdrop/s;txdrop/s;txcarr/s;rxfram/s;rxfifo/s;txfifo/s"
+	.bitmap_size	= 0
 };
 
 /* NFS client activity */
@@ -389,15 +433,16 @@ struct activity net_nfs_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_net_nfs_stats,
 	.f_xml_print	= xml_print_net_nfs_stats,
+	.hdr_line	= "call/s;retrans/s;read/s;write/s;access/s;getatt/s",
+	.name		= "A_NET_NFS",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[12],
 	.fsize		= STATS_NET_NFS_SIZE,
 	.msize		= STATS_NET_NFS_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "call/s;retrans/s;read/s;write/s;access/s;getatt/s"
+	.bitmap_size	= 0
 };
 
 /* NFS server activity */
@@ -415,21 +460,23 @@ struct activity net_nfsd_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_net_nfsd_stats,
 	.f_xml_print	= xml_print_net_nfsd_stats,
+	.hdr_line	= "scall/s;badcall/s;packet/s;udp/s;tcp/s;hit/s;miss/s;"
+		          "sread/s;swrite/s;saccess/s;sgetatt/s",
+	.name		= "A_NET_NFSD",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[12],
 	.fsize		= STATS_NET_NFSD_SIZE,
 	.msize		= STATS_NET_NFSD_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "scall/s;badcall/s;packet/s;udp/s;tcp/s;hit/s;miss/s;sread/s;swrite/s;saccess/s;sgetatt/s"
+	.bitmap_size	= 0
 };
 
 /* Network sockets activity */
 struct activity net_sock_act = {
 	.id		= A_NET_SOCK,
-	.options	= AO_COLLECTED + AO_CLOSE_MARKUP,
+	.options	= AO_COLLECTED,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
 	.f_read		= wrap_read_net_sock,
@@ -441,15 +488,207 @@ struct activity net_sock_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_net_sock_stats,
 	.f_xml_print	= xml_print_net_sock_stats,
+	.hdr_line	= "totsck;tcpsck;udpsck;rawsck;ip-frag;tcp-tw",
+	.name		= "A_NET_SOCK",
 #endif
-	.nr		= 1,
+	.nr		= &item_nr[13],
 	.fsize		= STATS_NET_SOCK_SIZE,
 	.msize		= STATS_NET_SOCK_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
-	.bitmap_size	= 0,
-	.hdr_line	= "totsck;tcpsck;udpsck;rawsck;ip-frag;tcp-tw"
+	.bitmap_size	= 0
+};
+
+/* IP network traffic activity */
+struct activity net_ip_act = {
+	.id		= A_NET_IP,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_ip,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_ip_stats,
+	.f_print_avg	= print_net_ip_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_ip_stats,
+	.f_xml_print	= xml_print_net_ip_stats,
+	.hdr_line	= "irec/s;fwddgm/s;idel/s;orq/s;asmrq/s;asmok/s;fragok/s;fragcrt/s",
+	.name		= "A_NET_IP",
+#endif
+	.nr		= &item_nr[14],
+	.fsize		= STATS_NET_IP_SIZE,
+	.msize		= STATS_NET_IP_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* IP network traffic (errors) activity */
+struct activity net_eip_act = {
+	.id		= A_NET_EIP,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_eip,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_eip_stats,
+	.f_print_avg	= print_net_eip_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_eip_stats,
+	.f_xml_print	= xml_print_net_eip_stats,
+	.hdr_line	= "ihdrerr/s;iadrerr/s;iukwnpr/s;idisc/s;odisc/s;onort/s;asmf/s;fragf/s",
+	.name		= "A_NET_EIP",
+#endif
+	.nr		= &item_nr[14],
+	.fsize		= STATS_NET_EIP_SIZE,
+	.msize		= STATS_NET_EIP_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* ICMP network traffic activity */
+struct activity net_icmp_act = {
+	.id		= A_NET_ICMP,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_icmp,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_icmp_stats,
+	.f_print_avg	= print_net_icmp_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_icmp_stats,
+	.f_xml_print	= xml_print_net_icmp_stats,
+	.hdr_line	= "imsg/s;omsg/s;iech/s;iechr/s;oech/s;oechr/s;itm/s;itmr/s;otm/s;"
+		          "otmr/s;iadrmk/s;iadrmkr/s;oadrmk/s;oadrmkr/s",
+	.name		= "A_NET_ICMP",
+#endif
+	.nr		= &item_nr[14],
+	.fsize		= STATS_NET_ICMP_SIZE,
+	.msize		= STATS_NET_ICMP_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* ICMP network traffic (errors) activity */
+struct activity net_eicmp_act = {
+	.id		= A_NET_EICMP,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_eicmp,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_eicmp_stats,
+	.f_print_avg	= print_net_eicmp_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_eicmp_stats,
+	.f_xml_print	= xml_print_net_eicmp_stats,
+	.hdr_line	= "ierr/s;oerr/s;idstunr/s;odstunr/s;itmex/s;otmex/s;"
+		          "iparmpb/s;oparmpb/s;isrcq/s;osrcq/s;iredir/s;oredir/s",
+	.name		= "A_NET_EICMP",
+#endif
+	.nr		= &item_nr[14],
+	.fsize		= STATS_NET_EICMP_SIZE,
+	.msize		= STATS_NET_EICMP_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* TCP network traffic activity */
+struct activity net_tcp_act = {
+	.id		= A_NET_TCP,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_tcp,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_tcp_stats,
+	.f_print_avg	= print_net_tcp_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_tcp_stats,
+	.f_xml_print	= xml_print_net_tcp_stats,
+	.hdr_line	= "active/s;passive/s;iseg/s;oseg/s",
+	.name		= "A_NET_TCP",
+#endif
+	.nr		= &item_nr[14],
+	.fsize		= STATS_NET_TCP_SIZE,
+	.msize		= STATS_NET_TCP_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* TCP network traffic (errors) activity */
+struct activity net_etcp_act = {
+	.id		= A_NET_ETCP,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_etcp,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_etcp_stats,
+	.f_print_avg	= print_net_etcp_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_etcp_stats,
+	.f_xml_print	= xml_print_net_etcp_stats,
+	.hdr_line	= "atmptf/s;estres/s;retrans/s;isegerr/s;orsts/s",
+	.name		= "A_NET_ETCP",
+#endif
+	.nr		= &item_nr[14],
+	.fsize		= STATS_NET_ETCP_SIZE,
+	.msize		= STATS_NET_ETCP_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* UDP network traffic activity */
+struct activity net_udp_act = {
+	.id		= A_NET_UDP,
+	.options	= AO_CLOSE_MARKUP,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_udp,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_udp_stats,
+	.f_print_avg	= print_net_udp_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_udp_stats,
+	.f_xml_print	= xml_print_net_udp_stats,
+	.hdr_line	= "idgm/s;odgm/s;noport/s;idgmerr/s",
+	.name		= "A_NET_UDP",
+#endif
+	.nr		= &item_nr[14],
+	.fsize		= STATS_NET_UDP_SIZE,
+	.msize		= STATS_NET_UDP_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
 };
 
 
@@ -472,5 +711,13 @@ struct activity *act[NR_ACT] = {
 	&net_edev_act,
 	&net_nfs_act,
 	&net_nfsd_act,
-	&net_sock_act
+	&net_sock_act,
+	&net_ip_act,
+	&net_eip_act,
+	&net_icmp_act,
+	&net_eicmp_act,
+	&net_tcp_act,
+	&net_etcp_act,
+	&net_udp_act
 };
+

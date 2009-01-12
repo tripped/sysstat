@@ -97,6 +97,14 @@
     	<xs:attribute name="tcp-tw" type="xs:nonNegativeInteger"></xs:attribute>
     </xs:complexType>
 
+    <xs:element name="net-sock6" type="net-sock6-type"></xs:element>
+
+    <xs:complexType name="net-sock6-type">
+        <xs:attribute name="tcp6sck" type="xs:nonNegativeInteger"></xs:attribute>
+        <xs:attribute name="udp6sck" type="xs:nonNegativeInteger"></xs:attribute>
+        <xs:attribute name="raw6sck" type="xs:nonNegativeInteger"></xs:attribute>
+        <xs:attribute name="ip6-frag" type="xs:nonNegativeInteger"></xs:attribute>
+    </xs:complexType>
 
     <xs:element name="net-nfsd" type="net-nfsd-type"></xs:element>
 
@@ -167,6 +175,21 @@
 	<xs:attribute name="fragcrt" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
+    <xs:element name="net-ip6" type="net-ip6-type"></xs:element>
+
+    <xs:complexType name="net-ip6-type">
+        <xs:attribute name="irec6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="fwddgm6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="idel6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="orq6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="asmrq6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="asmok6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="imcpck6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="omcpck6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="fragok6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="fragcr6" type="hundredth-type"></xs:attribute>
+    </xs:complexType>
+
     <xs:element name="net-eip" type="net-eip-type"></xs:element>
 
     <xs:complexType name="net-eip-type">
@@ -178,6 +201,22 @@
 	<xs:attribute name="onort" type="hundredth-type"></xs:attribute>
 	<xs:attribute name="asmf" type="hundredth-type"></xs:attribute>
 	<xs:attribute name="fragf" type="hundredth-type"></xs:attribute>
+    </xs:complexType>
+
+    <xs:element name="net-eip6" type="net-eip6-type"></xs:element>
+
+    <xs:complexType name="net-eip6-type">
+        <xs:attribute name="ihdrer6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="iadrer6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="iukwnp6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="i2big6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="idisc6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="odisc6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="inort6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="onort6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="asmf6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="fragf6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="itrpck6" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
     <xs:element name="net-icmp" type="net-icmp-type"></xs:element>
@@ -199,6 +238,28 @@
 	<xs:attribute name="oadrmkr" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
+    <xs:element name="net-icmp6" type="net-icmp6-type"></xs:element>
+
+    <xs:complexType name="net-icmp6-type">
+        <xs:attribute name="imsg6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="omsg6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="iech6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="iechr6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="oechr6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="igmbq6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="igmbr6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="ogmbr6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="igmbrd6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="ogmbrd6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="irtsol6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="ortsol6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="irtad6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="inbsol6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="onbsol6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="inbad6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="onbad6" type="hundredth-type"></xs:attribute>
+    </xs:complexType>
+
     <xs:element name="net-eicmp" type="net-eicmp-type"></xs:element>
 
     <xs:complexType name="net-eicmp-type">
@@ -214,6 +275,22 @@
 	<xs:attribute name="osrcq" type="hundredth-type"></xs:attribute>
 	<xs:attribute name="iredir" type="hundredth-type"></xs:attribute>
 	<xs:attribute name="oredir" type="hundredth-type"></xs:attribute>
+    </xs:complexType>
+
+    <xs:element name="net-eicmp6" type="net-eicmp6-type"></xs:element>
+
+    <xs:complexType name="net-eicmp6-type">
+        <xs:attribute name="ierr6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="idtunr6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="odtunr6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="itmex6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="otmex6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="iprmpb6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="oprmpb6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="iredir6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="oredir6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="ipck2b6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="opck2b6" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
     <xs:element name="net-tcp" type="net-tcp-type"></xs:element>
@@ -244,6 +321,15 @@
 	<xs:attribute name="idgmerr" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
+    <xs:element name="net-udp6" type="net-udp6-type"></xs:element>
+
+    <xs:complexType name="net-udp6-type">
+        <xs:attribute name="idgm6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="odgm6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="noport6" type="hundredth-type"></xs:attribute>
+        <xs:attribute name="idgmer6" type="hundredth-type"></xs:attribute>
+    </xs:complexType>
+
     <xs:element name="network" type="network-type"></xs:element>
 
     <xs:complexType name="network-type">
@@ -260,6 +346,12 @@
     		<xs:element name="net-tcp" type="net-tcp-type"></xs:element>
     		<xs:element name="net-etcp" type="net-etcp-type"></xs:element>
     		<xs:element name="net-udp" type="net-udp-type"></xs:element>
+                <xs:element name="net-sock6" type="net-sock6-type" minOccurs="1"></xs:element>
+                <xs:element name="net-ip6" type="net-ip6-type"></xs:element>
+                <xs:element name="net-eip6" type="net-eip6-type"></xs:element>
+                <xs:element name="net-icmp6" type="net-icmp6-type"></xs:element>
+                <xs:element name="net-eicmp6" type="net-eicmp6-type"></xs:element>
+                <xs:element name="net-udp6" type="net-udp6-type"></xs:element>
     	</xs:sequence>
     	<xs:attribute name="per" type="per-type"></xs:attribute>
     </xs:complexType>

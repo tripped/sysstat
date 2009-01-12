@@ -1,13 +1,13 @@
-.TH IOSTAT 1 "JULY 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "DECEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices, partitions and network filesystems (NFS).
 .SH SYNOPSIS
 .B iostat [ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [
 .I device
-.B [ ... ] | ALL ] [ -p [
+.B [...] | ALL ] [ -p [
 .I device
-.B | ALL ] ] [
+.B [,...] | ALL ] ] [
 .I interval
 .B [
 .I count
@@ -453,8 +453,8 @@ Useful for viewing LVM2 statistics.
 .IP -n
 Display the network filesystem (NFS) report. This option works only with kernel
 2.6.17 and later.
-.IP "-p [ { device | ALL } ]"
-The -p option is exclusive of the -x option and displays statistics for
+.IP "-p [ { device [,...] | ALL } ]"
+The -p option displays statistics for
 block devices and all their partitions that are used by the system.
 If a device name is entered on the command line, then statistics for it
 and all its partitions are displayed. Last, the
@@ -470,7 +470,7 @@ on the value of the S_TIME_FORMAT environment variable (see below).
 Print version number then exit.
 .IP -x
 Display extended statistics.
-This option is exclusive of the -p one, and works with
+This option works with
 post 2.5 kernels since it needs /proc/diskstats file or a mounted sysfs to
 get the statistics. This option may also work with older kernels (e.g. 2.4)
 only if extended statistics are available in /proc/partitions (the kernel

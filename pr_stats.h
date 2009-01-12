@@ -62,6 +62,18 @@ extern __print_funct_t print_net_etcp_stats
 	(struct activity *, int, int, unsigned long long);
 extern __print_funct_t print_net_udp_stats
 	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t print_net_sock6_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t print_net_ip6_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t print_net_eip6_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t print_net_icmp6_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t print_net_eicmp6_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t print_net_udp6_stats
+	(struct activity *, int, int, unsigned long long);
 
 /* Functions used to display average statistics */
 extern __print_funct_t print_avg_memory_stats
@@ -71,6 +83,8 @@ extern __print_funct_t print_avg_ktables_stats
 extern __print_funct_t print_avg_queue_stats
 	(struct activity *, int, int, unsigned long long);
 extern __print_funct_t print_avg_net_sock_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t print_avg_net_sock6_stats
 	(struct activity *, int, int, unsigned long long);
 
 #endif /* _PR_STATS_H */

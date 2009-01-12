@@ -1,15 +1,15 @@
-.TH SADF 1 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "DECEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
 .B sadf [ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ] [ -P {
 .I cpu
-.B | ALL } ] [ -s [
+.B [,...] | ALL } ] [ -s [
 .I hh:mm:ss
 .B ] ] [ -e [
 .I hh:mm:ss
 .B ] ] [ --
-.I sar_options...
+.I sar_options
 .B ] [
 .I interval
 .B [
@@ -94,7 +94,7 @@ When used in conjunction with option -d or -D, all activities
 will be displayed horizontally on a single line.
 .IP -H
 Display the header of the data file.
-.IP "-P { cpu | ALL }"
+.IP "-P { cpu [,...] | ALL }"
 Tell
 .B sadf
 that processor dependent statistics are to be reported only for the

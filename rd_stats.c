@@ -523,6 +523,7 @@ void read_diskstats_io(struct stats_io *st_io)
 {
 	FILE *fp;
 	char line[256];
+	char dev_name[MAX_NAME_LEN];
 	unsigned int major, minor;
 	unsigned long rd_ios, wr_ios;
 	unsigned long long rd_sec, wr_sec;
@@ -532,11 +533,11 @@ void read_diskstats_io(struct stats_io *st_io)
 
 	while (fgets(line, 256, fp) != NULL) {
 
-		if (sscanf(line, "%u %u %*s %lu %*u %llu %*u %lu %*u %llu",
-			   &major, &minor,
-			   &rd_ios, &rd_sec, &wr_ios, &wr_sec) == 6) {
+		if (sscanf(line, "%u %u %s %lu %*u %llu %*u %lu %*u %llu",
+			   &major, &minor, dev_name,
+			   &rd_ios, &rd_sec, &wr_ios, &wr_sec) == 7) {
 			
-			if (ioc_iswhole(major, minor)) {
+			if (is_device(dev_name)) {
 				/*
 				 * OK: It's a device and not a partition.
 				 * Note: Structure should have been initialized first!
@@ -694,6 +695,7 @@ void read_diskstats_disk(struct stats_disk *st_disk, int nbr)
 {
 	FILE *fp;
 	char line[256];
+	char dev_name[MAX_NAME_LEN];
 	int dsk = 0;
 	struct stats_disk *st_disk_i;
 	unsigned int major, minor;
@@ -706,17 +708,17 @@ void read_diskstats_disk(struct stats_disk *st_disk, int nbr)
 
 	while ((fgets(line, 256, fp) != NULL) && (dsk < nbr)) {
 
-		if (sscanf(line, "%u %u %*s %lu %*u %llu %lu %lu %*u %llu"
+		if (sscanf(line, "%u %u %s %lu %*u %llu %lu %lu %*u %llu"
 			   " %lu %*u %lu %lu",
-			   &major, &minor,
+			   &major, &minor, dev_name,
 			   &rd_ios, &rd_sec, &rd_ticks, &wr_ios, &wr_sec, &wr_ticks,
-			   &tot_ticks, &rq_ticks) == 10) {
+			   &tot_ticks, &rq_ticks) == 11) {
 			
 			if (!rd_ios && !wr_ios)
 				/* Unused device: ignore it */
 				continue;
 
-			if (ioc_iswhole(major, minor)) {
+			if (is_device(dev_name)) {
 				/* It's a device and not a partition */
 				st_disk_i = st_disk + dsk++;
 				st_disk_i->major     = major;
@@ -1549,6 +1551,337 @@ void read_net_udp(struct stats_net_udp *st_net_udp)
 
 /*
  ***************************************************************************
+ * Read IPv6 network sockets statistics from /proc/net/sockstat6.
+ *
+ * IN:
+ * @st_net_sock6	Structure where stats will be saved.
+ *
+ * OUT:
+ * @st_net_sock6	Structure with statistics.
+ ***************************************************************************
+ */
+void read_net_sock6(struct stats_net_sock6 *st_net_sock6)
+{
+	FILE *fp;
+	char line[96];
+
+	if ((fp = fopen(NET_SOCKSTAT6, "r")) == NULL)
+		return;
+	
+	while (fgets(line, 96, fp) != NULL) {
+
+		if (!strncmp(line, "TCP6:", 5)) {
+			/* TCPv6 sockets */
+			sscanf(line + 12, "%u", &st_net_sock6->tcp6_inuse);
+		}
+		else if (!strncmp(line, "UDP6:", 5)) {
+			/* UDPv6 sockets */
+			sscanf(line + 12, "%u", &st_net_sock6->udp6_inuse);
+		}
+		else if (!strncmp(line, "RAW6:", 5)) {
+			/* IPv6 RAW sockets */
+			sscanf(line + 12, "%u", &st_net_sock6->raw6_inuse);
+		}
+		else if (!strncmp(line, "FRAG6:", 6)) {
+			/* IPv6 FRAGments */
+			sscanf(line + 13, "%u", &st_net_sock6->frag6_inuse);
+		}
+	}
+
+	fclose(fp);
+}
+
+/*
+ ***************************************************************************
+ * Read IPv6 network traffic statistics from /proc/net/snmp6.
+ *
+ * IN:
+ * @st_net_ip6	Structure where stats will be saved.
+ *
+ * OUT:
+ * @st_net_ip6	Structure with statistics.
+ ***************************************************************************
+ */
+void read_net_ip6(struct stats_net_ip6 *st_net_ip6)
+{
+	FILE *fp;
+	char line[128];
+
+	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
+		return;
+
+	while (fgets(line, 128, fp) != NULL) {
+
+		if (!strncmp(line, "Ip6InReceives ", 14)) {
+			sscanf(line + 14, "%lu", &st_net_ip6->InReceives6);
+		}
+		else if (!strncmp(line, "Ip6OutForwDatagrams ", 20)) {
+			sscanf(line + 20, "%lu", &st_net_ip6->OutForwDatagrams6);
+		}
+		else if (!strncmp(line, "Ip6InDelivers ", 14)) {
+			sscanf(line + 14, "%lu", &st_net_ip6->InDelivers6);
+		}
+		else if (!strncmp(line, "Ip6OutRequests ", 15)) {
+			sscanf(line + 15, "%lu", &st_net_ip6->OutRequests6);
+		}
+		else if (!strncmp(line, "Ip6ReasmReqds ", 14)) {
+			sscanf(line + 14, "%lu", &st_net_ip6->ReasmReqds6);
+		}
+		else if (!strncmp(line, "Ip6ReasmOKs ", 12)) {
+			sscanf(line + 12, "%lu", &st_net_ip6->ReasmOKs6);
+		}
+		else if (!strncmp(line, "Ip6InMcastPkts ", 15)) {
+			sscanf(line + 15, "%lu", &st_net_ip6->InMcastPkts6);
+		}
+		else if (!strncmp(line, "Ip6OutMcastPkts ", 16)) {
+			sscanf(line + 16, "%lu", &st_net_ip6->OutMcastPkts6);
+		}
+		else if (!strncmp(line, "Ip6FragOKs ", 11)) {
+			sscanf(line + 11, "%lu", &st_net_ip6->FragOKs6);
+		}
+		else if (!strncmp(line, "Ip6FragCreates ", 15)) {
+			sscanf(line + 15, "%lu", &st_net_ip6->FragCreates6);
+		}
+	}
+	
+	fclose(fp);
+}
+
+/*
+ ***************************************************************************
+ * Read IPv6 network error statistics from /proc/net/snmp6.
+ *
+ * IN:
+ * @st_net_eip6	Structure where stats will be saved.
+ *
+ * OUT:
+ * @st_net_eip6	Structure with statistics.
+ ***************************************************************************
+ */
+void read_net_eip6(struct stats_net_eip6 *st_net_eip6)
+{
+	FILE *fp;
+	char line[128];
+
+	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
+		return;
+
+	while (fgets(line, 128, fp) != NULL) {
+
+		if (!strncmp(line, "Ip6InHdrErrors ", 15)) {
+			sscanf(line + 15, "%lu", &st_net_eip6->InHdrErrors6);
+		}
+		else if (!strncmp(line, "Ip6InAddrErrors ", 16)) {
+			sscanf(line + 16, "%lu", &st_net_eip6->InAddrErrors6);
+		}
+		else if (!strncmp(line, "Ip6InUnknownProtos ", 19)) {
+			sscanf(line + 19, "%lu", &st_net_eip6->InUnknownProtos6);
+		}
+		else if (!strncmp(line, "Ip6InTooBigErrors ", 18)) {
+			sscanf(line + 18, "%lu", &st_net_eip6->InTooBigErrors6);
+		}
+		else if (!strncmp(line, "Ip6InDiscards ", 14)) {
+			sscanf(line + 14, "%lu", &st_net_eip6->InDiscards6);
+		}
+		else if (!strncmp(line, "Ip6OutDiscards ", 15)) {
+			sscanf(line + 15, "%lu", &st_net_eip6->OutDiscards6);
+		}
+		else if (!strncmp(line, "Ip6InNoRoutes ", 14)) {
+			sscanf(line + 14, "%lu", &st_net_eip6->InNoRoutes6);
+		}
+		else if (!strncmp(line, "Ip6OutNoRoutes ", 15)) {
+			sscanf(line + 15, "%lu", &st_net_eip6->OutNoRoutes6);
+		}
+		else if (!strncmp(line, "Ip6ReasmFails ", 14)) {
+			sscanf(line + 14, "%lu", &st_net_eip6->ReasmFails6);
+		}
+		else if (!strncmp(line, "Ip6FragFails ", 13)) {
+			sscanf(line + 13, "%lu", &st_net_eip6->FragFails6);
+		}
+		else if (!strncmp(line, "Ip6InTruncatedPkts ", 19)) {
+			sscanf(line + 19, "%lu", &st_net_eip6->InTruncatedPkts6);
+		}
+	}
+	
+	fclose(fp);
+}
+
+/*
+ ***************************************************************************
+ * Read ICMPv6 network traffic statistics from /proc/net/snmp6.
+ *
+ * IN:
+ * @st_net_icmp6	Structure where stats will be saved.
+ *
+ * OUT:
+ * @st_net_icmp6	Structure with statistics.
+ ***************************************************************************
+ */
+void read_net_icmp6(struct stats_net_icmp6 *st_net_icmp6)
+{
+	FILE *fp;
+	char line[128];
+
+	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
+		return;
+
+	while (fgets(line, 128, fp) != NULL) {
+
+		if (!strncmp(line, "Icmp6InMsgs ", 12)) {
+			sscanf(line + 12, "%lu", &st_net_icmp6->InMsgs6);
+		}
+		else if (!strncmp(line, "Icmp6OutMsgs ", 13)) {
+			sscanf(line + 13, "%lu", &st_net_icmp6->OutMsgs6);
+		}
+		else if (!strncmp(line, "Icmp6InEchos ", 13)) {
+			sscanf(line + 13, "%lu", &st_net_icmp6->InEchos6);
+		}
+		else if (!strncmp(line, "Icmp6InEchoReplies ", 19)) {
+			sscanf(line + 19, "%lu", &st_net_icmp6->InEchoReplies6);
+		}
+		else if (!strncmp(line, "Icmp6OutEchoReplies ", 20)) {
+			sscanf(line + 20, "%lu", &st_net_icmp6->OutEchoReplies6);
+		}
+		else if (!strncmp(line, "Icmp6InGroupMembQueries ", 24)) {
+			sscanf(line + 24, "%lu", &st_net_icmp6->InGroupMembQueries6);
+		}
+		else if (!strncmp(line, "Icmp6InGroupMembResponses ", 26)) {
+			sscanf(line + 26, "%lu", &st_net_icmp6->InGroupMembResponses6);
+		}
+		else if (!strncmp(line, "Icmp6OutGroupMembResponses ", 27)) {
+			sscanf(line + 27, "%lu", &st_net_icmp6->OutGroupMembResponses6);
+		}
+		else if (!strncmp(line, "Icmp6InGroupMembReductions ", 27)) {
+			sscanf(line + 27, "%lu", &st_net_icmp6->InGroupMembReductions6);
+		}
+		else if (!strncmp(line, "Icmp6OutGroupMembReductions ", 28)) {
+			sscanf(line + 28, "%lu", &st_net_icmp6->OutGroupMembReductions6);
+		}
+		else if (!strncmp(line, "Icmp6InRouterSolicits ", 22)) {
+			sscanf(line + 22, "%lu", &st_net_icmp6->InRouterSolicits6);
+		}
+		else if (!strncmp(line, "Icmp6OutRouterSolicits ", 23)) {
+			sscanf(line + 23, "%lu", &st_net_icmp6->OutRouterSolicits6);
+		}
+		else if (!strncmp(line, "Icmp6InRouterAdvertisements ", 28)) {
+			sscanf(line + 28, "%lu", &st_net_icmp6->InRouterAdvertisements6);
+		}
+		else if (!strncmp(line, "Icmp6InNeighborSolicits ", 24)) {
+			sscanf(line + 24, "%lu", &st_net_icmp6->InNeighborSolicits6);
+		}
+		else if (!strncmp(line, "Icmp6OutNeighborSolicits ", 25)) {
+			sscanf(line + 25, "%lu", &st_net_icmp6->OutNeighborSolicits6);
+		}
+		else if (!strncmp(line, "Icmp6InNeighborAdvertisements ", 30)) {
+			sscanf(line + 30, "%lu", &st_net_icmp6->InNeighborAdvertisements6);
+		}
+		else if (!strncmp(line, "Icmp6OutNeighborAdvertisements ", 31)) {
+			sscanf(line + 31, "%lu", &st_net_icmp6->OutNeighborAdvertisements6);
+		}
+	}
+	
+	fclose(fp);
+}
+
+/*
+ ***************************************************************************
+ * Read ICMPv6 network error statistics from /proc/net/snmp6.
+ *
+ * IN:
+ * @st_net_eicmp6	Structure where stats will be saved.
+ *
+ * OUT:
+ * @st_net_eicmp6	Structure with statistics.
+ ***************************************************************************
+ */
+void read_net_eicmp6(struct stats_net_eicmp6 *st_net_eicmp6)
+{
+	FILE *fp;
+	char line[128];
+
+	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
+		return;
+
+	while (fgets(line, 128, fp) != NULL) {
+
+		if (!strncmp(line, "Icmp6InErrors ", 14)) {
+			sscanf(line + 14, "%lu", &st_net_eicmp6->InErrors6);
+		}
+		else if (!strncmp(line, "Icmp6InDestUnreachs ", 20)) {
+			sscanf(line + 20, "%lu", &st_net_eicmp6->InDestUnreachs6);
+		}
+		else if (!strncmp(line, "Icmp6OutDestUnreachs ", 21)) {
+			sscanf(line + 21, "%lu", &st_net_eicmp6->OutDestUnreachs6);
+		}
+		else if (!strncmp(line, "Icmp6InTimeExcds ", 17)) {
+			sscanf(line + 17, "%lu", &st_net_eicmp6->InTimeExcds6);
+		}
+		else if (!strncmp(line, "Icmp6OutTimeExcds ", 18)) {
+			sscanf(line + 18, "%lu", &st_net_eicmp6->OutTimeExcds6);
+		}
+		else if (!strncmp(line, "Icmp6InParmProblems ", 20)) {
+			sscanf(line + 20, "%lu", &st_net_eicmp6->InParmProblems6);
+		}
+		else if (!strncmp(line, "Icmp6OutParmProblems ", 21)) {
+			sscanf(line + 21, "%lu", &st_net_eicmp6->OutParmProblems6);
+		}
+		else if (!strncmp(line, "Icmp6InRedirects ", 17)) {
+			sscanf(line + 17, "%lu", &st_net_eicmp6->InRedirects6);
+		}
+		else if (!strncmp(line, "Icmp6OutRedirects ", 18)) {
+			sscanf(line + 18, "%lu", &st_net_eicmp6->OutRedirects6);
+		}
+		else if (!strncmp(line, "Icmp6InPktTooBigs ", 18)) {
+			sscanf(line + 18, "%lu", &st_net_eicmp6->InPktTooBigs6);
+		}
+		else if (!strncmp(line, "Icmp6OutPktTooBigs ", 19)) {
+			sscanf(line + 19, "%lu", &st_net_eicmp6->OutPktTooBigs6);
+		}
+	}
+	
+	fclose(fp);
+}
+
+/*
+ ***************************************************************************
+ * Read UDPv6 network traffic statistics from /proc/net/snmp6.
+ *
+ * IN:
+ * @st_net_udp6	Structure where stats will be saved.
+ *
+ * OUT:
+ * @st_net_udp6	Structure with statistics.
+ ***************************************************************************
+ */
+void read_net_udp6(struct stats_net_udp6 *st_net_udp6)
+{
+	FILE *fp;
+	char line[128];
+
+	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
+		return;
+
+	while (fgets(line, 128, fp) != NULL) {
+
+		if (!strncmp(line, "Udp6InDatagrams ", 16)) {
+			sscanf(line + 16, "%lu", &st_net_udp6->InDatagrams6);
+		}
+		else if (!strncmp(line, "Udp6OutDatagrams ", 17)) {
+			sscanf(line + 17, "%lu", &st_net_udp6->OutDatagrams6);
+		}
+		else if (!strncmp(line, "Udp6NoPorts ", 12)) {
+			sscanf(line + 12, "%lu", &st_net_udp6->NoPorts6);
+		}
+		else if (!strncmp(line, "Udp6InErrors ", 13)) {
+			sscanf(line + 13, "%lu", &st_net_udp6->InErrors6);
+		}
+	}
+	
+	fclose(fp);
+}
+
+/*
+ ***************************************************************************
  * Read machine uptime, independently of the number of processors.
  *
  * OUT:
@@ -1699,6 +2032,7 @@ int get_diskstats_dev_nr(int count_part, int only_used_dev)
 {
 	FILE *fp;
 	char line[256];
+	char dev_name[MAX_NAME_LEN];
 	int dev = 0, i;
 	unsigned long rd_ios, wr_ios;
 
@@ -1712,9 +2046,9 @@ int get_diskstats_dev_nr(int count_part, int only_used_dev)
 	 */
 	while (fgets(line, 256, fp) != NULL) {
 		if (!count_part) {
-			i = sscanf(line, "%*d %*d %*s %lu %*u %*u %*u %lu",
-				   &rd_ios, &wr_ios);
-			if (i == 1)
+			i = sscanf(line, "%*d %*d %s %lu %*u %*u %*u %lu",
+				   dev_name, &rd_ios, &wr_ios);
+			if ((i == 2) || !is_device(dev_name))
 				/* It was a partition and not a device */
 				continue;
 			if (only_used_dev && !rd_ios && !wr_ios)
@@ -1760,7 +2094,7 @@ int get_ppartitions_dev_nr(int count_part)
 			 * header, blank line,... or a line without stats!)
 			 */
 			if (!count_part && !ioc_iswhole(major, minor))
-				/* This was a partition, and we don't want to count them */
+				/* This was a partition, and we don't want to count it */
 				continue;
 			dev++;
 		}

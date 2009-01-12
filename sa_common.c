@@ -75,7 +75,7 @@ void set_bitmap(unsigned char bitmap[], unsigned char value, unsigned int sz)
 void allocate_structures(struct activity *act[])
 {
 	int i, j;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 		if (*act[i]->nr > 0) {
 			for (j = 0; j < 3; j++) {
@@ -96,7 +96,7 @@ void allocate_structures(struct activity *act[])
 void free_structures(struct activity *act[])
 {
 	int i, j;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 		if (*act[i]->nr > 0) {
 			for (j = 0; j < 3; j++) {
@@ -678,7 +678,7 @@ int check_disk_reg(struct activity *a, int curr, int ref, int pos)
 void allocate_bitmaps(struct activity *act[])
 {
 	int i;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 		if (act[i]->bitmap_size) {
 			SREALLOC(act[i]->bitmap, unsigned char,
@@ -698,7 +698,7 @@ void allocate_bitmaps(struct activity *act[])
 void free_bitmaps(struct activity *act[])
 {
 	int i;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 		if (act[i]->bitmap_size) {
 			free(act[i]->bitmap);
@@ -723,15 +723,15 @@ void free_bitmaps(struct activity *act[])
 int get_activity_position(struct activity *act[], unsigned int act_flag)
 {
 	int i;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 		if (act[i]->id == act_flag)
 			break;
 	}
-	
+
 	if (i == NR_ACT)
 		return -1;
-	
+
 	return i;
 }
 
@@ -754,10 +754,10 @@ int get_activity_nr(struct activity *act[], unsigned int option, int count_outpu
 {
 	int i, n = 0;
 	unsigned int msk;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 		if ((act[i]->options & option) == option) {
-			
+
 			if (HAS_MULTIPLE_OUTPUTS(act[i]->options) && count_outputs) {
 				for (msk = 1; msk < 0x10; msk <<= 1) {
 					if (act[i]->opt_flags & msk) {
@@ -770,7 +770,7 @@ int get_activity_nr(struct activity *act[], unsigned int option, int count_outpu
 			}
 		}
 	}
-	
+
 	return n;
 }
 
@@ -785,7 +785,7 @@ int get_activity_nr(struct activity *act[], unsigned int option, int count_outpu
 void select_all_activities(struct activity *act[])
 {
 	int i;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 		act[i]->options |= AO_SELECTED;
 	}
@@ -805,9 +805,9 @@ void select_all_activities(struct activity *act[])
 void select_default_activity(struct activity *act[])
 {
 	int p;
-	
+
 	p = get_activity_position(act, A_CPU);
-	
+
 	/* Default is CPU activity... */
 	if (!get_activity_nr(act, AO_SELECTED, COUNT_ACTIVITIES)) {
 		/*
@@ -934,9 +934,9 @@ void copy_structures(struct activity *act[], unsigned int id_seq[],
 		     struct record_header record_hdr[], int dest, int src)
 {
 	int i, p;
-	
+
 	memcpy(&record_hdr[dest], &record_hdr[src], RECORD_HEADER_SIZE);
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 
 		if (!id_seq[i])
@@ -948,7 +948,7 @@ void copy_structures(struct activity *act[], unsigned int id_seq[],
 		}
 
 		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * *act[p]->nr);
-		
+
 	}
 }
 
@@ -969,9 +969,9 @@ void read_file_stat_bunch(struct activity *act[], int curr, int ifd, int act_nr,
 {
 	int i, j, p;
 	struct file_activity *fal = file_actlst;
-	
+
 	for (i = 0; i < act_nr; i++, fal++) {
-		
+
 		if ((p = get_activity_position(act, fal->id)) < 0) {
 			/*
 			 * Ignore current activity in file, which is unknown to
@@ -1054,16 +1054,16 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 
 	/* Read sa data file standard header and allocate activity list */
 	sa_fread(*ifd, file_hdr, FILE_HEADER_SIZE, HARD_SIZE);
-	
+
 	SREALLOC(*file_actlst, struct file_activity, FILE_ACTIVITY_SIZE * file_hdr->sa_nr_act);
 	fal = *file_actlst;
 
 	/* Read activity list */
 	j = 0;
 	for (i = 0; i < file_hdr->sa_nr_act; i++, fal++) {
-		
+
 		sa_fread(*ifd, fal, FILE_ACTIVITY_SIZE, HARD_SIZE);
-		
+
 		if (fal->nr < 1) {
 			/*
 			 * Every activity, known or unknown,
@@ -1075,7 +1075,7 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 		if (fal->id == A_CPU) {
 			a_cpu = TRUE;
 		}
-		
+
 		if ((p = get_activity_position(act, fal->id)) >= 0) {
 			if (fal->size > act[p]->msize) {
 				act[p]->msize = fal->size;
@@ -1085,22 +1085,22 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 			id_seq[j++]   = fal->id;
 		}
 	}
-	
+
 	if (!a_cpu) {
 		/* CPU activity should always be in file */
 		handle_invalid_sa_file(ifd, file_magic, dfile, 0);
 	}
-	
+
 	while (j < NR_ACT) {
 		id_seq[j++] = 0;
 	}
-	
+
 	/* Check that at least one selected activity is available in file */
 	for (i = 0; i < NR_ACT; i++) {
-		
+
 		if (!IS_SELECTED(act[i]->options))
 			continue;
-		
+
 		/* Here is a selected activity: Does it exist in file? */
 		fal = *file_actlst;
 		for (j = 0; j < file_hdr->sa_nr_act; j++, fal++) {
@@ -1154,57 +1154,57 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 
 			p = get_activity_position(act, A_MEMORY);
 			act[p]->opt_flags |= AO_F_MEM_AMT + AO_F_MEM_DIA + AO_F_MEM_SWAP;
-			
+
 			p = get_activity_position(act, A_IRQ);
 			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
-			
+
 			p = get_activity_position(act, A_CPU);
 			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
 			act[p]->opt_flags = AO_F_CPU_ALL;
 			break;
-			
+
 		case 'B':
 			SELECT_ACTIVITY(A_PAGE);
 			break;
-			
+
 		case 'b':
 			SELECT_ACTIVITY(A_IO);
 			break;
-			
+
 		case 'C':
 			*flags |= S_F_COMMENT;
 			break;
-			
+
 		case 'd':
 			SELECT_ACTIVITY(A_DISK);
 			break;
-			
+
 		case 'p':
 			*flags |= S_F_DEV_PRETTY;
 			break;
-			
+
 		case 'q':
 			SELECT_ACTIVITY(A_QUEUE);
 			break;
-			
+
 		case 'r':
 			p = get_activity_position(act, A_MEMORY);
 			act[p]->options   |= AO_SELECTED;
 			act[p]->opt_flags |= AO_F_MEM_AMT;
 			break;
-			
+
 		case 'R':
 			p = get_activity_position(act, A_MEMORY);
 			act[p]->options   |= AO_SELECTED;
 			act[p]->opt_flags |= AO_F_MEM_DIA;
 			break;
-			
+
 		case 'S':
 			p = get_activity_position(act, A_MEMORY);
 			act[p]->options   |= AO_SELECTED;
 			act[p]->opt_flags |= AO_F_MEM_SWAP;
 			break;
-			
+
 		case 't':
 			if (caller == C_SAR) {
 				*flags |= S_F_TRUE_TIME;
@@ -1212,7 +1212,7 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			else
 				return 1;
 			break;
-			
+
 		case 'u':
 			p = get_activity_position(act, A_CPU);
 			act[p]->options |= AO_SELECTED;
@@ -1224,27 +1224,27 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 				act[p]->opt_flags = AO_F_CPU_DEF;
 			}
 			return 0;
-			
+
 		case 'v':
 			SELECT_ACTIVITY(A_KTABLES);
 			break;
-			
+
 		case 'w':
 			SELECT_ACTIVITY(A_PCSW);
 			break;
-			
+
 		case 'W':
 			SELECT_ACTIVITY(A_SWAP);
 			break;
-			
+
 		case 'y':
 			SELECT_ACTIVITY(A_SERIAL);
 			break;
-			
+
 		case 'V':
 			print_version();
 			break;
-			
+
 		default:
 			return 1;
 		}
@@ -1269,58 +1269,81 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
  */
 int parse_sar_n_opt(char *argv[], int *opt, struct activity *act[])
 {
-	if (!strcmp(argv[*opt], K_DEV)) {
-		SELECT_ACTIVITY(A_NET_DEV);
+	char *t;
+
+	for (t = strtok(argv[*opt], ","); t; t = strtok(NULL, ",")) {
+		if (!strcmp(t, K_DEV)) {
+			SELECT_ACTIVITY(A_NET_DEV);
+		}
+		else if (!strcmp(t, K_EDEV)) {
+			SELECT_ACTIVITY(A_NET_EDEV);
+		}
+		else if (!strcmp(t, K_SOCK)) {
+			SELECT_ACTIVITY(A_NET_SOCK);
+		}
+		else if (!strcmp(t, K_NFS)) {
+			SELECT_ACTIVITY(A_NET_NFS);
+		}
+		else if (!strcmp(t, K_NFSD)) {
+			SELECT_ACTIVITY(A_NET_NFSD);
+		}
+		else if (!strcmp(t, K_IP)) {
+			SELECT_ACTIVITY(A_NET_IP);
+		}
+		else if (!strcmp(t, K_EIP)) {
+			SELECT_ACTIVITY(A_NET_EIP);
+		}
+		else if (!strcmp(t, K_ICMP)) {
+			SELECT_ACTIVITY(A_NET_ICMP);
+		}
+		else if (!strcmp(t, K_EICMP)) {
+			SELECT_ACTIVITY(A_NET_EICMP);
+		}
+		else if (!strcmp(t, K_TCP)) {
+			SELECT_ACTIVITY(A_NET_TCP);
+		}
+		else if (!strcmp(t, K_ETCP)) {
+			SELECT_ACTIVITY(A_NET_ETCP);
+		}
+		else if (!strcmp(t, K_UDP)) {
+			SELECT_ACTIVITY(A_NET_UDP);
+		}
+		else if (!strcmp(t, K_SOCK6)) {
+			SELECT_ACTIVITY(A_NET_SOCK6);
+		}
+		else if (!strcmp(t, K_IP6)) {
+			SELECT_ACTIVITY(A_NET_IP6);
+		}
+		else if (!strcmp(t, K_EIP6)) {
+			SELECT_ACTIVITY(A_NET_EIP6);
+		}
+		else if (!strcmp(t, K_ICMP6)) {
+			SELECT_ACTIVITY(A_NET_ICMP6);
+		}
+		else if (!strcmp(t, K_EICMP6)) {
+			SELECT_ACTIVITY(A_NET_EICMP6);
+		}
+		else if (!strcmp(t, K_UDP6)) {
+			SELECT_ACTIVITY(A_NET_UDP6);
+		}
+		else if (!strcmp(t, K_ALL)) {
+			SELECT_ACTIVITY(A_NET_DEV);
+			SELECT_ACTIVITY(A_NET_EDEV);
+			SELECT_ACTIVITY(A_NET_SOCK);
+			SELECT_ACTIVITY(A_NET_NFS);
+			SELECT_ACTIVITY(A_NET_NFSD);
+			SELECT_ACTIVITY(A_NET_IP);
+			SELECT_ACTIVITY(A_NET_EIP);
+			SELECT_ACTIVITY(A_NET_ICMP);
+			SELECT_ACTIVITY(A_NET_EICMP);
+			SELECT_ACTIVITY(A_NET_TCP);
+			SELECT_ACTIVITY(A_NET_ETCP);
+			SELECT_ACTIVITY(A_NET_UDP);
+
+		}
+		else
+			return 1;
 	}
-	else if (!strcmp(argv[*opt], K_EDEV)) {
-		SELECT_ACTIVITY(A_NET_EDEV);
-	}
-	else if (!strcmp(argv[*opt], K_SOCK)) {
-		SELECT_ACTIVITY(A_NET_SOCK);
-	}
-	else if (!strcmp(argv[*opt], K_NFS)) {
-		SELECT_ACTIVITY(A_NET_NFS);
-	}
-	else if (!strcmp(argv[*opt], K_NFSD)) {
-		SELECT_ACTIVITY(A_NET_NFSD);
-	}
-	else if (!strcmp(argv[*opt], K_IP)) {
-		SELECT_ACTIVITY(A_NET_IP);
-	}
-	else if (!strcmp(argv[*opt], K_EIP)) {
-		SELECT_ACTIVITY(A_NET_EIP);
-	}
-	else if (!strcmp(argv[*opt], K_ICMP)) {
-		SELECT_ACTIVITY(A_NET_ICMP);
-	}
-	else if (!strcmp(argv[*opt], K_EICMP)) {
-		SELECT_ACTIVITY(A_NET_EICMP);
-	}
-	else if (!strcmp(argv[*opt], K_TCP)) {
-		SELECT_ACTIVITY(A_NET_TCP);
-	}
-	else if (!strcmp(argv[*opt], K_ETCP)) {
-		SELECT_ACTIVITY(A_NET_ETCP);
-	}
-	else if (!strcmp(argv[*opt], K_UDP)) {
-		SELECT_ACTIVITY(A_NET_UDP);
-	}
-	else if (!strcmp(argv[*opt], K_ALL)) {
-		SELECT_ACTIVITY(A_NET_DEV);
-		SELECT_ACTIVITY(A_NET_EDEV);
-		SELECT_ACTIVITY(A_NET_SOCK);
-		SELECT_ACTIVITY(A_NET_NFS);
-		SELECT_ACTIVITY(A_NET_NFSD);
-		SELECT_ACTIVITY(A_NET_IP);
-		SELECT_ACTIVITY(A_NET_EIP);
-		SELECT_ACTIVITY(A_NET_ICMP);
-		SELECT_ACTIVITY(A_NET_EICMP);
-		SELECT_ACTIVITY(A_NET_TCP);
-		SELECT_ACTIVITY(A_NET_ETCP);
-		SELECT_ACTIVITY(A_NET_UDP);
-	}
-	else
-		return 1;
 
 	(*opt)++;
 	return 0;
@@ -1346,40 +1369,40 @@ int parse_sar_I_opt(char *argv[], int *opt, struct activity *act[])
 {
 	int i, p;
 	unsigned char c;
+	char *t;
 
 	/* Select interrupt activity */
 	p = get_activity_position(act, A_IRQ);
 	act[p]->options |= AO_SELECTED;
-	
-	if (!strcmp(argv[*opt], K_SUM)) {
-		/* Select total number of interrupts */
-		act[p]->bitmap[0] |= 0x01;
-	}
-	else {
-		if (!strcmp(argv[*opt], K_ALL)) {
+
+	for (t = strtok(argv[*opt], ","); t; t = strtok(NULL, ",")) {
+		if (!strcmp(t, K_SUM)) {
+			/* Select total number of interrupts */
+			act[p]->bitmap[0] |= 0x01;
+		}
+		else if (!strcmp(t, K_ALL)) {
 			/* Set bit for the first 16 individual interrupts */
 			act[p]->bitmap[0] |= 0xfe;
 			act[p]->bitmap[1] |= 0xff;
 			act[p]->bitmap[2] |= 0x01;
 		}
-		else if (!strcmp(argv[*opt], K_XALL)) {
+		else if (!strcmp(t, K_XALL)) {
 			/* Set every bit except for total number of interrupts */
 			c = act[p]->bitmap[0];
 			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
 			act[p]->bitmap[0] = 0xfe | c;
 		}
 		else {
-			/*
-			 * Get irq number.
-			 */
-			if (strspn(argv[*opt], DIGITS) != strlen(argv[*opt]))
+			/* Get irq number */
+			if (strspn(t, DIGITS) != strlen(t))
 				return 1;
-			i = atoi(argv[*opt]);
+			i = atoi(t);
 			if ((i < 0) || (i >= act[p]->bitmap_size))
 				return 1;
 			act[p]->bitmap[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
 		}
 	}
+
 	(*opt)++;
 	return 0;
 }
@@ -1404,26 +1427,31 @@ int parse_sar_I_opt(char *argv[], int *opt, struct activity *act[])
 int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags, struct activity *act[])
 {
 	int i, p;
+	char *t;
 
 	p = get_activity_position(act, A_CPU);
-	
+
 	if (argv[++(*opt)]) {
 		*flags |= S_F_PER_PROC;
-		if (!strcmp(argv[*opt], K_ALL)) {
-			/*
-			 * Set bit for every processor.
-			 * We still don't know if we are going to read stats
-			 * from a file or not...
-			 */
-			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
-		}
-		else {
-			if (strspn(argv[*opt], DIGITS) != strlen(argv[*opt]))
-				return 1;
-			i = atoi(argv[*opt]);	/* Get cpu number */
-			if ((i < 0) || (i >= act[p]->bitmap_size))
-				return 1;
-			act[p]->bitmap[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
+
+		for (t = strtok(argv[*opt], ","); t; t = strtok(NULL, ",")) {
+			if (!strcmp(t, K_ALL)) {
+				/*
+				 * Set bit for every processor.
+				 * We still don't know if we are going to read stats
+				 * from a file or not...
+				 */
+				set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
+			}
+			else {
+				/* Get cpu number */
+				if (strspn(t, DIGITS) != strlen(t))
+					return 1;
+				i = atoi(t);
+				if ((i < 0) || (i >= act[p]->bitmap_size))
+					return 1;
+				act[p]->bitmap[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
+			}
 		}
 		(*opt)++;
 	}

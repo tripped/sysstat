@@ -87,8 +87,8 @@ void usage(char *progname)
 
 	fprintf(stderr, _("Options are:\n"
 			  "[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
-			  "[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-			  "[ -- <sar_options...> ]\n"));
+			  "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+			  "[ -- <sar_options> ]\n"));
 	exit(1);
 }
 
@@ -195,7 +195,7 @@ void list_fields(unsigned int act_id)
 			else {
 				msk = 1;
 				strcpy(hline, act[i]->hdr_line);
-				for (hl = strtok(hline, "|"); hl ; hl = strtok(NULL, "|"), msk <<= 1) {
+				for (hl = strtok(hline, "|"); hl; hl = strtok(NULL, "|"), msk <<= 1) {
 					if ((hl != NULL) && (act[i]->opt_flags & msk)) {
 						printf(";%s", hl);
 						if ((*act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {

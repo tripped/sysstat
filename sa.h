@@ -17,7 +17,7 @@
  */
 
 /* Number of activities */
-#define NR_ACT	23
+#define NR_ACT	29
 
 /* Activities */
 #define A_CPU		1
@@ -43,6 +43,13 @@
 #define A_NET_TCP	21
 #define A_NET_ETCP	22
 #define A_NET_UDP	23
+#define A_NET_SOCK6	24
+#define A_NET_IP6	25
+#define A_NET_EIP6	26
+#define A_NET_ICMP6	27
+#define A_NET_EICMP6	28
+#define A_NET_UDP6	29
+
 
 /* Macro used to flag an activity that should be collected */
 #define COLLECT_ACTIVITY(m)	act[get_activity_position(act, m)]->options |= AO_COLLECTED
@@ -126,6 +133,13 @@
 #define K_DISK		"DISK"
 #define K_INT		"INT"
 #define K_SNMP		"SNMP"
+#define K_SOCK6		"SOCK6"
+#define K_IP6		"IP6"
+#define K_EIP6		"EIP6"
+#define K_ICMP6		"ICMP6"
+#define K_EICMP6	"EICMP6"
+#define K_UDP6		"UDP6"
+#define K_IPV6		"IPV6"
 
 /* sadc program */
 #define SADC		"sadc"
@@ -563,6 +577,10 @@ struct stats_sum {
 	unsigned long long udp_inuse;
 	unsigned long long raw_inuse;
 	unsigned long long frag_inuse;
+	unsigned long long tcp6_inuse;
+	unsigned long long udp6_inuse;
+	unsigned long long raw6_inuse;
+	unsigned long long frag6_inuse;
 	unsigned long long nr_running;
 	unsigned long long nr_threads;
 	unsigned long load_avg_1;
@@ -647,6 +665,18 @@ extern __read_funct_t
 	wrap_read_net_etcp(struct activity *);
 extern __read_funct_t
 	wrap_read_net_udp(struct activity *);
+extern __read_funct_t
+	wrap_read_net_sock6(struct activity *);
+extern __read_funct_t
+	wrap_read_net_ip6(struct activity *);
+extern __read_funct_t
+	wrap_read_net_eip6(struct activity *);
+extern __read_funct_t
+	wrap_read_net_icmp6(struct activity *);
+extern __read_funct_t
+	wrap_read_net_eicmp6(struct activity *);
+extern __read_funct_t
+	wrap_read_net_udp6(struct activity *);
 
 /* Other functions */
 extern void

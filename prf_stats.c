@@ -1705,6 +1705,418 @@ __print_funct_t render_net_udp_stats(struct activity *a, int isdb, char *pre,
 
 /*
  ***************************************************************************
+ * Display IPv6 network sockets statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_sock6_stats(struct activity *a, int isdb, char *pre,
+				       int curr, unsigned long long itv)
+{
+	struct stats_net_sock6
+		*snsc = (struct stats_net_sock6 *) a->buf[curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+
+	render(isdb, pre, PT_USEINT,
+	       "-\ttcp6sck", NULL, NULL,
+	       snsc->tcp6_inuse, DNOVAL);
+
+	render(isdb, pre, PT_USEINT,
+	       "-\tudp6sck",  NULL, NULL,
+	       snsc->udp6_inuse, DNOVAL);
+
+	render(isdb, pre, PT_USEINT,
+	       "-\traw6sck", NULL, NULL,
+	       snsc->raw6_inuse, DNOVAL);
+
+	render(isdb, pre, PT_USEINT | pt_newlin,
+	       "-\tip6-frag", NULL, NULL,
+	       snsc->frag6_inuse, DNOVAL);
+}
+
+/*
+ ***************************************************************************
+ * Display IPv6 network statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_ip6_stats(struct activity *a, int isdb, char *pre,
+				     int curr, unsigned long long itv)
+{
+	struct stats_net_ip6
+		*snic = (struct stats_net_ip6 *) a->buf[curr],
+		*snip = (struct stats_net_ip6 *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tirec6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InReceives6, snic->InReceives6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tfwddgm6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutForwDatagrams6, snic->OutForwDatagrams6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tidel6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InDelivers6, snic->InDelivers6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\torq6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutRequests6, snic->OutRequests6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tasmrq6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->ReasmReqds6, snic->ReasmReqds6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tasmok6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->ReasmOKs6, snic->ReasmOKs6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\timcpck6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InMcastPkts6, snic->InMcastPkts6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tomcpck6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutMcastPkts6, snic->OutMcastPkts6, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tfragok6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->FragOKs6, snic->FragOKs6, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\tfragcr6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->FragCreates6, snic->FragCreates6, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display IPv6 network error statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_eip6_stats(struct activity *a, int isdb, char *pre,
+				      int curr, unsigned long long itv)
+{
+	struct stats_net_eip6
+		*sneic = (struct stats_net_eip6 *) a->buf[curr],
+		*sneip = (struct stats_net_eip6 *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tihdrer6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InHdrErrors6, sneic->InHdrErrors6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiadrer6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InAddrErrors6, sneic->InAddrErrors6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiukwnp6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InUnknownProtos6, sneic->InUnknownProtos6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\ti2big6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InTooBigErrors6, sneic->InTooBigErrors6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tidisc6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InDiscards6, sneic->InDiscards6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\todisc6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutDiscards6, sneic->OutDiscards6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tinort6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InNoRoutes6, sneic->InNoRoutes6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tonort6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutNoRoutes6, sneic->OutNoRoutes6, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tasmf6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->ReasmFails6, sneic->ReasmFails6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tfragf6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->FragFails6, sneic->FragFails6, itv));
+	
+	render(isdb, pre, pt_newlin,
+	       "-\titrpck6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InTruncatedPkts6, sneic->InTruncatedPkts6, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display ICMPv6 network statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_icmp6_stats(struct activity *a, int isdb, char *pre,
+				       int curr, unsigned long long itv)
+{
+	struct stats_net_icmp6
+		*snic = (struct stats_net_icmp6 *) a->buf[curr],
+		*snip = (struct stats_net_icmp6 *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\timsg6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InMsgs6, snic->InMsgs6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tomsg6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutMsgs6, snic->OutMsgs6, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiech6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InEchos6, snic->InEchos6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiechr6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InEchoReplies6, snic->InEchoReplies6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\toechr6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutEchoReplies6, snic->OutEchoReplies6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tigmbq6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InGroupMembQueries6, snic->InGroupMembQueries6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tigmbr6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InGroupMembResponses6, snic->InGroupMembResponses6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\togmbr6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutGroupMembResponses6, snic->OutGroupMembResponses6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tigmbrd6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InGroupMembReductions6, snic->InGroupMembReductions6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\togmbrd6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutGroupMembReductions6, snic->OutGroupMembReductions6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tirtsol6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InRouterSolicits6, snic->InRouterSolicits6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tortsol6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutRouterSolicits6, snic->OutRouterSolicits6, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tirtad6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InRouterAdvertisements6, snic->InRouterAdvertisements6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tinbsol6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InNeighborSolicits6, snic->InNeighborSolicits6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tonbsol6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutNeighborSolicits6, snic->OutNeighborSolicits6, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tinbad6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->InNeighborAdvertisements6, snic->InNeighborAdvertisements6, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\tonbad6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snip->OutNeighborAdvertisements6, snic->OutNeighborAdvertisements6, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display ICMPv6 error message statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_eicmp6_stats(struct activity *a, int isdb, char *pre,
+					int curr, unsigned long long itv)
+{
+	struct stats_net_eicmp6
+		*sneic = (struct stats_net_eicmp6 *) a->buf[curr],
+		*sneip = (struct stats_net_eicmp6 *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tierr6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InErrors6, sneic->InErrors6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tidtunr6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InDestUnreachs6, sneic->InDestUnreachs6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\todtunr6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutDestUnreachs6, sneic->OutDestUnreachs6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\titmex6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InTimeExcds6, sneic->InTimeExcds6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\totmex6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutTimeExcds6, sneic->OutTimeExcds6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiprmpb6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InParmProblems6, sneic->InParmProblems6, itv));
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\toprmpb6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutParmProblems6, sneic->OutParmProblems6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tiredir6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InRedirects6, sneic->InRedirects6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\toredir6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutRedirects6, sneic->OutRedirects6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tipck2b6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->InPktTooBigs6, sneic->InPktTooBigs6, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\topck2b6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(sneip->OutPktTooBigs6, sneic->OutPktTooBigs6, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display UDP6 network statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_net_udp6_stats(struct activity *a, int isdb, char *pre,
+				      int curr, unsigned long long itv)
+{
+	struct stats_net_udp6
+		*snuc = (struct stats_net_udp6 *) a->buf[curr],
+		*snup = (struct stats_net_udp6 *) a->buf[!curr];
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+	
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tidgm6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snup->InDatagrams6, snuc->InDatagrams6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\todgm6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snup->OutDatagrams6, snuc->OutDatagrams6, itv));
+
+	render(isdb, pre, PT_NOFLAG,
+	       "-\tnoport6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snup->NoPorts6, snuc->NoPorts6, itv));
+
+	render(isdb, pre, pt_newlin,
+	       "-\tidgmer6/s", NULL, NULL,
+	       NOVAL,
+	       S_VALUE(snup->InErrors6, snuc->InErrors6, itv));
+}
+
+/*
+ ***************************************************************************
  * Print tabulations
  *
  * IN:
@@ -2944,6 +3356,317 @@ __print_funct_t xml_print_net_udp_stats(struct activity *a, int curr, int tab,
 		S_VALUE(snup->OutDatagrams, snuc->OutDatagrams, itv),
 		S_VALUE(snup->NoPorts,      snuc->NoPorts,      itv),
 		S_VALUE(snup->InErrors,     snuc->InErrors,     itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display IPv6 network socket statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_sock6_stats(struct activity *a, int curr, int tab,
+					  unsigned long long itv)
+{
+	struct stats_net_sock6
+		*snsc = (struct stats_net_sock6 *) a->buf[curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-sock6 "
+		"tcp6sck=\"%u\" "
+		"udp6sck=\"%u\" "
+		"raw6sck=\"%u\" "
+		"ip6-frag=\"%u\"/>",
+	       	snsc->tcp6_inuse,
+	       	snsc->udp6_inuse,
+       		snsc->raw6_inuse,
+	       	snsc->frag6_inuse);
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display IPv6 network statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_ip6_stats(struct activity *a, int curr, int tab,
+					unsigned long long itv)
+{
+	struct stats_net_ip6
+		*snic = (struct stats_net_ip6 *) a->buf[curr],
+		*snip = (struct stats_net_ip6 *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-ip6 "
+		"irec6=\"%.2f\" "
+		"fwddgm6=\"%.2f\" "
+		"idel6=\"%.2f\" "
+		"orq6=\"%.2f\" "
+		"asmrq6=\"%.2f\" "
+		"asmok6=\"%.2f\" "
+		"imcpck6=\"%.2f\" "
+		"omcpck6=\"%.2f\" "
+		"fragok6=\"%.2f\" "
+		"fragcr6=\"%.2f\"/>",
+		S_VALUE(snip->InReceives6,       snic->InReceives6,       itv),
+		S_VALUE(snip->OutForwDatagrams6, snic->OutForwDatagrams6, itv),
+		S_VALUE(snip->InDelivers6,       snic->InDelivers6,       itv),
+		S_VALUE(snip->OutRequests6,      snic->OutRequests6,      itv),
+		S_VALUE(snip->ReasmReqds6,       snic->ReasmReqds6,       itv),
+		S_VALUE(snip->ReasmOKs6,         snic->ReasmOKs6,         itv),
+		S_VALUE(snip->InMcastPkts6,      snic->InMcastPkts6,      itv),
+		S_VALUE(snip->OutMcastPkts6,     snic->OutMcastPkts6,     itv),
+		S_VALUE(snip->FragOKs6,          snic->FragOKs6,          itv),
+		S_VALUE(snip->FragCreates6,      snic->FragCreates6,      itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display IPv6 network error statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_eip6_stats(struct activity *a, int curr, int tab,
+					 unsigned long long itv)
+{
+	struct stats_net_eip6
+		*sneic = (struct stats_net_eip6 *) a->buf[curr],
+		*sneip = (struct stats_net_eip6 *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-eip6 "
+		"ihdrer6=\"%.2f\" "
+		"iadrer6=\"%.2f\" "
+		"iukwnp6=\"%.2f\" "
+		"i2big6=\"%.2f\" "
+		"idisc6=\"%.2f\" "
+		"odisc6=\"%.2f\" "
+		"inort6=\"%.2f\" "
+		"onort6=\"%.2f\" "
+		"asmf6=\"%.2f\" "
+		"fragf6=\"%.2f\" "
+		"itrpck6=\"%.2f\"/>",
+		S_VALUE(sneip->InHdrErrors6,     sneic->InHdrErrors6,     itv),
+		S_VALUE(sneip->InAddrErrors6,    sneic->InAddrErrors6,    itv),
+		S_VALUE(sneip->InUnknownProtos6, sneic->InUnknownProtos6, itv),
+		S_VALUE(sneip->InTooBigErrors6,  sneic->InTooBigErrors6,  itv),
+		S_VALUE(sneip->InDiscards6,      sneic->InDiscards6,      itv),
+		S_VALUE(sneip->OutDiscards6,     sneic->OutDiscards6,     itv),
+		S_VALUE(sneip->InNoRoutes6,      sneic->InNoRoutes6,      itv),
+		S_VALUE(sneip->OutNoRoutes6,     sneic->OutNoRoutes6,     itv),
+		S_VALUE(sneip->ReasmFails6,      sneic->ReasmFails6,      itv),
+		S_VALUE(sneip->FragFails6,       sneic->FragFails6,       itv),
+		S_VALUE(sneip->InTruncatedPkts6, sneic->InTruncatedPkts6, itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display ICMPv6 network statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_icmp6_stats(struct activity *a, int curr, int tab,
+					  unsigned long long itv)
+{
+	struct stats_net_icmp6
+		*snic = (struct stats_net_icmp6 *) a->buf[curr],
+		*snip = (struct stats_net_icmp6 *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-icmp6 "
+		"imsg6=\"%.2f\" "
+		"omsg6=\"%.2f\" "
+		"iech6=\"%.2f\" "
+		"iechr6=\"%.2f\" "
+		"oechr6=\"%.2f\" "
+		"igmbq6=\"%.2f\" "
+		"igmbr6=\"%.2f\" "
+		"ogmbr6=\"%.2f\" "
+		"igmbrd6=\"%.2f\" "
+		"ogmbrd6=\"%.2f\" "
+		"irtsol6=\"%.2f\" "
+		"ortsol6=\"%.2f\" "
+		"irtad6=\"%.2f\" "
+		"inbsol6=\"%.2f\" "
+		"onbsol6=\"%.2f\" "
+		"inbad6=\"%.2f\" "
+		"onbad6=\"%.2f\"/>",
+		S_VALUE(snip->InMsgs6,                    snic->InMsgs6,                    itv),
+		S_VALUE(snip->OutMsgs6,                   snic->OutMsgs6,                   itv),
+		S_VALUE(snip->InEchos6,                   snic->InEchos6,                   itv),
+		S_VALUE(snip->InEchoReplies6,             snic->InEchoReplies6,             itv),
+		S_VALUE(snip->OutEchoReplies6,            snic->OutEchoReplies6,            itv),
+		S_VALUE(snip->InGroupMembQueries6,        snic->InGroupMembQueries6,        itv),
+		S_VALUE(snip->InGroupMembResponses6,      snic->InGroupMembResponses6,      itv),
+		S_VALUE(snip->OutGroupMembResponses6,     snic->OutGroupMembResponses6,     itv),
+		S_VALUE(snip->InGroupMembReductions6,     snic->InGroupMembReductions6,     itv),
+		S_VALUE(snip->OutGroupMembReductions6,    snic->OutGroupMembReductions6,    itv),
+		S_VALUE(snip->InRouterSolicits6,          snic->InRouterSolicits6,          itv),
+		S_VALUE(snip->OutRouterSolicits6,         snic->OutRouterSolicits6,         itv),
+		S_VALUE(snip->InRouterAdvertisements6,    snic->InRouterAdvertisements6,    itv),
+		S_VALUE(snip->InNeighborSolicits6,        snic->InNeighborSolicits6,        itv),
+		S_VALUE(snip->OutNeighborSolicits6,       snic->OutNeighborSolicits6,       itv),
+		S_VALUE(snip->InNeighborAdvertisements6,  snic->InNeighborAdvertisements6,  itv),
+		S_VALUE(snip->OutNeighborAdvertisements6, snic->OutNeighborAdvertisements6, itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display ICMPv6 error message statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_eicmp6_stats(struct activity *a, int curr, int tab,
+					   unsigned long long itv)
+{
+	struct stats_net_eicmp6
+		*sneic = (struct stats_net_eicmp6 *) a->buf[curr],
+		*sneip = (struct stats_net_eicmp6 *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-eicmp6 "
+		"ierr6=\"%.2f\" "
+		"idtunr6=\"%.2f\" "
+		"odtunr6=\"%.2f\" "
+		"itmex6=\"%.2f\" "
+		"otmex6=\"%.2f\" "
+		"iprmpb6=\"%.2f\" "
+		"oprmpb6=\"%.2f\" "
+		"iredir6=\"%.2f\" "
+		"oredir6=\"%.2f\" "
+		"ipck2b6=\"%.2f\" "
+		"opck2b6=\"%.2f\"/>",
+		S_VALUE(sneip->InErrors6,        sneic->InErrors6,        itv),
+		S_VALUE(sneip->InDestUnreachs6,  sneic->InDestUnreachs6,  itv),
+		S_VALUE(sneip->OutDestUnreachs6, sneic->OutDestUnreachs6, itv),
+		S_VALUE(sneip->InTimeExcds6,     sneic->InTimeExcds6,     itv),
+		S_VALUE(sneip->OutTimeExcds6,    sneic->OutTimeExcds6,    itv),
+		S_VALUE(sneip->InParmProblems6,  sneic->InParmProblems6,  itv),
+		S_VALUE(sneip->OutParmProblems6, sneic->OutParmProblems6, itv),
+		S_VALUE(sneip->InRedirects6,     sneic->InRedirects6,     itv),
+		S_VALUE(sneip->OutRedirects6,    sneic->OutRedirects6,    itv),
+		S_VALUE(sneip->InPktTooBigs6,    sneic->InPktTooBigs6,    itv),
+		S_VALUE(sneip->OutPktTooBigs6,   sneic->OutPktTooBigs6,   itv));
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display UDPv6 network statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_net_udp6_stats(struct activity *a, int curr, int tab,
+					 unsigned long long itv)
+{
+	struct stats_net_udp6
+		*snuc = (struct stats_net_udp6 *) a->buf[curr],
+		*snup = (struct stats_net_udp6 *) a->buf[!curr];
+	
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab, "<net-udp6 "
+		"idgm6=\"%.2f\" "
+		"odgm6=\"%.2f\" "
+		"noport6=\"%.2f\" "
+		"idgmer6=\"%.2f\"/>",
+		S_VALUE(snup->InDatagrams6,  snuc->InDatagrams6,  itv),
+		S_VALUE(snup->OutDatagrams6, snuc->OutDatagrams6, itv),
+		S_VALUE(snup->NoPorts6,      snuc->NoPorts6,      itv),
+		S_VALUE(snup->InErrors6,     snuc->InErrors6,     itv));
 	tab--;
 
 close_xml_markup:

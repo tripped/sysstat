@@ -79,7 +79,7 @@ void usage(char *progname)
 
 	fprintf(stderr, _("Options are:\n"
 			  "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
-			  "[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"));
+			  "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"));
 	exit(1);
 }
 
@@ -236,7 +236,7 @@ int update_pid_array(unsigned int *pid_array_nr, unsigned int pid)
 /*
  ***************************************************************************
  * Display process command name or command line.
- * 
+ *
  * IN:
  * @pst		Pointer on structure with process stats and command line.
  ***************************************************************************
@@ -398,7 +398,8 @@ int read_proc_pid_status(unsigned int pid, struct pid_stats *pst,
  * @pst		Pointer on structure where command line has been saved.
  *
  * RETURNS:
- * 0 if command line has been successfully read, and 1 otherwise.
+ * 0 if command line has been successfully read, and 1 otherwise (the process
+ * has terminated or its /proc/.../cmdline file is just empty).
  *****************************************************************************
  */
 int read_proc_pid_cmdline(unsigned int pid, struct pid_stats *pst,
@@ -423,6 +424,7 @@ int read_proc_pid_cmdline(unsigned int pid, struct pid_stats *pst,
 	memset(line, 0, MAX_CMDLINE_LEN);
 	
 	if ((len = fread(line, 1, MAX_CMDLINE_LEN - 1, fp)) < 0)
+		/* Nothing to read doesn't mean that process no longer exists */
 		return 1;
 	
 	for (i = 0; i < len; i++) {
@@ -1827,6 +1829,7 @@ int main(int argc, char **argv)
 	unsigned int pid;
 	struct utsname header;
 	int rows = 23;
+	char *t;
 
 #ifdef USE_NLS
 	/* Init National Language Support */
@@ -1850,24 +1853,25 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[opt], "-p")) {
 			pidflag |= P_D_PID;
 			if (argv[++opt]) {
-				if (!strcmp(argv[opt], K_ALL)) {
-					pidflag |= P_D_ALL_PID;
-					opt++;
-					continue;	/* Next option */
-				}
-				else if (!strcmp(argv[opt], K_SELF)) {
-					pid = getpid();
-				}
-				else {
-					if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
-						usage(argv[0]);
+
+				for (t = strtok(argv[opt], ","); t; t = strtok(NULL, ",")) {
+					if (!strcmp(t, K_ALL)) {
+						pidflag |= P_D_ALL_PID;
 					}
-					pid = atoi(argv[opt]);
-					if (pid < 1) {
-						usage(argv[0]);
+					else if (!strcmp(t, K_SELF)) {
+						update_pid_array(&pid_array_nr, getpid());
+					}
+					else {
+						if (strspn(t, DIGITS) != strlen(t)) {
+							usage(argv[0]);
+						}
+						pid = atoi(t);
+						if (pid < 1) {
+							usage(argv[0]);
+						}
+						update_pid_array(&pid_array_nr, pid);
 					}
 				}
-				update_pid_array(&pid_array_nr, pid);
 				opt++;
 			}
 			else {

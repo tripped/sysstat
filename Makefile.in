@@ -162,7 +162,7 @@ pr_stats.o: pr_stats.c sa.h ioconf.h sysconfig.h pr_stats.h
 
 prf_stats.o: prf_stats.c sa.h ioconf.h sysconfig.h prf_stats.h
 
-sa_stub.o: sa_stub.c sa.h rd_stats.h
+sa_wrap.o: sa_wrap.c sa.h rd_stats.h
 
 # Explicit rules needed to prevent possible file corruption
 # when using parallel execution.
@@ -175,7 +175,7 @@ librdstats.a: librdstats.a(rd_stats.o)
 
 sadc.o: sadc.c sa.h version.h common.h ioconf.h sysconfig.h rd_stats.h
 
-sadc: sadc.o act_sadc.o sa_stub.o sa_common.o librdstats.a libsyscom.a
+sadc: sadc.o act_sadc.o sa_wrap.o sa_common.o librdstats.a libsyscom.a
 
 sar.o: sar.c sa.h version.h common.h ioconf.h pr_stats.h sysconfig.h
 
@@ -260,6 +260,7 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/ky/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/mt/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/nb/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/nl/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/nn/LC_MESSAGES
@@ -283,6 +284,7 @@ ifdef REQUIRE_NLS
 	$(INSTALL_DATA) nls/it.gmo $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/ja.gmo $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/ky.gmo $(DESTDIR)$(NLS_DIR)/ky/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/mt.gmo $(DESTDIR)$(NLS_DIR)/mt/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/nb.gmo $(DESTDIR)$(NLS_DIR)/nb/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/nl.gmo $(DESTDIR)$(NLS_DIR)/nl/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/nn.gmo $(DESTDIR)$(NLS_DIR)/nn/LC_MESSAGES/$(PACKAGE).mo
@@ -396,6 +398,7 @@ ifdef REQUIRE_NLS
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/it/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/ja/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/ky/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/mt/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/nb/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/nl/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/nn/LC_MESSAGES/$(PACKAGE).mo
@@ -419,6 +422,7 @@ ifdef REQUIRE_NLS
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/it/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ja/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ky/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/mt/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nb/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nl/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nn/LC_MESSAGES
@@ -442,6 +446,7 @@ ifdef REQUIRE_NLS
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/it
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ja
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ky
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/mt
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nb
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nl
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nn

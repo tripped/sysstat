@@ -55,7 +55,9 @@ __nr_t item_nr[] = {
 	 1,	/* [11] Constant for A_QUEUE						*/
 	 1,	/* [12] Constant for A_NET_NFS and A_NET_NFSD				*/
 	 1,	/* [13] Constant for A_NET_SOCK						*/
-	 1	/* [14] Constant for SNMP statistics (A_NET_IP, etc.)			*/
+	 1,	/* [14] Constant for SNMP statistics (A_NET_IP, etc.)			*/
+	 1,	/* [15] Constant for A_NET_SOCK6					*/
+	 1	/* [16] Constant for SNMP (IPv6) statistics (A_NET_IP6, etc.)		*/
 };
 
 /*
@@ -667,7 +669,7 @@ struct activity net_etcp_act = {
 /* UDP network traffic activity */
 struct activity net_udp_act = {
 	.id		= A_NET_UDP,
-	.options	= AO_CLOSE_MARKUP,
+	.options	= AO_NULL,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
 	.f_read		= wrap_read_net_udp,
@@ -685,6 +687,173 @@ struct activity net_udp_act = {
 	.nr		= &item_nr[14],
 	.fsize		= STATS_NET_UDP_SIZE,
 	.msize		= STATS_NET_UDP_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* IPv6 sockets activity */
+struct activity net_sock6_act = {
+	.id		= A_NET_SOCK6,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_sock6,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_sock6_stats,
+	.f_print_avg	= print_avg_net_sock6_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_sock6_stats,
+	.f_xml_print	= xml_print_net_sock6_stats,
+	.hdr_line	= "tcp6sck;udp6sck;raw6sck;ip6-frag",
+	.name		= "A_NET_SOCK6",
+#endif
+	.nr		= &item_nr[15],
+	.fsize		= STATS_NET_SOCK6_SIZE,
+	.msize		= STATS_NET_SOCK6_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* IPv6 network traffic activity */
+struct activity net_ip6_act = {
+	.id		= A_NET_IP6,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_ip6,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_ip6_stats,
+	.f_print_avg	= print_net_ip6_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_ip6_stats,
+	.f_xml_print	= xml_print_net_ip6_stats,
+	.hdr_line	= "irec6/s;fwddgm6/s;idel6/s;orq6/s;asmrq6/s;asmok6/s;"
+			  "imcpck6/s;omcpck6/s;fragok6/s;fragcr6/s",
+	.name		= "A_NET_IP6",
+#endif
+	.nr		= &item_nr[16],
+	.fsize		= STATS_NET_IP6_SIZE,
+	.msize		= STATS_NET_IP6_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* IPv6 network traffic (errors) activity */
+struct activity net_eip6_act = {
+	.id		= A_NET_EIP6,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_eip6,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_eip6_stats,
+	.f_print_avg	= print_net_eip6_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_eip6_stats,
+	.f_xml_print	= xml_print_net_eip6_stats,
+	.hdr_line	= "ihdrer6/s;iadrer6/s;iukwnp6/s;i2big6/s;idisc6/s;odisc6/s;"
+			  "inort6/s;onort6/s;asmf6/s;fragf6/s;itrpck6/s",
+	.name		= "A_NET_EIP6",
+#endif
+	.nr		= &item_nr[16],
+	.fsize		= STATS_NET_EIP6_SIZE,
+	.msize		= STATS_NET_EIP6_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* ICMPv6 network traffic activity */
+struct activity net_icmp6_act = {
+	.id		= A_NET_ICMP6,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_icmp6,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_icmp6_stats,
+	.f_print_avg	= print_net_icmp6_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_icmp6_stats,
+	.f_xml_print	= xml_print_net_icmp6_stats,
+	.hdr_line	= "imsg6/s;omsg6/s;iech6/s;iechr6/s;oechr6/s;igmbq6/s;igmbr6/s;ogmbr6/s;"
+			  "igmbrd6/s;ogmbrd6/s;irtsol6/s;ortsol6/s;irtad6/s;inbsol6/s;onbsol6/s"
+			  "inbad6/s;onbad6/s",
+	.name		= "A_NET_ICMP6",
+#endif
+	.nr		= &item_nr[16],
+	.fsize		= STATS_NET_ICMP6_SIZE,
+	.msize		= STATS_NET_ICMP6_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* ICMPv6 network traffic (errors) activity */
+struct activity net_eicmp6_act = {
+	.id		= A_NET_EICMP6,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_eicmp6,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_eicmp6_stats,
+	.f_print_avg	= print_net_eicmp6_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_eicmp6_stats,
+	.f_xml_print	= xml_print_net_eicmp6_stats,
+	.hdr_line	= "ierr6/s;idtunr6/s;odtunr6/s;itmex6/s;otmex6/s;"
+		          "iprmpb6/s;oprmpb6/s;iredir6/s;oredir6/s;ipck2b6/s;opck2b6/s",
+	.name		= "A_NET_EICMP6",
+#endif
+	.nr		= &item_nr[16],
+	.fsize		= STATS_NET_EICMP6_SIZE,
+	.msize		= STATS_NET_EICMP6_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL,
+	.bitmap_size	= 0
+};
+
+/* UDPv6 network traffic activity */
+struct activity net_udp6_act = {
+	.id		= A_NET_UDP6,
+	.options	= AO_CLOSE_MARKUP,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_read		= wrap_read_net_udp6,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_net_udp6_stats,
+	.f_print_avg	= print_net_udp6_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_net_udp6_stats,
+	.f_xml_print	= xml_print_net_udp6_stats,
+	.hdr_line	= "idgm6/s;odgm6/s;noport6/s;idgmer6/s",
+	.name		= "A_NET_UDP6",
+#endif
+	.nr		= &item_nr[16],
+	.fsize		= STATS_NET_UDP6_SIZE,
+	.msize		= STATS_NET_UDP6_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL,
@@ -718,6 +887,12 @@ struct activity *act[NR_ACT] = {
 	&net_eicmp_act,
 	&net_tcp_act,
 	&net_etcp_act,
-	&net_udp_act
+	&net_udp_act,
+	&net_sock6_act,
+	&net_ip6_act,
+	&net_eip6_act,
+	&net_icmp6_act,
+	&net_eicmp6_act,
+	&net_udp6_act
 };
 

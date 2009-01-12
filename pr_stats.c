@@ -1276,3 +1276,278 @@ __print_funct_t print_net_udp_stats(struct activity *a, int prev, int curr,
 	       S_VALUE(snup->NoPorts,      snuc->NoPorts,      itv),
 	       S_VALUE(snup->InErrors,     snuc->InErrors,     itv));
 }
+
+/*
+ ***************************************************************************
+ * Display IPv6 sockets statistics. This function is used to display
+ * instantaneous and average statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ * @dispavg	TRUE if displaying average statistics.
+ ***************************************************************************
+ */
+void stub_print_net_sock6_stats(struct activity *a, int prev, int curr,
+				unsigned long long itv, int dispavg)
+{
+	struct stats_net_sock6
+		*snsc = (struct stats_net_sock6 *) a->buf[curr];
+	
+	if (dis) {
+		printf("\n%-11s   tcp6sck   udp6sck   raw6sck  ip6-frag\n",
+		       timestamp[!curr]);
+	}
+
+	if (!dispavg) {
+		/* Display instantaneous values */
+		printf("%-11s %9u %9u %9u %9u\n", timestamp[curr],
+		       snsc->tcp6_inuse,
+		       snsc->udp6_inuse,
+		       snsc->raw6_inuse,
+		       snsc->frag6_inuse);
+
+		/* Will be used to compute the average */
+		asum.tcp6_inuse  += snsc->tcp6_inuse;
+		asum.udp6_inuse  += snsc->udp6_inuse;
+		asum.raw6_inuse  += snsc->raw6_inuse;
+		asum.frag6_inuse += snsc->frag6_inuse;
+	}
+	else {
+		/* Display average values */
+		printf("%-11s %9.0f %9.0f %9.0f %9.0f\n", timestamp[curr],
+		       (double) asum.tcp6_inuse  / asum.count,
+		       (double) asum.udp6_inuse  / asum.count,
+		       (double) asum.raw6_inuse  / asum.count,
+		       (double) asum.frag6_inuse / asum.count);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display IPv6 sockets statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_sock6_stats(struct activity *a, int prev, int curr,
+				      unsigned long long itv)
+{
+	stub_print_net_sock6_stats(a, prev, curr, itv, FALSE);
+}
+
+/*
+ ***************************************************************************
+ * Display average IPv6 sockets statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_avg_net_sock6_stats(struct activity *a, int prev, int curr,
+					  unsigned long long itv)
+{
+	stub_print_net_sock6_stats(a, prev, curr, itv, TRUE);
+}
+
+/*
+ ***************************************************************************
+ * Display IPv6 network traffic statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_ip6_stats(struct activity *a, int prev, int curr,
+				    unsigned long long itv)
+{
+	struct stats_net_ip6
+		*snic = (struct stats_net_ip6 *) a->buf[curr],
+		*snip = (struct stats_net_ip6 *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s   irec6/s fwddgm6/s   idel6/s    orq6/s  asmrq6/s"
+		       "  asmok6/s imcpck6/s omcpck6/s fragok6/s fragcr6/s\n",
+		       timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+	       timestamp[curr],
+	       S_VALUE(snip->InReceives6,       snic->InReceives6,       itv),
+	       S_VALUE(snip->OutForwDatagrams6, snic->OutForwDatagrams6, itv),
+	       S_VALUE(snip->InDelivers6,       snic->InDelivers6,       itv),
+	       S_VALUE(snip->OutRequests6,      snic->OutRequests6,      itv),
+	       S_VALUE(snip->ReasmReqds6,       snic->ReasmReqds6,       itv),
+	       S_VALUE(snip->ReasmOKs6,         snic->ReasmOKs6,         itv),
+	       S_VALUE(snip->InMcastPkts6,      snic->InMcastPkts6,      itv),
+	       S_VALUE(snip->OutMcastPkts6,     snic->OutMcastPkts6,     itv),
+	       S_VALUE(snip->FragOKs6,          snic->FragOKs6,          itv),
+	       S_VALUE(snip->FragCreates6,      snic->FragCreates6,      itv));
+}
+
+/*
+ ***************************************************************************
+ * Display IPv6 network error statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_eip6_stats(struct activity *a, int prev, int curr,
+				     unsigned long long itv)
+{
+	struct stats_net_eip6
+		*sneic = (struct stats_net_eip6 *) a->buf[curr],
+		*sneip = (struct stats_net_eip6 *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s ihdrer6/s iadrer6/s iukwnp6/s  i2big6/s  idisc6/s  odisc6/s"
+		       "  inort6/s  onort6/s   asmf6/s  fragf6/s itrpck6/s\n",
+		       timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
+	       timestamp[curr],
+	       S_VALUE(sneip->InHdrErrors6,     sneic->InHdrErrors6,     itv),
+	       S_VALUE(sneip->InAddrErrors6,    sneic->InAddrErrors6,    itv),
+	       S_VALUE(sneip->InUnknownProtos6, sneic->InUnknownProtos6, itv),
+	       S_VALUE(sneip->InTooBigErrors6,  sneic->InTooBigErrors6,  itv),
+	       S_VALUE(sneip->InDiscards6,      sneic->InDiscards6,      itv),
+	       S_VALUE(sneip->OutDiscards6,     sneic->OutDiscards6,     itv),
+	       S_VALUE(sneip->InNoRoutes6,      sneic->InNoRoutes6,      itv),
+	       S_VALUE(sneip->OutNoRoutes6,     sneic->OutNoRoutes6,     itv),
+	       S_VALUE(sneip->ReasmFails6,      sneic->ReasmFails6,      itv),
+	       S_VALUE(sneip->FragFails6,       sneic->FragFails6,       itv),
+	       S_VALUE(sneip->InTruncatedPkts6, sneic->InTruncatedPkts6, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display ICMPv6 network traffic statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_icmp6_stats(struct activity *a, int prev, int curr,
+				      unsigned long long itv)
+{
+	struct stats_net_icmp6
+		*snic = (struct stats_net_icmp6 *) a->buf[curr],
+		*snip = (struct stats_net_icmp6 *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s   imsg6/s   omsg6/s   iech6/s  iechr6/s  oechr6/s"
+		       "  igmbq6/s  igmbr6/s  ogmbr6/s igmbrd6/s ogmbrd6/s irtsol6/s ortsol6/s"
+		       "  irtad6/s inbsol6/s onbsol6/s  inbad6/s  onbad6/s\n",
+		       timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f"
+	       " %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n", timestamp[curr],
+	       S_VALUE(snip->InMsgs6,                    snic->InMsgs6,                    itv),
+	       S_VALUE(snip->OutMsgs6,                   snic->OutMsgs6,                   itv),
+	       S_VALUE(snip->InEchos6,                   snic->InEchos6,                   itv),
+	       S_VALUE(snip->InEchoReplies6,             snic->InEchoReplies6,             itv),
+	       S_VALUE(snip->OutEchoReplies6,            snic->OutEchoReplies6,            itv),
+	       S_VALUE(snip->InGroupMembQueries6,        snic->InGroupMembQueries6,        itv),
+	       S_VALUE(snip->InGroupMembResponses6,      snic->InGroupMembResponses6,      itv),
+	       S_VALUE(snip->OutGroupMembResponses6,     snic->OutGroupMembResponses6,     itv),
+	       S_VALUE(snip->InGroupMembReductions6,     snic->InGroupMembReductions6,     itv),
+	       S_VALUE(snip->OutGroupMembReductions6,    snic->OutGroupMembReductions6,    itv),
+	       S_VALUE(snip->InRouterSolicits6,          snic->InRouterSolicits6,          itv),
+	       S_VALUE(snip->OutRouterSolicits6,         snic->OutRouterSolicits6,         itv),
+	       S_VALUE(snip->InRouterAdvertisements6,    snic->InRouterAdvertisements6,    itv),
+	       S_VALUE(snip->InNeighborSolicits6,        snic->InNeighborSolicits6,        itv),
+	       S_VALUE(snip->OutNeighborSolicits6,       snic->OutNeighborSolicits6,       itv),
+	       S_VALUE(snip->InNeighborAdvertisements6,  snic->InNeighborAdvertisements6,  itv),
+	       S_VALUE(snip->OutNeighborAdvertisements6, snic->OutNeighborAdvertisements6, itv));
+}
+
+/*
+ ***************************************************************************
+ * Display ICMPv6 network error statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_eicmp6_stats(struct activity *a, int prev, int curr,
+				       unsigned long long itv)
+{
+	struct stats_net_eicmp6
+		*sneic = (struct stats_net_eicmp6 *) a->buf[curr],
+		*sneip = (struct stats_net_eicmp6 *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s   ierr6/s idtunr6/s odtunr6/s  itmex6/s  otmex6/s"
+		       " iprmpb6/s oprmpb6/s iredir6/s oredir6/s ipck2b6/s opck2b6/s\n",
+		       timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f"
+	       " %9.2f\n", timestamp[curr],
+	       S_VALUE(sneip->InErrors6,        sneic->InErrors6,        itv),
+	       S_VALUE(sneip->InDestUnreachs6,  sneic->InDestUnreachs6,  itv),
+	       S_VALUE(sneip->OutDestUnreachs6, sneic->OutDestUnreachs6, itv),
+	       S_VALUE(sneip->InTimeExcds6,     sneic->InTimeExcds6,     itv),
+	       S_VALUE(sneip->OutTimeExcds6,    sneic->OutTimeExcds6,    itv),
+	       S_VALUE(sneip->InParmProblems6,  sneic->InParmProblems6,  itv),
+	       S_VALUE(sneip->OutParmProblems6, sneic->OutParmProblems6, itv),
+	       S_VALUE(sneip->InRedirects6,     sneic->InRedirects6,     itv),
+	       S_VALUE(sneip->OutRedirects6,    sneic->OutRedirects6,    itv),
+	       S_VALUE(sneip->InPktTooBigs6,    sneic->InPktTooBigs6,    itv),
+	       S_VALUE(sneip->OutPktTooBigs6,   sneic->OutPktTooBigs6,   itv));
+}
+
+/*
+ ***************************************************************************
+ * Display UDPv6 network traffic statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_net_udp6_stats(struct activity *a, int prev, int curr,
+				     unsigned long long itv)
+{
+	struct stats_net_udp6
+		*snuc = (struct stats_net_udp6 *) a->buf[curr],
+		*snup = (struct stats_net_udp6 *) a->buf[prev];
+
+	if (dis) {
+		printf("\n%-11s   idgm6/s   odgm6/s noport6/s idgmer6/s\n",
+		       timestamp[!curr]);
+	}
+
+	printf("%-11s %9.2f %9.2f %9.2f %9.2f\n",
+	       timestamp[curr],
+	       S_VALUE(snup->InDatagrams6,  snuc->InDatagrams6,  itv),
+	       S_VALUE(snup->OutDatagrams6, snuc->OutDatagrams6, itv),
+	       S_VALUE(snup->NoPorts6,      snuc->NoPorts6,      itv),
+	       S_VALUE(snup->InErrors6,     snuc->InErrors6,     itv));
+}

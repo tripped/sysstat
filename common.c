@@ -49,7 +49,7 @@ unsigned int kb_shift;
 
 /*
  ***************************************************************************
- * Print sysstat version number and exit
+ * Print sysstat version number and exit.
  ***************************************************************************
  */
 void print_version(void)
@@ -61,7 +61,7 @@ void print_version(void)
 
 /*
  ***************************************************************************
- * Get local date and time
+ * Get local date and time.
  *
  * OUT:
  * @rectime	Current local date and time.
@@ -84,7 +84,7 @@ time_t get_localtime(struct tm *rectime)
 
 /*
  ***************************************************************************
- * Get date and time expressed in UTC
+ * Get date and time expressed in UTC.
  *
  * OUT:
  * @rectime	Current date and time expressed in UTC.
@@ -107,7 +107,7 @@ time_t get_gmtime(struct tm *rectime)
 
 /*
  ***************************************************************************
- * Get date and time and take into account <ENV_TIME_DEFTM> variable
+ * Get date and time and take into account <ENV_TIME_DEFTM> variable.
  *
  * OUT:
  * @rectime	Current date and time.
@@ -137,7 +137,7 @@ time_t get_time(struct tm *rectime)
 
 /*
  ***************************************************************************
- * Look for partitions of a given block device in /sys filesystem
+ * Look for partitions of a given block device in /sys filesystem.
  *
  * IN:
  * @dev_name	Name of the block device.
@@ -270,7 +270,7 @@ int get_nfs_mount_nr(void)
 
 /*
  ***************************************************************************
- * Print banner
+ * Print banner.
  *
  * IN:
  * @rectime	Date and time to display.
@@ -308,7 +308,7 @@ int print_gal_header(struct tm *rectime, char *sysname, char *release,
 #ifdef USE_NLS
 /*
  ***************************************************************************
- * Init National Language Support
+ * Init National Language Support.
  ***************************************************************************
  */
 void init_nls(void)
@@ -325,7 +325,7 @@ void init_nls(void)
 
 /*
  ***************************************************************************
- * Get nb of rows of current window
+ * Get number of rows for current window.
  *
  * RETURNS:
  * Number of rows.
@@ -350,7 +350,7 @@ int get_win_height(void)
 
 /*
  ***************************************************************************
- * Remove /dev from path name
+ * Remove /dev from path name.
  *
  * IN:
  * @name	Device name (may begins with "/dev/")
@@ -369,7 +369,34 @@ char *device_name(char *name)
 
 /*
  ***************************************************************************
- * Get page shift in kB
+ * Test whether given name is a device or a partition, using sysfs.
+ * This is more straightforward that using ioc_iswhole() function from
+ * ioconf.c which should be used only with kernels that don't have sysfs.
+ *
+ * IN:
+ * @name	Device or partition name.
+ *
+ * RETURNS:
+ * TRUE if @name is a (whole) device.
+ ***************************************************************************
+ */
+int is_device(char *name)
+{
+	char syspath[PATH_MAX];
+	char *slash;
+
+	/* Some devices may have a slash in their name (eg. cciss/c0d0...) */
+	while ((slash = strchr(name, '/'))) {
+		*slash = '!';
+	}
+	snprintf(syspath, sizeof(syspath), "/sys/block/%s", name);
+	
+	return !(access(syspath, F_OK));
+}
+
+/*
+ ***************************************************************************
+ * Get page shift in kB.
  ***************************************************************************
  */
 void get_kb_shift(void)
@@ -394,7 +421,7 @@ void get_kb_shift(void)
 
 /*
  ***************************************************************************
- * Get number of clock ticks per second
+ * Get number of clock ticks per second.
  ***************************************************************************
  */
 void get_HZ(void)
@@ -556,7 +583,7 @@ int count_bits(void *ptr, int size)
 
 /*
  ***************************************************************************
- * Compute "extended" device statistics (service time, etc.)
+ * Compute "extended" device statistics (service time, etc.).
  *
  * IN:
  * @sdc		Structure with current device statistics.

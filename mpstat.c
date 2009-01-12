@@ -84,7 +84,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> | ALL } ] [ -V ]\n"));
+			  "[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"));
 	exit(1);
 }
 
@@ -674,6 +674,7 @@ int main(int argc, char **argv)
 	struct utsname header;
 	int dis_hdr = -1;
 	int rows = 23;
+	char *t;
 
 #ifdef USE_NLS
 	/* Init National Language Support */
@@ -723,27 +724,30 @@ int main(int argc, char **argv)
 			if (argv[++opt]) {
 				flags |= F_P_OPTION;
 				dis_hdr++;
-				if (!strcmp(argv[opt], K_ALL)) {
-					if (cpu_nr) {
-						dis_hdr = 9;
+				
+				for (t = strtok(argv[opt], ","); t; t = strtok(NULL, ",")) {
+					if (!strcmp(t, K_ALL)) {
+						if (cpu_nr) {
+							dis_hdr = 9;
+						}
+						/*
+						 * Set bit for every processor.
+						 * Also indicate to display stats for CPU 'all'.
+						 */
+						memset(cpu_bitmap, 0xff, ((cpu_nr + 1) >> 3) + 1);
 					}
-					/*
-					 * Set bit for every processor.
-					 * Also indicate to display stats for CPU 'all'.
-					 */
-					memset(cpu_bitmap, 0xff, ((cpu_nr + 1) >> 3) + 1);
-				}
-				else {
-					if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
-						usage(argv[0]);
+					else {
+						if (strspn(t, DIGITS) != strlen(t)) {
+							usage(argv[0]);
+						}
+						i = atoi(t);	/* Get cpu number */
+						if (i >= cpu_nr) {
+							fprintf(stderr, _("Not that many processors!\n"));
+							exit(1);
+						}
+						i++;
+						*(cpu_bitmap + (i >> 3)) |= 1 << (i & 0x07);
 					}
-					i = atoi(argv[opt]);	/* Get cpu number */
-					if (i >= cpu_nr) {
-						fprintf(stderr, _("Not that many processors!\n"));
-						exit(1);
-					}
-					i++;
-					*(cpu_bitmap + (i >> 3)) |= 1 << (i & 0x07);
 				}
 			}
 			else {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--DTD v2.2 for sysstat. See sadf.h -->
+<!--DTD v2.3 for sysstat. See sadf.h -->
 <!ELEMENT boot EMPTY>
 <!ATTLIST boot
 	date CDATA #REQUIRED
@@ -102,7 +102,7 @@
 >
 <!ELEMENT memused (#PCDATA)>
 <!ELEMENT memused-percent (#PCDATA)>
-<!ELEMENT network (net-dev+, net-edev+, net-nfs, net-nfsd, net-sock, net-ip, net-eip, net-icmp, net-eicmp, net-tcp, net-etcp, net-udp)>
+<!ELEMENT network (net-dev+, net-edev+, net-nfs, net-nfsd, net-sock, net-ip, net-eip, net-icmp, net-eicmp, net-tcp, net-etcp, net-udp, net-sock6, net-ip6, net-eip6, net-icmp6, net-eicmp6, net-udp6)>
 <!ATTLIST network
 	per CDATA #REQUIRED
 >
@@ -161,6 +161,13 @@
 	ip-frag CDATA #REQUIRED
 	tcp-tw CDATA #REQUIRED
 >
+<!ELEMENT net-sock6 EMPTY>
+<!ATTLIST net-sock6
+        tcp6sck CDATA #REQUIRED
+        udp6sck CDATA #REQUIRED
+        raw6sck CDATA #REQUIRED
+        ip6-frag CDATA #REQUIRED
+>
 <!ELEMENT net-nfs EMPTY>
 <!ATTLIST net-nfs
 	call CDATA #REQUIRED
@@ -195,6 +202,19 @@
 	fragok CDATA #REQUIRED
 	fragcrt CDATA #REQUIRED
 >
+<!ELEMENT net-ip6 EMPTY>
+<!ATTLIST net-ip6
+        irec6 CDATA #REQUIRED
+        fwddgm6 CDATA #REQUIRED
+        idel6 CDATA #REQUIRED
+        orq6 CDATA #REQUIRED
+        asmrq6 CDATA #REQUIRED
+        asmok6 CDATA #REQUIRED
+        imcpck6 CDATA #REQUIRED
+        omcpck6 CDATA #REQUIRED
+        fragok6 CDATA #REQUIRED
+        fragcr6 CDATA #REQUIRED
+>
 <!ELEMENT net-eip EMPTY>
 <!ATTLIST net-eip
 	ihdrerr CDATA #REQUIRED
@@ -205,6 +225,20 @@
 	onort CDATA #REQUIRED
 	asmf CDATA #REQUIRED
 	fragf CDATA #REQUIRED
+>
+<!ELEMENT net-eip6 EMPTY>
+<!ATTLIST net-eip6
+        ihdrer6 CDATA #REQUIRED
+        iadrer6 CDATA #REQUIRED
+        iukwnp6 CDATA #REQUIRED
+        i2big6 CDATA #REQUIRED
+        idisc6 CDATA #REQUIRED
+        odisc6 CDATA #REQUIRED
+        inort6 CDATA #REQUIRED
+        onort6 CDATA #REQUIRED
+        asmf6 CDATA #REQUIRED
+        fragf6 CDATA #REQUIRED
+        itrpck6 CDATA #REQUIRED
 >
 <!ELEMENT net-icmp EMPTY>
 <!ATTLIST net-icmp
@@ -223,6 +257,26 @@
 	oadrmk CDATA #REQUIRED
 	oadrmkr CDATA #REQUIRED
 >
+<!ELEMENT net-icmp6 EMPTY>
+<!ATTLIST net-icmp6
+        imsg6 CDATA #REQUIRED
+        omsg6 CDATA #REQUIRED
+        iech6 CDATA #REQUIRED
+        iechr6 CDATA #REQUIRED
+        oechr6 CDATA #REQUIRED
+        igmbq6 CDATA #REQUIRED
+        igmbr6 CDATA #REQUIRED
+        ogmbr6 CDATA #REQUIRED
+        igmbrd6 CDATA #REQUIRED
+        ogmbrd6 CDATA #REQUIRED
+        irtsol6 CDATA #REQUIRED
+        ortsol6 CDATA #REQUIRED
+        irtad6 CDATA #REQUIRED
+        inbsol6 CDATA #REQUIRED
+        onbsol6 CDATA #REQUIRED
+        inbad6 CDATA #REQUIRED
+        onbad6 CDATA #REQUIRED
+>
 <!ELEMENT net-eicmp EMPTY>
 <!ATTLIST net-eicmp
 	ierr CDATA #REQUIRED
@@ -232,11 +286,25 @@
 	itmex CDATA #REQUIRED
 	otmex CDATA #REQUIRED
 	iparmpb CDATA #REQUIRED
-	oparmpb/ CDATA #REQUIRED
+	oparmpb CDATA #REQUIRED
 	isrcq CDATA #REQUIRED
 	osrcq CDATA #REQUIRED
 	iredir CDATA #REQUIRED
 	oredir CDATA #REQUIRED
+>
+<!ELEMENT net-eicmp6 EMPTY>
+<!ATTLIST net-eicmp6
+        ierr6 CDATA #REQUIRED
+        idtunr6 CDATA #REQUIRED
+        odtunr6 CDATA #REQUIRED
+        itmex6 CDATA #REQUIRED
+        otmex6 CDATA #REQUIRED
+        iprmpb6 CDATA #REQUIRED
+        oprmpb6 CDATA #REQUIRED
+        iredir6 CDATA #REQUIRED
+        oredir6 CDATA #REQUIRED
+        ipck2b6 CDATA #REQUIRED
+        opck2b6 CDATA #REQUIRED
 >
 <!ELEMENT net-tcp EMPTY>
 <!ATTLIST net-tcp
@@ -259,6 +327,13 @@
 	odgm CDATA #REQUIRED
 	noport CDATA #REQUIRED
 	idgmerr CDATA #REQUIRED
+>
+<!ELEMENT net-udp6 EMPTY>
+<!ATTLIST net-udp6
+        idgm6 CDATA #REQUIRED
+        odgm6 CDATA #REQUIRED
+        noport6 CDATA #REQUIRED
+        idgmer6 CDATA #REQUIRED
 >
 <!ELEMENT statistics (timestamp+)>
 <!ELEMENT swap-pages EMPTY>

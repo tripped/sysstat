@@ -1,5 +1,5 @@
 /*
- * sysstat - sa_stub.c: Functions used in activity.c
+ * sysstat - sa_wrap.c: Functions used in activity.c
  * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
@@ -669,6 +669,138 @@ __read_funct_t wrap_read_net_udp(struct activity *a)
 
 	/* Read UDP stats */
 	read_net_udp(st_net_udp);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read IPv6 network sockets statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_sock6(struct activity *a)
+{
+	struct stats_net_sock6 *st_net_sock6
+		= (struct stats_net_sock6 *) a->_buf0;
+
+	/* Read IPv6 network sockets stats */
+	read_net_sock6(st_net_sock6);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read IPv6 statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_ip6(struct activity *a)
+{
+	struct stats_net_ip6 *st_net_ip6
+		= (struct stats_net_ip6 *) a->_buf0;
+
+	/* Read IPv6 stats */
+	read_net_ip6(st_net_ip6);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read IPv6 error statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_eip6(struct activity *a)
+{
+	struct stats_net_eip6 *st_net_eip6
+		= (struct stats_net_eip6 *) a->_buf0;
+
+	/* Read IPv6 error stats */
+	read_net_eip6(st_net_eip6);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read ICMPv6 statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_icmp6(struct activity *a)
+{
+	struct stats_net_icmp6 *st_net_icmp6
+		= (struct stats_net_icmp6 *) a->_buf0;
+
+	/* Read ICMPv6 stats */
+	read_net_icmp6(st_net_icmp6);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read ICMPv6 error statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_eicmp6(struct activity *a)
+{
+	struct stats_net_eicmp6 *st_net_eicmp6
+		= (struct stats_net_eicmp6 *) a->_buf0;
+
+	/* Read ICMPv6 error stats */
+	read_net_eicmp6(st_net_eicmp6);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read UDPv6 statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_net_udp6(struct activity *a)
+{
+	struct stats_net_udp6 *st_net_udp6
+		= (struct stats_net_udp6 *) a->_buf0;
+
+	/* Read UDPv6 stats */
+	read_net_udp6(st_net_udp6);
 	
 	return;
 }

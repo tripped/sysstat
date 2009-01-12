@@ -49,10 +49,6 @@
 #define DISPLAY_ISO(m)		(((m) & I_D_ISO) == I_D_ISO)
 #define DISPLAY_HUMAN_READ(m)	(((m) & I_D_HUMAN_READ) == I_D_HUMAN_READ)
 
-
-#define DT_DEVICE	0
-#define DT_PARTITION	1
-
 /* Preallocation constats */
 #define NR_DEV_PREALLOC		4
 #define NR_DISK_PREALLOC	3

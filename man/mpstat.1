@@ -1,10 +1,10 @@
-.TH MPSTAT 1 "JULY 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH MPSTAT 1 "DECEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 mpstat \- Report processors related statistics.
 .SH SYNOPSIS
 .B mpstat [ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P {
 .I cpu
-.B | ALL } ] [ -V ] [
+.B [,...] | ALL } ] [ -V ] [
 .I interval
 .B [
 .I count
@@ -82,7 +82,7 @@ keyword is equivalent to specifying all the keywords above and
 therefore all the interrupts statistics are displayed.
 .RE
 .RE
-.IP "-P { cpu | ALL }"
+.IP "-P { cpu [,...] | ALL }"
 Indicate the processor number for which statistics are to be reported.
 .I cpu
 is the processor number. Note that processor 0 is the first processor.

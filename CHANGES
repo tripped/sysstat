@@ -1,5 +1,33 @@
 Changes:
 
+2009/01/11: Version 8.1.8 - Sebastien Godard (sysstat <at> orange.fr)
+	* IPv6 support added. A bunch of new metrics have been added to
+	  sar, enabling the user to display statistics for IPv6 protocol
+	  family (IPv6, ICMPv6, UDPv6 and network sockets).
+	* sadc updated: Option "-S IPV6" tells sadc to collect IPv6
+	  statistics.
+	* sadf command updated to take into account IPv6 statistics.
+	* Options -S (for sadc), -P (for mpstat, sar and sadf), -p (for
+	  iostat and pidstat) and -n and -I (for sar) now accept a list of
+	  comma-separated arguments.
+	* [Ivana Varekova]: Make iostat display statistics for devices only
+	  (and not partitions) when not using its option -d. This was
+	  no longer possible with kernels 2.6.25 and later because iostat
+	  couldn't distinguish between devices and partitions any more.
+	* iostat's options -x and -p are no longer mutually exclusive:
+	  Extended statistics are now available even for partitions with
+	  recent kernels.
+	* iostat was unable to read stats from sysfs for devices who had
+	  a slash in their names (for example, iostat -p /dev/cciss/c0d0
+	  didn't work properly before). This is now fixed.
+	* [Amir Rapson]: Fixed a bug in iostat where %CPU spent
+	  servicing hard and soft irq were counted twice. This bug
+	  was introduced in 8.1.5.
+	* DTD and XSD files updated.
+	* Manual pages updated.
+	* NLS updated. Maltese translation added.
+	* CREDITS file updated.
+
 2008/11/13: Version 8.1.7 - Sebastien Godard (sysstat <at> orange.fr)
 	* Support for SNMP statistics added to sar. Several keywords
 	  have been added to option "-n". The user can now display

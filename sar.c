@@ -104,8 +104,8 @@ void usage(char *progname)
 	fprintf(stderr, _("Options are:\n"
 			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 			  "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-			  "[ -I { <int> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-			  "[ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]\n"
+			  "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+			  "[ -n { <keyword> [,...] | ALL } ]\n"
 			  "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 			  "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"));
 	exit(1);
@@ -123,15 +123,33 @@ void display_help(char *progname)
 {
 
 	print_usage_title(progname);
-	fprintf(stderr, _("\nMain options and reports:\n"));
+	fprintf(stderr, _("Main options and reports:\n"));
 	fprintf(stderr, _("\t-b\tI/O and transfer rate statistics\n"));
 	fprintf(stderr, _("\t-B\tPaging statistics\n"));
 	fprintf(stderr, _("\t-d\tBlock device statistics\n"));
 	fprintf(stderr, _("\t-I { <int> | SUM | ALL | XALL }\n"
 			  "\t\tInterrupts statistics\n"));
-	fprintf(stderr, _("\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
-			  "\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
-			  "\t\tNetwork statistics\n"));
+	fprintf(stderr, _("\t-n { <keyword> [,...] | ALL }\n"
+			  "\t\tNetwork statistics\n"
+			  "\t\tKeywords are:\n"
+			  "\t\tDEV\tNetwork interfaces\n"
+			  "\t\tEDEV\tNetwork interfaces (errors)\n"
+			  "\t\tNFS\tNFS client\n"
+			  "\t\tNFSD\tNFS server\n"
+			  "\t\tSOCK\tSockets\t(v4)\n"
+			  "\t\tIP\tIP traffic\t(v4)\n"
+			  "\t\tEIP\tIP traffic\t(v4) (errors)\n"
+			  "\t\tICMP\tICMP traffic\t(v4)\n"
+			  "\t\tEICMP\tICMP traffic\t(v4) (errors)\n"
+			  "\t\tTCP\tTCP traffic\t(v4)\n"
+			  "\t\tETCP\tTCP traffic\t(v4) (errors)\n"
+			  "\t\tUDP\tUDP traffic\t(v4)\n"
+			  "\t\tSOCK6\tSockets\t(v6)\n"
+			  "\t\tIP6\tIP traffic\t(v6)\n"
+			  "\t\tEIP6\tIP traffic\t(v6) (errors)\n"
+			  "\t\tICMP6\tICMP traffic\t(v6)\n"
+			  "\t\tEICMP6\tICMP traffic\t(v6) (errors)\n"
+			  "\t\tUDP6\tUDP traffic\t(v6)\n"));
 	fprintf(stderr, _("\t-q\tQueue length and load average statistics\n"));
 	fprintf(stderr, _("\t-r\tMemory utilization statistics\n"));
 	fprintf(stderr, _("\t-R\tMemory statistics\n"));

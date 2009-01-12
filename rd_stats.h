@@ -47,11 +47,13 @@
 #define PTY_NR		"/proc/sys/kernel/pty/nr"
 #define NET_DEV		"/proc/net/dev"
 #define NET_SOCKSTAT	"/proc/net/sockstat"
+#define NET_SOCKSTAT6	"/proc/net/sockstat6"
 #define NET_RPC_NFS	"/proc/net/rpc/nfs"
 #define NET_RPC_NFSD	"/proc/net/rpc/nfsd"
 #define LOADAVG		"/proc/loadavg"
 #define VMSTAT		"/proc/vmstat"
 #define NET_SNMP	"/proc/net/snmp"
+#define NET_SNMP6	"/proc/net/snmp6"
 
 
 /*
@@ -264,7 +266,7 @@ struct stats_net_nfsd {
 
 #define STATS_NET_NFSD_SIZE	(sizeof(struct stats_net_nfsd))
 
-/* Structure for network sockets statistics */
+/* Structure for IPv4 sockets statistics */
 struct stats_net_sock {
 	unsigned int  sock_inuse	__attribute__ ((aligned (4)));
 	unsigned int  tcp_inuse		__attribute__ ((packed));
@@ -373,6 +375,100 @@ struct stats_net_udp {
 
 #define STATS_NET_UDP_SIZE	(sizeof(struct stats_net_udp))
 
+/* Structure for IPv6 statistics */
+struct stats_net_ip6 {
+	unsigned long InReceives6	__attribute__ ((aligned (8)));
+	unsigned long OutForwDatagrams6	__attribute__ ((aligned (8)));
+	unsigned long InDelivers6	__attribute__ ((aligned (8)));
+	unsigned long OutRequests6	__attribute__ ((aligned (8)));
+	unsigned long ReasmReqds6	__attribute__ ((aligned (8)));
+	unsigned long ReasmOKs6		__attribute__ ((aligned (8)));
+	unsigned long InMcastPkts6	__attribute__ ((aligned (8)));
+	unsigned long OutMcastPkts6	__attribute__ ((aligned (8)));
+	unsigned long FragOKs6		__attribute__ ((aligned (8)));
+	unsigned long FragCreates6	__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_IP6_SIZE	(sizeof(struct stats_net_ip6))
+
+/* Structure for IPv6 errors statistics */
+struct stats_net_eip6 {
+	unsigned long InHdrErrors6	__attribute__ ((aligned (8)));
+	unsigned long InAddrErrors6	__attribute__ ((aligned (8)));
+	unsigned long InUnknownProtos6	__attribute__ ((aligned (8)));
+	unsigned long InTooBigErrors6	__attribute__ ((aligned (8)));
+	unsigned long InDiscards6	__attribute__ ((aligned (8)));
+	unsigned long OutDiscards6	__attribute__ ((aligned (8)));
+	unsigned long InNoRoutes6	__attribute__ ((aligned (8)));
+	unsigned long OutNoRoutes6	__attribute__ ((aligned (8)));
+	unsigned long ReasmFails6	__attribute__ ((aligned (8)));
+	unsigned long FragFails6	__attribute__ ((aligned (8)));
+	unsigned long InTruncatedPkts6	__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_EIP6_SIZE	(sizeof(struct stats_net_eip6))
+
+/* Structure for ICMPv6 statistics */
+struct stats_net_icmp6 {
+	unsigned long InMsgs6				__attribute__ ((aligned (8)));
+	unsigned long OutMsgs6				__attribute__ ((aligned (8)));
+	unsigned long InEchos6				__attribute__ ((aligned (8)));
+	unsigned long InEchoReplies6			__attribute__ ((aligned (8)));
+	unsigned long OutEchoReplies6			__attribute__ ((aligned (8)));
+	unsigned long InGroupMembQueries6		__attribute__ ((aligned (8)));
+	unsigned long InGroupMembResponses6		__attribute__ ((aligned (8)));
+	unsigned long OutGroupMembResponses6		__attribute__ ((aligned (8)));
+	unsigned long InGroupMembReductions6		__attribute__ ((aligned (8)));
+	unsigned long OutGroupMembReductions6		__attribute__ ((aligned (8)));
+	unsigned long InRouterSolicits6			__attribute__ ((aligned (8)));
+	unsigned long OutRouterSolicits6		__attribute__ ((aligned (8)));
+	unsigned long InRouterAdvertisements6		__attribute__ ((aligned (8)));
+	unsigned long InNeighborSolicits6		__attribute__ ((aligned (8)));
+	unsigned long OutNeighborSolicits6		__attribute__ ((aligned (8)));
+	unsigned long InNeighborAdvertisements6		__attribute__ ((aligned (8)));
+	unsigned long OutNeighborAdvertisements6	__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_ICMP6_SIZE	(sizeof(struct stats_net_icmp6))
+
+/* Structure for ICMPv6 error message statistics */
+struct stats_net_eicmp6 {
+	unsigned long InErrors6		__attribute__ ((aligned (8)));
+	unsigned long InDestUnreachs6	__attribute__ ((aligned (8)));
+	unsigned long OutDestUnreachs6	__attribute__ ((aligned (8)));
+	unsigned long InTimeExcds6	__attribute__ ((aligned (8)));
+	unsigned long OutTimeExcds6	__attribute__ ((aligned (8)));
+	unsigned long InParmProblems6	__attribute__ ((aligned (8)));
+	unsigned long OutParmProblems6	__attribute__ ((aligned (8)));
+	unsigned long InRedirects6	__attribute__ ((aligned (8)));
+	unsigned long OutRedirects6	__attribute__ ((aligned (8)));
+	unsigned long InPktTooBigs6	__attribute__ ((aligned (8)));
+	unsigned long OutPktTooBigs6	__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_EICMP6_SIZE	(sizeof(struct stats_net_eicmp6))
+
+/* Structure for UDPv6 statistics */
+struct stats_net_udp6 {
+	unsigned long InDatagrams6	__attribute__ ((aligned (8)));
+	unsigned long OutDatagrams6	__attribute__ ((aligned (8)));
+	unsigned long NoPorts6		__attribute__ ((aligned (8)));
+	unsigned long InErrors6		__attribute__ ((aligned (8)));
+};
+
+#define STATS_NET_UDP6_SIZE	(sizeof(struct stats_net_udp6))
+
+/* Structure for IPv6 sockets statistics */
+struct stats_net_sock6 {
+	unsigned int  tcp6_inuse	__attribute__ ((aligned (4)));
+	unsigned int  udp6_inuse	__attribute__ ((packed));
+	unsigned int  raw6_inuse	__attribute__ ((packed));
+	unsigned int  frag6_inuse	__attribute__ ((packed));
+};
+
+#define STATS_NET_SOCK6_SIZE	(sizeof(struct stats_net_sock6))
+
+
 /*
  ***************************************************************************
  * Prototypes for functions used to read system statistics
@@ -440,6 +536,18 @@ extern void
 	read_net_udp(struct stats_net_udp *);
 extern void
 	read_uptime(unsigned long long *);
+extern void
+	read_net_sock6(struct stats_net_sock6 *);
+extern void
+	read_net_ip6(struct stats_net_ip6 *);
+extern void
+	read_net_eip6(struct stats_net_eip6 *);
+extern void
+	read_net_icmp6(struct stats_net_icmp6 *);
+extern void
+	read_net_eicmp6(struct stats_net_eicmp6 *);
+extern void
+	read_net_udp6(struct stats_net_udp6 *);
 
 /*
  ***************************************************************************

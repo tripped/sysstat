@@ -176,6 +176,8 @@ extern int
 	get_win_height(void);
 extern void
 	init_nls(void);
+extern int
+	is_device(char *);
 extern double
 	ll_s_value(unsigned long long, unsigned long long, unsigned long long);
 extern double

@@ -1,16 +1,18 @@
-.TH SAR 1 "NOVEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "DECEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
 .B sar [ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -i
 .I interval
 .B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
-.B [ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]
+.B [ -n {
+.I keyword
+.B [,...] | ALL } ]
 .B [ -I {
 .I int
-.B | SUM | ALL | XALL } ] [ -P {
+.B [,...] | SUM | ALL | XALL } ] [ -P {
 .I cpu
-.B | ALL } ] [ -o [
+.B [,...] | ALL } ] [ -o [
 .I filename
 .B ] | -f [
 .I filename
@@ -328,7 +330,7 @@ Select data records at seconds as close as possible to the number specified
 by the
 .I interval
 parameter.
-.IP "-I { int | SUM | ALL | XALL }"
+.IP "-I { int [,...] | SUM | ALL | XALL }"
 Report statistics for a given interrupt.
 .B int
 is the interrupt number. Specifying multiple
@@ -344,8 +346,29 @@ the first 16 interrupts are to be reported, whereas the
 .B XALL
 keyword indicates that statistics from all interrupts, including potential
 APIC interrupt sources, are to be reported.
-.IP "-n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }"
+.IP "-n { keyword [,...] | ALL }"
 Report network statistics.
+
+Possible keywords are
+.BR DEV ,
+.BR EDEV ,
+.BR NFS ,
+.BR NFSD ,
+.BR SOCK ,
+.BR IP ,
+.BR EIP ,
+.BR ICMP ,
+.BR EICMP ,
+.BR TCP ,
+.BR ETCP ,
+.BR UDP ,
+.BR SOCK6 ,
+.BR IP6 ,
+.BR EIP6 ,
+.BR ICMP6 ,
+.BR EICMP6
+and
+.BR UDP6 .
 
 With the
 .B DEV
@@ -547,7 +570,8 @@ Number of 'getattr' RPC calls received per second.
 
 With the
 .B SOCK
-keyword, statistics on sockets in use are reported.
+keyword, statistics on sockets in use are reported
+(IPv4).
 The following values are displayed:
 
 .B totsck
@@ -582,7 +606,7 @@ Number of TCP sockets in TIME_WAIT state.
 
 With the
 .B IP
-keyword, statistics about IP network traffic are reported.
+keyword, statistics about IPv4 network traffic are reported.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -638,7 +662,7 @@ generated per second as a result of fragmentation at this entity [ipFragCreates]
 
 With the
 .B EIP
-keyword, statistics about IP network errors are reported.
+keyword, statistics about IPv4 network errors are reported.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -717,7 +741,7 @@ be, e.g., because their Don't Fragment flag was set [ipFragFails].
 
 With the
 .B ICMP
-keyword, statistics about ICMP network traffic are reported.
+keyword, statistics about ICMPv4 network traffic are reported.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -797,7 +821,7 @@ The number of ICMP Address Mask Reply messages sent per second [icmpOutAddrMaskR
 
 With the
 .B EICMP
-keyword, statistics about ICMP error messages are reported.
+keyword, statistics about ICMPv4 error messages are reported.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -867,7 +891,7 @@ The number of ICMP Redirect messages sent per second [icmpOutRedirects].
 
 With the
 .B TCP
-keyword, statistics about TCP network traffic are reported.
+keyword, statistics about TCPv4 network traffic are reported.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -899,7 +923,7 @@ retransmitted octets [tcpOutSegs].
 
 With the
 .B ETCP
-keyword, statistics about TCP network errors are reported.
+keyword, statistics about TCPv4 network errors are reported.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -939,7 +963,7 @@ The number of TCP segments sent per second containing the RST flag [tcpOutRsts].
 
 With the
 .B UDP
-keyword, statistics about UDP network traffic are reported.
+keyword, statistics about UDPv4 network traffic are reported.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -966,6 +990,449 @@ delivered for reasons other than the lack of an application
 at the destination port [udpInErrors].
 .RE
 
+With the
+.B SOCK6
+keyword, statistics on sockets in use are reported
+(IPv6).
+The following values are displayed:
+
+.B tcp6sck
+.RS
+Number of TCPv6 sockets currently in use.
+.RE
+
+.B udp6sck
+.RS
+Number of UDPv6 sockets currently in use.
+.RE
+
+.B raw6sck
+.RS
+Number of RAWv6 sockets currently in use.
+.RE
+
+.B ip6-frag
+.RS
+Number of IPv6 fragments currently in use.
+.RE
+
+With the
+.B IP6
+keyword, statistics about IPv6 network traffic are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B irec6/s
+.RS
+The total number of input datagrams received from
+interfaces per second, including those received in error
+[ipv6IfStatsInReceives].
+.RE
+
+.B fwddgm6/s
+.RS
+The number of output datagrams per second which this
+entity received and forwarded to their final
+destinations [ipv6IfStatsOutForwDatagrams].
+.RE
+
+.B idel6/s
+.RS
+The total number of datagrams successfully
+delivered per second to IPv6 user-protocols (including ICMP)
+[ipv6IfStatsInDelivers].
+.RE
+
+.B orq6/s
+.RS
+The total number of IPv6 datagrams which local IPv6
+user-protocols (including ICMP) supplied per second to IPv6 in
+requests for transmission [ipv6IfStatsOutRequests].
+Note that this counter
+does not include any datagrams counted in fwddgm6/s.
+.RE
+
+.B asmrq6/s
+.RS
+The number of IPv6 fragments received per second which needed
+to be reassembled at this interface [ipv6IfStatsReasmReqds].
+.RE
+
+.B asmok6/s
+.RS
+The number of IPv6 datagrams successfully
+reassembled per second [ipv6IfStatsReasmOKs].
+.RE
+
+.B imcpck6/s
+.RS
+The number of multicast packets received per second
+by the interface [ipv6IfStatsInMcastPkts].
+.RE
+
+.B omcpck6/s
+.RS
+The number of multicast packets transmitted per second
+by the interface [ipv6IfStatsOutMcastPkts].
+.RE
+
+.B fragok6/s
+.RS
+The number of IPv6 datagrams that have been
+successfully fragmented at this output interface per second
+[ipv6IfStatsOutFragOKs].
+.RE
+
+.B fragcr6/s
+.RS
+The number of output datagram fragments that have
+been generated per second as a result of fragmentation at
+this output interface [ipv6IfStatsOutFragCreates].
+.RE
+
+With the
+.B EIP6
+keyword, statistics about IPv6 network errors are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B ihdrer6/s
+.RS
+The number of input datagrams discarded per second due to
+errors in their IPv6 headers, including version
+number mismatch, other format errors, hop count
+exceeded, errors discovered in processing their
+IPv6 options, etc. [ipv6IfStatsInHdrErrors]
+.RE
+
+.B iadrer6/s
+.RS
+The number of input datagrams discarded per second because
+the IPv6 address in their IPv6 header's destination
+field was not a valid address to be received at
+this entity. This count includes invalid
+addresses (e.g., ::0) and unsupported addresses
+(e.g., addresses with unallocated prefixes). For
+entities which are not IPv6 routers and therefore
+do not forward datagrams, this counter includes
+datagrams discarded because the destination address
+was not a local address [ipv6IfStatsInAddrErrors].
+.RE
+
+.B iukwnp6/s
+.RS
+The number of locally-addressed datagrams
+received successfully but discarded per second because of an
+unknown or unsupported protocol [ipv6IfStatsInUnknownProtos].
+.RE
+
+.B i2big6/s
+.RS
+The number of input datagrams that could not be
+forwarded per second because their size exceeded the link MTU
+of outgoing interface [ipv6IfStatsInTooBigErrors].
+.RE
+
+.B idisc6/s
+.RS
+The number of input IPv6 datagrams per second for which no
+problems were encountered to prevent their
+continued processing, but which were discarded
+(e.g., for lack of buffer space)
+[ipv6IfStatsInDiscards]. Note that this
+counter does not include any datagrams discarded
+while awaiting re-assembly.
+.RE
+
+.B odisc6/s
+.RS
+The number of output IPv6 datagrams per second for which no
+problem was encountered to prevent their
+transmission to their destination, but which were
+discarded (e.g., for lack of buffer space)
+[ipv6IfStatsOutDiscards]. Note
+that this counter would include datagrams counted
+in fwddgm6/s if any such packets
+met this (discretionary) discard criterion.
+.RE
+
+.B inort6/s
+.RS
+The number of input datagrams discarded per second because no
+route could be found to transmit them to their
+destination [ipv6IfStatsInNoRoutes].
+.RE
+
+.B onort6/s
+.RS
+The number of locally generated IP datagrams discarded per second
+because no route could be found to transmit them to their
+destination [unknown formal SNMP name].
+.RE
+
+.B asmf6/s
+.RS
+The number of failures detected per second by the IPv6
+re-assembly algorithm (for whatever reason: timed
+out, errors, etc.) [ipv6IfStatsReasmFails].
+Note that this is not
+necessarily a count of discarded IPv6 fragments
+since some algorithms
+can lose track of the number of fragments
+by combining them as they are received.
+.RE
+
+.B fragf6/s
+.RS
+The number of IPv6 datagrams that have been
+discarded per second because they needed to be fragmented
+at this output interface but could not be
+[ipv6IfStatsOutFragFails].
+.RE
+
+.B itrpck6/s
+.RS
+The number of input datagrams discarded per second because
+datagram frame didn't carry enough data
+[ipv6IfStatsInTruncatedPkts].
+.RE
+
+With the
+.B ICMP6
+keyword, statistics about ICMPv6 network traffic are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B imsg6/s
+.RS
+The total number of ICMP messages received
+by the interface per second which includes all those
+counted by ierr6/s [ipv6IfIcmpInMsgs].
+.RE
+
+.B omsg6/s
+.RS
+The total number of ICMP messages which this
+interface attempted to send per second [ipv6IfIcmpOutMsgs].
+.RE
+
+.B iech6/s
+.RS
+The number of ICMP Echo (request) messages
+received by the interface per second [ipv6IfIcmpInEchos].
+.RE
+
+.B iechr6/s
+.RS
+The number of ICMP Echo Reply messages received
+by the interface per second [ipv6IfIcmpInEchoReplies].
+.RE
+
+.B oechr6/s
+.RS
+The number of ICMP Echo Reply messages sent
+by the interface per second [ipv6IfIcmpOutEchoReplies].
+.RE
+
+.B igmbq6/s
+.RS
+The number of ICMPv6 Group Membership Query
+messages received by the interface per second
+[ipv6IfIcmpInGroupMembQueries].
+.RE
+
+.B igmbr6/s
+.RS
+The number of ICMPv6 Group Membership Response messages
+received by the interface per second
+[ipv6IfIcmpInGroupMembResponses].
+.RE
+
+.B ogmbr6/s
+.RS
+The number of ICMPv6 Group Membership Response
+messages sent per second
+[ipv6IfIcmpOutGroupMembResponses].
+.RE
+
+.B igmbrd6/s
+.RS
+The number of ICMPv6 Group Membership Reduction messages
+received by the interface per second
+[ipv6IfIcmpInGroupMembReductions].
+.RE
+
+.B ogmbrd6/s
+.RS
+The number of ICMPv6 Group Membership Reduction
+messages sent per second
+[ipv6IfIcmpOutGroupMembReductions].
+.RE
+
+.B irtsol6/s
+.RS
+The number of ICMP Router Solicit messages
+received by the interface per second
+[ipv6IfIcmpInRouterSolicits].
+.RE
+
+.B ortsol6/s
+.RS
+The number of ICMP Router Solicitation messages
+sent by the interface per second
+[ipv6IfIcmpOutRouterSolicits].
+.RE
+
+.B irtad6/s
+.RS
+The number of ICMP Router Advertisement messages
+received by the interface per second
+[ipv6IfIcmpInRouterAdvertisements].
+.RE
+
+.B inbsol6/s
+.RS
+The number of ICMP Neighbor Solicit messages
+received by the interface per second
+[ipv6IfIcmpInNeighborSolicits].
+.RE
+
+.B onbsol6/s
+.RS
+The number of ICMP Neighbor Solicitation
+messages sent by the interface per second
+[ipv6IfIcmpOutNeighborSolicits].
+.RE
+
+.B inbad6/s
+.RS
+The number of ICMP Neighbor Advertisement
+messages received by the interface per second
+[ipv6IfIcmpInNeighborAdvertisements].
+.RE
+
+.B onbad6/s
+.RS
+The number of ICMP Neighbor Advertisement
+messages sent by the interface per second
+[ipv6IfIcmpOutNeighborAdvertisements].
+.RE
+
+With the
+.B EICMP6
+keyword, statistics about ICMPv6 error messages are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B ierr6/s
+.RS
+The number of ICMP messages per second which the interface
+received but determined as having ICMP-specific
+errors (bad ICMP checksums, bad length, etc.)
+[ipv6IfIcmpInErrors]
+.RE
+
+.B idtunr6/s
+.RS
+The number of ICMP Destination Unreachable
+messages received by the interface per second
+[ipv6IfIcmpInDestUnreachs].
+.RE
+
+.B odtunr6/s
+.RS
+The number of ICMP Destination Unreachable
+messages sent by the interface per second
+[ipv6IfIcmpOutDestUnreachs].
+.RE
+
+.B itmex6/s
+.RS
+The number of ICMP Time Exceeded messages
+received by the interface per second
+[ipv6IfIcmpInTimeExcds].
+.RE
+
+.B otmex6/s
+.RS
+The number of ICMP Time Exceeded messages sent
+by the interface per second
+[ipv6IfIcmpOutTimeExcds].
+.RE
+
+.B iprmpb6/s
+.RS
+The number of ICMP Parameter Problem messages
+received by the interface per second
+[ipv6IfIcmpInParmProblems].
+.RE
+
+.B oprmpb6/s
+.RS
+The number of ICMP Parameter Problem messages
+sent by the interface per second
+[ipv6IfIcmpOutParmProblems].
+.RE
+
+.B iredir6/s
+.RS
+The number of Redirect messages received
+by the interface per second
+[ipv6IfIcmpInRedirects].
+.RE
+
+.B oredir6/s
+.RS
+The number of Redirect messages sent by
+the interface by second
+[ipv6IfIcmpOutRedirects].
+.RE
+
+.B ipck2b6/s
+.RS
+The number of ICMP Packet Too Big messages
+received by the interface per second
+[ipv6IfIcmpInPktTooBigs].
+.RE
+
+.B opck2b6/s
+.RS
+The number of ICMP Packet Too Big messages sent
+by the interface per second
+[ipv6IfIcmpOutPktTooBigs].
+.RE
+
+With the
+.B UDP6
+keyword, statistics about UDPv6 network traffic are reported.
+The following values are displayed (formal SNMP names between
+square brackets):
+
+.B idgm6/s
+.RS
+The total number of UDP datagrams delivered per second to UDP users
+[udpInDatagrams].
+.RE
+
+.B odgm6/s
+.RS
+The total number of UDP datagrams sent per second from this
+entity [udpOutDatagrams].
+.RE
+
+.B noport6/s
+.RS
+The total number of received UDP datagrams per second for which there
+was no application at the destination port [udpNoPorts].
+.RE
+
+.B idgmer6/s
+.RS
+The number of received UDP datagrams per second that could not be
+delivered for reasons other than the lack of an application
+at the destination port [udpInErrors].
+.RE
+
 The
 .B ALL
 keyword is equivalent to specifying all the keywords above and therefore all the network
@@ -979,7 +1446,7 @@ is in a separate record. The default value of the
 parameter is the current daily data file, the
 .IR @SA_DIR@/sa dd
 file. The -o option is exclusive of the -f option.
-.IP "-P { cpu | ALL }"
+.IP "-P { cpu [,...] | ALL }"
 Report per-processor statistics for the specified processor or processors.
 Specifying the
 .B ALL

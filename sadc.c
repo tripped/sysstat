@@ -57,7 +57,7 @@ int dis;
 char timestamp[2][TIMESTAMP_LEN];
 
 struct stats_sum asum;
-	
+
 struct file_header file_hdr;
 struct record_header record_hdr;
 char comment[MAX_COMMENT_LEN];
@@ -79,8 +79,86 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C <comment> ] [ -S { INT | DISK | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"));
+			  "[ -C <comment> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"));
 	exit(1);
+}
+
+/*
+ ***************************************************************************
+ * Parse option -S, indicating which activities are to be collected.
+ *
+ * IN:
+ * @argv	Arguments list.
+ * @opt		Index in list of arguments.
+ ***************************************************************************
+ */
+void parse_sadc_S_option(char *argv[], int opt)
+{
+	char *p;
+	int i;
+
+	for (p = strtok(argv[opt], ","); p; p = strtok(NULL, ",")) {
+		if (!strcmp(p, K_INT)) {
+			/* Select interrupt activity */
+			COLLECT_ACTIVITY(A_IRQ);
+		}
+		else if (!strcmp(p, K_DISK)) {
+			/* Select disk activity */
+			COLLECT_ACTIVITY(A_DISK);
+		}
+		else if (!strcmp(p, K_SNMP)) {
+			/* Select SNMP activities */
+			COLLECT_ACTIVITY(A_NET_IP);
+			COLLECT_ACTIVITY(A_NET_EIP);
+			COLLECT_ACTIVITY(A_NET_ICMP);
+			COLLECT_ACTIVITY(A_NET_EICMP);
+			COLLECT_ACTIVITY(A_NET_TCP);
+			COLLECT_ACTIVITY(A_NET_ETCP);
+			COLLECT_ACTIVITY(A_NET_UDP);
+		}
+		else if (!strcmp(p, K_IPV6)) {
+			/* Select IPv6 activities */
+			COLLECT_ACTIVITY(A_NET_IP6);
+			COLLECT_ACTIVITY(A_NET_EIP6);
+			COLLECT_ACTIVITY(A_NET_ICMP6);
+			COLLECT_ACTIVITY(A_NET_EICMP6);
+			COLLECT_ACTIVITY(A_NET_UDP6);
+			COLLECT_ACTIVITY(A_NET_SOCK6);
+		}
+		else if (!strcmp(p, K_ALL)) {
+			/* Select all activities */
+			for (i = 0; i < NR_ACT; i++) {
+				act[i]->options |= AO_COLLECTED;
+			}
+		}
+		else if (strspn(argv[opt], DIGITS) == strlen(argv[opt])) {
+			/*
+			 * Although undocumented, option -S followed by a numerical value
+			 * enables the user to select each activity that should be
+			 * collected. "-S 0" unselects all activities but CPU.
+			 */
+			int act_id;
+
+			act_id = atoi(argv[opt]);
+			if ((act_id < 0) || (act_id > NR_ACT)) {
+				usage(argv[0]);
+			}
+			if (!act_id) {
+				/* Unselect all activities but CPU */
+				for (i = 0; i < NR_ACT; i++) {
+					act[i]->options &= ~AO_COLLECTED;
+				}
+				COLLECT_ACTIVITY(A_CPU);
+			}
+			else {
+				/* Select chosen activity */
+				COLLECT_ACTIVITY(act_id);
+			}
+		}
+		else {
+			usage(argv[0]);
+		}
+	}
 }
 
 /*
@@ -124,9 +202,9 @@ void p_write_error(void)
 void reset_stats(void)
 {
 	int i;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
- 		if ((*act[i]->nr > 0) && act[i]->_buf0 && !IS_REMANENT(act[i]->options)) {
+		if ((*act[i]->nr > 0) && act[i]->_buf0 && !IS_REMANENT(act[i]->options)) {
 			memset(act[i]->_buf0, 0, act[i]->msize * *act[i]->nr);
 		}
 	}
@@ -140,16 +218,16 @@ void reset_stats(void)
 void sa_sys_init(void)
 {
 	int i;
-		
+
 	for (i = 0; i < NR_ACT; i++) {
-		
+
 		if (act[i]->f_count) {
 			/* Number of items is not a constant and should be calculated */
 			if (*act[i]->nr < 0) {
 				*act[i]->nr = (*act[i]->f_count)(act[i]);
 			}
 		}
-		
+
 		if (*act[i]->nr > 0) {
 			/* Allocate structures for current activity */
 			SREALLOC(act[i]->_buf0, void, act[i]->msize * *act[i]->nr);
@@ -158,7 +236,7 @@ void sa_sys_init(void)
 			/* No items found: Invalidate current activity */
 			act[i]->options &= ~AO_COLLECTED;
 		}
-		
+
 		/* Set default activity list */
 		id_seq[i] = act[i]->id;
 	}
@@ -172,9 +250,9 @@ void sa_sys_init(void)
 void sa_sys_free(void)
 {
 	int i;
-		
+
 	for (i = 0; i < NR_ACT; i++) {
-		
+
 		if (*act[i]->nr > 0) {
 			if (act[i]->_buf0) {
 				free(act[i]->_buf0);
@@ -201,10 +279,10 @@ int write_all(int fd, const void *buf, int nr_bytes)
 {
 	int block, offset = 0;
 	char *buffer = (char *) buf;
-	
+
 	while (nr_bytes > 0) {
 		block = write(fd, &buffer[offset], nr_bytes);
-		
+
 		if (block < 0) {
 			if (errno == EINTR)
 				continue;
@@ -212,11 +290,11 @@ int write_all(int fd, const void *buf, int nr_bytes)
 		}
 		if (block == 0)
 			return offset;
-		
+
 		offset += block;
 		nr_bytes -= block;
 	}
-	
+
 	return offset;
 }
 
@@ -354,10 +432,10 @@ void setup_file_hdr(int fd)
 	/* Write file header */
 	if ((n = write_all(fd, &file_hdr, FILE_HEADER_SIZE)) != FILE_HEADER_SIZE)
 		goto write_error;
-	
+
 	/* Write activity list */
 	for (i = 0; i < NR_ACT; i++) {
-		
+
 		/*
 		 * Activity sequence given by id_seq array.
 		 * Sequence must be the same for stdout as for output file.
@@ -371,16 +449,16 @@ void setup_file_hdr(int fd)
 			file_act.id   = act[p]->id;
 			file_act.nr   = *act[p]->nr;
 			file_act.size = act[p]->fsize;
-			
+
 			if ((n = write_all(fd, &file_act, FILE_ACTIVITY_SIZE))
 			    != FILE_ACTIVITY_SIZE)
 				goto write_error;
 		}
 	}
-	
+
 	return;
 
-write_error:
+	write_error:
 
 	fprintf(stderr, _("Cannot write system activity file header: %s\n"),
 		strerror(errno));
@@ -457,7 +535,7 @@ void write_stats(int ofd)
 			 */
 			return;
 	}
-	
+
 	/* Write record header */
 	if ((n = write_all(ofd, &record_hdr, RECORD_HEADER_SIZE)) != RECORD_HEADER_SIZE) {
 		p_write_error();
@@ -465,12 +543,12 @@ void write_stats(int ofd)
 
 	/* Then write all statistics */
 	for (i = 0; i < NR_ACT; i++) {
-		
+
 		if (!id_seq[i])
 			continue;
 		if ((p = get_activity_position(act, id_seq[i])) < 0)
 			continue;
-		
+
 		if (IS_COLLECTED(act[p]->options)) {
 			if ((n = write_all(ofd, act[p]->_buf0, act[p]->fsize * *act[p]->nr)) !=
 			    (act[p]->fsize * *act[p]->nr)) {
@@ -604,14 +682,14 @@ void open_ofile(int *ofd, char ofile[])
 				act[i]->options &= ~AO_COLLECTED;
 				id_seq[i] = 0;
 			}
-			
+
 			if (!file_hdr.sa_nr_act || (file_hdr.sa_nr_act > NR_ACT))
 				/*
 				 * No activities at all or at least one unknown activity:
 				 * Cannot append data to such a file.
 				 */
 				goto append_error;
-			
+
 			for (i = 0; i < file_hdr.sa_nr_act; i++) {
 
 				/* Read current activity in list */
@@ -647,11 +725,11 @@ void open_ofile(int *ofd, char ofile[])
 			}
 		}
 	}
-	
+
 	return;
 
-append_error:
-	
+	append_error:
+
 	close(*ofd);
 	if (FORCE_FILE(flags)) {
 		/* Truncate file */
@@ -672,7 +750,7 @@ void read_stats(void)
 {
 	int i;
 	__nr_t cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
-	
+
 	/*
 	 * Init uptime0. So if /proc/uptime cannot fill it,
 	 * this will be done by /proc/stat.
@@ -687,14 +765,14 @@ void read_stats(void)
 	if (cpu_nr > 2) {
 		read_uptime(&(record_hdr.uptime0));
 	}
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 		if (IS_COLLECTED(act[i]->options)) {
 			/* Read statistics for current activity */
 			(*act[i]->f_read)(act[i]);
 		}
 	}
-	
+
 	if (cpu_nr == 1) {
 		/*
 		 * uptime has been filled by read_uptime()
@@ -724,7 +802,7 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
 	char new_ofile[MAX_FILE_LEN];
 
 	new_ofile[0] = '\0';
-	
+
 	/* Main loop */
 	do {
 
@@ -842,7 +920,7 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
  */
 int main(int argc, char **argv)
 {
-	int opt = 0, optz = 0, i;
+	int opt = 0, optz = 0;
 	char ofile[MAX_FILE_LEN];
 	struct tm rectime;
 	int stdfd = 0, ofd = -1;
@@ -862,57 +940,7 @@ int main(int argc, char **argv)
 
 		if (!strcmp(argv[opt], "-S")) {
 			if (argv[++opt]) {
-				if (!strcmp(argv[opt], K_INT)) {
-					/* Select interrupt activity */
-					COLLECT_ACTIVITY(A_IRQ);
-				}
-				else if (!strcmp(argv[opt], K_DISK)) {
-					/* Select disk activity */
-					COLLECT_ACTIVITY(A_DISK);
-				}
-				else if (!strcmp(argv[opt], K_SNMP)) {
-					/* Select SNMP activities */
-					COLLECT_ACTIVITY(A_NET_IP);
-					COLLECT_ACTIVITY(A_NET_EIP);
-					COLLECT_ACTIVITY(A_NET_ICMP);
-					COLLECT_ACTIVITY(A_NET_EICMP);
-					COLLECT_ACTIVITY(A_NET_TCP);
-					COLLECT_ACTIVITY(A_NET_ETCP);
-					COLLECT_ACTIVITY(A_NET_UDP);
-				}
-				else if (!strcmp(argv[opt], K_ALL)) {
-					/* Select all activities */
-					for (i = 0; i < NR_ACT; i++) {
-						act[i]->options |= AO_COLLECTED;
-					}
-				}
-				else if (strspn(argv[opt], DIGITS) == strlen(argv[opt])) {
-					/*
-					 * Although undocumented, option -S followed by a numerical value
-					 * enables the user to select each activity that should be
-					 * collected. "-S 0" unselects all activities but CPU.
-					 */
-					int act_id;
-					
-					act_id = atoi(argv[opt]);
-					if ((act_id < 0) || (act_id > NR_ACT)) {
-						usage(argv[0]);
-					}
-					if (!act_id) {
-						/* Unselect all activities but CPU */
-						for (i = 0; i < NR_ACT; i++) {
-							act[i]->options &= ~AO_COLLECTED;
-						}
-						COLLECT_ACTIVITY(A_CPU);
-					}
-					else {
-						/* Select chosen activity */
-						COLLECT_ACTIVITY(act_id);
-					}
-				}
-				else {
-					usage(argv[0]);
-				}
+				parse_sadc_S_option(argv, opt);
 			}
 			else {
 				usage(argv[0]);
@@ -931,7 +959,8 @@ int main(int argc, char **argv)
 			print_version();
 		}
 
-		else if (!strcmp(argv[opt], "-z")) {	/* Set by sar command */
+		else if (!strcmp(argv[opt], "-z")) {
+			/* Set by sar command */
 			optz = 1;
 		}
 

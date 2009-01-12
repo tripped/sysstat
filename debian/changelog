@@ -1,3 +1,10 @@
+sysstat (8.1.8-1) UNRELEASED; urgency=low
+
+  * NOT RELEASED YET
+  * (NOT RELEASED YET) New upstream release
+
+ -- Robert Luberda <robert@debian.org>  Tue, 13 Jan 2009 00:33:27 +0100
+
 sysstat (8.1.7-1) unstable; urgency=low
 
   * New upstream release.

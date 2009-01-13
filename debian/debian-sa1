@@ -1,0 +1,27 @@
+#!/bin/sh
+# vim:ts=2:et
+# $Id: debian-sa1 1413 2009-01-13 00:01:37Z robert $
+# Debian sa1 helper which is run from cron.d job, not to needlessly 
+# fill logs (see Bug#499461).
+
+set -e
+
+# Global variables:
+#
+#  our configuration file
+DEFAULT=/etc/default/sysstat
+#  default setting, overriden in the above file
+ENABLED=false
+SA1_OPTIONS=""
+
+# Read defaults file
+if [ -r "$DEFAULT" ]; then 
+  . "$DEFAULT"
+fi
+
+if [ "true" = "$ENABLED" ]; then
+  exec /usr/lib/sysstat/sa1 $SA1_OPTIONS "$@"
+fi
+
+exit 0
+

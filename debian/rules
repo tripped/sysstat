@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules,v 1.15 2008-03-02 14:40:30 robert Exp $
+# $Id: rules 1413 2009-01-13 00:01:37Z robert $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -47,6 +47,8 @@ build-stamp:
 
 	# Add here commands to compile the package.
 	$(MAKE)
+
+	chmod a+x debian/debian-sa1
 
 	touch build-stamp
 

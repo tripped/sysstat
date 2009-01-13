@@ -2,8 +2,9 @@ sysstat (8.1.8-1) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
   * (NOT RELEASED YET) New upstream release
+  * Add debian-sa1 script and ran it from cron.d job (closes: #499461). 
 
- -- Robert Luberda <robert@debian.org>  Tue, 13 Jan 2009 00:33:27 +0100
+ -- Robert Luberda <robert@debian.org>  Tue, 13 Jan 2009 00:58:54 +0100
 
 sysstat (8.1.7-1) unstable; urgency=low
 

@@ -3,8 +3,10 @@ sysstat (8.1.8-1) UNRELEASED; urgency=low
   * NOT RELEASED YET
   * (NOT RELEASED YET) New upstream release
   * Add debian-sa1 script and ran it from cron.d job (closes: #499461). 
+  * If sar cannot open a data file, print a message indicating that sysstat
+    might not be enabled (closes: #511418).
 
- -- Robert Luberda <robert@debian.org>  Tue, 13 Jan 2009 00:58:54 +0100
+ -- Robert Luberda <robert@debian.org>  Thu, 15 Jan 2009 23:52:03 +0100
 
 sysstat (8.1.7-1) unstable; urgency=low
 

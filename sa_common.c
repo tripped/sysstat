@@ -43,6 +43,8 @@
 #define _(string) (string)
 #endif
 
+static char defaultFileUsed = 0; /* Debian: fix for bug#511418 */
+
 /*
  ***************************************************************************
  * Init a bitmap (CPU, IRQ, etc.).
@@ -309,6 +311,7 @@ void set_default_file(struct tm *rectime, char *datafile)
 	snprintf(datafile, MAX_FILE_LEN,
 		 "%s/sa%02d", SA_DIR, rectime->tm_mday);
 	datafile[MAX_FILE_LEN - 1] = '\0';
+	defaultFileUsed = 1; /* Debian: fix for bug#511418 */
 }
 
 /*
@@ -1030,7 +1033,12 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 
 	/* Open sa data file */
 	if ((*ifd = open(dfile, O_RDONLY)) < 0) {
+		const int saved_errno=errno; /* Debian: fix for bug#511418 */
 		fprintf(stderr, _("Cannot open %s: %s\n"), dfile, strerror(errno));
+		if (saved_errno == ENOENT && defaultFileUsed) /* Debian: fix for bug#511418 */
+		{
+			fprintf(stderr, "Please check if data collecting is enabled in /etc/default/sysstat\n");
+		}
 		exit(2);
 	}
 

@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules 1413 2009-01-13 00:01:37Z robert $
+# $Id: rules 1416 2009-01-15 23:07:50Z robert $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -67,7 +67,7 @@ install: DH_OPTIONS=
 install: build
 	dh_testdir
 	dh_testroot
-	dh_clean -k
+	dh_prep
 	dh_installdirs
 
 	# Add here commands to install the package into debian/tmp.
@@ -98,7 +98,7 @@ binary-common:
 #	dh_installcatalogs
 #	dh_installpam
 #	dh_installmime
-	dh_installinit --no-start
+	dh_installinit --no-start -- start 20 2 3 4 5 . stop 20 1 .
 #	dh_installman
 	dh_installcron
 #	dh_installinfo

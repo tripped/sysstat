@@ -5,10 +5,12 @@ sysstat (8.1.8-1) UNRELEASED; urgency=low
   * Add debian-sa1 script and ran it from cron.d job (closes: #499461). 
   * If sar cannot open a data file, print a message indicating that sysstat
     might not be enabled (closes: #511418).
+  * Remove stop links from rc0 and rc6 run levels.
   * Remove the "sysstat not enabled" warning from out init script (closes:
     #507493).
+  * Switch to v7 debhelper's compat level, use dh_prep instead of `dh_clean -k'.
 
- -- Robert Luberda <robert@debian.org>  Thu, 15 Jan 2009 23:55:15 +0100
+ -- Robert Luberda <robert@debian.org>  Fri, 16 Jan 2009 00:06:49 +0100
 
 sysstat (8.1.7-1) unstable; urgency=low
 

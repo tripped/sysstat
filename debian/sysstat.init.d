@@ -5,7 +5,7 @@
 # Required-Start:    $local_fs $syslog
 # Required-Stop:    
 # Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
+# Default-Stop:      1
 # Short-Description: Start/stop sysstat's sadc
 # Description:       Sysstat contains system performance tools for Linux
 #                    The init file runs the sadc command in order to write

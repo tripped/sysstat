@@ -41,8 +41,6 @@ case "$1" in
                 log_daemon_msg "Starting $DESC" "$NAME"
                 start-stop-daemon --start --quiet --exec $DAEMON -- --boot $SA1_OPTIONS || status=$?
                 log_end_msg $status
-        else
-                log_warning_msg "$NAME not enabled in ${DEFAULT}, not starting."
         fi
         ;;
   stop)

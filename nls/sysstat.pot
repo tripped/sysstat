@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-01-13 00:36+0100\n"
+"POT-Creation-Date: 2009-01-16 22:52+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,7 +22,7 @@ msgid "sysstat version %s\n"
 msgstr ""
 
 #: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2232
-#: sa_common.c:1033 sadc.c:576 sadc.c:585 sadc.c:645
+#: sa_common.c:1037 sadc.c:576 sadc.c:585 sadc.c:645
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr ""
@@ -76,33 +76,33 @@ msgstr ""
 msgid "Cannot handle so many processors!\n"
 msgstr ""
 
-#: sa_common.c:847
+#: sa_common.c:850
 #, c-format
 msgid "Error while reading system activity file: %s\n"
 msgstr ""
 
-#: sa_common.c:857
+#: sa_common.c:860
 #, c-format
 msgid "End of system activity file unexpected\n"
 msgstr ""
 
-#: sa_common.c:875
+#: sa_common.c:878
 #, c-format
 msgid "File created using sar/sadc from sysstat version %d.%d.%d"
 msgstr ""
 
-#: sa_common.c:906
+#: sa_common.c:909
 #, c-format
 msgid "Invalid system activity file: %s\n"
 msgstr ""
 
-#: sa_common.c:913
+#: sa_common.c:916
 #, c-format
 msgid ""
 "Current sysstat version can no longer read the format of this file (%#x)\n"
 msgstr ""
 
-#: sa_common.c:1116
+#: sa_common.c:1124
 #, c-format
 msgid "Requested activities not available in file %s\n"
 msgstr ""

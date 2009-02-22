@@ -24,8 +24,10 @@ sysstat (8.1.8-2) unstable; urgency=low
   * Applied Christian's patch from bug#513671. Many thanks to him, and all
     the people who worked on improving the debconf templates.
   * Updated Polish debconf translations.
+  * debian/copyright: sysstat is distributed under the terms of GPL ver. 2
+    *or later* (fixes lintian's `copyright-refers-to-versionless-license...').
 
- -- Robert Luberda <robert@debian.org>  Sun, 22 Feb 2009 20:02:26 +0100
+ -- Robert Luberda <robert@debian.org>  Sun, 22 Feb 2009 20:25:20 +0100
 
 sysstat (8.1.8-1) unstable; urgency=low
 

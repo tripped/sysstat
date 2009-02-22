@@ -1,4 +1,4 @@
-sysstat (8.1.8-2) UNRELEASED; urgency=low
+sysstat (8.1.8-2) unstable; urgency=low
 
   [ Christian Perrier ]
   * Debconf templates and debian/control reviewed by the debian-l10n-
@@ -21,12 +21,11 @@ sysstat (8.1.8-2) UNRELEASED; urgency=low
     - Finnish. Closes: #516334
 
   [ Robert Luberda ]
-  * Applied Christian's patch from bug#513671.
-    Many thans to him, reviewers and translators for their work!
+  * Applied Christian's patch from bug#513671. Many thanks to him, and all
+    the people who worked on improving the debconf templates.
   * Updated Polish debconf translations.
 
-
- -- Robert Luberda <robert@debian.org>  Sun, 22 Feb 2009 11:02:23 +0100
+ -- Robert Luberda <robert@debian.org>  Sun, 22 Feb 2009 20:02:26 +0100
 
 sysstat (8.1.8-1) unstable; urgency=low
 
@@ -59,7 +58,7 @@ sysstat (8.1.6-1) experimental; urgency=low
     + Daily data files format has changed again.
     + NFS v4 support added to sar -n (closes: #434442);
     + All sysstat commands are made consistent with how parameters are 
-      interpreted: "COMMAND <interval>" now generates a report continusouly, 
+      interpreted: "COMMAND <interval>" now generates a report continuously, 
       "COMMAND <interval> 0" causes an error, "COMMAND 0" displays a report 
       since system startup (closes: #475707);
    + Option -S added to sadc, which replaces previous options -I or -d. Existing
@@ -95,7 +94,7 @@ sysstat (8.1.1-1) experimental; urgency=low
     bzip2-compressed ones.
   * Update debian/copyright.
   * sysstat.sysconfig.in: remove @PACKAGE_VERSION@ from the file to avoid
-    unnecesary dpkg conffile change prompt on each upgrade.
+    unnecessary dpkg conffile change prompt on each upgrade.
   * Build with debhelper v6. 
 
  -- Robert Luberda <robert@debian.org>  Sun, 02 Mar 2008 15:16:27 +0100
@@ -120,7 +119,7 @@ sysstat (8.0.3-1) unstable; urgency=low
   * New upstream version (stable).
   * Update upstream URL in debian/{copyright,watch,control}.
   * Switch to the new Homepage field.
-  * Add dependacy on bzip2, used to compress log files.
+  * Add dependency on bzip2, used to compress log files.
 
  -- Robert Luberda <robert@debian.org>  Tue, 20 Nov 2007 23:24:52 +0100
 
@@ -183,8 +182,8 @@ sysstat (7.1.2-1) experimental; urgency=low
   * New upstream version (development):
     + daily data files format has changed again.
   * debian/rules: Adjust for the new autoconf stuff introduced by upstream.
-  * Small isag enhacements:
-    + add support for log subdirectiories and compressed log files,
+  * Small isag enhancements:
+    + add support for log subdirectories and compressed log files,
     + auto load the latest log file,
     + use standard tk_messageBox to display error messages,
     + "save picture" prompts user for choosing path.
@@ -195,8 +194,8 @@ sysstat (7.1.2-1) experimental; urgency=low
 
 sysstat (7.0.4-4) unstable; urgency=low
 
-  * Small isag enhacements, backported from version 7.1.3:
-    + add support for log subdirectiories and compressed log files,
+  * Small isag enhancements, backported from version 7.1.3:
+    + add support for log subdirectories and compressed log files,
     + auto load the latest log file,
     + use standard tk_messageBox to display error messages,
     + "save picture" prompts user for choosing path.
@@ -243,7 +242,7 @@ sysstat (7.0.0-4) unstable; urgency=low
 
 sysstat (7.0.0-3) unstable; urgency=low
 
-  * systat.config: don't overwrite systat/enable debconf variable unless
+  * sysstat.config: don't overwrite sysstat/enable debconf variable unless
     /etc/default/sysstat exists (closes: #306504).
   * Add Swedish PO translation  (closes: #386136).
   * ioconf.c: Fix FTBFS on GNU/kFreeBSD (closes: #395038).
@@ -424,7 +423,7 @@ sysstat (5.1.2-1) experimental; urgency=low
   * New upstream version (development).
   * sa2.sh: use /etc/default/sysstat instead of RedHat-ish
     /etc/syssconfig/default for HISTORY config.
-  * systat.postinst: handle update of default file.
+  * sysstat.postinst: handle update of default file.
 
  -- Robert Luberda <robert@debian.org>  Sun, 14 Nov 2004 12:07:47 +0100
 
@@ -433,7 +432,7 @@ sysstat (5.1.1-1) experimental; urgency=low
   * New upstream version (development):
     + daily data files format has changed again.
     + new tool: sadf
-  * Updated systat package description.
+  * Updated sysstat package description.
 
  -- Robert Luberda <robert@debian.org>  Sun, 24 Oct 2004 12:53:38 +0200
 
@@ -634,7 +633,7 @@ sysstat (4.1.3-1) unstable; urgency=low
 sysstat (4.1.2-3) unstable; urgency=low
 
   * Update German and Russian translations of debconf templates from DDTP.
-  * Removed build dependency on po-debconf, as debhelper dpends on it.
+  * Removed build dependency on po-debconf, as debhelper depends on it.
   * Standards-Version: 3.5.9.
 
  -- Robert Luberda <robert@debian.org>  Sat, 22 Mar 2003 22:01:43 +0100
@@ -662,9 +661,9 @@ sysstat (4.1.1-1) unstable; urgency=low
       *not* compatible with the previous one! Delete existing data
       files in /var/log/sysstat directory!
 
-  * debian/systat.{postinst,config}: Update $S_VERSION to show debconf
+  * debian/sysstat.{postinst,config}: Update $S_VERSION to show debconf
     warning about above mentioned incompatibility.
-  * debian/systat.templates: Do not misuse `yes'/`no' words (closes: #173788).
+  * debian/sysstat.templates: Do not misuse `yes'/`no' words (closes: #173788).
   * Update Polish translation of templates.
   * Add the override file for the following lintian false error:
     `shell-script-fails-syntax-check ./usr/bin/isag'.
@@ -673,7 +672,7 @@ sysstat (4.1.1-1) unstable; urgency=low
 
 sysstat (4.0.7-2) unstable; urgency=low
 
-  * Aplied patches from Junichi Uekawa:
+  * Applied patches from Junichi Uekawa:
     + common.c: set LC_CTYPE in nls_init() (closes: #172903).
     + sysstat.postinst: call /usr/lib/sysstat/sa1 (closes: #172904).
     Thanks for the patches, Junichi!
@@ -761,14 +760,14 @@ sysstat (4.0.1-1) unstable; urgency=low
 
   * New upstream version.
   * isag: set LC_ALL to sane value to prevent breakage if current
-    locale spiecifies a comma decimal separator (closes: #101545).
+    locale specifies a comma decimal separator (closes: #101545).
 
  -- Robert Luberda <robert@debian.org>  Wed,  4 Jul 2001 22:36:18 +0200
 
 sysstat (4.0.0-2) unstable; urgency=high
 
   * Set umask in sa[12] scripts (closes: #95561).
-  * Also in postinst: `chmod go-w' files from /var/log/systat.
+  * Also in postinst: `chmod go-w' files from /var/log/sysstat.
 
  -- Robert Luberda <robert@debian.org>  Mon, 30 Apr 2001 13:00:18 +0200
 

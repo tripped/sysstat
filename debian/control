@@ -11,15 +11,15 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, ucf (>= 2.003), lsb-base (>= 3.0-6)
 Recommends: cron
 Suggests: isag
 Conflicts: atsar (<< 1.5-3)
-Description: sar, iostat and mpstat - system performance tools for Linux
+Description: system performance tools for Linux
  The sysstat package contains the following system performance tools:
-  * sar - collects and reports system activity information;
-  * iostat - reports CPU utilization and I/O statistics for disks;
-  * mpstat - reports global and per-processor statistics;
-  * pidstat - reports statistics for Linux tasks (processes);
-  * sadf - displays data collected by sar in various formats.
+  - sar: collects and reports system activity information;
+  - iostat: reports CPU utilization and disk I/O statistics;
+  - mpstat: reports global and per-processor statistics;
+  - pidstat: reports statistics for Linux tasks (processes);
+  - sadf: displays data collected by sar in various formats.
  .
- The statistics reported by sar concern I/O transfer rates,
+ The statistics reported by sar deal with I/O transfer rates,
  paging activity, process-related activities, interrupts,
  network activity, memory and swap space utilization, CPU
  utilization, kernel activities and TTY statistics, among
@@ -31,7 +31,7 @@ Architecture: all
 Depends: sysstat (>= ${source:Version}), tk8.5|wish, gnuplot-x11, ${misc:Depends}
 Suggests: rcs
 Description: Interactive System Activity Grapher for sysstat
- This package includes the isag command, which graphically displays the 
- system activity data stored in a binary data produced by a sar command
- from a sysstat package.
+ This package provides the command isag, which graphically displays the
+ system activity data stored in the binary logs produced by sar (in the
+ package sysstat).
 Homepage: http://pagesperso-orange.fr/sebastien.godard/

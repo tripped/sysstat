@@ -1,3 +1,26 @@
+ sysstat (8.1.8-2) UNRELEASED; urgency=low
+ 
+   * Debconf templates and debian/control reviewed by the debian-l10n-
+     english team as part of the Smith review project. Closes: #513671
+   * [Debconf translation updates]
+     - Galician. Closes: #514162
+     - Swedish. Closes: #514174
+     - Basque. Closes: #514178
+     - Vietnamese. Closes: #514308
+     - Slovak. Closes: #514383
+     - Czech. Closes: #514440
+     - Japanese. Closes: #514507
+     - Catalan. Closes: #514638
+     - Russian. Closes: #514895
+     - Italian. Closes: #515169
+     - German. Closes: #515680
+     - Spanish. Closes: #515723
+     - Portuguese. Closes: #516021
+     - French. Closes: #516077
+     - Finnish. Closes: #516334
+ 
+  -- Christian Perrier <bubulle@debian.org>  Sat, 31 Jan 2009 11:16:45 +0100
+
 sysstat (8.1.8-1) unstable; urgency=low
 
   * New upstream release.

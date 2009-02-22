@@ -7,91 +7,99 @@
 # /usr/share/doc/po-debconf/README-trans
 # or http://www.debian.org/intl/l10n/po-debconf/README-trans
 # Developers do not need to manually edit POT or PO files.
-# 
-# 
+#
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: sysstat 6.0.1-2\n"
-"Report-Msgid-Bugs-To: robert@debian.org\n"
-"POT-Creation-Date: 2006-04-24 20:17+0200\n"
-"PO-Revision-Date: 2005-10-02 02:33-0700\n"
-"Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
-"Language-Team: Swedish <sv@li.org>\n"
+"Report-Msgid-Bugs-To: sysstat@packages.debian.org\n"
+"POT-Creation-Date: 2009-02-04 18:52+0100\n"
+"PO-Revision-Date: 2009-02-04 23:20+0100\n"
+"Last-Translator: Martin Bagge <brother@bsnet.se>\n"
+"Language-Team: Swedish <debian-l10n-swedish@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Swedish\n"
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:4
-msgid "Do you want post-installation script to remove these data files?"
-msgstr ""
-"Vill du att skriptet som körs efter installation ska radera dessa filer?"
+#: ../sysstat.templates:2001
+msgid "Remove old format statistics data files?"
+msgstr "Ta bort datafiler med det Ã¤ldre statistikformatet?"
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:4
+#: ../sysstat.templates:2001
 msgid ""
-"Format of daily data statistics files has changed in version ${s_version} of "
-"sysstat and is *not* compatible with the previous one!"
+"The format of daily data statistics files has changed in version "
+"${s_version} of sysstat and is not compatible with the previous one."
 msgstr ""
-"Formatet på daglig datastatistiken har ändrats i version ${s_version} av "
-"sysstat och är *inte* kompatibel med tidigare versioner!"
+"Formatet pÃ¥ de dagliga datastatistikfilerna har Ã¤ndrats i version "
+"${s_version} av sysstat och Ã¤r inte kompatibel med den tidigare."
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:4
+#: ../sysstat.templates:2001
 msgid ""
-"If you activate this option, any existing data files in /var/log/sysstat/ "
+"If you choose this option, all existing data files in the /var/log/sysstat/ "
 "directory will be deleted."
 msgstr ""
-"Om du aktiverar denna funktion kommer alla existerande datafiler i mappen /"
-"var/log/sysstat/ att raderas."
+"VÃ¤ljer du detta alternativ kommer alla datafiler i katalogen /var/log/"
+"sysstat/ att raderas."
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:4
+#: ../sysstat.templates:2001
 msgid ""
-"If you don't want to remove them automatically, please remove them by hand "
-"later, in order for the sar command to work properly."
+"If you don't choose this option, the sar(1) command will not work properly "
+"until you remove the files manually."
 msgstr ""
-"Om du inte vill raderar dom automatiskt, vänligen radera dom på egen hand "
-"senare för att kommandot sar ska fungerar korrekt."
+"Om du inte vÃ¤ljer detta alternativ kommer kommandot sar(1) inte fungera pÃ¥ "
+"ett korrekt sÃ¤tt innan filerna har raderats manuellt."
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:17
-msgid "Do you want to activate sysstat's cron job?"
-msgstr "Vill du aktivera sysstat's cron-job?"
+#: ../sysstat.templates:3001
+msgid "Activate sysstat's cron job?"
+msgstr "Vill du aktivera cron-jobbet fÃ¶r sysstat?"
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:17
+#: ../sysstat.templates:3001
 msgid ""
-"If this option is enabled the sysstat package will collect (using the cron "
-"daemon and init.d script) binary data concerning system activities and store "
-"them in log files within /var/log/sysstat/ directory."
+"If this option is enabled the sysstat package will monitor system activities "
+"and store the data in log files within /var/log/sysstat/."
 msgstr ""
-"Om denna funktion är aktiverat kommer sysstat-paketet att samla in (mde cron-"
-"daemonen och init.d-skript) binärdata om aktiviteter på ditt system och "
-"lagra dom i en loggfil i mappen /var/log/sysstat/."
+"Om detta alternativ aktiveras kommer sysstat-paketet att Ã¶vervaka "
+"systemaktiviterna och lagra data i loggfiler i /var/log/systat/."
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:17
+#: ../sysstat.templates:3001
 msgid ""
-"With this data the sar(1) command will be able to display day-long system "
-"statistics."
+"This data allows the sar(1) command to display system statistics for the "
+"whole day."
 msgstr ""
-"Med detta data kommer kommandot sar(1) att kunna visa systemstatistik för "
-"hela dagen."
+"Dessa data gÃ¶r att kommandot sar(1) visar systemstatistik fÃ¶r hela dagen."
 
 #. Type: boolean
 #. Description
-#: ../sysstat.templates:17
+#: ../sysstat.templates:3001
 msgid ""
-"If you don't enable this option, the sar(1) command will show only the "
+"If you don't enable this option, the sar(1) command will only show the "
 "current statistics."
 msgstr ""
-"Om du inte aktiverar denna funktion kan kommandot sar(1) bara visa nuvarande "
-"statistik."
+"Om du inte aktiverar detta alternativ kan kommandot sar(1) endast visa "
+"aktuell statistik."
+
+#~ msgid "Do you want post-installation script to remove these data files?"
+#~ msgstr ""
+#~ "Vill du att skriptet som kÃƒÂ¶rs efter installation ska radera dessa filer?"
+
+#~ msgid ""
+#~ "If you don't want to remove them automatically, please remove them by "
+#~ "hand later, in order for the sar command to work properly."
+#~ msgstr ""
+#~ "Om du inte vill raderar dom automatiskt, vÃƒÂ¤nligen radera dom pÃƒÂ¥ egen "
+#~ "hand senare fÃƒÂ¶r att kommandot sar ska fungerar korrekt."

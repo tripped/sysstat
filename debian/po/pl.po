@@ -64,7 +64,7 @@ msgstr ""
 #. Description
 #: ../sysstat.templates:3001
 msgid "Activate sysstat's cron job?"
-msgstr "Aktywowaæ zadanie crona pakietu sysstat"
+msgstr "Aktywowaæ zadanie crona pakietu sysstat?"
 
 #. Type: boolean
 #. Description

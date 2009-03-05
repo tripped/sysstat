@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -52,7 +52,7 @@ int dis = TRUE;
 unsigned int flags = 0;
 char timestamp[2][TIMESTAMP_LEN];
 
-struct stats_sum asum;
+unsigned long avg_count = 0;
 
 /* File header */
 struct file_header file_hdr;
@@ -102,7 +102,7 @@ void usage(char *progname)
 
 	print_usage_title(progname);
 	fprintf(stderr, _("Options are:\n"
-			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
+			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -m ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 			  "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 			  "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
 			  "[ -n { <keyword> [,...] | ALL } ]\n"
@@ -129,6 +129,7 @@ void display_help(char *progname)
 	fprintf(stderr, _("\t-d\tBlock device statistics\n"));
 	fprintf(stderr, _("\t-I { <int> | SUM | ALL | XALL }\n"
 			  "\t\tInterrupts statistics\n"));
+	fprintf(stderr, _("\t-m\tPower management statistics\n"));
 	fprintf(stderr, _("\t-n { <keyword> [,...] | ALL }\n"
 			  "\t\tNetwork statistics\n"
 			  "\t\tKeywords are:\n"
@@ -174,8 +175,6 @@ void init_structures(void)
 	
 	for (i = 0; i < 3; i++)
 		memset(&record_hdr[i], 0, RECORD_HEADER_SIZE);
-
-	memset(&asum, 0, STATS_SUM_SIZE);
 }
 
 /*
@@ -281,9 +280,9 @@ int check_line_hdr(void)
 	for (i = 0; i < NR_ACT; i++) {
 		if (IS_SELECTED(act[i]->options)) {
 			/* Special processing for activities using a bitmap */
-			if (act[i]->bitmap_size) {
-				if (count_bits(act[i]->bitmap,
-					       BITMAP_SIZE(act[i]->bitmap_size)) > 1) {
+			if (act[i]->bitmap) {
+				if (count_bits(act[i]->bitmap->b_array,
+					       BITMAP_SIZE(act[i]->bitmap->b_size)) > 1) {
 					rc = TRUE;
 				}
 			}
@@ -369,8 +368,11 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 	}
 
 	if (read_from_file) {
-		/* Reset counters only if we read stats from a system activity file */
-		memset(&asum, 0, STATS_SUM_SIZE);
+		/*
+		 * Reset number of lines printed only if we read stats
+		 * from a system activity file.
+		 */
+		avg_count = 0;
 	}
 }
 
@@ -453,7 +455,7 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 		return 0;
 	}
 
-	(asum.count)++;	/* Nb of lines printed */
+	avg_count++;
 	
 	/* Test stdout */
 	TEST_STDOUT(STDOUT_FILENO);
@@ -669,8 +671,9 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 
 	/* Assess number of lines printed */
 	if ((p = get_activity_position(act, act_id)) >= 0) {
-		if (act[p]->bitmap_size) {
-			inc = count_bits(act[p]->bitmap, BITMAP_SIZE(act[p]->bitmap_size));
+		if (act[p]->bitmap) {
+			inc = count_bits(act[p]->bitmap->b_array,
+					 BITMAP_SIZE(act[p]->bitmap->b_size));
 		}
 		else {
 			inc = *act[p]->nr;

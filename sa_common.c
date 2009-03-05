@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -44,6 +44,7 @@
 #endif
 
 static char defaultFileUsed = 0; /* Debian: fix for bug#511418 */
+extern struct act_bitmap cpu_bitmap;
 
 /*
  ***************************************************************************
@@ -683,9 +684,14 @@ void allocate_bitmaps(struct activity *act[])
 	int i;
 
 	for (i = 0; i < NR_ACT; i++) {
-		if (act[i]->bitmap_size) {
-			SREALLOC(act[i]->bitmap, unsigned char,
-				 BITMAP_SIZE(act[i]->bitmap_size));
+		/*
+		 * If current activity has a bitmap which has not already
+		 * been allocated, then allocate it.
+		 * Note that a same bitmap may be used by several activities.
+		 */
+		if (act[i]->bitmap && !act[i]->bitmap->b_array) {
+			SREALLOC(act[i]->bitmap->b_array, unsigned char,
+				 BITMAP_SIZE(act[i]->bitmap->b_size));
 		}
 	}
 }
@@ -703,8 +709,8 @@ void free_bitmaps(struct activity *act[])
 	int i;
 
 	for (i = 0; i < NR_ACT; i++) {
-		if (act[i]->bitmap_size) {
-			free(act[i]->bitmap);
+		if (act[i]->bitmap && act[i]->bitmap->b_array) {
+			free(act[i]->bitmap->b_array);
 		}
 	}
 }
@@ -797,6 +803,7 @@ void select_all_activities(struct activity *act[])
 /*
  ***************************************************************************
  * Select CPU activity if no other activities have been explicitly selected.
+ * Also select CPU "all" if no other CPU has been selected.
  *
  * IN:
  * @act	Array of activities.
@@ -820,10 +827,12 @@ void select_default_activity(struct activity *act[])
 		act[p]->options |= AO_SELECTED;
 	}
 
-	/* If no CPU's have been selected then select CPU "all" */
-	if (IS_SELECTED(act[p]->options) &&
-	    !count_bits(act[p]->bitmap, BITMAP_SIZE(act[p]->bitmap_size))) {
-		act[p]->bitmap[0] |= 0x01;
+	/*
+	 * If no CPU's have been selected then select CPU "all".
+	 * cpu_bitmap bitmap may be used by several activities (A_CPU, A_PWR_CPUFREQ...)
+	 */
+	if (!count_bits(cpu_bitmap.b_array, BITMAP_SIZE(cpu_bitmap.b_size))) {
+		cpu_bitmap.b_array[0] |= 0x01;
 	}
 }
 
@@ -1164,10 +1173,12 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			act[p]->opt_flags |= AO_F_MEM_AMT + AO_F_MEM_DIA + AO_F_MEM_SWAP;
 
 			p = get_activity_position(act, A_IRQ);
-			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
+			set_bitmap(act[p]->bitmap->b_array, ~0,
+				   BITMAP_SIZE(act[p]->bitmap->b_size));
 
 			p = get_activity_position(act, A_CPU);
-			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
+			set_bitmap(act[p]->bitmap->b_array, ~0,
+				   BITMAP_SIZE(act[p]->bitmap->b_size));
 			act[p]->opt_flags = AO_F_CPU_ALL;
 			break;
 
@@ -1185,6 +1196,10 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 
 		case 'd':
 			SELECT_ACTIVITY(A_DISK);
+			break;
+
+		case 'm':
+			SELECT_ACTIVITY(A_PWR_CPUFREQ);
 			break;
 
 		case 'p':
@@ -1227,11 +1242,12 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			if (!*(argv[*opt] + i + 1) && argv[*opt + 1] && !strcmp(argv[*opt + 1], K_ALL)) {
 				(*opt)++;
 				act[p]->opt_flags = AO_F_CPU_ALL;
+				return 0;
 			}
 			else {
 				act[p]->opt_flags = AO_F_CPU_DEF;
 			}
-			return 0;
+			break;
 
 		case 'v':
 			SELECT_ACTIVITY(A_KTABLES);
@@ -1386,28 +1402,29 @@ int parse_sar_I_opt(char *argv[], int *opt, struct activity *act[])
 	for (t = strtok(argv[*opt], ","); t; t = strtok(NULL, ",")) {
 		if (!strcmp(t, K_SUM)) {
 			/* Select total number of interrupts */
-			act[p]->bitmap[0] |= 0x01;
+			act[p]->bitmap->b_array[0] |= 0x01;
 		}
 		else if (!strcmp(t, K_ALL)) {
 			/* Set bit for the first 16 individual interrupts */
-			act[p]->bitmap[0] |= 0xfe;
-			act[p]->bitmap[1] |= 0xff;
-			act[p]->bitmap[2] |= 0x01;
+			act[p]->bitmap->b_array[0] |= 0xfe;
+			act[p]->bitmap->b_array[1] |= 0xff;
+			act[p]->bitmap->b_array[2] |= 0x01;
 		}
 		else if (!strcmp(t, K_XALL)) {
 			/* Set every bit except for total number of interrupts */
-			c = act[p]->bitmap[0];
-			set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
-			act[p]->bitmap[0] = 0xfe | c;
+			c = act[p]->bitmap->b_array[0];
+			set_bitmap(act[p]->bitmap->b_array, ~0,
+				   BITMAP_SIZE(act[p]->bitmap->b_size));
+			act[p]->bitmap->b_array[0] = 0xfe | c;
 		}
 		else {
 			/* Get irq number */
 			if (strspn(t, DIGITS) != strlen(t))
 				return 1;
 			i = atoi(t);
-			if ((i < 0) || (i >= act[p]->bitmap_size))
+			if ((i < 0) || (i >= act[p]->bitmap->b_size))
 				return 1;
-			act[p]->bitmap[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
+			act[p]->bitmap->b_array[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
 		}
 	}
 
@@ -1449,16 +1466,17 @@ int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags, struct activity 
 				 * We still don't know if we are going to read stats
 				 * from a file or not...
 				 */
-				set_bitmap(act[p]->bitmap, ~0, BITMAP_SIZE(act[p]->bitmap_size));
+				set_bitmap(act[p]->bitmap->b_array, ~0,
+					   BITMAP_SIZE(act[p]->bitmap->b_size));
 			}
 			else {
 				/* Get cpu number */
 				if (strspn(t, DIGITS) != strlen(t))
 					return 1;
 				i = atoi(t);
-				if ((i < 0) || (i >= act[p]->bitmap_size))
+				if ((i < 0) || (i >= act[p]->bitmap->b_size))
 					return 1;
-				act[p]->bitmap[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
+				act[p]->bitmap->b_array[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
 			}
 		}
 		(*opt)++;

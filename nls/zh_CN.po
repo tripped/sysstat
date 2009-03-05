@@ -6,10 +6,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 8.1.7\n"
+"Project-Id-Version: sysstat 8.1.8\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2008-11-12 13:38+0100\n"
-"PO-Revision-Date: 2008-11-14 11:09+0800\n"
+"POT-Creation-Date: 2009-01-08 14:13+0100\n"
+"PO-Revision-Date: 2009-01-16 16:43中国标准时间\n"
 "Last-Translator: Ji ZhengYu <zhengyuji@gmail.com>\n"
 "Language-Team: Chinese (simplified) <translation-team-zh-cn@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
@@ -21,47 +21,42 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr "sysstat 版本 %s\n"
 
-#: ioconf.c:479 iostat.c:509 rd_stats.c:69 rd_stats.c:1791 rd_stats.c:1898
-#: sa_common.c:1033 sadc.c:498 sadc.c:507 sadc.c:567
+#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2232
+#: sa_common.c:1033 sadc.c:576 sadc.c:585 sadc.c:645
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr "无法打开 %s: %s\n"
 
-#: iostat.c:80 mpstat.c:83 pidstat.c:77 sar.c:88
+#: iostat.c:81 mpstat.c:83 pidstat.c:77 sar.c:88
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ]\n"
 msgstr "用法: %s [ 选项 ] [ <时间间隔> [ <次数> ] ]\n"
 
-#: iostat.c:83
+#: iostat.c:84
 #, c-format
 msgid ""
 "Options are:\n"
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"
+"[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"
 msgstr ""
 "选项:\n"
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <设备> [ ... ] | ALL ] [ -p [ <设备> | ALL ] ]\n"
-
-#: iostat.c:1692
-#, c-format
-msgid "-x and -p options are mutually exclusive\n"
-msgstr "-x 和 -p 选项不能同时使用\n"
+"[ <设备> [...] | ALL ] [ -p [ <设备> [,...] | ALL ] ]\n"
 
 #: mpstat.c:86
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> | ALL } ] [ -V ]\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 msgstr ""
 "选项:\n"
-"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> | ALL } ] [ -V ]\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 
-#: mpstat.c:433 pidstat.c:1681 sar.c:333
+#: mpstat.c:433 pidstat.c:1683 sar.c:351
 msgid "Average:"
 msgstr "平均时间:"
 
-#: mpstat.c:742
+#: mpstat.c:745
 #, c-format
 msgid "Not that many processors!\n"
 msgstr "处理器实在太多！\n"
@@ -71,18 +66,18 @@ msgstr "处理器实在太多！\n"
 msgid ""
 "Options are:\n"
 "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
-"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+"[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
 "选项:\n"
 "[ -C <命令> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
-"[ -p { <进程号> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+"[ -p { <进程号> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:197 sar.c:943
+#: pidstat.c:197 sar.c:961
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "所需的运行记录无法获得\n"
 
-#: rd_stats.c:1944
+#: rd_stats.c:2278
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr "处理器太多，无法处理！\n"
@@ -126,22 +121,22 @@ msgstr "用法: %s [ 选项 ] [ <时间间隔> [ <次数> ] ] [ <输出文件> ]
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -C <comment> ] [ -S { INT | DISK | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
+"[ -C <comment> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
 msgstr ""
 "选项:\n"
-"[ -C <注释> ] [ -S { INT | DISK | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
+"[ -C <注释> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
 
-#: sadc.c:107
+#: sadc.c:185
 #, c-format
 msgid "Cannot write data to system activity file: %s\n"
 msgstr "无法将数据写入系统运行记录文件: %s\n"
 
-#: sadc.c:385
+#: sadc.c:463
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
 msgstr "无法写系统运行记录文件开始部分: %s\n"
 
-#: sadc.c:661
+#: sadc.c:739
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
 msgstr "无法向文件 (%s) 中追加记录\n"
@@ -156,13 +151,13 @@ msgstr "用法: %s [ 选项 ] [ <时间间隔> [ <次数> ] ] [ <数据文件> ]
 msgid ""
 "Options are:\n"
 "[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ -- <sar_options...> ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_options> ]\n"
 msgstr ""
 "选项:\n"
 "[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <时:分:秒> ] ] [ -e [ <时:分:秒> ] ]\n"
-"[ -- <sar 选项...> ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <时:分:秒> ] ] [ -e [ <时:分:秒> ] ]\n"
+"[ -- <sar 选项> ]\n"
 
 #: sadf.c:527
 #, c-format
@@ -190,27 +185,23 @@ msgid ""
 "Options are:\n"
 "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <int> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-"[ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]\n"
+"[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+"[ -n { <keyword> [,...] | ALL } ]\n"
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr ""
 "选项:\n"
 "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <中断> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-"[ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]\n"
+"[ -I { <中断> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+"[ -n { <关键词> [,...] | ALL } ]\n"
 "[ -o [ <文件名> ] | -f [ <文件名> ] ]\n"
 "[ -i <时间间隔> ] [ -s [ <时:分:秒> ] ] [ -e [ <时:分:秒> ] ]\n"
 
 #: sar.c:126
 #, c-format
-msgid ""
-"\n"
-"Main options and reports:\n"
-msgstr ""
-"\n"
-"主选项和报告：\n"
+msgid "Main options and reports:\n"
+msgstr "主选项和报告：\n"
 
 #: sar.c:127
 #, c-format
@@ -239,35 +230,71 @@ msgstr ""
 #: sar.c:132
 #, c-format
 msgid ""
-"\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
-"\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
+"\t-n { <keyword> [,...] | ALL }\n"
 "\t\tNetwork statistics\n"
+"\t\tKeywords are:\n"
+"\t\tDEV\tNetwork interfaces\n"
+"\t\tEDEV\tNetwork interfaces (errors)\n"
+"\t\tNFS\tNFS client\n"
+"\t\tNFSD\tNFS server\n"
+"\t\tSOCK\tSockets\t(v4)\n"
+"\t\tIP\tIP traffic\t(v4)\n"
+"\t\tEIP\tIP traffic\t(v4) (errors)\n"
+"\t\tICMP\tICMP traffic\t(v4)\n"
+"\t\tEICMP\tICMP traffic\t(v4) (errors)\n"
+"\t\tTCP\tTCP traffic\t(v4)\n"
+"\t\tETCP\tTCP traffic\t(v4) (errors)\n"
+"\t\tUDP\tUDP traffic\t(v4)\n"
+"\t\tSOCK6\tSockets\t(v6)\n"
+"\t\tIP6\tIP traffic\t(v6)\n"
+"\t\tEIP6\tIP traffic\t(v6) (errors)\n"
+"\t\tICMP6\tICMP traffic\t(v6)\n"
+"\t\tEICMP6\tICMP traffic\t(v6) (errors)\n"
+"\t\tUDP6\tUDP traffic\t(v6)\n"
 msgstr ""
-"\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
-"\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
-"\t\t网络信息状况\n"
+"\t-n { <关键词> [,...] | ALL }\n"
+"\t\t网络统计信息\n"
+"\t\t关键词可以是：\n"
+"\t\tDEV\t网卡\n"
+"\t\tEDEV\t网卡 (错误)\n"
+"\t\tNFS\tNFS 客户端\n"
+"\t\tNFSD\tNFS 服务器\n"
+"\t\tSOCK\tSockets (套接字)\t(v4)\n"
+"\t\tIP\tIP 流\t(v4)\n"
+"\t\tEIP\tIP 流\t(v4) (错误)\n"
+"\t\tICMP\tICMP 流\t(v4)\n"
+"\t\tEICMP\tICMP 流\t(v4) (错误)\n"
+"\t\tTCP\tTCP 流\t(v4)\n"
+"\t\tETCP\tTCP 流\t(v4) (错误)\n"
+"\t\tUDP\tUDP 流\t(v4)\n"
+"\t\tSOCK6\tSockets (套接字)\t(v6)\n"
+"\t\tIP6\tIP 流\t(v6)\n"
+"\t\tEIP6\tIP 流\t(v6) (错误)\n"
+"\t\tICMP6\tICMP 流\t(v6)\n"
+"\t\tEICMP6\tICMP 流\t(v6) (错误)\n"
+"\t\tUDP6\tUDP 流\t(v6)\n"
 
-#: sar.c:135
+#: sar.c:153
 #, c-format
 msgid "\t-q\tQueue length and load average statistics\n"
 msgstr "\t-q\t队列长度和平均负载\n"
 
-#: sar.c:136
+#: sar.c:154
 #, c-format
 msgid "\t-r\tMemory utilization statistics\n"
 msgstr "\t-r\t内存利用率\n"
 
-#: sar.c:137
+#: sar.c:155
 #, c-format
 msgid "\t-R\tMemory statistics\n"
 msgstr "\t-R\t内存状况\n"
 
-#: sar.c:138
+#: sar.c:156
 #, c-format
 msgid "\t-S\tSwap space utilization statistics\n"
 msgstr "\t-S\t交换空间利用率\n"
 
-#: sar.c:139
+#: sar.c:157
 #, c-format
 msgid ""
 "\t-u [ ALL ]\n"
@@ -276,60 +303,72 @@ msgstr ""
 "\t-u [ ALL ]\n"
 "\t\tCPU 利用率\n"
 
-#: sar.c:141
+#: sar.c:159
 #, c-format
 msgid "\t-v\tKernel table statistics\n"
 msgstr "\t-v\tKernel table 状况\n"
 
-#: sar.c:142
+#: sar.c:160
 #, c-format
 msgid "\t-w\tTask creation and system switching statistics\n"
 msgstr "\t-w\t任务创建与系统转换统计信息\n"
 
-#: sar.c:143
+#: sar.c:161
 #, c-format
 msgid "\t-W\tSwapping statistics\n"
 msgstr "\t-W\t交换信息\n"
 
-#: sar.c:144
+#: sar.c:162
 #, c-format
 msgid "\t-y\tTTY device statistics\n"
 msgstr "\t-y\tTTY 设备状况\n"
 
-#: sar.c:189
+#: sar.c:207
 #, c-format
 msgid "End of data collecting unexpected\n"
 msgstr "数据流结尾有未知错误\n"
 
-#: sar.c:749
+#: sar.c:767
 #, c-format
 msgid "Invalid data format\n"
 msgstr "无效的数据格式\n"
 
-#: sar.c:753
+#: sar.c:771
 #, c-format
 msgid "Using a wrong data collector from a different sysstat version\n"
 msgstr "正在使用来自不同版本 sysstat 的错误的数据收集器\n"
 
-#: sar.c:773
+#: sar.c:791
 #, c-format
 msgid "Inconsistent input data\n"
 msgstr "所取数据前后不一致\n"
 
-#: sar.c:1178
+#: sar.c:1196
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "-f 和 -o 选项不能同时使用\n"
 
-#: sar.c:1184
+#: sar.c:1202
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "无法查看系统活动记录文件 (用 -f 选项)\n"
 
-#: sar.c:1285
+#: sar.c:1303
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "无法找到数据收集器 (%s)\n"
+
+#~ msgid "-x and -p options are mutually exclusive\n"
+#~ msgstr "-x 和 -p 选项不能同时使用\n"
+
+#~ msgid ""
+#~ "\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
+#~ "\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
+#~ "\t\tNetwork statistics\n"
+#~ msgstr ""
+#~ "\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
+#~ "\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
+#~ "\t\t网络信息状况\n"
 
 #~ msgid "Time: %s\n"
 #~ msgstr "时间: %s\n"

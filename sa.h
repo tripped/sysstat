@@ -1,6 +1,6 @@
 /*
  * sar/sadc: Report system activity
- * (C) 1999-2008 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SA_H
@@ -17,7 +17,7 @@
  */
 
 /* Number of activities */
-#define NR_ACT	29
+#define NR_ACT	30
 
 /* Activities */
 #define A_CPU		1
@@ -49,6 +49,7 @@
 #define A_NET_ICMP6	27
 #define A_NET_EICMP6	28
 #define A_NET_UDP6	29
+#define A_PWR_CPUFREQ	30
 
 
 /* Macro used to flag an activity that should be collected */
@@ -140,6 +141,7 @@
 #define K_EICMP6	"EICMP6"
 #define K_UDP6		"UDP6"
 #define K_IPV6		"IPV6"
+#define K_POWER		"POWER"
 
 /* sadc program */
 #define SADC		"sadc"
@@ -248,6 +250,21 @@
 
 #define _buf0	buf[0]
 
+/* Structure used to define a bitmap needed by an activity */
+struct act_bitmap {
+	/*
+	 * Bitmap for activities that need one. Remember to allocate it
+	 * before use!
+	 */
+	unsigned char *b_array;
+	/*
+	 * Size of the bitmap in bits. In fact, bitmap is sized to bitmap_size + 1
+	 * to take into account CPU "all"
+	 */
+	int b_size;
+};
+
+/* Structure used to define an activity */
 struct activity {
 	/*
 	 * This variable contains the identification value (A_...) for this activity.
@@ -331,15 +348,10 @@ struct activity {
 	 */
 	void *buf[3];
 	/*
-	 * Bitmap for activities that need one. Such a bitmap is needed by activity if
-	 * @bitmap_size has a non zero value. Bitmap should be allocated before use!
+	 * Bitmap for activities that need one. Such a bitmap is needed by activity
+	 * if @bitmap is not NULL.
 	 */
-	unsigned char *bitmap;
-	/*
-	 * Size of the bitmap in bits. In fact, bitmap is sized to bitmap_size + 1
-	 * to take into account CPU "all"
-	 */
-	int bitmap_size;
+	struct act_bitmap *bitmap;
 };
 
 
@@ -555,42 +567,6 @@ struct record_header {
  ***************************************************************************
  */
 
-/*
- * Structure used to compute statistics average
- * for counters which are not cumulative.
- */
-struct stats_sum {
-	unsigned long long frmkb;
-	unsigned long long bufkb;
-	unsigned long long camkb;
-	unsigned long long frskb;
-	unsigned long long tlskb;
-	unsigned long long caskb;
-	unsigned long long comkb;
-	unsigned long long dentry_stat;
-	unsigned long long file_used;
-	unsigned long long inode_used;
-	unsigned long long pty_nr;
-	unsigned long long sock_inuse;
-	unsigned long long tcp_inuse;
-	unsigned long long tcp_tw;
-	unsigned long long udp_inuse;
-	unsigned long long raw_inuse;
-	unsigned long long frag_inuse;
-	unsigned long long tcp6_inuse;
-	unsigned long long udp6_inuse;
-	unsigned long long raw6_inuse;
-	unsigned long long frag6_inuse;
-	unsigned long long nr_running;
-	unsigned long long nr_threads;
-	unsigned long load_avg_1;
-	unsigned long load_avg_5;
-	unsigned long load_avg_15;
-	unsigned long count;
-};
-
-#define STATS_SUM_SIZE	(sizeof(struct stats_sum))
-
 /* Structure for timestamps */
 struct tstamp {
 	int tm_sec;
@@ -677,6 +653,8 @@ extern __read_funct_t
 	wrap_read_net_eicmp6(struct activity *);
 extern __read_funct_t
 	wrap_read_net_udp6(struct activity *);
+extern __read_funct_t
+	wrap_read_cpuinfo(struct activity *);
 
 /* Other functions */
 extern void

@@ -1,6 +1,6 @@
 /*
  * rd_stats.c: Read system statistics
- * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -1901,7 +1901,7 @@ void read_uptime(unsigned long long *uptime)
 		return;
 
 	sscanf(line, "%lu.%lu", &up_sec, &up_cent);
-	*uptime = up_sec * HZ + up_cent * HZ / 100;
+	*uptime = (unsigned long long) up_sec * HZ + (unsigned long long) up_cent * HZ / 100;
 
 	fclose(fp);
 
@@ -2322,3 +2322,56 @@ int get_irqcpu_nr(int max_nr_irqcpu, int cpu_nr)
 	return irq;
 }
 
+/*
+ ***************************************************************************
+ * Read CPU frequency statistics.
+ *
+ * IN:
+ * @st_pwr_cpufreq	Structure where stats will be saved.
+ * @nbr			Total number of CPU (including cpu "all").
+ *
+ * OUT:
+ * @st_pwr_cpufreq	Structure with statistics.
+ ***************************************************************************
+ */
+void read_cpuinfo(struct stats_pwr_cpufreq *st_pwr_cpufreq, int nbr)
+{
+	FILE *fp;
+	struct stats_pwr_cpufreq *st_pwr_cpufreq_i;
+	char line[1024];
+	int proc_nb = 0, nr = 0;
+	unsigned int ifreq, dfreq;
+	
+	if ((fp = fopen(CPUINFO, "r")) == NULL)
+		return;
+	
+	st_pwr_cpufreq->cpufreq = 0;
+	
+	while (fgets(line, 1024, fp) != NULL) {
+		
+		if (!strncmp(line, "processor\t", 10)) {
+			sscanf(strchr(line, ':') + 1, "%d", &proc_nb);
+		}
+		
+		else if (!strncmp(line, "cpu MHz\t", 8)) {
+			sscanf(strchr(line, ':') + 1, "%u.%u", &ifreq, &dfreq);
+			
+			if (proc_nb < (nbr - 1)) {
+				/* Save current CPU frequency */
+				st_pwr_cpufreq_i = st_pwr_cpufreq + proc_nb + 1;
+				st_pwr_cpufreq_i->cpufreq = ifreq * 100 + dfreq / 10;
+				
+				/* Also save it to compute an average CPU frequency */
+				st_pwr_cpufreq->cpufreq += st_pwr_cpufreq_i->cpufreq;
+				nr++;
+			}
+		}
+	}
+	
+	fclose(fp);
+	
+	if (nr) {
+		/* Compute average CPU frequency for this machine */
+		st_pwr_cpufreq->cpufreq /= nr;
+	}
+}

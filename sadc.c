@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -56,8 +56,6 @@ unsigned int flags = 0;
 int dis;
 char timestamp[2][TIMESTAMP_LEN];
 
-struct stats_sum asum;
-
 struct file_header file_hdr;
 struct record_header record_hdr;
 char comment[MAX_COMMENT_LEN];
@@ -79,7 +77,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C <comment> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"));
+			  "[ -C <comment> ] [ -S { INT | DISK | IPV6 | POWER | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"));
 	exit(1);
 }
 
@@ -124,6 +122,10 @@ void parse_sadc_S_option(char *argv[], int opt)
 			COLLECT_ACTIVITY(A_NET_EICMP6);
 			COLLECT_ACTIVITY(A_NET_UDP6);
 			COLLECT_ACTIVITY(A_NET_SOCK6);
+		}
+		else if (!strcmp(p, K_POWER)) {
+			/* Select activities related to power management */
+			COLLECT_ACTIVITY(A_PWR_CPUFREQ);
 		}
 		else if (!strcmp(p, K_ALL)) {
 			/* Select all activities */

@@ -352,7 +352,7 @@
 <!ELEMENT machine (#PCDATA)>
 <!ELEMENT number-of-cpus (#PCDATA)>
 <!ELEMENT sysstat (sysdata-version, host)>
-<!ELEMENT timestamp (cpu-load, cpu-load-all, process-and-context-switch, interrupts, swap-pages, paging, io, memory, kernel, queue, serial, disk, network)>
+<!ELEMENT timestamp (cpu-load, cpu-load-all, process-and-context-switch, interrupts, swap-pages, paging, io, memory, kernel, queue, serial, disk, network, power-management)>
 <!ATTLIST timestamp
 	date CDATA #REQUIRED
 	time CDATA #REQUIRED
@@ -381,4 +381,14 @@
 	prtyerr CDATA #REQUIRED
 	brk CDATA #REQUIRED
 	ovrun CDATA #REQUIRED
+>
+<!ELEMENT power-management (cpu-frequency)>
+<!ELEMENT cpu-frequency (cpufreq+)>
+<!ATTLIST cpu-frequency
+	unit CDATA #REQUIRED
+>
+<!ELEMENT cpufreq EMPTY>
+<!ATTLIST cpufreq
+	number CDATA #REQUIRED
+	frequency CDATA #REQUIRED
 >

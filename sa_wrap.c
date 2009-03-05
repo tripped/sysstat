@@ -1,6 +1,6 @@
 /*
  * sysstat - sa_wrap.c: Functions used in activity.c
- * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -42,8 +42,8 @@ __nr_t wrap_get_irq_nr(struct activity *a)
 {
 	__nr_t n;
 
-	if ((n = get_irq_nr()) > (a->bitmap_size + 1)) {
-		n = a->bitmap_size + 1;
+	if ((n = get_irq_nr()) > (a->bitmap->b_size + 1)) {
+		n = a->bitmap->b_size + 1;
 	}
 	
 	return n;
@@ -110,7 +110,7 @@ __nr_t wrap_get_iface_nr(struct activity *a)
  */
 __nr_t wrap_get_cpu_nr(struct activity *a)
 {
-	return (get_cpu_nr(a->bitmap_size) + 1);
+	return (get_cpu_nr(a->bitmap->b_size) + 1);
 }
 
 /*
@@ -801,6 +801,28 @@ __read_funct_t wrap_read_net_udp6(struct activity *a)
 
 	/* Read UDPv6 stats */
 	read_net_udp6(st_net_udp6);
+	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Read CPU frequency statistics.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * OUT:
+ * @a	Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_cpuinfo(struct activity *a)
+{
+	struct stats_pwr_cpufreq *st_pwr_cpufreq
+		= (struct stats_pwr_cpufreq *) a->_buf0;
+
+	/* Read CPU frequency stats */
+	read_cpuinfo(st_pwr_cpufreq, *a->nr);
 	
 	return;
 }

@@ -1,14 +1,14 @@
 # Vietnamese translation for Sys Stat.
-# Copyright © 2008 Free Software Foundation, Inc.
+# Copyright © 2009 Free Software Foundation, Inc.
 # This file is distributed under the same license as the sysstat package.
-# Clytie Siddall <clytie@riverland.net.au>, 2007-2008.
+# Clytie Siddall <clytie@riverland.net.au>, 2007-2009.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 8.1.7\n"
+"Project-Id-Version: sysstat 8.1.8\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2008-11-12 13:38+0100\n"
-"PO-Revision-Date: 2008-12-25 16:59+1030\n"
+"POT-Creation-Date: 2009-01-08 14:13+0100\n"
+"PO-Revision-Date: 2009-01-25 23:56+1030\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <vi-VN@googlegroups.com>\n"
 "MIME-Version: 1.0\n"
@@ -22,53 +22,48 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr "sysstat phiên bản %s\n"
 
-#: ioconf.c:479 iostat.c:509 rd_stats.c:69 rd_stats.c:1791 rd_stats.c:1898
-#: sa_common.c:1033 sadc.c:498 sadc.c:507 sadc.c:567
+#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2232
+#: sa_common.c:1033 sadc.c:576 sadc.c:585 sadc.c:645
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr "Không thể mở %s: %s\n"
 
-#: iostat.c:80 mpstat.c:83 pidstat.c:77 sar.c:88
+#: iostat.c:81 mpstat.c:83 pidstat.c:77 sar.c:88
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ]\n"
 msgstr "Sử dụng: %s [ tùy_chọn... ] [ <khoảng> [ <đếm> ] ]\n"
 
-#: iostat.c:83
+#: iostat.c:84
 #, c-format
 msgid ""
 "Options are:\n"
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"
+"[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"
 msgstr ""
 "Tùy chọn:\n"
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <thiết_bị> [ ... ] | ALL ] [ -p [ <thiết_bị> | ALL ] ]\n"
+"[ <thiết_bị> [ ... ] | ALL ] [ -p [ <thiết_bị> [,...] | ALL ] ]\n"
 "\n"
 "ALL\ttất cả\n"
-
-#: iostat.c:1692
-#, c-format
-msgid "-x and -p options are mutually exclusive\n"
-msgstr "Hai tùy chọn « -x » và « -p » loại từ lẫn nhau\n"
 
 #: mpstat.c:86
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> | ALL } ] [ -V ]\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 msgstr ""
 "Tùy chọn:\n"
-"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> | ALL } ] [ -V ]\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 "\n"
 "SUM\ttổng\n"
 "CPU, cpu\tđơn vị xử lý trung tâm\n"
 "ALL\ttất cả\n"
 
-#: mpstat.c:433 pidstat.c:1681 sar.c:333
+#: mpstat.c:433 pidstat.c:1683 sar.c:351
 msgid "Average:"
 msgstr "Trung bình:"
 
-#: mpstat.c:742
+#: mpstat.c:745
 #, c-format
 msgid "Not that many processors!\n"
 msgstr "Quá nhiều bộ xử lý !\n"
@@ -78,23 +73,23 @@ msgstr "Quá nhiều bộ xử lý !\n"
 msgid ""
 "Options are:\n"
 "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
-"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+"[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
 "Tùy chọn:\n"
-"[ -C <lệnh> ] [ -d ] [-h] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
-"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+"[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
+"[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 "\n"
 "SELF\t\tmình\n"
 "ALL\t\ttất cả\n"
 "TASK\tcông việc\n"
 "CHILD\tcon\n"
 
-#: pidstat.c:197 sar.c:943
+#: pidstat.c:197 sar.c:961
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "Hoạt động yêu cầu vẫn không sẵn sàng\n"
 
-#: rd_stats.c:1944
+#: rd_stats.c:2278
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr "Quá nhiều bộ xử lý để xử lý !\n"
@@ -138,26 +133,26 @@ msgstr "Sử dụng: %s [ tùy_chọn... ] [ <khoảng> [ <đếm> ] ] [ <tập_
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -C <comment> ] [ -S { INT | DISK | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
+"[ -C <comment> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
 msgstr ""
 "Tùy chọn:\n"
-"[ -C <ghi_chú> ] [ -S { INT | DISK | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
+"[ -C <ghi_chú> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
 "\n"
 "INT\t\tsố nguyên ?\n"
 "DISK\t\tđĩa\n"
 "ALL\t\ttất cả\n"
 
-#: sadc.c:107
+#: sadc.c:185
 #, c-format
 msgid "Cannot write data to system activity file: %s\n"
 msgstr "Không thể ghi dữ liệu vào tập tin hoạt động hệ thống: %s\n"
 
-#: sadc.c:385
+#: sadc.c:463
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
 msgstr "Không thể ghi phần đầu tập tin hoạt động hệ thống: %s\n"
 
-#: sadc.c:661
+#: sadc.c:739
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
 msgstr "Không thể phụ thêm dữ liệu vào tập tin đó (%s)\n"
@@ -172,12 +167,12 @@ msgstr "Sử dụng: %s [ tùy_chọn... ] [ <khoảng> [ <đếm> ] ] [ <tập_
 msgid ""
 "Options are:\n"
 "[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ -- <sar_options...> ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_options> ]\n"
 msgstr ""
 "Tùy chọn:\n"
 "[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <gi:ph:gy> ] ] [ -e [ <gi:ph:gy> ] ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <gi:ph:gy> ] ] [ -e [ <gi:ph:gy> ] ]\n"
 "[ -- <tùy_chọn_sar...> ]\n"
 "\n"
 "ALL\ttất cả\n"
@@ -209,19 +204,19 @@ msgid ""
 "Options are:\n"
 "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <int> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-"[ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]\n"
+"[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+"[ -n { <keyword> [,...] | ALL } ]\n"
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr ""
 "Tùy chọn:\n"
-"[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [-h]  [ -p ] [ -q ] [ -r ] [ -R ]\n"
+"[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <int> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-"[ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]\n"
+"[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+"[ -n { <từ_khoá> [,...] | ALL } ]\n"
 "[ -o [ <tên_tập_tin> ] | -f [ <tên_tập_tin> ] ]\n"
 "[ -i <khoảng> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"\n"
+"n\n"
 "ALL\ttất cả\n"
 "int\tsố nguyên (viết tắt)\n"
 "SUM\ttổng\n"
@@ -233,12 +228,8 @@ msgstr ""
 
 #: sar.c:126
 #, c-format
-msgid ""
-"\n"
-"Main options and reports:\n"
-msgstr ""
-"\n"
-"Tùy chọn và thông báo chính:\n"
+msgid "Main options and reports:\n"
+msgstr "Tùy chọn và thông báo chính:\n"
 
 #: sar.c:127
 #, c-format
@@ -272,35 +263,75 @@ msgstr ""
 #: sar.c:132
 #, c-format
 msgid ""
-"\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
-"\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
+"\t-n { <keyword> [,...] | ALL }\n"
 "\t\tNetwork statistics\n"
+"\t\tKeywords are:\n"
+"\t\tDEV\tNetwork interfaces\n"
+"\t\tEDEV\tNetwork interfaces (errors)\n"
+"\t\tNFS\tNFS client\n"
+"\t\tNFSD\tNFS server\n"
+"\t\tSOCK\tSockets\t(v4)\n"
+"\t\tIP\tIP traffic\t(v4)\n"
+"\t\tEIP\tIP traffic\t(v4) (errors)\n"
+"\t\tICMP\tICMP traffic\t(v4)\n"
+"\t\tEICMP\tICMP traffic\t(v4) (errors)\n"
+"\t\tTCP\tTCP traffic\t(v4)\n"
+"\t\tETCP\tTCP traffic\t(v4) (errors)\n"
+"\t\tUDP\tUDP traffic\t(v4)\n"
+"\t\tSOCK6\tSockets\t(v6)\n"
+"\t\tIP6\tIP traffic\t(v6)\n"
+"\t\tEIP6\tIP traffic\t(v6) (errors)\n"
+"\t\tICMP6\tICMP traffic\t(v6)\n"
+"\t\tEICMP6\tICMP traffic\t(v6) (errors)\n"
+"\t\tUDP6\tUDP traffic\t(v6)\n"
 msgstr ""
-"\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
-"\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
-"\t\tthống kê chạy mạng\n"
+"\t-n { <từ_khoá> [,...] | ALL }\n"
+"\n"
+"[ALL\ttất cả]\n"
+"\n"
+"\t\tThống kê chạy mạng\n"
+"\n"
+"\t\tTừ khoá:\n"
+"\t\tDEV\tCác giao diện mạng\n"
+"\t\tEDEV\tCác giao diện mạng (lỗi)\n"
+"\t\tNFS\tỨng dụng khách NFS\n"
+"\t\tNFSD\tTrình phục vụ NFS\n"
+"\t\tSOCK\tCác ổ cắm\t(v4)\n"
+"\t\tIP\tTrọng tải IP\t(v4)\n"
+"\t\tEIP\tTrọng tải IP\t(v4) (lỗi)\n"
+"\t\tICMP\tTrọng tải ICMP\t(v4)\n"
+"\t\tEICMP\tTrọng tải ICMP\t(v4) (lỗi)\n"
+"\t\tTCP\tTrọng tải TCP\t(v4)\n"
+"\t\tETCP\tTrọng tải TCP\t(v4) (lỗi)\n"
+"\t\tUDP\tTrọng tải UDP\t(v4)\n"
+"\t\tSOCK6\tCác ổ cắm\t(v6)\n"
+"\t\tIP6\tTrọng tải IP\t(v6)\n"
+"\t\tEIP6\tTrọng tải IP\t(v6) (lỗi)\n"
+"\t\tICMP6\tTrọng tải ICMP\t(v6)\n"
+"\t\tEICMP6\tTrọng tải ICMP\t(v6) (lỗi)\n"
+"\t\tUDP6\tTrọng tải UDP\t(v6)\n"
 
-#: sar.c:135
+#: sar.c:153
 #, c-format
 msgid "\t-q\tQueue length and load average statistics\n"
 msgstr "\t-q\tthống kê về chiều dài hàng đợi và tải trọng trung bình\n"
 
-#: sar.c:136
+#: sar.c:154
 #, c-format
 msgid "\t-r\tMemory utilization statistics\n"
 msgstr "\t-r\tthống kê sử dụng bộ nhớ\n"
 
-#: sar.c:137
+#: sar.c:155
 #, c-format
 msgid "\t-R\tMemory statistics\n"
 msgstr "\t-R\tthống kê bộ nhớ\n"
 
-#: sar.c:138
+#: sar.c:156
 #, c-format
 msgid "\t-S\tSwap space utilization statistics\n"
 msgstr "\t-S\tthống kê vùng trao đổi\n"
 
-#: sar.c:139
+#: sar.c:157
 #, c-format
 msgid ""
 "\t-u [ ALL ]\n"
@@ -311,57 +342,57 @@ msgstr ""
 "\n"
 "ALL\ttất cả\n"
 
-#: sar.c:141
+#: sar.c:159
 #, c-format
 msgid "\t-v\tKernel table statistics\n"
 msgstr "\t-v\tthống kê bảng hạt nhân\n"
 
-#: sar.c:142
+#: sar.c:160
 #, c-format
 msgid "\t-w\tTask creation and system switching statistics\n"
 msgstr "\t-w\tthống kê về tạo công việc và chuyển đổi hệ thống\n"
 
-#: sar.c:143
+#: sar.c:161
 #, c-format
 msgid "\t-W\tSwapping statistics\n"
 msgstr "\t-W\tthống kê trao đổi\n"
 
-#: sar.c:144
+#: sar.c:162
 #, c-format
 msgid "\t-y\tTTY device statistics\n"
 msgstr "\t-y\tthống kê thiết bị TTY\n"
 
-#: sar.c:189
+#: sar.c:207
 #, c-format
 msgid "End of data collecting unexpected\n"
 msgstr "Kết thúc bất thường khi thu thập dữ liệu\n"
 
-#: sar.c:749
+#: sar.c:767
 #, c-format
 msgid "Invalid data format\n"
 msgstr "Định dạng dữ liệu không hợp lệ\n"
 
-#: sar.c:753
+#: sar.c:771
 #, c-format
 msgid "Using a wrong data collector from a different sysstat version\n"
 msgstr "Dùng một bộ thu thập không đúng từ một phiên bản sysstat khác\n"
 
-#: sar.c:773
+#: sar.c:791
 #, c-format
 msgid "Inconsistent input data\n"
 msgstr "Dữ liệu nhập vào không phải thống nhất\n"
 
-#: sar.c:1178
+#: sar.c:1196
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "Hai tùy chọn « -f » và « -o » loại từ lẫn nhau\n"
 
-#: sar.c:1184
+#: sar.c:1202
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "Không phải đọc từ tập tin hoạt động hệ thống (dùng tùy chọn « -f »)\n"
 
-#: sar.c:1285
+#: sar.c:1303
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "Không tìm thấy bộ thu thập dữ liệu (%s)\n"

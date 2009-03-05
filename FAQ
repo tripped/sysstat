@@ -329,6 +329,9 @@ Several such tools are lying around on the internet. I haven't tested all of
 them and there must still be some way for improvement...
 You can find among others: isag (a Perl script included in the sysstat
 package), kSar, sarvant, sar2gp, loadgraph, SysStat Charts, sarplot...
+rrd.cgi (http://haroon.sis.utoronto.ca/rrd/scripts/) is a perl front-end for
+rrdtool and can be used to make some graphs (see a demo at
+http://haroon.sis.utoronto.ca/perl/rrd.cgi/sar_stats/).
 I've also heard of commercial tools which use sysstat: PerfMan comes to mind,
 among others.
 If you find others which you think are of real interest, please let me know
@@ -386,10 +389,12 @@ Requested activities not available in file ...
 This error message means that you are trying to extract non-existent activities
 from the data file. Usually sadc reads all the available activities from the
 system and stores them in the data file. However, to prevent data files from
-taking too much space on disk, some activities (like interrupts, disks and SNMP
-statistics) must be explicitly set on the command line to be read by sadc.
+taking too much space on disk, some activities must be explicitly set on the
+command line to be read by sadc.
 To tell sadc that an optional activity should be collected, use switch -S
 followed by the keyword corresponding to that activity (see sadc(8) manual page).
+As of this writing, optional activities are: interrupts, disks, SNMP, IPv6 and
+power management statistics.
 IMPORTANT NOTE: The list of activities that are saved in a file can no longer
 be modified once the file has been created. So it is important to use the proper
 options the first time sadc is called (whether via a crontab, a script like

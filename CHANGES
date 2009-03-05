@@ -1,5 +1,26 @@
 Changes:
 
+2009/03/01: Version 9.0.0 - Sebastien Godard (sysstat <at> orange.fr)
+	* Option -m added to sar. This option is intended to display
+	  power management statistics. At the present time, only
+	  CPU frequency statistics are available.
+	* sadc updated: Option "-S POWER" tells sadc to collect power
+	  management statistics.
+	* sadf command updated to take into account power management
+	  statistics.
+	* [Mike Harvey]: No longer truncate the interval of time to
+	  32 bits, as this may cause some problems when displaying
+	  average values statistics on machines with hundreds of CPU.
+	* read_uptime(): Cast values read from /proc/uptime to
+	  unsigned long long.
+	* Fixed a small bug in sar where it didn't parse arguments
+	  properly when some options were entered in a specific order.
+	* sadc and sar manual pages updated.
+	* XSD and DTD documents updated.
+	* FAQ updated.
+	* NLS updated.
+	* Code cleaned. Makefile cleaned.
+
 2009/01/11: Version 8.1.8 - Sebastien Godard (sysstat <at> orange.fr)
 	* IPv6 support added. A bunch of new metrics have been added to
 	  sar, enabling the user to display statistics for IPv6 protocol

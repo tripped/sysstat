@@ -1,6 +1,6 @@
 /*
  * prf_stats.c: Funtions used by sadf to display statistics
- * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -167,13 +167,13 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
 		
 		scc = (struct stats_cpu *) ((char *) a->buf[curr]  + i * a->msize);
 		scp = (struct stats_cpu *) ((char *) a->buf[!curr] + i * a->msize);
 
 		/* Should current CPU (including CPU "all") be displayed? */
-		if (a->bitmap[i >> 3] & (1 << (i & 0x07))) {
+		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
 			
 			if (!i) {
 				/* This is CPU "all" */
@@ -414,13 +414,13 @@ __print_funct_t render_irq_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 	
-	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
 
 		sic = (struct stats_irq *) ((char *) a->buf[curr]  + i * a->msize);
 		sip = (struct stats_irq *) ((char *) a->buf[!curr] + i * a->msize);
 		
 		/* Should current interrupt (including int "sum") be displayed? */
-		if (a->bitmap[i >> 3] & (1 << (i & 0x07))) {
+		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
 			
 			/* Yes: Display it */
 			if (!i) {
@@ -2117,6 +2117,52 @@ __print_funct_t render_net_udp6_stats(struct activity *a, int isdb, char *pre,
 
 /*
  ***************************************************************************
+ * Display CPU frequency statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_pwr_cpufreq_stats(struct activity *a, int isdb, char *pre,
+					 int curr, unsigned long long itv)
+{
+	int i;
+	struct stats_pwr_cpufreq *spc;
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+
+	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+		
+		spc = (struct stats_pwr_cpufreq *) ((char *) a->buf[curr] + i * a->msize);
+
+		/* Should current CPU (including CPU "all") be displayed? */
+		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
+			
+			if (!i) {
+				/* This is CPU "all" */
+				render(isdb, pre, pt_newlin,
+				       "all\tMHz",
+				       "-1", NULL,
+				       NOVAL,
+				       ((double) spc->cpufreq) / 100);
+			}
+			else {
+				render(isdb, pre, pt_newlin,
+				       "cpu%d\tMHz",
+				       "%d", cons(iv, i - 1, NOVAL),
+				       NOVAL,
+				       ((double) spc->cpufreq) / 100);
+			}
+		}
+	}
+}
+
+/*
+ ***************************************************************************
  * Print tabulations
  *
  * IN:
@@ -2183,6 +2229,33 @@ void xml_markup_network(int tab, int action)
 
 /*
  ***************************************************************************
+ * Open or close <power-management> markup.
+ *
+ * IN:
+ * @tab		Number of tabulations.
+ * @action	Open or close action.
+ ***************************************************************************
+ */
+void xml_markup_power_management(int tab, int action)
+{
+	static int markup_state = CLOSE_XML_MARKUP;
+
+	if (action == markup_state)
+		return;
+	markup_state = action;
+
+	if (action == OPEN_XML_MARKUP) {
+		/* Open markup */
+		xprintf(tab, "<power-management>");
+	}
+	else {
+		/* Close markup */
+		xprintf(tab, "</power-management>");
+	}
+}
+
+/*
+ ***************************************************************************
  * Display CPU statistics in XML.
  *
  * IN:
@@ -2207,13 +2280,13 @@ __print_funct_t xml_print_cpu_stats(struct activity *a, int curr, int tab,
 		xprintf(tab++, "<cpu-load-all>");
 	}
 
-	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
 		
 		scc = (struct stats_cpu *) ((char *) a->buf[curr]  + i * a->msize);
 		scp = (struct stats_cpu *) ((char *) a->buf[!curr] + i * a->msize);
 
 		/* Should current CPU (including CPU "all") be displayed? */
-		if (a->bitmap[i >> 3] & (1 << (i & 0x07))) {
+		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
 			
 			/* Yes: Display it */
 			if (!i) {
@@ -2358,13 +2431,13 @@ __print_funct_t xml_print_irq_stats(struct activity *a, int curr, int tab,
 	xprintf(tab++, "<interrupts>");
 	xprintf(tab++, "<int-global per=\"second\">");
 
-	for (i = 0; (i < *a->nr) && (i < a->bitmap_size + 1); i++) {
+	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
 
 		sic = (struct stats_irq *) ((char *) a->buf[curr]  + i * a->msize);
 		sip = (struct stats_irq *) ((char *) a->buf[!curr] + i * a->msize);
 		
 		/* Should current interrupt (including int "sum") be displayed? */
-		if (a->bitmap[i >> 3] & (1 << (i & 0x07))) {
+		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
 			
 			/* Yes: Display it */
 			if (!i) {
@@ -3672,5 +3745,63 @@ __print_funct_t xml_print_net_udp6_stats(struct activity *a, int curr, int tab,
 close_xml_markup:
 	if (CLOSE_MARKUP(a->options)) {
 		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display CPU frequency statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_pwr_cpufreq_stats(struct activity *a, int curr, int tab,
+					    unsigned long long itv)
+{
+	int i;
+	struct stats_pwr_cpufreq *spc;
+	char cpuno[8];
+
+	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_power_management(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab++, "<cpu-frequency unit=\"MHz\">");
+	
+	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+		
+		spc = (struct stats_pwr_cpufreq *) ((char *) a->buf[curr]  + i * a->msize);
+	
+		/* Should current CPU (including CPU "all") be displayed? */
+		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
+
+			/* Yes: Display it */
+			if (!i) {
+				/* This is CPU "all" */
+				strcpy(cpuno, "all");
+			}
+			else {
+				sprintf(cpuno, "%d", i - 1);
+			}
+			
+			xprintf(tab, "<cpu number=\"%s\" "
+				"frequency=\"%.2f\"/>",
+				cpuno,
+				((double) spc->cpufreq) / 100);
+		}
+	}
+	
+	xprintf(--tab, "</cpu-frequency>");
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_power_management(tab, CLOSE_XML_MARKUP);
 	}
 }

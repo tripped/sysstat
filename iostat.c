@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1998-2008 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1998-2009 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -1279,7 +1279,7 @@ void write_nfs_stat(int curr, unsigned long long itv, int fctr,
 		    struct io_nfs_stats *ionj)
 {
 	if (DISPLAY_HUMAN_READ(flags)) {
-		printf("%-22s\n%23s", shi-> name, "");
+		printf("%-22s\n%23s", shi->name, "");
 	}
 	else {
 		printf("%-22s ", shi->name);

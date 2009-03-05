@@ -1,6 +1,6 @@
 /*
  * activity.c: Define system activities available for sar/sadc.
- * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -20,10 +20,18 @@
  */
 
 #include "sa.h"
-#include "rd_stats.h"
-#include "pr_stats.h"
-#include "prf_stats.h"
 
+#ifdef SOURCE_SADC
+#include "rd_stats.h"
+#endif
+
+#ifdef SOURCE_SAR
+#include "pr_stats.h"
+#endif
+
+#ifdef SOURCE_SADF
+#include "prf_stats.h"
+#endif
 
 /*
  ***************************************************************************
@@ -41,7 +49,7 @@
  * been found.
  */
 __nr_t item_nr[] = {
-	-1,	/*  [0] Filled by wrap_get_cpu_nr() for A_CPU				*/
+	-1,	/*  [0] Filled by wrap_get_cpu_nr() for A_CPU and A_PWR_CPUFREQ		*/
 	 1,	/*  [1] Constant for A_PCSW						*/
 	-1,	/*  [2] Filled by wrap_get_irq_nr() for A_IRQ				*/
 	-1,	/*  [3] Filled by wrap_get_serial_nr() for A_SERIAL			*/
@@ -59,6 +67,25 @@ __nr_t item_nr[] = {
 	 1,	/* [15] Constant for A_NET_SOCK6					*/
 	 1	/* [16] Constant for SNMP (IPv6) statistics (A_NET_IP6, etc.)		*/
 };
+
+
+/*
+ * Bitmaps needed by activities.
+ * Remember to allocate them before use!
+ */
+
+/* CPU bitmap */
+struct act_bitmap cpu_bitmap = {
+	.b_array	= NULL,
+	.b_size		= NR_CPUS
+};
+
+/* Interrupts bitmap */
+struct act_bitmap irq_bitmap = {
+	.b_array	= NULL,
+	.b_size		= NR_IRQS
+};
+
 
 /*
  * CPU statistics.
@@ -88,8 +115,7 @@ struct activity cpu_act = {
 	.msize		= STATS_CPU_SIZE,
 	.opt_flags	= AO_F_CPU_DEF,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= NR_CPUS
+	.bitmap		= &cpu_bitmap
 };
 
 /* Process (task) creation and context switch activity */
@@ -115,8 +141,7 @@ struct activity pcsw_act = {
 	.msize		= STATS_PCSW_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Interrupts statistics */
@@ -142,8 +167,7 @@ struct activity irq_act = {
 	.msize		= STATS_IRQ_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= NR_IRQS
+	.bitmap		= &irq_bitmap
 };
 
 /* Swapping activity */
@@ -169,8 +193,7 @@ struct activity swap_act = {
 	.msize		= STATS_SWAP_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Paging activity */
@@ -197,8 +220,7 @@ struct activity paging_act = {
 	.msize		= STATS_PAGING_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* I/O and transfer rate activity */
@@ -224,8 +246,7 @@ struct activity io_act = {
 	.msize		= STATS_IO_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Memory and swap space utilization activity */
@@ -253,8 +274,7 @@ struct activity memory_act = {
 	.msize		= STATS_MEMORY_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Kernel tables activity */
@@ -280,8 +300,7 @@ struct activity ktables_act = {
 	.msize		= STATS_KTABLES_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Queue and load activity */
@@ -307,8 +326,7 @@ struct activity queue_act = {
 	.msize		= STATS_QUEUE_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Serial lines activity */
@@ -334,8 +352,7 @@ struct activity serial_act = {
 	.msize		= STATS_SERIAL_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Block devices activity */
@@ -361,8 +378,7 @@ struct activity disk_act = {
 	.msize		= STATS_DISK_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Network interfaces activity */
@@ -388,8 +404,7 @@ struct activity net_dev_act = {
 	.msize		= STATS_NET_DEV_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Network interfaces activity */
@@ -416,8 +431,7 @@ struct activity net_edev_act = {
 	.msize		= STATS_NET_EDEV_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* NFS client activity */
@@ -443,8 +457,7 @@ struct activity net_nfs_act = {
 	.msize		= STATS_NET_NFS_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* NFS server activity */
@@ -471,8 +484,7 @@ struct activity net_nfsd_act = {
 	.msize		= STATS_NET_NFSD_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* Network sockets activity */
@@ -498,8 +510,7 @@ struct activity net_sock_act = {
 	.msize		= STATS_NET_SOCK_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* IP network traffic activity */
@@ -525,8 +536,7 @@ struct activity net_ip_act = {
 	.msize		= STATS_NET_IP_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* IP network traffic (errors) activity */
@@ -552,8 +562,7 @@ struct activity net_eip_act = {
 	.msize		= STATS_NET_EIP_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* ICMP network traffic activity */
@@ -580,8 +589,7 @@ struct activity net_icmp_act = {
 	.msize		= STATS_NET_ICMP_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* ICMP network traffic (errors) activity */
@@ -608,8 +616,7 @@ struct activity net_eicmp_act = {
 	.msize		= STATS_NET_EICMP_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* TCP network traffic activity */
@@ -635,8 +642,7 @@ struct activity net_tcp_act = {
 	.msize		= STATS_NET_TCP_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* TCP network traffic (errors) activity */
@@ -662,8 +668,7 @@ struct activity net_etcp_act = {
 	.msize		= STATS_NET_ETCP_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* UDP network traffic activity */
@@ -689,8 +694,7 @@ struct activity net_udp_act = {
 	.msize		= STATS_NET_UDP_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* IPv6 sockets activity */
@@ -716,8 +720,7 @@ struct activity net_sock6_act = {
 	.msize		= STATS_NET_SOCK6_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* IPv6 network traffic activity */
@@ -744,8 +747,7 @@ struct activity net_ip6_act = {
 	.msize		= STATS_NET_IP6_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* IPv6 network traffic (errors) activity */
@@ -772,8 +774,7 @@ struct activity net_eip6_act = {
 	.msize		= STATS_NET_EIP6_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* ICMPv6 network traffic activity */
@@ -801,8 +802,7 @@ struct activity net_icmp6_act = {
 	.msize		= STATS_NET_ICMP6_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* ICMPv6 network traffic (errors) activity */
@@ -829,8 +829,7 @@ struct activity net_eicmp6_act = {
 	.msize		= STATS_NET_EICMP6_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
 };
 
 /* UDPv6 network traffic activity */
@@ -856,8 +855,33 @@ struct activity net_udp6_act = {
 	.msize		= STATS_NET_UDP6_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
-	.bitmap		= NULL,
-	.bitmap_size	= 0
+	.bitmap		= NULL
+};
+
+/* CPU frequency */
+struct activity pwr_cpufreq_act = {
+	.id		= A_PWR_CPUFREQ,
+	.options	= AO_CLOSE_MARKUP,
+#ifdef SOURCE_SADC
+	.f_count	= wrap_get_cpu_nr,
+	.f_read		= wrap_read_cpuinfo,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_pwr_cpufreq_stats,
+	.f_print_avg	= print_avg_pwr_cpufreq_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_pwr_cpufreq_stats,
+	.f_xml_print	= xml_print_pwr_cpufreq_stats,
+	.hdr_line	= "CPU;MHz",
+	.name		= "A_PWR_CPUFREQ",
+#endif
+	.nr		= &item_nr[0],
+	.fsize		= STATS_PWR_CPUFREQ_SIZE,
+	.msize		= STATS_PWR_CPUFREQ_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= &cpu_bitmap
 };
 
 
@@ -893,6 +917,7 @@ struct activity *act[NR_ACT] = {
 	&net_eip6_act,
 	&net_icmp6_act,
 	&net_eicmp6_act,
-	&net_udp6_act
+	&net_udp6_act,
+	&pwr_cpufreq_act
 };
 

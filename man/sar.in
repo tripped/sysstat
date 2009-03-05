@@ -1,10 +1,11 @@
-.TH SAR 1 "DECEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "FEBRUARY 2009" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
 .B sar [ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -i
 .I interval
-.B ] [ -p ] [ -q ] [ -r ] [ -R ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
+.B ] [ -m ] [ -p ] [ -q ] [ -r ] [ -R ] [ -S ] [ -t ] [ -u [ ALL ] ]
+[ -v ] [ -V ] [ -w ] [ -W ] [ -y ]
 .B [ -n {
 .I keyword
 .B [,...] | ALL } ]
@@ -346,6 +347,15 @@ the first 16 interrupts are to be reported, whereas the
 .B XALL
 keyword indicates that statistics from all interrupts, including potential
 APIC interrupt sources, are to be reported.
+.IP -m
+Report power management statistics. The following value is displayed:
+
+.B MHz
+.RS
+.RS
+CPU clock frequency in MHz.
+.RE
+.RE
 .IP "-n { keyword [,...] | ALL }"
 Report network statistics.
 

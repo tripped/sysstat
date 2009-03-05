@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2008 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -472,12 +472,6 @@ double ll_s_value(unsigned long long value1, unsigned long long value2,
 /*
  ***************************************************************************
  * Compute time interval.
- * The interval should always be smaller than 0xffffffff (ULONG_MAX on
- * 32-bit architectures), except perhaps if it is the interval since
- * system startup (we want stats since boot time).
- * Interval is and'ed with mask 0xffffffff to handle overflow conditions
- * that may happen since uptime values are unsigned long long but are
- * calculated as a sum of values that _may_ be unsigned long only...
  *
  * IN:
  * @prev_uptime	Previous uptime value in jiffies.
@@ -492,12 +486,9 @@ unsigned long long get_interval(unsigned long long prev_uptime,
 {
 	unsigned long long itv;
 
-	if (!prev_uptime) {
-		itv = curr_uptime;
-	}
-	else {
-		itv = (curr_uptime - prev_uptime) & 0xffffffff;
-	}
+	/* prev_time=0 when displaying stats since system startup */
+	itv = curr_uptime - prev_uptime;
+	
 	if (!itv) {	/* Paranoia checking */
 		itv = 1;
 	}

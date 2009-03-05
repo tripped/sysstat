@@ -1,6 +1,6 @@
 /*
  * rd_stats.h: Include file used to read system statistics
- * (C) 1999-2008 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2009 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _RD_STATS_H
@@ -54,6 +54,7 @@
 #define VMSTAT		"/proc/vmstat"
 #define NET_SNMP	"/proc/net/snmp"
 #define NET_SNMP6	"/proc/net/snmp6"
+#define CPUINFO		"/proc/cpuinfo"
 
 
 /*
@@ -468,6 +469,16 @@ struct stats_net_sock6 {
 
 #define STATS_NET_SOCK6_SIZE	(sizeof(struct stats_net_sock6))
 
+/*
+ * Structure for CPU frequency statistics.
+ * In activity buffer: First structure is for global CPU utilisation ("all").
+ * Following structures are for each individual CPU (0, 1, etc.)
+ */
+struct stats_pwr_cpufreq {
+	unsigned long cpufreq	__attribute__ ((aligned (8)));
+};
+
+#define STATS_PWR_CPUFREQ_SIZE	(sizeof(struct stats_pwr_cpufreq))
 
 /*
  ***************************************************************************
@@ -548,6 +559,8 @@ extern void
 	read_net_eicmp6(struct stats_net_eicmp6 *);
 extern void
 	read_net_udp6(struct stats_net_udp6 *);
+extern void
+	read_cpuinfo(struct stats_pwr_cpufreq *, int);
 
 /*
  ***************************************************************************

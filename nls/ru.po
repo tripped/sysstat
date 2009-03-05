@@ -1,196 +1,364 @@
+# translation of sysstat-8.1.8.ru.po to Russian
 # NLS support for the sysstat package.
-# Copyright (C) 1999 Free Software Foundation, Inc.
-# SИbastien GODARD <sysstat [at] orange.fr>, 1999.
+# Copyright (C) 1999, 2009 Free Software Foundation, Inc.
+# This file is distributed under the same license as the sysstat package.
 #
+# Sп≤bastien GODARD <sysstat [at] orange.fr>, 1999.
+# Dennis Selsky <selsky@densky.pp.ru>, 2002.
+# Yuri Kozlov <yuray@komyakino.ru>, 2009.
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 3.0\n"
+"Project-Id-Version: sysstat 8.1.8\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2007-12-19 14:02+0100\n"
-"PO-Revision-Date: 2002-01-31 14:21GMT+6\n"
-"Last-Translator: Dennis Selsky <selsky@densky.pp.ru>\n"
-"Language-Team: Russian <ru@li.org>\n"
+"POT-Creation-Date: 2009-01-08 14:13+0100\n"
+"PO-Revision-Date: 2009-02-01 14:55+0300\n"
+"Last-Translator: Yuri Kozlov <yuray@komyakino.ru>\n"
+"Language-Team: Russian <gnu@mx.ru>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=koi8-r\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: KBabel 0.9.5\n"
+"X-Generator: KBabel 1.11.4\n"
+"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 #: common.c:57
 #, c-format
 msgid "sysstat version %s\n"
-msgstr "sysstat версия %s\n"
+msgstr "sysstat, п╡п╣я─я│п╦я▐ %s\n"
 
-#: common.c:160 common.c:385 ioconf.c:459 mpstat.c:265 sa_common.c:601
-#: sadc.c:476 sadc.c:485 sadc.c:530 sadc.c:620
+#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2232
+#: sa_common.c:1033 sadc.c:576 sadc.c:585 sadc.c:645
 #, c-format
 msgid "Cannot open %s: %s\n"
-msgstr "Невозможно открыть %s: %s\n"
+msgstr "п²п╣ я┐п╢п╟п╩п╬я│я▄ п╬я┌п╨я─я▀я┌я▄ %s: %s\n"
 
-#: common.c:199
+#: iostat.c:81 mpstat.c:83 pidstat.c:77 sar.c:88
 #, c-format
-msgid "Cannot handle so many processors!\n"
-msgstr "Невозможно обработать так много процессоров!\n"
+msgid "Usage: %s [ options ] [ <interval> [ <count> ] ]\n"
+msgstr "п≤я│п©п╬п╩я▄п╥п╬п╡п╟п╫п╦п╣: %s [ п©п╟я─п╟п╪п╣я┌я─я▀ ] [ <п╦п╫я┌п╣я─п╡п╟п╩> [ <я│я┤я▒я┌я┤п╦п╨> ] ]\n"
 
-#: iostat.c:74
-#, c-format
-msgid ""
-"Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
-"Options are:\n"
-"[ -c ] [ -d ] [ -N ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"
-msgstr ""
-"Использование: %s [ опции... ] [ <интервал> [ <счетчик> ] ]\n"
-"Допустимые опции:\n"
-"[ -c ] [ -d ] [ -N ] [ -n ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <устройство> [ ... ] | ALL ] [ -p [ <устройство> | ALL ] ]\n"
-
-#: iostat.c:1119
-#, c-format
-msgid "Time: %s\n"
-msgstr "Время: %s\n"
-
-#: iostat.c:1435
-#, c-format
-msgid "-x and -p options are mutually exclusive\n"
-msgstr "Опции -x и -p взаимоисключающие\n"
-
-#: mpstat.c:66
+#: iostat.c:84
 #, c-format
 msgid ""
-"Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
-"[ -P { <cpu> | ALL } ] [ -V ]\n"
+"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+"[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"
 msgstr ""
-"Использование: %s [ опции... ] [ <интервал> [ <счетчик> ] ]\n"
-"Допустимые опции:\n"
-"[ -P { <cpu> | ALL } ] [ -V ]\n"
+"п÷п╟я─п╟п╪п╣я┌я─я▀:\n"
+"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+"[ <я┐я│я┌я─п╬п╧я│я┌п╡п╬> [...] | ALL ] [ -p [ <я┐я│я┌я─п╬п╧я│я┌п╡п╬> [,...] | ALL ] ]\n"
+
+#: mpstat.c:86
+#, c-format
+msgid ""
+"Options are:\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
+msgstr ""
+"п÷п╟я─п╟п╪п╣я┌я─я▀:\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <п╕п÷> [,...] | ALL } ] [ -V ]\n"
 
 # sar.c:
-#: mpstat.c:226 pidstat.c:1148 sar.c:740
+#: mpstat.c:433 pidstat.c:1683 sar.c:351
 msgid "Average:"
-msgstr "Среднее:"
+msgstr "п║я─п╣п╢п╫п╣п╣:"
 
-#: mpstat.c:563 sar.c:157
+#: mpstat.c:745
 #, c-format
 msgid "Not that many processors!\n"
-msgstr "Не так много процессоров!\n"
+msgstr "п²п╣я┌ я┌п╟п╨п╬пЁп╬ п╨п╬п╩п╦я┤п╣я│я┌п╡п╟ п©я─п╬я├п╣я│я│п╬я─п╬п╡ п╡ я│п╦я│я┌п╣п╪п╣!\n"
 
-#: pidstat.c:72
+#: pidstat.c:80
 #, c-format
 msgid ""
-"Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
-"[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
-"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+"[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
+"[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
-"Использование: %s [ опции... ] [ <интервал> [ <счетчик> ] ]\n"
-"Допустимые опции:\n"
-"[ -C <comm> ] [ -d ] [ -I ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
+"п÷п╟я─п╟п╪п╣я┌я─я▀:\n"
+"[ -C <п╨п╬п╪п╟п╫п╢п╟> ] [ -d ] [ -I ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:166 sar.c:1419
+#: pidstat.c:197 sar.c:961
 #, c-format
 msgid "Requested activities not available\n"
-msgstr "Запрошенная активность недоступна\n"
+msgstr "п≈п╟п©я─п╬я┬п╣п╫п╫я▀п╧ п©п╬п╨п╟п╥п╟я┌п╣п╩я▄ п╫п╣п╢п╬я│я┌я┐п©п╣п╫\n"
 
-#: sa_common.c:572
+#: rd_stats.c:2278
+#, c-format
+msgid "Cannot handle so many processors!\n"
+msgstr "п²п╣п╡п╬п╥п╪п╬п╤п╫п╬ п╬п╠я─п╟п╠п╬я┌п╟я┌я▄ я┌п╟п╨ п╪п╫п╬пЁп╬ п©я─п╬я├п╣я│я│п╬я─п╬п╡!\n"
+
+#: sa_common.c:847
 #, c-format
 msgid "Error while reading system activity file: %s\n"
-msgstr "Ошибка чтения файла системной активности: %s\n"
+msgstr "п·я┬п╦п╠п╨п╟ я┤я┌п╣п╫п╦я▐ я└п╟п╧п╩п╟ я│п╦я│я┌п╣п╪п╫я▀я┘ п©п╬п╨п╟п╥п╟я┌п╣п╩п╣п╧: %s\n"
 
-#: sa_common.c:581
+#: sa_common.c:857
 #, c-format
 msgid "End of system activity file unexpected\n"
-msgstr "Неожиданное окончание файла системной активности\n"
+msgstr "п²п╣п╬п╤п╦п╢п╟п╫п╫я▀п╧ п╨п╬п╫п╣я├ я└п╟п╧п╩п╟ я│п╦я│я┌п╣п╪п╫я▀я┘ п©п╬п╨п╟п╥п╟я┌п╣п╩п╣п╧\n"
 
-#: sa_common.c:608 sadc.c:549
+#: sa_common.c:875
 #, c-format
-msgid "Invalid system activity file: %s (%#x)\n"
-msgstr "Неправильный файл системной активности: %s (%#x)\n"
+msgid "File created using sar/sadc from sysstat version %d.%d.%d"
+msgstr "п╓п╟п╧п╩ я│п╬п╥п╢п╟п╫ я│ п©п╬п╪п╬я┴я▄я▌ sar/sadc п╦п╥ sysstat п╡п╣я─я│п╦п╦ %d.%d.%d"
 
-#: sa_common.c:632
+#: sa_common.c:906
 #, c-format
-msgid "Requested activities not available in file\n"
-msgstr "Запрошенных активностей нет в файле\n"
+msgid "Invalid system activity file: %s\n"
+msgstr "п²п╣п©я─п╟п╡п╦п╩я▄п╫я▀п╧ я└п╟п╧п╩ я│п╦я│я┌п╣п╪п╫я▀я┘ п©п╬п╨п╟п╥п╟я┌п╣п╩п╣п╧: %s\n"
 
-#: sadc.c:83
+#: sa_common.c:913
+#, c-format
+msgid "Current sysstat version can no longer read the format of this file (%#x)\n"
+msgstr "п╒п╣п╨я┐я┴п╟я▐ п╡п╣я─я│п╦я▐ sysstat п╠п╬п╩я▄я┬п╣ п╫п╣ п©п╬п╢п╢п╣я─п╤п╦п╡п╟п╣я┌ я└п╬я─п╪п╟я┌ я█я┌п╬пЁп╬ я└п╟п╧п╩п╟ (%#x)\n"
+
+#: sa_common.c:1116
+#, c-format
+msgid "Requested activities not available in file %s\n"
+msgstr "п≈п╟п©я─п╟я┬п╦п╡п╟п╣п╪я▀п╣ п©п╬п╨п╟п╥п╟я┌п╣п╩п╦ п╦п╥ я└п╟п╧п╩п╟ %s п╫п╣п╢п╬я│я┌я┐п©п╫я▀\n"
+
+#: sadc.c:78
+#, c-format
+msgid "Usage: %s [ options ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
+msgstr "п≤я│п©п╬п╩я▄п╥п╬п╡п╟п╫п╦п╣: %s [ п©п╟я─п╟п╪п╣я┌я─я▀ ] [ <п╦п╫я┌п╣я─п╡п╟п╩> [ <я│я┤я▒я┌я┤п╦п╨> ] ] [ <п╡я▀я┘_я└п╟п╧п╩> ]\n"
+
+#: sadc.c:81
 #, c-format
 msgid ""
-"Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
 "Options are:\n"
-"[ -C <comment> ] [ -d ] [ -F ] [ -I ] [ -V ]\n"
+"[ -C <comment> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
 msgstr ""
-"Использование: %s [ опции... ] [ <интервал> [ <счетчик> ] ] [ <выходной_файл> ]\n"
-"Допустимые опции:\n"
-"[ -C <comment> ] [ -d ] [ -F ] [ -I ] [ -V ]\n"
+"п÷п╟я─п╟п╪п╣я┌я─я▀:\n"
+"[ -C <п╨п╬п╪п╪.> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
 
-#: sadc.c:110
+#: sadc.c:185
 #, c-format
 msgid "Cannot write data to system activity file: %s\n"
-msgstr "Невозможно записать данные в файл системной активности: %s\n"
+msgstr "п²п╣ я┐п╢п╟п╩п╬я│я▄ п╥п╟п©п╦я│п╟я┌я▄ п╢п╟п╫п╫я▀п╣ п╡ я└п╟п╧п╩ я│п╦я│я┌п╣п╪п╫я▀я┘ п©п╬п╨п╟п╥п╟я┌п╣п╩п╣п╧: %s\n"
 
-#: sadc.c:361
+#: sadc.c:463
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
-msgstr "Невозможно записать заголовок файла системной активности: %s\n"
+msgstr "п²п╣ я┐п╢п╟п╩п╬я│я▄ п╥п╟п©п╦я│п╟я┌я▄ п╥п╟пЁп╬п╩п╬п╡п╬п╨ п╡ я└п╟п╧п╩ я│п╦я│я┌п╣п╪п╫я▀я┘ п©п╬п╨п╟п╥п╟я┌п╣п╩п╣п╧: %s\n"
 
-#: sadc.c:568
+#: sadc.c:739
 #, c-format
-msgid "Cannot append data to that file\n"
-msgstr "Невозможно добавить данные в этот файл\n"
+msgid "Cannot append data to that file (%s)\n"
+msgstr "п²п╣ я┐п╢п╟п╩п╬я│я▄ п╢п╬п╠п╟п╡п╦я┌я▄ п╢п╟п╫п╫я▀п╣ п╡ я█я┌п╬я┌ я└п╟п╧п╩ (%s)\n"
 
-#: sadf.c:78
+#: sadf.c:85
+#, c-format
+msgid "Usage: %s [ options ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
+msgstr "п≤я│п©п╬п╩я▄п╥п╬п╡п╟п╫п╦п╣: %s [ п©п╟я─п╟п╪п╣я┌я─я▀ ] [ <п╦п╫я┌п╣я─п╡п╟п╩> [ <я│я┤я▒я┌я┤п╦п╨> ] ] [ <я└п╟п╧п╩_п╢п╟п╫п╫я▀я┘> ]\n"
+
+#: sadf.c:88
 #, c-format
 msgid ""
-"Usage: %s [ options... ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
 "Options are:\n"
-"[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ -- <sar_options...> ]\n"
+"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_options> ]\n"
 msgstr ""
-"Использование: %s [ опции... ] [ <интервал> [ <счетчик> ] ] [ <имя_файла> ]\n"
-"Допустимые опции:\n"
-"[ -d | -D | -H | -p | -x ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ -- <sar_опции...> ]\n"
+"п÷п╟я─п╟п╪п╣я┌я─я▀:\n"
+"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -P { <п╕п÷> [,...] | ALL } ] [ -s [ <я┤я┤:п╪п╪:я│я│> ] ] [ -e [ <я┤я┤:п╪п╪:я│я│> ] ]\n"
+"[ -- <sar_п©п╟я─п╟п╪п╣я┌я─я▀> ]\n"
 
-#: sar.c:76
+#: sadf.c:527
+#, c-format
+msgid "System activity data file: %s (%#x)\n"
+msgstr "п²п╣п©я─п╟п╡п╦п╩я▄п╫я▀п╧ я└п╟п╧п╩ я│п╦я│я┌п╣п╪п╫я▀я┘ п©п╬п╨п╟п╥п╟я┌п╣п╩п╣п╧: %s (%#x)\n"
+
+#: sadf.c:536
+#, c-format
+msgid "Host: "
+msgstr "п╔п╬я│я┌: "
+
+#: sadf.c:542
+#, c-format
+msgid "Size of a long int: %d\n"
+msgstr "п═п╟п╥п╪п╣я─ long int: %d\n"
+
+#: sadf.c:544
+#, c-format
+msgid "List of activities:\n"
+msgstr "п║п©п╦я│п╬п╨ п©п╬п╨п╟п╥п╟я┌п╣п╩п╣п╧:\n"
+
+#: sar.c:104
 #, c-format
 msgid ""
-"Usage: %s [ options... ] [ <interval> [ <count> ] ]\n"
 "Options are:\n"
-"[ -A ] [ -b ] [ -B ] [ -c ] [ -C ] [ -d ] [ -i <interval> ] [ -p ] [ -q ]\n"
-"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-"[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
+"[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
+"[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+"[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+"[ -n { <keyword> [,...] | ALL } ]\n"
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
-"[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr ""
-"Использование: %s [ опции... ] [ <интервал> [ <счетчик> ] ]\n"
-"Допустимые опции:\n"
-"[ -A ] [ -b ] [ -B ] [ -c ] [ -C ] [ -d ] [ -i <интервал> ] [ -p ] [ -q ]\n"
-"[ -r ] [ -R ] [ -t ] [ -u ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <irq> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-"[ -n { DEV | EDEV | NFS | NFSD | SOCK | ALL } ]\n"
-"[ -o [ <имя_файла> ] | -f [ <имя_файла> ] ]\n"
-"[ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"п÷п╟я─п╟п╪п╣я┌я─я▀:\n"
+"[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
+"[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+"[ -I { <я├п╣п╩п╬п╣> [,...] | SUM | ALL | XALL } ] [ -P { <п╕п÷> [,...] | ALL } ]\n"
+"[ -n { <п╨п╩я▌я┤_я│п╩п╬п╡п╬> [,...] | ALL } ]\n"
+"[ -o [ <п╦п╪я▐_я└п╟п╧п╩п╟> ] | -f [ <п╦п╪я▐_я└п╟п╧п╩п╟> ] ]\n"
+"[ -i <п╦п╫я┌п╣я─п╡п╟п╩> ] [ -s [ <я┤я┤:п╪п╪:я│я│> ] ] [ -e [ <я┤я┤:п╪п╪:я│я│> ] ]\n"
 
-#: sar.c:149
+#: sar.c:126
 #, c-format
-msgid "Not an SMP machine...\n"
-msgstr "Не многопроцессорная тачка...\n"
+msgid "Main options and reports:\n"
+msgstr "п·я│п╫п╬п╡п╫я▀п╣ п©п╟я─п╟п╪п╣я┌я─я▀ п╦ п╬я┌я┤я▒я┌я▀:\n"
 
-#: sar.c:1261
+#: sar.c:127
+#, c-format
+msgid "\t-b\tI/O and transfer rate statistics\n"
+msgstr "\t-b\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п▓п▓/п▓п╚п▓ п╦ я│п╨п╬я─п╬я│я┌п╦ п©п╣я─п╣п╢п╟я┤п╦\n"
+
+#: sar.c:128
+#, c-format
+msgid "\t-B\tPaging statistics\n"
+msgstr "\t-B\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п╬п╠п╪п╣п╫я┐ я│я┌я─п╟п╫п╦я├\n"
+
+#: sar.c:129
+#, c-format
+msgid "\t-d\tBlock device statistics\n"
+msgstr "\t-d\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п╠п╩п╬я┤п╫я▀п╪ я┐я│я┌я─п╬п╧я│я┌п╡п╟п╪\n"
+
+#: sar.c:130
+#, c-format
+msgid ""
+"\t-I { <int> | SUM | ALL | XALL }\n"
+"\t\tInterrupts statistics\n"
+msgstr ""
+"\t-I { <я├п╣п╩п╬п╣> | SUM | ALL | XALL }\n"
+"\t\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п©я─п╣я─я▀п╡п╟п╫п╦я▐п╪\n"
+
+#: sar.c:132
+#, c-format
+msgid ""
+"\t-n { <keyword> [,...] | ALL }\n"
+"\t\tNetwork statistics\n"
+"\t\tKeywords are:\n"
+"\t\tDEV\tNetwork interfaces\n"
+"\t\tEDEV\tNetwork interfaces (errors)\n"
+"\t\tNFS\tNFS client\n"
+"\t\tNFSD\tNFS server\n"
+"\t\tSOCK\tSockets\t(v4)\n"
+"\t\tIP\tIP traffic\t(v4)\n"
+"\t\tEIP\tIP traffic\t(v4) (errors)\n"
+"\t\tICMP\tICMP traffic\t(v4)\n"
+"\t\tEICMP\tICMP traffic\t(v4) (errors)\n"
+"\t\tTCP\tTCP traffic\t(v4)\n"
+"\t\tETCP\tTCP traffic\t(v4) (errors)\n"
+"\t\tUDP\tUDP traffic\t(v4)\n"
+"\t\tSOCK6\tSockets\t(v6)\n"
+"\t\tIP6\tIP traffic\t(v6)\n"
+"\t\tEIP6\tIP traffic\t(v6) (errors)\n"
+"\t\tICMP6\tICMP traffic\t(v6)\n"
+"\t\tEICMP6\tICMP traffic\t(v6) (errors)\n"
+"\t\tUDP6\tUDP traffic\t(v6)\n"
+msgstr ""
+"\t-n { <п╨п╩я▌я┤_я│п╩п╬п╡п╬> [,...] | ALL }\n"
+"\t\tп║п╣я┌п╣п╡п╟я▐ я│я┌п╟я┌п╦я│я┌п╦п╨п╟\n"
+"\t\tп п╩я▌я┤п╣п╡я▀п╣ я│п╩п╬п╡п╟:\n"
+"\t\tDEV\tп║п╣я┌п╣п╡я▀п╣ п╦п╫я┌п╣я─я└п╣п╧я│я▀\n"
+"\t\tEDEV\tп║п╣я┌п╣п╡я▀п╣ п╦п╫я┌п╣я─я└п╣п╧я│я▀ (п╬я┬п╦п╠п╨п╦)\n"
+"\t\tNFS\tп п╩п╦п╣п╫я┌ NFS\n"
+"\t\tNFSD\tп║п╣я─п╡п╣я─ NFS\n"
+"\t\tSOCK\tп║п╬п╨п╣я┌я▀\t(v4)\n"
+"\t\tIP\tIP я┌я─п╟я└п╦п╨\t(v4)\n"
+"\t\tEIP\tIP я┌я─п╟я└п╦п╨\t(v4) (errors)\n"
+"\t\tICMP\tICMP я┌я─п╟я└п╦п╨\t(v4)\n"
+"\t\tEICMP\tICMP я┌я─п╟я└п╦п╨\t(v4) (errors)\n"
+"\t\tTCP\tTCP я┌я─п╟я└п╦п╨\t(v4)\n"
+"\t\tETCP\tTCP я┌я─п╟я└п╦п╨\t(v4) (errors)\n"
+"\t\tUDP\tUDP я┌я─п╟я└п╦п╨\t(v4)\n"
+"\t\tSOCK6\tп║п╬п╨п╣я┌я▀\t(v6)\n"
+"\t\tIP6\tIP я┌я─п╟я└п╦п╨\t(v6)\n"
+"\t\tEIP6\tIP я┌я─п╟я└п╦п╨\t(v6) (errors)\n"
+"\t\tICMP6\tICMP я┌я─п╟я└п╦п╨\t(v6)\n"
+"\t\tEICMP6\tICMP я┌я─п╟я└п╦п╨\t(v6) (errors)\n"
+"\t\tUDP6\tUDP я┌я─п╟я└п╦п╨\t(v6)\n"
+
+#: sar.c:153
+#, c-format
+msgid "\t-q\tQueue length and load average statistics\n"
+msgstr "\t-q\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п╢п╩п╦п╫п╣ п╦ я│я─п╣п╢п╫п╣п╧ п╥п╟пЁя─я┐п╥п╨п╣ п╬я┤п╣я─п╣п╢п╦\n"
+
+#: sar.c:154
+#, c-format
+msgid "\t-r\tMemory utilization statistics\n"
+msgstr "\t-r\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п╦я│п©п╬п╩я▄п╥п╬п╡п╟п╫п╦я▌ п©п╟п╪я▐я┌п╦\n"
+
+#: sar.c:155
+#, c-format
+msgid "\t-R\tMemory statistics\n"
+msgstr "\t-R\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п©п╟п╪я▐я┌п╦\n"
+
+#: sar.c:156
+#, c-format
+msgid "\t-S\tSwap space utilization statistics\n"
+msgstr "\t-S\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п╦я│п©п╬п╩я▄п╥п╬п╡п╟п╫п╦я▌ п╬п╠п╩п╟я│я┌п╦ п©п╬п╢п╨п╟я┤п╨п╦\n"
+
+#: sar.c:157
+#, c-format
+msgid ""
+"\t-u [ ALL ]\n"
+"\t\tCPU utilization statistics\n"
+msgstr ""
+"\t-u [ ALL ]\n"
+"\t\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п╦я│п©п╬п╩я▄п╥п╬п╡п╟п╫п╦я▌ п╕п÷\n"
+
+#: sar.c:159
+#, c-format
+msgid "\t-v\tKernel table statistics\n"
+msgstr "\t-v\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ я┌п╟п╠п╩п╦я├п╣ я▐п╢я─п╟\n"
+
+#: sar.c:160
+#, c-format
+msgid "\t-w\tTask creation and system switching statistics\n"
+msgstr "\t-w\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ я│п╬п╥п╢п╟п╫п╦я▌ п╥п╟п╢п╟я┤ п╦ я│п╦я│я┌п╣п╪п╫я▀п╪ п©п╣я─п╣п╨п╩я▌я┤п╣п╫п╦я▐п╪\n"
+
+#: sar.c:161
+#, c-format
+msgid "\t-W\tSwapping statistics\n"
+msgstr "\t-W\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ п©п╬п╢п╨п╟я┤п╨п╣\n"
+
+#: sar.c:162
+#, c-format
+msgid "\t-y\tTTY device statistics\n"
+msgstr "\t-y\tп║я┌п╟я┌п╦я│я┌п╦п╨п╟ п©п╬ я┐я│я┌я─п╬п╧я│я┌п╡п╟п╪ TTY\n"
+
+#: sar.c:207
+#, c-format
+msgid "End of data collecting unexpected\n"
+msgstr "п²п╣п╬п╤п╦п╢п╟п╫п╫п╬ п╥п╟п╨п╬п╫я┤п╦п╩п╦я│я▄ я│п╬п╠п╦я─п╟п╣п╪я▀п╣ п╢п╟п╫п╫я▀п╣\n"
+
+#: sar.c:767
 #, c-format
 msgid "Invalid data format\n"
-msgstr "Неправильный формат данных\n"
+msgstr "п²п╣п©я─п╟п╡п╦п╩я▄п╫я▀п╧ я└п╬я─п╪п╟я┌ п╢п╟п╫п╫я▀я┘\n"
 
-#: sar.c:1633
+#: sar.c:771
+#, c-format
+msgid "Using a wrong data collector from a different sysstat version\n"
+msgstr "п≤я│п©п╬п╩я▄п╥я┐п╣я┌я│я▐ п╬я┬п╦п╠п╬я┤п╫п╬п╣ я│я─п╣п╢я│я┌п╡п╬ я│п╠п╬я─п╟ п╢п╟п╫п╫я▀я┘ п╬я┌ п╢я─я┐пЁп╬п╧ п╡п╣я─я│п╦п╦ sysstat\n"
+
+#: sar.c:791
+#, c-format
+msgid "Inconsistent input data\n"
+msgstr "п²п╣я│п╬пЁп╩п╟я│п╬п╡п╟п╫п╫я▀п╣ п╡я┘п╬п╢п╫я▀п╣ п╢п╟п╫п╫я▀п╣\n"
+
+#: sar.c:1196
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
-msgstr "Опции -f и -o взаимоисключающие\n"
+msgstr "п÷п╟я─п╟п╪п╣я┌я─я▀ -f п╦ -o я▐п╡п╩я▐я▌я┌я│я▐ п╡п╥п╟п╦п╪п╬п╦я│п╨п╩я▌я┤п╟я▌я┴п╦п╪п╦\n"
 
-#: sar.c:1639
+#: sar.c:1202
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
-msgstr "Не читаем из файла системной активности (используйте опцию -f)\n"
+msgstr "п²п╣ п╡я▀п©п╬п╩п╫я▐п╣п╪ я┤я┌п╣п╫п╦п╣ п╦п╥ я└п╟п╧п╩п╟ я│п╦я│я┌п╣п╪п╫я▀я┘ п©п╬п╨п╟п╥п╟я┌п╣п╩п╣п╧ (п╦я│п©п╬п╩я▄п╥я┐п╧я┌п╣ п©п╟я─п╟п╪п╣я┌я─ -f)\n"
+
+#: sar.c:1303
+#, c-format
+msgid "Cannot find the data collector (%s)\n"
+msgstr "п²п╣ я┐п╢п╟п╩п╬я│я▄ п╫п╟п╧я┌п╦ я│я─п╣п╢я│я┌п╡п╬ я│п╠п╬я─п╟ п╢п╟п╫п╫я▀я┘ (%s)\n"

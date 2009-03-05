@@ -1,14 +1,14 @@
 # Indonesian translations for sysstat package.
 # Copyright (C) 2008 THE sysstat'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the sysstat package.
-# Andhika Padmawan <andhika.padmawan@gmail.com>, 2008.
+# Andhika Padmawan <andhika.padmawan@gmail.com>, 2009.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 8.1.7\n"
+"Project-Id-Version: sysstat 8.1.8\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2008-11-12 13:38+0100\n"
-"PO-Revision-Date: 2008-11-14 21:23+0700\n"
+"POT-Creation-Date: 2009-01-08 14:13+0100\n"
+"PO-Revision-Date: 2009-01-14 21:47+0700\n"
 "Last-Translator: Andhika Padmawan <andhika.padmawan@gmail.com>\n"
 "Language-Team: Indonesian <translation-team-id@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
@@ -20,47 +20,42 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr "sysstat versi %s\n"
 
-#: ioconf.c:479 iostat.c:509 rd_stats.c:69 rd_stats.c:1791 rd_stats.c:1898
-#: sa_common.c:1033 sadc.c:498 sadc.c:507 sadc.c:567
+#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2232
+#: sa_common.c:1033 sadc.c:576 sadc.c:585 sadc.c:645
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr "Tak dapat membuka %s: %s\n"
 
-#: iostat.c:80 mpstat.c:83 pidstat.c:77 sar.c:88
+#: iostat.c:81 mpstat.c:83 pidstat.c:77 sar.c:88
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ]\n"
 msgstr "Penggunaan: %s [ opsi ] [ <interval> [ <hitungan> ] ]\n"
 
-#: iostat.c:83
+#: iostat.c:84
 #, c-format
 msgid ""
 "Options are:\n"
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <device> [ ... ] | ALL ] [ -p [ <device> | ALL ] ]\n"
+"[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"
 msgstr ""
 "Opsinya adalah:\n"
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <divais> [ ... ] | ALL ] [ -p [ <divais> | ALL ] ]\n"
-
-#: iostat.c:1692
-#, c-format
-msgid "-x and -p options are mutually exclusive\n"
-msgstr "opsi -x dan -p secara mutual eksklusif\n"
+"[ <divais> [...] | ALL ] [ -p [ <divais> [,...] | ALL ] ]\n"
 
 #: mpstat.c:86
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> | ALL } ] [ -V ]\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 msgstr ""
 "Opsinya adalah:\n"
-"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> | ALL } ] [ -V ]\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 
-#: mpstat.c:433 pidstat.c:1681 sar.c:333
+#: mpstat.c:433 pidstat.c:1683 sar.c:351
 msgid "Average:"
 msgstr "Rata-rata:"
 
-#: mpstat.c:742
+#: mpstat.c:745
 #, c-format
 msgid "Not that many processors!\n"
 msgstr "Tidak sebanyak itu prosesor!\n"
@@ -70,18 +65,18 @@ msgstr "Tidak sebanyak itu prosesor!\n"
 msgid ""
 "Options are:\n"
 "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
-"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+"[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
 "Opsinya adalah:\n"
 "[ -C <perintah> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
-"[ -p { <pid> | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+"[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:197 sar.c:943
+#: pidstat.c:197 sar.c:961
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "Aktivitas yang diminta tak tersedia\n"
 
-#: rd_stats.c:1944
+#: rd_stats.c:2278
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr "Tak dapat menangani begitu banyak prosesor!\n"
@@ -125,22 +120,22 @@ msgstr "Penggunaan: %s [ opsi... ] [ <interval> [ <hitungan> ] ] [ <berkas kelua
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -C <comment> ] [ -S { INT | DISK | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
+"[ -C <comment> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
 msgstr ""
 "Opsinya adalah:\n"
-"[ -C <komentar> ] [ -S { INT | DISK | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
+"[ -C <komentar> ] [ -S { INT | DISK | IPV6 | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"
 
-#: sadc.c:107
+#: sadc.c:185
 #, c-format
 msgid "Cannot write data to system activity file: %s\n"
 msgstr "Tak dapat menulis data ke berkas aktivitas sistem: %s\n"
 
-#: sadc.c:385
+#: sadc.c:463
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
 msgstr "Tak dapat menulis tajuk berkas aktivitas sistem: %s\n"
 
-#: sadc.c:661
+#: sadc.c:739
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
 msgstr "Tak dapat menambah data ke berkas tersebut (%s)\n"
@@ -155,13 +150,13 @@ msgstr "Penggunaan: %s [ opsi ] [ <interval> [ <hitungan> ] ] [ <berkas data> ]\
 msgid ""
 "Options are:\n"
 "[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ -- <sar_options...> ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_options> ]\n"
 msgstr ""
 "Opsinya adalah:\n"
 "[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> | ALL } ] [ -s [ <jj:mm:dd> ] ] [ -e [ <jj:mm:dd> ] ]\n"
-"[ -- <opsi_sar...> ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <opsi_sar> ]\n"
 
 #: sadf.c:527
 #, c-format
@@ -189,27 +184,23 @@ msgid ""
 "Options are:\n"
 "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <int> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-"[ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]\n"
+"[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+"[ -n { <keyword> [,...] | ALL } ]\n"
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr ""
 "Opsinya adalah:\n"
 "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <int> | SUM | ALL | XALL } ] [ -P { <cpu> | ALL } ]\n"
-"[ -n { DEV | EDEV | NFS | NFSD | SOCK | IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL } ]\n"
+"[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+"[ -n { <kata kunci> [,...] | ALL } ]\n"
 "[ -o [ <nama berkas> ] | -f [ <nama berkas> ] ]\n"
 "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 
 #: sar.c:126
 #, c-format
-msgid ""
-"\n"
-"Main options and reports:\n"
-msgstr ""
-"\n"
-"Opsi utama dan laporan:\n"
+msgid "Main options and reports:\n"
+msgstr "Opsi utama dan laporan:\n"
 
 #: sar.c:127
 #, c-format
@@ -238,35 +229,71 @@ msgstr ""
 #: sar.c:132
 #, c-format
 msgid ""
-"\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
-"\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
+"\t-n { <keyword> [,...] | ALL }\n"
 "\t\tNetwork statistics\n"
+"\t\tKeywords are:\n"
+"\t\tDEV\tNetwork interfaces\n"
+"\t\tEDEV\tNetwork interfaces (errors)\n"
+"\t\tNFS\tNFS client\n"
+"\t\tNFSD\tNFS server\n"
+"\t\tSOCK\tSockets\t(v4)\n"
+"\t\tIP\tIP traffic\t(v4)\n"
+"\t\tEIP\tIP traffic\t(v4) (errors)\n"
+"\t\tICMP\tICMP traffic\t(v4)\n"
+"\t\tEICMP\tICMP traffic\t(v4) (errors)\n"
+"\t\tTCP\tTCP traffic\t(v4)\n"
+"\t\tETCP\tTCP traffic\t(v4) (errors)\n"
+"\t\tUDP\tUDP traffic\t(v4)\n"
+"\t\tSOCK6\tSockets\t(v6)\n"
+"\t\tIP6\tIP traffic\t(v6)\n"
+"\t\tEIP6\tIP traffic\t(v6) (errors)\n"
+"\t\tICMP6\tICMP traffic\t(v6)\n"
+"\t\tEICMP6\tICMP traffic\t(v6) (errors)\n"
+"\t\tUDP6\tUDP traffic\t(v6)\n"
 msgstr ""
-"\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
-"\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
+"\t-n { <kata kunci> [,...] | ALL }\n"
 "\t\tStatistik jaringan\n"
+"\t\tKata kunci adalah:\n"
+"\t\tDEV\tAntarmuka jaringan\n"
+"\t\tEDEV\tAntarmuka jaringan (galat)\n"
+"\t\tNFS\tKlien NFS\n"
+"\t\tNFSD\tKlien NFS\n"
+"\t\tSOCK\tSoket\t(v4)\n"
+"\t\tIP\tLalu lintas IP\t(v4)\n"
+"\t\tEIP\tLalu lintas IP\t(v4) (galat)\n"
+"\t\tICMP\tLalu lintas ICMP\t(v4)\n"
+"\t\tEICMP\tLalu lintas ICMP\t(v4) (galat)\n"
+"\t\tTCP\tLalu lintas TCP\t(v4)\n"
+"\t\tETCP\tLalu lintas TCP\t(v4) (galat)\n"
+"\t\tUDP\tLalu lintas UDP\t(v4)\n"
+"\t\tSOCK6\tSoket\t(v6)\n"
+"\t\tIP6\tLalu lintas IP\t(v6)\n"
+"\t\tEIP6\tLalu lintas IP\t(v6) (galat)\n"
+"\t\tICMP6\tLalu lintas ICMP\t(v6)\n"
+"\t\tEICMP6\tLalu lintas ICMP\t(v6) (galat)\n"
+"\t\tUDP6\tLalu lintas UDP\t(v6)\n"
 
-#: sar.c:135
+#: sar.c:153
 #, c-format
 msgid "\t-q\tQueue length and load average statistics\n"
 msgstr "\t-q\tPanjang antrean dan statistik rata-rata muatan\n"
 
-#: sar.c:136
+#: sar.c:154
 #, c-format
 msgid "\t-r\tMemory utilization statistics\n"
 msgstr "\t-r\tStatistik utilisasi memori\n"
 
-#: sar.c:137
+#: sar.c:155
 #, c-format
 msgid "\t-R\tMemory statistics\n"
 msgstr "\t-R\tStatistik memori\n"
 
-#: sar.c:138
+#: sar.c:156
 #, c-format
 msgid "\t-S\tSwap space utilization statistics\n"
 msgstr "\t-S\tStatistik utilisasi ruang swap\n"
 
-#: sar.c:139
+#: sar.c:157
 #, c-format
 msgid ""
 "\t-u [ ALL ]\n"
@@ -275,60 +302,72 @@ msgstr ""
 "\t-u [ ALL ]\n"
 "\t\tStatistik utilisasi CPU\n"
 
-#: sar.c:141
+#: sar.c:159
 #, c-format
 msgid "\t-v\tKernel table statistics\n"
 msgstr "\t-v\tStatistik tabel kernel\n"
 
-#: sar.c:142
+#: sar.c:160
 #, c-format
 msgid "\t-w\tTask creation and system switching statistics\n"
 msgstr "\t-w\tStatistik penukar sistem dan pembuatan tugas\n"
 
-#: sar.c:143
+#: sar.c:161
 #, c-format
 msgid "\t-W\tSwapping statistics\n"
 msgstr "\t-W\tStatistik swap\n"
 
-#: sar.c:144
+#: sar.c:162
 #, c-format
 msgid "\t-y\tTTY device statistics\n"
 msgstr "\t-y\tStatistik divais TTY\n"
 
-#: sar.c:189
+#: sar.c:207
 #, c-format
 msgid "End of data collecting unexpected\n"
 msgstr "Akhir pengumpulan data tak diharapkan\n"
 
-#: sar.c:749
+#: sar.c:767
 #, c-format
 msgid "Invalid data format\n"
 msgstr "Format data tak sah\n"
 
-#: sar.c:753
+#: sar.c:771
 #, c-format
 msgid "Using a wrong data collector from a different sysstat version\n"
 msgstr "Menggunakan pengumpul data yang salah dari versi sysstat yang berbeda\n"
 
-#: sar.c:773
+#: sar.c:791
 #, c-format
 msgid "Inconsistent input data\n"
 msgstr "Data masukan tidak konsisten\n"
 
-#: sar.c:1178
+#: sar.c:1196
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "opsi -f dan -o secara mutual eksklusif\n"
 
-#: sar.c:1184
+#: sar.c:1202
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "Tak membaca dari berkas aktivitas sistem (gunakan opsi -f)\n"
 
-#: sar.c:1285
+#: sar.c:1303
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "Tak dapat menemukan pengumpul data (%s)\n"
+
+#~ msgid "-x and -p options are mutually exclusive\n"
+#~ msgstr "opsi -x dan -p secara mutual eksklusif\n"
+
+#~ msgid ""
+#~ "\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
+#~ "\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
+#~ "\t\tNetwork statistics\n"
+#~ msgstr ""
+#~ "\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
+#~ "\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
+#~ "\t\tStatistik jaringan\n"
 
 #~ msgid "Time: %s\n"
 #~ msgstr "Waktu: %s\n"

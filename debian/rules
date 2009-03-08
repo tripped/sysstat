@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules 1416 2009-01-15 23:07:50Z robert $
+# $Id: rules 1439 2009-03-08 17:59:09Z robert $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -21,10 +21,6 @@ ifeq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	CFLAGS 		:= -g -O2
 else
 	CFLAGS 		:= -g -O0
-endif
-
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-	 LDFLAGS 	:= -s
 endif
 
 

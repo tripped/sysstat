@@ -2,8 +2,9 @@ sysstat (9.0.1-1) unstable; urgency=low
 
   * New upstream release:
     + sar man page now mentions dependencies on sadc options (closes: #518438).
+  * Makefile.in: don't update sysstat.pot in clean. 
 
- -- Robert Luberda <robert@debian.org>  Sun, 08 Mar 2009 18:44:01 +0100
+ -- Robert Luberda <robert@debian.org>  Sun, 08 Mar 2009 19:01:43 +0100
 
 sysstat (9.0.0-1) unstable; urgency=low
 

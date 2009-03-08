@@ -529,7 +529,7 @@ clean:
 	rm -f sadc sar sadf iostat mpstat pidstat *.o *.a core TAGS
 	find nls -name "*.gmo" -exec rm -f {} \;
 
-almost-distclean: clean nls/sysstat.pot
+almost-distclean: clean 
 	rm -f sa1 sa2 sysstat crontab version.h sysconfig.h
 	rm -f sysstat.sysconfig sysstat.crond sysstat.cron.daily
 	rm -f sysstat.cron.hourly sysstat.crond.sample sysstat.crond.sample.in

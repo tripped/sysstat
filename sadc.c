@@ -258,6 +258,7 @@ void sa_sys_free(void)
 		if (*act[i]->nr > 0) {
 			if (act[i]->_buf0) {
 				free(act[i]->_buf0);
+				act[i]->_buf0 = NULL;
 			}
 		}
 	}

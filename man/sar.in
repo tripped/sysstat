@@ -1,4 +1,4 @@
-.TH SAR 1 "FEBRUARY 2009" Linux "Linux User's Manual" -*- nroff -*-
+.TH SAR 1 "MARCH 2009" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sar \- Collect, report, or save system activity information.
 .SH SYNOPSIS
@@ -256,6 +256,8 @@ is the minor number of the device, but is only a sequence number with
 pre 2.5 kernels. Device names may also be pretty-printed if option -p
 is used (see below). Values for fields avgqu-sz, await, svctm and %util
 may be unavailable and displayed as 0.00 with some 2.4 kernels.
+Note that disk activity depends on sadc option "-S DISK" to be collected.
+The following values are displayed:
 
 .B tps
 .RS
@@ -347,8 +349,11 @@ the first 16 interrupts are to be reported, whereas the
 .B XALL
 keyword indicates that statistics from all interrupts, including potential
 APIC interrupt sources, are to be reported.
+Note that interrupt statistics depend on sadc option "-S INT" to be collected.
 .IP -m
-Report power management statistics. The following value is displayed:
+Report power management statistics.
+Note that these statistics depend on sadc option "-S POWER" to be collected.
+The following value is displayed:
 
 .B MHz
 .RS
@@ -617,6 +622,8 @@ Number of TCP sockets in TIME_WAIT state.
 With the
 .B IP
 keyword, statistics about IPv4 network traffic are reported.
+Note that IPv4 statistics depend on sadc option "-S SNMP" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -673,6 +680,8 @@ generated per second as a result of fragmentation at this entity [ipFragCreates]
 With the
 .B EIP
 keyword, statistics about IPv4 network errors are reported.
+Note that IPv4 statistics depend on sadc option "-S SNMP" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -752,6 +761,8 @@ be, e.g., because their Don't Fragment flag was set [ipFragFails].
 With the
 .B ICMP
 keyword, statistics about ICMPv4 network traffic are reported.
+Note that ICMPv4 statistics depend on sadc option "-S SNMP" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -832,6 +843,8 @@ The number of ICMP Address Mask Reply messages sent per second [icmpOutAddrMaskR
 With the
 .B EICMP
 keyword, statistics about ICMPv4 error messages are reported.
+Note that ICMPv4 statistics depend on sadc option "-S SNMP" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -902,6 +915,8 @@ The number of ICMP Redirect messages sent per second [icmpOutRedirects].
 With the
 .B TCP
 keyword, statistics about TCPv4 network traffic are reported.
+Note that TCPv4 statistics depend on sadc option "-S SNMP" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -934,6 +949,8 @@ retransmitted octets [tcpOutSegs].
 With the
 .B ETCP
 keyword, statistics about TCPv4 network errors are reported.
+Note that TCPv4 statistics depend on sadc option "-S SNMP" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -974,6 +991,8 @@ The number of TCP segments sent per second containing the RST flag [tcpOutRsts].
 With the
 .B UDP
 keyword, statistics about UDPv4 network traffic are reported.
+Note that UDPv4 statistics depend on sadc option "-S SNMP" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -1002,8 +1021,9 @@ at the destination port [udpInErrors].
 
 With the
 .B SOCK6
-keyword, statistics on sockets in use are reported
-(IPv6).
+keyword, statistics on sockets in use are reported (IPv6).
+Note that IPv6 statistics depend on sadc option "-S IPV6" to be
+collected.
 The following values are displayed:
 
 .B tcp6sck
@@ -1029,6 +1049,8 @@ Number of IPv6 fragments currently in use.
 With the
 .B IP6
 keyword, statistics about IPv6 network traffic are reported.
+Note that IPv6 statistics depend on sadc option "-S IPV6" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -1103,6 +1125,8 @@ this output interface [ipv6IfStatsOutFragCreates].
 With the
 .B EIP6
 keyword, statistics about IPv6 network errors are reported.
+Note that IPv6 statistics depend on sadc option "-S IPV6" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -1210,6 +1234,8 @@ datagram frame didn't carry enough data
 With the
 .B ICMP6
 keyword, statistics about ICMPv6 network traffic are reported.
+Note that ICMPv6 statistics depend on sadc option "-S IPV6" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -1331,6 +1357,8 @@ messages sent by the interface per second
 With the
 .B EICMP6
 keyword, statistics about ICMPv6 error messages are reported.
+Note that ICMPv6 statistics depend on sadc option "-S IPV6" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 
@@ -1415,6 +1443,8 @@ by the interface per second
 With the
 .B UDP6
 keyword, statistics about UDPv6 network traffic are reported.
+Note that UDPv6 statistics depend on sadc option "-S IPV6" to be
+collected.
 The following values are displayed (formal SNMP names between
 square brackets):
 

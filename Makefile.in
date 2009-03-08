@@ -201,8 +201,9 @@ else
 locales:
 endif
 
-nls/sysstat.pot: $(wildcard *.c)
-	$(XGETTEXT) -o $@ -k_ --msgid-bugs-address="sysstat <at> orange.fr" $^
+.PHONY: nls/sysstat.pot
+nls/sysstat.pot: | $(wildcard *.c)
+	$(XGETTEXT) -o $@ -k_ --msgid-bugs-address="sysstat <at> orange.fr" $|
 
 # Phony targets
 .PHONY: clean distclean install install_base install_all uninstall \

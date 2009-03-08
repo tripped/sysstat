@@ -3,8 +3,9 @@ sysstat (9.0.0-1) unstable; urgency=low
   * New upstream release.
   * sa_common.c: fixed double-free.
   * Fixed typo in Polish translation of debconf templates.
+  * Makefile.in: don't automatically update sysstat.pot file.
 
- -- Robert Luberda <robert@debian.org>  Sat, 07 Mar 2009 22:55:56 +0100
+ -- Robert Luberda <robert@debian.org>  Sat, 07 Mar 2009 23:11:46 +0100
 
 sysstat (8.1.8-2) unstable; urgency=low
 

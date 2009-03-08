@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--DTD v2.3 for sysstat. See sadf.h -->
+<!--DTD v2.4 for sysstat. See sadf.h -->
 <!ELEMENT boot EMPTY>
 <!ATTLIST boot
 	date CDATA #REQUIRED

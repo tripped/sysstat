@@ -105,6 +105,7 @@ void free_structures(struct activity *act[])
 			for (j = 0; j < 3; j++) {
 				if (act[i]->buf[j]) {
 					free(act[i]->buf[j]);
+					act[i]->buf[j] = NULL;
 				}
 			}
 		}
@@ -711,6 +712,8 @@ void free_bitmaps(struct activity *act[])
 	for (i = 0; i < NR_ACT; i++) {
 		if (act[i]->bitmap && act[i]->bitmap->b_array) {
 			free(act[i]->bitmap->b_array);
+
+			/* Set pointer to NULL to prevent it from being freed again */
 			act[i]->bitmap->b_array = NULL;
 		}
 	}

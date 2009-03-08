@@ -1,5 +1,11 @@
 Changes:
 
+2009/03/07: Version 9.0.1 - Sebastien Godard (sysstat <at> orange.fr)
+	* Fix a crash with sar where a pointer was freed twice.
+	* NLS updated.
+	* sar manual page updated.
+	* CREDITS file updated.
+
 2009/03/01: Version 9.0.0 - Sebastien Godard (sysstat <at> orange.fr)
 	* Option -m added to sar. This option is intended to display
 	  power management statistics. At the present time, only

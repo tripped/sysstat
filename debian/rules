@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules 1439 2009-03-08 17:59:09Z robert $
+# $Id: rules 1444 2009-05-16 15:00:53Z robert $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -22,6 +22,7 @@ ifeq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 else
 	CFLAGS 		:= -g -O0
 endif
+LDFLAGS = -ldmalloc
 
 
 build: build-stamp
@@ -42,7 +43,7 @@ build-stamp:
 		    LDFLAGS="$(LDFLAGS)"		
 
 	# Add here commands to compile the package.
-	$(MAKE)
+	$(MAKE) LDFLAGS+=-ldmalloc
 
 	chmod a+x debian/debian-sa1
 

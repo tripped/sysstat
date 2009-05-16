@@ -96,7 +96,7 @@ __nr_t wrap_get_iface_nr(struct activity *a)
 
 /*
  ***************************************************************************
- * Compute number of structures to allocate for CPUs.
+ * Compute number of CPU structures to allocate.
  *
  * IN:
  * @a	Activity structure.
@@ -130,7 +130,7 @@ __nr_t wrap_get_cpu_nr(struct activity *a)
 __nr_t wrap_get_disk_nr(struct activity *a)
 {
 	__nr_t n = 0;
-	unsigned int f = 0;
+	unsigned int f = COLLECT_PARTITIONS(a->opt_flags);
 	
 	n = get_disk_nr(&f);
 
@@ -353,7 +353,7 @@ __read_funct_t wrap_read_disk(struct activity *a)
 
 	/* Try to read stats from /proc/diskstats, /proc/partitions or /proc/stat */
 	if (HAS_DISKSTATS(flags)) {
-		read_diskstats_disk(st_disk, *a->nr);
+		read_diskstats_disk(st_disk, *a->nr, COLLECT_PARTITIONS(a->opt_flags));
 	}
 	else if (HAS_PPARTITIONS(flags)) {
 		read_partitions_disk(st_disk, *a->nr);

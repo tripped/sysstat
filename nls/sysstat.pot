@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-03-08 11:20+0100\n"
+"POT-Creation-Date: 2009-04-01 10:36+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,8 +21,8 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr ""
 
-#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2232
-#: sa_common.c:1046 sadc.c:579 sadc.c:588 sadc.c:648
+#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
+#: sa_common.c:1046 sadc.c:591 sadc.c:600 sadc.c:660
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr ""
@@ -48,11 +48,11 @@ msgid ""
 "V ]\n"
 msgstr ""
 
-#: mpstat.c:433 pidstat.c:1683 sar.c:350
+#: mpstat.c:457 pidstat.c:1683 sar.c:350
 msgid "Average:"
 msgstr ""
 
-#: mpstat.c:745
+#: mpstat.c:769
 #, c-format
 msgid "Not that many processors!\n"
 msgstr ""
@@ -71,7 +71,7 @@ msgstr ""
 msgid "Requested activities not available\n"
 msgstr ""
 
-#: rd_stats.c:2278
+#: rd_stats.c:2289
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr ""
@@ -116,21 +116,21 @@ msgstr ""
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -C <comment> ] [ -S { INT | DISK | IPV6 | POWER | SNMP | ALL } ] [ -F ] [ -"
-"L ] [ -V ]\n"
+"[ -C <comment> ] [ -F ] [ -L ] [ -V ]\n"
+"[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"
 msgstr ""
 
-#: sadc.c:187
+#: sadc.c:199
 #, c-format
 msgid "Cannot write data to system activity file: %s\n"
 msgstr ""
 
-#: sadc.c:466
+#: sadc.c:478
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
 msgstr ""
 
-#: sadc.c:742
+#: sadc.c:754
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
 msgstr ""

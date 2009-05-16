@@ -154,6 +154,8 @@ extern void
 			       unsigned long long, struct ext_disk_stats *);
 extern int
 	count_bits(void *, int);
+extern int
+	count_csvalues(int, char **);
 extern char *
 	device_name(char *);
 extern void

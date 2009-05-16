@@ -1841,10 +1841,10 @@ int main(int argc, char **argv)
 
 	/* Compute page shift in kB */
 	get_kb_shift();
-
+	
 	/* Allocate structures for device list */
 	if (argc > 1) {
-		salloc_pid_array((argc / 2) + 1);
+		salloc_pid_array((argc / 2) + count_csvalues(argc, argv));
 	}
 
 	/* Process args... */

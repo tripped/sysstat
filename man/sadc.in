@@ -1,10 +1,10 @@
-.TH SADC 8 "FEBRUARY 2009" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "MARCH 2009" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
 .B @SA_LIB_DIR@/sadc [ -C
 .I comment
-.B ] [ -S { INT | DISK | SNMP | IPV6 | POWER | ALL } ] [ -F ] [ -L ] [ -V ] [
+.B ] [ -S { INT | DISK | SNMP | IPV6 | POWER | XDISK | ALL | XALL } ] [ -F ] [ -L ] [ -V ] [
 .I interval
 .B [
 .I count
@@ -100,7 +100,7 @@ If the system is under heavy load, an old
 .B sadc
 might still be running when cron starts a new one. Without locking,
 this situation can result in a corrupted system activity file.
-.IP "-S { INT | DISK | SNMP | IPV6 | POWER | ALL }"
+.IP "-S { INT | DISK | SNMP | IPV6 | POWER | XDISK | ALL | XALL }"
 Specify which optional activities should be collected by
 .BR sadc .
 Some activities are optional to prevent data files from growing too large.
@@ -129,7 +129,20 @@ should collect power management statistics.
 The
 .B ALL
 keyword is equivalent to specifying all the keywords above and therefore
-all possible activities are collected.
+all previous activities are collected.
+
+The
+.B XDISK
+keyword is an extension to the
+.B DISK
+one and indicates that partition statistics should be collected by
+.B sadc
+in addition to disk statistics. This option works only with kernels 2.6.25
+and later.
+The
+.B XALL
+keyword is equivalent to specifying all the keywords above (including
+keyword extensions) and therefore all possible activities are collected.
 .IP -V
 Print version number then exit.
 

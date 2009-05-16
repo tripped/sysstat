@@ -444,13 +444,13 @@ unsigned int check_net_dev_reg(struct activity *a, int curr, int ref,
 			 * If a counter has decreased, then we may assume that the
 			 * corresponding interface was unregistered, then registered again.
 			 */
-			if ((sndc->rx_packets        < sndp->rx_packets)        ||
-			    (sndc->tx_packets        < sndp->tx_packets)        ||
-			    (sndc->rx_bytes          < sndp->rx_bytes)          ||
-			    (sndc->tx_bytes          < sndp->tx_bytes)          ||
-			    (sndc->rx_compressed     < sndp->rx_compressed)     ||
-			    (sndc->tx_compressed     < sndp->tx_compressed)     ||
-			    (sndc->multicast         < sndp->multicast)) {
+			if ((sndc->rx_packets    < sndp->rx_packets)    ||
+			    (sndc->tx_packets    < sndp->tx_packets)    ||
+			    (sndc->rx_bytes      < sndp->rx_bytes)      ||
+			    (sndc->tx_bytes      < sndp->tx_bytes)      ||
+			    (sndc->rx_compressed < sndp->rx_compressed) ||
+			    (sndc->tx_compressed < sndp->tx_compressed) ||
+			    (sndc->multicast     < sndp->multicast)) {
 
 				/*
 				 * Special processing for rx_bytes (_packets) and
@@ -743,7 +743,10 @@ int get_activity_position(struct activity *act[], unsigned int act_flag)
 	}
 
 	if (i == NR_ACT)
+	{
+		abort();
 		return -1;
+	}
 
 	return i;
 }

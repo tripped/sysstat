@@ -256,8 +256,8 @@ is the minor number of the device, but is only a sequence number with
 pre 2.5 kernels. Device names may also be pretty-printed if option -p
 is used (see below). Values for fields avgqu-sz, await, svctm and %util
 may be unavailable and displayed as 0.00 with some 2.4 kernels.
-Note that disk activity depends on sadc option "-S DISK" to be collected.
-The following values are displayed:
+Note that disk activity depends on sadc options "-S DISK" and "-S XDISK"
+to be collected. The following values are displayed:
 
 .B tps
 .RS
@@ -1486,6 +1486,11 @@ is in a separate record. The default value of the
 parameter is the current daily data file, the
 .IR @SA_DIR@/sa dd
 file. The -o option is exclusive of the -f option.
+All the data available from the kernel are saved in the file (in fact,
+.B sar
+calls its data collector
+.B sadc
+with the option "-S ALL". See sadc(8) manual page).
 .IP "-P { cpu [,...] | ALL }"
 Report per-processor statistics for the specified processor or processors.
 Specifying the

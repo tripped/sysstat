@@ -686,12 +686,14 @@ void read_stat_io(struct stats_io *st_io)
  * IN:
  * @st_disk	Structure where stats will be saved.
  * @nbr		Maximum number of block devices.
+ * @read_part	True if disks *and* partitions should be read; False if only
+ * 		disks are read.
  *
  * OUT:
  * @st_disk	Structure with statistics.
  ***************************************************************************
  */
-void read_diskstats_disk(struct stats_disk *st_disk, int nbr)
+void read_diskstats_disk(struct stats_disk *st_disk, int nbr, int read_part)
 {
 	FILE *fp;
 	char line[256];
@@ -718,8 +720,7 @@ void read_diskstats_disk(struct stats_disk *st_disk, int nbr)
 				/* Unused device: ignore it */
 				continue;
 
-			if (is_device(dev_name)) {
-				/* It's a device and not a partition */
+			if (read_part || is_device(dev_name)) {
 				st_disk_i = st_disk + dsk++;
 				st_disk_i->major     = major;
 				st_disk_i->minor     = minor;
@@ -2145,6 +2146,10 @@ unsigned int get_disk_io_nr(void)
  * Get number of devices in /proc/{diskstats,partitions}
  * or number of disk_io entries in /proc/stat.
  *
+ * IN:
+ * @f	Non zero (true) if disks *and* partitions should be counted, and
+ *	zero (false) if only disks must be counted.
+ *
  * OUT:
  * @f	Flag specifying the file used to count number of devices.
  *
@@ -2156,7 +2161,12 @@ int get_disk_nr(unsigned int *f)
 {
 	int disk_nr;
 	
-	if ((disk_nr = get_diskstats_dev_nr(CNT_DEV, CNT_USED_DEV)) > 0) {
+	/*
+	 * Partitions are taken into account by sar -d only with
+	 * kernels 2.6.25 and later. So the @f flag is used only
+	 * when reading /proc/diskstats but not /proc/partitions.
+	 */
+	if ((disk_nr = get_diskstats_dev_nr(*f, CNT_USED_DEV)) > 0) {
 		*f = READ_DISKSTATS;
 	}
 	else if ((disk_nr = get_ppartitions_dev_nr(CNT_DEV)) > 0) {
@@ -2164,6 +2174,7 @@ int get_disk_nr(unsigned int *f)
 	}
 	else {
 		disk_nr = get_disk_io_nr();
+		*f = READ_PROC_STAT;
 	}
 
 	return disk_nr;

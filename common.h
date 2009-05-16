@@ -75,6 +75,7 @@
 
 /* Allocate and init structure */
 #define SREALLOC(S, TYPE, SIZE)	do {								 \
+					fprintf(stderr, "realloc  %d %d\n",  __LINE__, SIZE);	 \
    					TYPE *_p_;						 \
 				   	_p_ = S;						 \
    				   	if (SIZE) {						 \
@@ -154,6 +155,8 @@ extern void
 			       unsigned long long, struct ext_disk_stats *);
 extern int
 	count_bits(void *, int);
+extern int
+	count_csvalues(int, char **);
 extern char *
 	device_name(char *);
 extern void

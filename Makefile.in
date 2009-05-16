@@ -4,6 +4,8 @@
 # Version and package name
 VERSION = @PACKAGE_VERSION@
 PACKAGE = @PACKAGE_NAME@
+# Needed by docdir
+PACKAGE_TARNAME = $(PACKAGE)-$(VERSION)
 
 # Compiler to use
 CC = @CC@
@@ -29,8 +31,10 @@ ifndef DESTDIR
 DESTDIR = $(RPM_BUILD_ROOT)
 endif
 # These two variables are needed by other ones (eg bindir)
-prefix=$(PREFIX)
-exec_prefix=@exec_prefix@
+prefix = $(PREFIX)
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+
 ifndef SA_LIB_DIR
 SA_LIB_DIR = @SA_LIB_DIR@
 endif
@@ -39,13 +43,19 @@ ifndef SA_DIR
 SA_DIR = @SA_DIR@
 endif
 BIN_DIR = @bindir@
+
 ifndef MAN_DIR
-# Don't use $(PREFIX)/share/man by default: not necessarily in man path!
-MAN_DIR = @mandir@
+# With recent versions of autoconf, mandir defaults to ${datarootdir}/man
+# (i.e. $prefix/share/man) which is not necessarily in man path!
+# MAN_DIR = @mandir@
+MAN_DIR = @AuxMandir@
 endif
 MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
-DOC_DIR = @datadir@/doc/$(PACKAGE)
+ifndef DOC_DIR
+DOC_DIR = @docdir@
+endif
+
 NLS_DIR = $(PREFIX)/share/locale
 SYSCONFIG_DIR = @SYSCONFIG_DIR@
 

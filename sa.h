@@ -109,6 +109,10 @@
 #define DISPLAY_CPU_DEF(m)	(((m) & AO_F_CPU_DEF)        == AO_F_CPU_DEF)
 #define DISPLAY_CPU_ALL(m)	(((m) & AO_F_CPU_ALL)        == AO_F_CPU_ALL)
 
+/* Output flags for option -d */
+#define AO_F_DISK_PART		0x00000001
+
+#define COLLECT_PARTITIONS(m)	(((m) & AO_F_DISK_PART)      == AO_F_DISK_PART)
 
 /*
  ***************************************************************************
@@ -142,6 +146,7 @@
 #define K_UDP6		"UDP6"
 #define K_IPV6		"IPV6"
 #define K_POWER		"POWER"
+#define K_XDISK		"XDISK"
 
 /* sadc program */
 #define SADC		"sadc"

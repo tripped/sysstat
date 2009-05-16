@@ -1,6 +1,6 @@
 #!/bin/sh
 #@(#) Configuration script for sysstat
-# (C) 2000-2008 Sebastien GODARD (sysstat <at> orange.fr)
+# (C) 2000-2009 Sebastien GODARD (sysstat <at> orange.fr)
 
 ASK="sh build/Ask.sh"
 
@@ -129,6 +129,15 @@ then
 	fi
 fi
 
+if [ "${CRON}" != "" ];
+then
+	# rc directory
+	RCDIR=`${ASK} 'rc directory:' "rcdir" "rcdir"`
+	if [ "${RCDIR}" != "" ]; then
+	        RCDIR="rcdir=${RCDIR} "
+	fi
+fi
+
 # Compress manual pages
 COMPRESSMANPG=`${ASK} 'Compress manual pages? (y/n)' "--enable-compress-manpg" "compress-manpg"`
 if [ "${COMPRESSMANPG}" = "y" ]; then
@@ -158,11 +167,11 @@ fi
 
 echo
 echo "./configure ${PREFIX}${SA_LIB_DIR}${SA_DIR}${SYSCONFIG_DIR}${CLEAN_SA_DIR}${NLS} \
-${SMPRACE}${YESTERDAY}${HISTORY}${COMPRESSAFTER}${MAN}${IGNORE_MAN}${CRON}${COMPRESSMANPG} \
-${INSTALL_DOC}${INSTALL_ISAG}"
+${SMPRACE}${YESTERDAY}${HISTORY}${COMPRESSAFTER}${MAN}${IGNORE_MAN}${CRON}${RCDIR} \
+${COMPRESSMANPG}${INSTALL_DOC}${INSTALL_ISAG}"
 echo
 
 ./configure ${PREFIX}${SA_LIB_DIR}${SA_DIR}${SYSCONFIG_DIR}${CLEAN_SA_DIR}${NLS} \
-${SMPRACE}${YESTERDAY}${HISTORY}${COMPRESSAFTER}${MAN}${IGNORE_MAN}${CRON}${COMPRESSMANPG} \
-${INSTALL_DOC}${INSTALL_ISAG}
+${SMPRACE}${YESTERDAY}${HISTORY}${COMPRESSAFTER}${MAN}${IGNORE_MAN}${CRON}${RCDIR} \
+${COMPRESSMANPG}${INSTALL_DOC}${INSTALL_ISAG}
 

@@ -1550,7 +1550,7 @@ int main(int argc, char **argv)
 
 	/* Allocate structures for device list */
 	if (argc > 1) {
-		salloc_dev_list(argc - 1);
+		salloc_dev_list(argc - 1 + count_csvalues(argc, argv));
 	}
 
 	/* Process args... */

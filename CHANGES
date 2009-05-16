@@ -1,5 +1,22 @@
 Changes:
 
+2009/04/02: Version 9.0.2 - Sebastien Godard (sysstat <at> orange.fr)
+	* sadc can now collect partition statistics in addition to disk ones.
+	  Keywords XDISK and XALL have been added to -S option.
+	* Fixed a memory corruption in pidstat and iostat. This corruption
+	  could happen when a list of comma-separated values following
+	  option -p was entered on the command line.
+	* configure now takes into account a new variable named rcdir.
+	  This variable may be used to specify the directory where
+	  startup scripts will be installed.
+	* The value of directory for installing documentation files
+	  can now be set with configure's --docdir option.
+	* Fixed a small bug in activity.c file, where there was a
+	  missing semicolon between two fields.
+	* sar and sadc manual pages updated.
+	* NLS updated.
+	* CREDITS file updated.
+
 2009/03/07: Version 9.0.1 - Sebastien Godard (sysstat <at> orange.fr)
 	* Fix a crash with sar where a pointer was freed twice.
 	* NLS updated.

@@ -77,7 +77,8 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C <comment> ] [ -S { INT | DISK | IPV6 | POWER | SNMP | ALL } ] [ -F ] [ -L ] [ -V ]\n"));
+			  "[ -C <comment> ] [ -F ] [ -L ] [ -V ]\n"
+			  "[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"));
 	exit(1);
 }
 
@@ -104,6 +105,12 @@ void parse_sadc_S_option(char *argv[], int opt)
 			/* Select disk activity */
 			COLLECT_ACTIVITY(A_DISK);
 		}
+		else if (!strcmp(p, K_XDISK)) {
+			/* Select disk and partition activity */
+			i = get_activity_position(act, A_DISK);
+			act[i]->options   |= AO_COLLECTED;
+			act[i]->opt_flags |= AO_F_DISK_PART;
+		}
 		else if (!strcmp(p, K_SNMP)) {
 			/* Select SNMP activities */
 			COLLECT_ACTIVITY(A_NET_IP);
@@ -127,10 +134,15 @@ void parse_sadc_S_option(char *argv[], int opt)
 			/* Select activities related to power management */
 			COLLECT_ACTIVITY(A_PWR_CPUFREQ);
 		}
-		else if (!strcmp(p, K_ALL)) {
+		else if (!strcmp(p, K_ALL) || !strcmp(p, K_XALL)) {
 			/* Select all activities */
 			for (i = 0; i < NR_ACT; i++) {
 				act[i]->options |= AO_COLLECTED;
+			}
+			if (!strcmp(p, K_XALL)) {
+				/* Tell sadc to also collect partition statistics */
+				i = get_activity_position(act, A_DISK);
+				act[i]->opt_flags |= AO_F_DISK_PART;
 			}
 		}
 		else if (strspn(argv[opt], DIGITS) == strlen(argv[opt])) {
@@ -322,7 +334,7 @@ int ask_for_flock(int fd, int fatal)
 	/* Option -L may be used only if an outfile was specified on the command line */
 	if (LOCK_FILE(flags)) {
 		/*
-		 * Yes: try to lock file. To make code portable, check for both EWOULDBLOCK
+		 * Yes: Try to lock file. To make code portable, check for both EWOULDBLOCK
 		 * and EAGAIN return codes, and treat them the same (glibc documentation).
 		 * Indeed, some Linux ports (e.g. hppa-linux) do not equate EWOULDBLOCK and
 		 * EAGAIN like every other Linux port.
@@ -461,7 +473,7 @@ void setup_file_hdr(int fd)
 
 	return;
 
-	write_error:
+write_error:
 
 	fprintf(stderr, _("Cannot write system activity file header: %s\n"),
 		strerror(errno));
@@ -552,7 +564,10 @@ void write_stats(int ofd)
 		if ((p = get_activity_position(act, id_seq[i])) < 0)
 			continue;
 
+		if(act[p]->fsize != act[p]->msize) abort();
 		if (IS_COLLECTED(act[p]->options)) {
+			if (!act[p]->_buf0) abort();
+			if (*act[p]->nr <= 0) abort();
 			if ((n = write_all(ofd, act[p]->_buf0, act[p]->fsize * *act[p]->nr)) !=
 			    (act[p]->fsize * *act[p]->nr)) {
 				p_write_error();
@@ -731,7 +746,7 @@ void open_ofile(int *ofd, char ofile[])
 
 	return;
 
-	append_error:
+append_error:
 
 	close(*ofd);
 	if (FORCE_FILE(flags)) {

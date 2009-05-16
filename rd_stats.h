@@ -29,6 +29,7 @@
 #define CNT_ALL_DEV	0
 #define CNT_USED_DEV	1
 
+#define READ_PROC_STAT		0
 #define READ_DISKSTATS		1
 #define READ_PPARTITIONS	2
 
@@ -512,7 +513,7 @@ extern void
 extern void
 	read_stat_io(struct stats_io *);
 extern void
-	read_diskstats_disk(struct stats_disk *, int);
+	read_diskstats_disk(struct stats_disk *, int, int);
 extern void
 	read_partitions_disk(struct stats_disk *, int);
 extern void

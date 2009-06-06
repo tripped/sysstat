@@ -2,9 +2,10 @@ sysstat (9.0.2-1) UNRELEASED; urgency=low
 
   * NOT RELEASED YET
   * (NOT RELEASED YET) New upstream release
+  * Standards-Version: 3.8.1 (no changes)
   * 
 
- -- Robert Luberda <robert@debian.org>  Sat, 16 May 2009 16:59:42 +0200
+ -- Robert Luberda <robert@debian.org>  Sat, 16 May 2009 17:05:18 +0200
 
 sysstat (9.0.1-1) unstable; urgency=low
 

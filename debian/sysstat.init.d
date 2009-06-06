@@ -45,9 +45,17 @@ case "$1" in
         ;;
   stop)
         ;;
-
+  status)
+        if [ "$ENABLED" = "true" ] ; then
+                log_success_msg "sadc cron jobs are enabled"
+                exit 0
+        else
+                log_failure_msg "sadc cron jobs are disabled"
+                exit 3
+        fi
+        ;;
   *)
-        log_failure_msg "Usage: $0 {start|stop|restart|reload|force-reload}"
+        log_failure_msg "Usage: $0 {start|stop|restart|reload|force-reload|status}"
         exit 1
         ;;
 esac

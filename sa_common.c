@@ -348,7 +348,11 @@ void get_itv_value(struct record_header *record_hdr_curr,
 
 /*
  ***************************************************************************
- * Fill rectime structure according to data saved in file header.
+ * Fill the rectime structure with the file's creation date, based on file's
+ * time data saved in file header.
+ * The resulting timestamp is expressed in the locale of the file creator or
+ * in the user's own locale, depending on whether option -t has been used
+ * or not.
  *
  * IN:
  * @flags	Flags for common options and system state.
@@ -358,13 +362,13 @@ void get_itv_value(struct record_header *record_hdr_curr,
  * @rectime	Date and time from file header.
  ***************************************************************************
  */
-void set_hdr_rectime(unsigned int flags, struct tm *rectime,
-		     struct file_header *file_hdr)
+void get_file_timestamp_struct(unsigned int flags, struct tm *rectime,
+			       struct file_header *file_hdr)
 {
 	struct tm *loc_t;
 
 	if (PRINT_TRUE_TIME(flags)) {
-		/* Get local time */
+		/* Get local time. This is just to fill HH:MM:SS fields */
 		get_time(rectime);
 
 		rectime->tm_mday = file_hdr->sa_day;
@@ -403,8 +407,10 @@ void print_report_hdr(unsigned int flags, struct tm *rectime,
 		      struct file_header *file_hdr, int cpu_nr)
 {
 
-	set_hdr_rectime(flags, rectime, file_hdr);
+	/* Get date of file creation */
+	get_file_timestamp_struct(flags, rectime, file_hdr);
 
+	/* Display the header */
 	print_gal_header(rectime, file_hdr->sa_sysname, file_hdr->sa_release,
 			 file_hdr->sa_nodename, file_hdr->sa_machine,
 			 cpu_nr > 1 ? cpu_nr - 1 : 1);
@@ -1359,7 +1365,12 @@ int parse_sar_n_opt(char *argv[], int *opt, struct activity *act[])
 			SELECT_ACTIVITY(A_NET_TCP);
 			SELECT_ACTIVITY(A_NET_ETCP);
 			SELECT_ACTIVITY(A_NET_UDP);
-
+			SELECT_ACTIVITY(A_NET_SOCK6);
+			SELECT_ACTIVITY(A_NET_IP6);
+			SELECT_ACTIVITY(A_NET_EIP6);
+			SELECT_ACTIVITY(A_NET_ICMP6);
+			SELECT_ACTIVITY(A_NET_EICMP6);
+			SELECT_ACTIVITY(A_NET_UDP6);
 		}
 		else
 			return 1;

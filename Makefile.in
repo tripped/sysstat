@@ -269,6 +269,7 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/ky/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/lv/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/mt/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/nb/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/nl/LC_MESSAGES
@@ -293,6 +294,7 @@ ifdef REQUIRE_NLS
 	$(INSTALL_DATA) nls/it.gmo $(DESTDIR)$(NLS_DIR)/it/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/ja.gmo $(DESTDIR)$(NLS_DIR)/ja/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/ky.gmo $(DESTDIR)$(NLS_DIR)/ky/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/lv.gmo $(DESTDIR)$(NLS_DIR)/lv/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/mt.gmo $(DESTDIR)$(NLS_DIR)/mt/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/nb.gmo $(DESTDIR)$(NLS_DIR)/nb/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/nl.gmo $(DESTDIR)$(NLS_DIR)/nl/LC_MESSAGES/$(PACKAGE).mo
@@ -407,6 +409,7 @@ ifdef REQUIRE_NLS
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/it/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/ja/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/ky/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/lv/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/mt/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/nb/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/nl/LC_MESSAGES/$(PACKAGE).mo
@@ -431,6 +434,7 @@ ifdef REQUIRE_NLS
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/it/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ja/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ky/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/lv/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/mt/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nb/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nl/LC_MESSAGES
@@ -455,6 +459,7 @@ ifdef REQUIRE_NLS
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/it
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ja
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ky
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/lv
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/mt
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nb
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/nl

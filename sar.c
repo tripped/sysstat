@@ -237,14 +237,17 @@ void reverse_check_act(unsigned int act_nr)
 
 /*
  ***************************************************************************
- * Fill rectime structure according to time data saved in current
- * structure.
+ * Fill the rectime structure with current record's time, based on current
+ * record's time data saved in file.
+ * The resulting timestamp is expressed in the locale of the file creator
+ * or in the user's own locale depending on whether option -t has been used
+ * or not.
  *
  * IN:
  * @curr	Index in array for current sample statistics.
  ***************************************************************************
 */
-void sar_set_rectime(int curr)
+void sar_get_record_timestamp_struct(int curr)
 {
 	struct tm *ltm;
 
@@ -299,7 +302,7 @@ int check_line_hdr(void)
 
 /*
  ***************************************************************************
- * Set timestamp string.
+ * Set current record's timestamp string.
  *
  * IN:
  * @curr	Index in array for current sample statistics.
@@ -309,9 +312,10 @@ int check_line_hdr(void)
  * @cur_time	Timestamp string.
  ***************************************************************************
 */
-void set_timestamp(int curr, char *cur_time, int len)
+void set_record_timestamp_string(int curr, char *cur_time, int len)
 {
-	sar_set_rectime(curr);
+	/* Fill timestamp structure */
+	sar_get_record_timestamp_struct(curr);
 
 	/* Set cur_time date value */
 	strftime(cur_time, len, "%X", &rectime);
@@ -419,9 +423,9 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 	}
 
 	/* Set previous timestamp */
-	set_timestamp(!curr, timestamp[!curr], 16);
+	set_record_timestamp_string(!curr, timestamp[!curr], 16);
 	/* Set current timestamp */
-	set_timestamp(curr,  timestamp[curr],  16);
+	set_record_timestamp_string(curr,  timestamp[curr],  16);
 
 	/* Check if we are beginning a new day */
 	if (use_tm_start && record_hdr[!curr].ust_time &&
@@ -566,7 +570,7 @@ int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, int
 	char cur_time[26];
 	int dp = 1;
 
-	set_timestamp(curr, cur_time, 26);
+	set_record_timestamp_string(curr, cur_time, 26);
 
 	/* The record must be in the interval specified by -s/-e options */
 	if ((use_tm_start && (datecmp(&rectime, &tm_start) < 0)) ||
@@ -861,7 +865,7 @@ void read_stats_from_file(char from_file[])
 				 */
 				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
 						     file_actlst);
-				sar_set_rectime(0);
+				sar_get_record_timestamp_struct(0);
 			}
 		}
 		while ((rtype == R_RESTART) || (rtype == R_COMMENT) ||

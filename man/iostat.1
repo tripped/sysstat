@@ -1,9 +1,9 @@
-.TH IOSTAT 1 "DECEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "APRIL 2009" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
 statistics for devices, partitions and network filesystems (NFS).
 .SH SYNOPSIS
-.B iostat [ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [
+.B iostat [ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ] [
 .I device
 .B [...] | ALL ] [ -p [
 .I device
@@ -475,6 +475,9 @@ post 2.5 kernels since it needs /proc/diskstats file or a mounted sysfs to
 get the statistics. This option may also work with older kernels (e.g. 2.4)
 only if extended statistics are available in /proc/partitions (the kernel
 needs to be patched for that).
+.IP -z
+Tell iostat to omit output for any devices for which there was no activity
+during the sample period.
 
 .SH ENVIRONMENT
 The

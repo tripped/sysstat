@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://pagesperso-orange.fr/sebastien.godard/sysstat" targetNamespace="http://pagesperso-orange.fr/sebastien.godard/sysstat" elementFormDefault="qualified">
-<xs:annotation><xs:appinfo>-- XML Schema v2.4 for sysstat. See sadf.h --</xs:appinfo></xs:annotation>
+<xs:annotation><xs:appinfo>-- XML Schema v2.5 for sysstat. See sadf.h --</xs:appinfo></xs:annotation>
 
     <xs:element name="queue" type="queue-type"></xs:element>
 
@@ -601,6 +601,12 @@
     	<xs:restriction base="xs:nonNegativeInteger"></xs:restriction>
     </xs:simpleType>
 
+    <xs:element name="file-date" type="file-date-type"></xs:element>
+
+    <xs:simpleType name="file-date-type">
+        <xs:restriction base="xs:date"></xs:restriction>
+
+    </xs:simpleType>
     <xs:element name="sysname" type="sysname-type"></xs:element>
 
     <xs:simpleType name="sysname-type">
@@ -614,6 +620,7 @@
     		<xs:element name="sysname" type="sysname-type"></xs:element>
     		<xs:element name="release" type="release-type"></xs:element>
     		<xs:element name="machine" type="machine-type"></xs:element>
+		<xs:element name="file-date" type="file-date-type"></xs:element>
     		<xs:element name="number-of-cpus" type="number-of-cpus-type"></xs:element>
     		<xs:element name="statistics" type="statistics-type"></xs:element>
     		<xs:element name="restarts" type="restarts-type"></xs:element>

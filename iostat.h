@@ -28,6 +28,7 @@
 #define I_D_DEVMAP_NAME		0x10000
 #define I_D_ISO			0x20000
 #define I_D_HUMAN_READ		0x40000
+#define I_D_ZERO_OMIT		0x80000
 
 #define DISPLAY_CPU(m)		(((m) & I_D_CPU) == I_D_CPU)
 #define DISPLAY_DISK(m)		(((m) & I_D_DISK) == I_D_DISK)
@@ -48,6 +49,7 @@
 #define DISPLAY_DEVMAP_NAME(m)	(((m) & I_D_DEVMAP_NAME) == I_D_DEVMAP_NAME)
 #define DISPLAY_ISO(m)		(((m) & I_D_ISO) == I_D_ISO)
 #define DISPLAY_HUMAN_READ(m)	(((m) & I_D_HUMAN_READ) == I_D_HUMAN_READ)
+#define DISPLAY_ZERO_OMIT(m)	(((m) & I_D_ZERO_OMIT) == I_D_ZERO_OMIT)
 
 /* Preallocation constats */
 #define NR_DEV_PREALLOC		4

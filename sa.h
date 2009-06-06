@@ -694,6 +694,8 @@ extern int
 extern char *
 	get_devname(unsigned int, unsigned int, int);
 extern void
+	get_file_timestamp_struct(unsigned int, struct tm *, struct file_header *);
+extern void
 	get_itv_value(struct record_header *, struct record_header *,
 		      unsigned int, unsigned long long *, unsigned long long *);
 extern void

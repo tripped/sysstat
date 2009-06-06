@@ -73,7 +73,7 @@ extern struct activity *act[];
 
 /*
  ***************************************************************************
- * Print usage and exit
+ * Print usage and exit.
  *
  * IN:
  * @progname	Name of sysstat command.
@@ -94,7 +94,7 @@ void usage(char *progname)
 
 /*
  ***************************************************************************
- * Init structures
+ * Init structures.
  ***************************************************************************
  */
 void init_structures(void)
@@ -108,7 +108,10 @@ void init_structures(void)
 
 /*
  ***************************************************************************
- * Fill rectime structure according to time data saved in file.
+ * Fill the rectime structure with current record's date and time, based on
+ * current record's "number of seconds since the epoch" saved in file.
+ * The resulting timestamp is expressed in UTC or in local time, depending
+ * on whether option -t has been used or not.
  * NB: Option -t is ignored when option -p is used, since option -p
  * displays its timestamp as a long integer. This is type 'time_t',
  * which is the number of seconds since 1970 _always_ expressed in UTC.
@@ -117,7 +120,7 @@ void init_structures(void)
  * @curr	Index in array for current sample statistics.
  ***************************************************************************
 */
-void sadf_set_rectime(int curr)
+void sadf_get_record_timestamp_struct(int curr)
 {
 	struct tm *ltm;
 
@@ -135,7 +138,11 @@ void sadf_set_rectime(int curr)
 
 /*
  ***************************************************************************
- * Set timestamp string
+ * Set current record's timestamp string. This timestamp is expressed in
+ * UTC or in local time, depending on whether option -t has been used or
+ * not.
+ * NB: If options -D or -p have been used, the timestamp in expressed in
+ * seconds since 1970.
  *
  * IN:
  * @curr	Index in array for current sample statistics.
@@ -145,9 +152,10 @@ void sadf_set_rectime(int curr)
  * @cur_time	Timestamp string.
  ***************************************************************************
 */
-void set_timestamp(int curr, char *cur_time, int len)
+void set_record_timestamp_string(int curr, char *cur_time, int len)
 {
-	sadf_set_rectime(curr);
+	/* Fill timestamp structure */
+	sadf_get_record_timestamp_struct(curr);
 
 	/* Set cur_time date value */
 	if (format == S_O_DB_OPTION) {
@@ -265,7 +273,7 @@ void write_mech_stats(int curr, unsigned long dt, unsigned long long itv,
 
 /*
  ***************************************************************************
- * Write system statistics
+ * Write system statistics.
  *
  * IN:
  * @curr		Index in array for current sample statistics.
@@ -295,14 +303,20 @@ int write_parsable_stats(int curr, int reset, long *cnt, int use_tm_start,
 		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
 	}
 
-	/* Check time (1) */
+	/*
+	 * Check time (1).
+	 * For this first check, we use the time interval entered on
+	 * the command line. This is equivalent to sar's option -i which
+	 * selects records at seconds as close as possible to the number
+	 * specified by the interval parameter.
+	 */
 	if (!next_slice(record_hdr[2].uptime0, record_hdr[curr].uptime0,
 			reset, interval))
 		/* Not close enough to desired interval */
 		return 0;
 
 	/* Set current timestamp */
-	set_timestamp(curr, cur_time, 26);
+	set_record_timestamp_string(curr, cur_time, 26);
 
 	/* Check if we are beginning a new day */
 	if (use_tm_start && record_hdr[!curr].ust_time &&
@@ -363,8 +377,8 @@ void write_xml_stats(int curr, int tab, __nr_t cpu_nr)
 	unsigned long long dt, itv, g_itv;
 	char cur_time[XML_TIMESTAMP_LEN];
 
-	/* Set timestamp for current data */
-	sadf_set_rectime(curr);
+	/* Fill timestamp structure (rectime) for current record */
+	sadf_get_record_timestamp_struct(curr);
 
 	/* Get interval values */
 	get_itv_value(&record_hdr[curr], &record_hdr[!curr],
@@ -414,8 +428,8 @@ void write_xml_restarts(int curr, int tab)
 {
 	char cur_time[64];
 
-	/* Set timestamp for current data */
-	sadf_set_rectime(curr);
+	/* Fill timestamp structure for current record */
+	sadf_get_record_timestamp_struct(curr);
 
 	strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
 	xprintf(tab, "<boot %s/>", cur_time);
@@ -439,8 +453,8 @@ void write_xml_comments(int curr, int tab, int ifd)
 	sa_fread(ifd, file_comment, MAX_COMMENT_LEN, HARD_SIZE);
 	file_comment[MAX_COMMENT_LEN - 1] = '\0';
 
-	/* Set timestamp for current data */
-	sadf_set_rectime(curr);
+	/* Fill timestamp structure for current record */
+	sadf_get_record_timestamp_struct(curr);
 
 	strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
 	xprintf(tab, "<comment %s com=\"%s\"/>", cur_time, file_comment);
@@ -463,7 +477,7 @@ void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, i
 	char cur_time[26];
 	int dp = 1;
 
-	set_timestamp(curr, cur_time, 26);
+	set_record_timestamp_string(curr, cur_time, 26);
 
 	/* The record must be in the interval specified by -s/-e options */
 	if ((use_tm_start && (datecmp(&loctime, &tm_start) < 0)) ||
@@ -568,6 +582,8 @@ void display_file_header(char *dfile, struct file_magic *file_magic,
  */
 void display_xml_header(int *tab, __nr_t cpu_nr)
 {
+	char cur_time[XML_TIMESTAMP_LEN];
+	
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	printf("<!DOCTYPE Configure PUBLIC \"DTD v%s sysstat //EN\"\n", XML_DTD_VERSION);
 	printf("\"http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd\">\n");
@@ -578,8 +594,14 @@ void display_xml_header(int *tab, __nr_t cpu_nr)
 	xprintf(*tab, "<host nodename=\"%s\">", file_hdr.sa_nodename);
 	xprintf(++(*tab), "<sysname>%s</sysname>", file_hdr.sa_sysname);
 	xprintf(*tab, "<release>%s</release>", file_hdr.sa_release);
+		
 	xprintf(*tab, "<machine>%s</machine>", file_hdr.sa_machine);
 	xprintf(*tab, "<number-of-cpus>%d</number-of-cpus>", cpu_nr > 1 ? cpu_nr - 1 : 1);
+
+	/* Fill file timestmap structure (rectime) */
+	get_file_timestamp_struct(flags, &rectime, &file_hdr);
+	strftime(cur_time, XML_TIMESTAMP_LEN, "%Y-%m-%d", &rectime);
+	xprintf(*tab, "<file-date>%s</file-date>", cur_time);
 }
 
 /*
@@ -601,8 +623,8 @@ void display_xml_header(int *tab, __nr_t cpu_nr)
  * 		reinitialized (used in next_slice() function).
  ***************************************************************************
  */
-void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
-			 unsigned int act_id, int *reset, struct file_activity *file_actlst)
+void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
+		       unsigned int act_id, int *reset, struct file_activity *file_actlst)
 {
 	unsigned char rtype;
 	int next;
@@ -670,7 +692,7 @@ void read_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 
 /*
  ***************************************************************************
- * Display activities for -x option
+ * Display activities for -x option.
  *
  * IN:
  * @ifd		File descriptor of input file.
@@ -701,8 +723,8 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 	xprintf(tab++, "<statistics>");
 	do {
 		/*
-		 * If this record is a special (RESTART or COMMENT)  one,
-		 * try to get another one.
+		 * If this record is a special (RESTART or COMMENT) one,
+		 * skip it and try to read the next record in file.
 		 */
 		do {
 			eosaf = sa_fread(ifd, &record_hdr[0], RECORD_HEADER_SIZE, SOFT_SIZE);
@@ -710,7 +732,7 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 
 			if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
 				/*
-				 * Ok: previous record was not a special one.
+				 * OK: Previous record was not a special one.
 				 * So read now the extra fields.
 				 */
 				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
@@ -718,7 +740,11 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 			}
 
 			if (!eosaf && (rtype == R_COMMENT)) {
-				/* Ignore COMMENT record */
+				/*
+				 * Ignore COMMENT record.
+				 * (Unlike RESTART records, COMMENT records have an additional
+				 * comment field).
+				 */
 				if (lseek(ifd, MAX_COMMENT_LEN, SEEK_CUR) < MAX_COMMENT_LEN) {
 					perror("lseek");
 				}
@@ -818,7 +844,7 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 
 /*
  ***************************************************************************
- * Display activities for -p and -d options
+ * Display activities for -p and -d options.
  *
  * IN:
  * @ifd		File descriptor of input file.
@@ -850,12 +876,12 @@ void main_display_loop(int ifd, struct file_activity *file_actlst)
 			}
 			else {
 				/*
-				 * Ok: previous record was not a RESTART one.
+				 * OK: Previous record was not a special one.
 				 * So read now the extra fields.
 				 */
 				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
 						     file_actlst);
-				sadf_set_rectime(0);
+				sadf_get_record_timestamp_struct(0);
 			}
 		}
 		while ((rtype == R_RESTART) || (rtype == R_COMMENT) ||
@@ -880,8 +906,8 @@ void main_display_loop(int ifd, struct file_activity *file_actlst)
 			 * If stats are displayed horizontally, then all activities
 			 * are printed on the same line.
 			 */
-			read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
-					    ALL_ACTIVITIES, &reset, file_actlst);
+			rw_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
+					  ALL_ACTIVITIES, &reset, file_actlst);
 		}
 		else {
 			/* For each requested activity... */
@@ -898,8 +924,8 @@ void main_display_loop(int ifd, struct file_activity *file_actlst)
 					continue;
 
 				if (!HAS_MULTIPLE_OUTPUTS(act[p]->options)) {
-					read_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
-							    act[p]->id, &reset, file_actlst);
+					rw_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
+							  act[p]->id, &reset, file_actlst);
 				}
 				else {
 					unsigned int optf, msk;
@@ -910,9 +936,8 @@ void main_display_loop(int ifd, struct file_activity *file_actlst)
 						if (act[p]->opt_flags & msk) {
 							act[p]->opt_flags &= msk;
 							
-							read_curr_act_stats(ifd, fpos, &curr, &cnt,
-									    &eosaf, act[p]->id, &reset,
-									    file_actlst);
+							rw_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
+									  act[p]->id, &reset, file_actlst);
 							act[p]->opt_flags = optf;
 						}
 					}
@@ -944,7 +969,7 @@ void main_display_loop(int ifd, struct file_activity *file_actlst)
 
 /*
  ***************************************************************************
- * Read statistics from a system activity data file
+ * Read statistics from a system activity data file.
  *
  * IN:
  * @dfile	System activity data file name.
@@ -968,8 +993,6 @@ void read_stats_from_file(char dfile[])
 
 	/* Perform required allocations */
 	allocate_structures(act);
-
-	set_hdr_rectime(flags, &rectime, &file_hdr);
 
 	if (format == S_O_XML_OPTION) {
 		xml_display_loop(ifd, file_actlst);

@@ -1,5 +1,19 @@
 Changes:
 
+2009/05/24: Version 9.0.3 - Sebastien Godard (sysstat <at> orange.fr)
+	* [Michael Blakeley]: Option -z added to iostat. This option
+	  tells iostat to omit output for any devices for which there
+	  was no activity during the sample period.
+	* [Tomasz Pala]: Fix mpstat where interrupt values should be
+	  read as unsigned integers.
+	* sar -n ALL didn't select IPv6 statistics. This is now fixed.
+	* iostat, sar and mpstat manual pages updated.
+	* sadf -x now displays file creation date.
+	* XSD and DTD documents updated.
+	* NLS updated. Latvian translation added.
+	* CREDITS file updated.
+	* Code cleaned.
+
 2009/04/02: Version 9.0.2 - Sebastien Godard (sysstat <at> orange.fr)
 	* sadc can now collect partition statistics in addition to disk ones.
 	  Keywords XDISK and XALL have been added to -S option.

@@ -545,9 +545,9 @@ void read_interrupts_stat(int curr)
 				st_irq_i = st_irq[curr] + cpu_index[cpu] + 1;
 				/*
 				 * No need to set (st_irqcpu + cpu * irqcpu_nr)->irq:
-				 * same as st_irqcpu->irq.
+				 * This is the same as st_irqcpu->irq.
 				 */
-				p->interrupt = strtol(cp, &next, 10);
+				p->interrupt = strtoul(cp, &next, 10);
 				if (dgt) {
 					/* Sum only numerical irq (and not NMI, LOC, etc.) */
 					st_irq_i->irq_nr += p->interrupt;

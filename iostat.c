@@ -82,7 +82,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+			  "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
 			  "[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"));
 	exit(1);
 }
@@ -1389,6 +1389,21 @@ void write_stats(int curr, struct tm *rectime)
 							continue;
 					}
 				}
+				
+				if (DISPLAY_ZERO_OMIT(flags)) {
+					if (HAS_OLD_KERNEL(flags) ||
+					    HAS_PLAIN_KERNEL24(flags)) {
+						if (ioi->dk_drive == ioj->dk_drive)
+							/* No activity: Ignore it */
+							continue;
+					}
+					else {
+						if ((ioi->rd_ios == ioj->rd_ios) &&
+						    (ioi->wr_ios == ioj->wr_ios))
+							/* No activity: Ignore it */
+							continue;
+					}
+				}
 
 				if (DISPLAY_EXTENDED(flags)) {
 					write_ext_stat(curr, itv, fctr, shi, ioi, ioj);
@@ -1635,6 +1650,11 @@ int main(int argc, char **argv)
 				case 'x':
 					/* Display extended stats */
 					flags |= I_D_EXTENDED;
+					break;
+					
+				case 'z':
+					/* Omit output for devices with no activity */
+					flags |= I_D_ZERO_OMIT;
 					break;
 
 				case 'V':

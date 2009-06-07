@@ -75,7 +75,6 @@
 
 /* Allocate and init structure */
 #define SREALLOC(S, TYPE, SIZE)	do {								 \
-					fprintf(stderr, "realloc  %d %d\n",  __LINE__, SIZE);	 \
    					TYPE *_p_;						 \
 				   	_p_ = S;						 \
    				   	if (SIZE) {						 \

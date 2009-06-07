@@ -1,4 +1,4 @@
-sysstat (9.0.3-1) UNRELEASED; urgency=low
+sysstat (9.0.3-1) unstable; urgency=low
 
   * New upstream release
   * Standards-Version: 3.8.1 (no changes)
@@ -6,7 +6,7 @@ sysstat (9.0.3-1) UNRELEASED; urgency=low
   * Support status action in init.d script (closes: #526051).
   * Mention cron.daily's job in README.Debian (closes: #524219).
 
- -- Robert Luberda <robert@debian.org>  Sat, 06 Jun 2009 22:07:59 +0200
+ -- Robert Luberda <robert@debian.org>  Sun, 07 Jun 2009 09:38:31 +0200
 
 sysstat (9.0.1-1) unstable; urgency=low
 

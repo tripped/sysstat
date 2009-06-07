@@ -321,7 +321,7 @@ ifeq ($(CLEAN_SA_DIR),y)
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
 endif
 	mkdir -p $(DESTDIR)$(BIN_DIR)
-	mkdir -p $(DESTDIR)$(DOC_DIR)
+	#mkdir -p $(DESTDIR)$(DOC_DIR)
 	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
 	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
 	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)

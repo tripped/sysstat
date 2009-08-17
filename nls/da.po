@@ -1,4 +1,4 @@
-# translation of sysstat-9.0.0.po to Danish
+# translation of sysstat-9.0.3.po to Danish
 # Danish translation of the sysstat package.
 # Copyright (C) 1999, 2006, 2009 Free Software Foundation, Inc.
 # This file is distributed under the same license as the sysstat package.
@@ -8,11 +8,11 @@
 # Joe Hansen <joedalton2@yahoo.dk>, 2008, 2009.
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat-9.0.2\n"
+"Project-Id-Version: sysstat-9.0.3\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-04-01 10:36+0200\n"
-"PO-Revision-Date: 2009-05-17 19:56+0100\n"
-"Last-Translator: oe Hansen <joedalton2@yahoo.dk>\n"
+"POT-Creation-Date: 2009-05-17 16:16+0200\n"
+"PO-Revision-Date: 2009-05-25 09:19+0200\n"
+"Last-Translator: Keld Simonsen <keld@dkuug.dk>\n"
 "Language-Team: Danish <dansk@dansk-gruppen.dk>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=ISO-8859-15\n"
@@ -26,7 +26,7 @@ msgid "sysstat version %s\n"
 msgstr "sysstat version %s\n"
 
 #: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
-#: sa_common.c:1046 sadc.c:591 sadc.c:600 sadc.c:660
+#: sa_common.c:1052 sadc.c:591 sadc.c:600 sadc.c:660
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr "Kan ikke åbne %s: %s\n"
@@ -40,12 +40,12 @@ msgstr "Brug: %s [ flag ] [ <interval> [ <count> ] ]\n"
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
 "[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"
 msgstr ""
 "Flag er:\n"
-"[ -c ] [ -d ] [ -N ] [ -n ] [ -h] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
-"[ <enhed> [ ... ] | ALL ] [ -p [ <enhed> | ALL ] ]\n"
+"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
+"[ <enhed> [...] | ALL ] [ -p [ <enhed> [,...] | ALL ] ]\n"
 
 #: mpstat.c:86
 #, c-format
@@ -57,7 +57,7 @@ msgstr ""
 "[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 
 # sar.c:
-#: mpstat.c:457 pidstat.c:1683 sar.c:350
+#: mpstat.c:457 pidstat.c:1683 sar.c:354
 msgid "Average:"
 msgstr "Middel:"
 
@@ -77,7 +77,7 @@ msgstr ""
 "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:197 sar.c:964
+#: pidstat.c:197 sar.c:968
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "Angivne aktiviteter er ikke tilgængelig\n"
@@ -87,32 +87,32 @@ msgstr "Angivne aktiviteter er ikke tilgængelig\n"
 msgid "Cannot handle so many processors!\n"
 msgstr "Kan ikke håndtere så mange cpuer!\n"
 
-#: sa_common.c:860
+#: sa_common.c:866
 #, c-format
 msgid "Error while reading system activity file: %s\n"
 msgstr "Læsefejl ved indlæsning af aktivitetsfil: %s\n"
 
-#: sa_common.c:870
+#: sa_common.c:876
 #, c-format
 msgid "End of system activity file unexpected\n"
 msgstr "Uventet afslutning på systemaktivitetsfil\n"
 
-#: sa_common.c:888
+#: sa_common.c:894
 #, c-format
 msgid "File created using sar/sadc from sysstat version %d.%d.%d"
 msgstr "Fil oprettet ved brug af sar/sadc fra sysstat version %d.%d.%d"
 
-#: sa_common.c:919
+#: sa_common.c:925
 #, c-format
 msgid "Invalid system activity file: %s\n"
 msgstr "Ugyldig systemaktivitetsfil: %s\n"
 
-#: sa_common.c:926
+#: sa_common.c:932
 #, c-format
 msgid "Current sysstat version can no longer read the format of this file (%#x)\n"
 msgstr "Nuværende sysstat version kan ikke længere læse formatet på denne fil (%#x)\n"
 
-#: sa_common.c:1129
+#: sa_common.c:1135
 #, c-format
 msgid "Requested activities not available in file %s\n"
 msgstr "Angivne aktiviteter findes ikke i filen %s\n"
@@ -166,22 +166,22 @@ msgstr ""
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <tt:mm:ss> ] ] [ -e [ <tt:mm:ss> ] ]\n"
 "[ -- <sar_flag...> ]\n"
 
-#: sadf.c:527
+#: sadf.c:541
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr "Systemaktivitetsdatafil: %s (%#x)\n"
 
-#: sadf.c:536
+#: sadf.c:550
 #, c-format
 msgid "Host: "
 msgstr "Vært: "
 
-#: sadf.c:542
+#: sadf.c:556
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr "Størrelse på en lang int: %d\n"
 
-#: sadf.c:544
+#: sadf.c:558
 #, c-format
 msgid "List of activities:\n"
 msgstr "Oversigt over aktiviteter:\n"
@@ -340,32 +340,32 @@ msgstr "\t-y\tTTY enhedsstatistik\n"
 msgid "End of data collecting unexpected\n"
 msgstr "Uventet afslutning på dataindsamling\n"
 
-#: sar.c:770
+#: sar.c:774
 #, c-format
 msgid "Invalid data format\n"
 msgstr "Ugyldig dataformat\n"
 
-#: sar.c:774
+#: sar.c:778
 #, c-format
 msgid "Using a wrong data collector from a different sysstat version\n"
 msgstr "Bruger en forkert dataindsamler fra en anden sysstat version\n"
 
-#: sar.c:794
+#: sar.c:798
 #, c-format
 msgid "Inconsistent input data\n"
 msgstr "Inkonsistent inddata\n"
 
-#: sar.c:1199
+#: sar.c:1203
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "flagene -f og -o udelukker hinanden\n"
 
-#: sar.c:1205
+#: sar.c:1209
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "Læsning sker ikke fra en systemaktivitetsfil (brug flaget -f)\n"
 
-#: sar.c:1306
+#: sar.c:1310
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "Kan ikke lokalisere dataindsamleren (%s)\n"

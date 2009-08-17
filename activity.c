@@ -41,35 +41,6 @@
  */
 
 /*
- * Array of item numbers (CPUs, network interfaces, etc.)
- * A negative value (-1) is the default value and indicates that this number
- * has still not been calculated by the f_count() function from the corresponding
- * activity.
- * A value of 0 means that this number has been calculated, but no items have
- * been found.
- */
-__nr_t item_nr[] = {
-	-1,	/*  [0] Filled by wrap_get_cpu_nr() for A_CPU and A_PWR_CPUFREQ		*/
-	 1,	/*  [1] Constant for A_PCSW						*/
-	-1,	/*  [2] Filled by wrap_get_irq_nr() for A_IRQ				*/
-	-1,	/*  [3] Filled by wrap_get_serial_nr() for A_SERIAL			*/
-	-1,	/*  [4] Filled by wrap_get_disk_nr() for A_DISK				*/
-	-1,	/*  [5] Filled by wrap_get_iface_nr() for A_NET_DEV and A_NET_EDEV	*/
-	 1,	/*  [6] Constant for A_SWAP						*/
-	 1,	/*  [7] Constant for A_PAGE						*/
-	 1,	/*  [8] Constant for A_IO						*/
-	 1,	/*  [9] Constant for A_MEMORY						*/
-	 1,	/* [10] Constant for A_KTABLES						*/
-	 1,	/* [11] Constant for A_QUEUE						*/
-	 1,	/* [12] Constant for A_NET_NFS and A_NET_NFSD				*/
-	 1,	/* [13] Constant for A_NET_SOCK						*/
-	 1,	/* [14] Constant for SNMP statistics (A_NET_IP, etc.)			*/
-	 1,	/* [15] Constant for A_NET_SOCK6					*/
-	 1	/* [16] Constant for SNMP (IPv6) statistics (A_NET_IP6, etc.)		*/
-};
-
-
-/*
  * Bitmaps needed by activities.
  * Remember to allocate them before use!
  */
@@ -110,7 +81,7 @@ struct activity cpu_act = {
 		          "CPU;%usr;%nice;%sys;%iowait;%steal;%irq;%soft;%guest;%idle",
 	.name		= "A_CPU",
 #endif
-	.nr		= &item_nr[0],
+	.nr		= -1,
 	.fsize		= STATS_CPU_SIZE,
 	.msize		= STATS_CPU_SIZE,
 	.opt_flags	= AO_F_CPU_DEF,
@@ -136,7 +107,7 @@ struct activity pcsw_act = {
 	.hdr_line	= "proc/s;cswch/s",
 	.name		= "A_PCSW",
 #endif
-	.nr		= &item_nr[1],
+	.nr		= 1,
 	.fsize		= STATS_PCSW_SIZE,
 	.msize		= STATS_PCSW_SIZE,
 	.opt_flags	= 0,
@@ -162,7 +133,7 @@ struct activity irq_act = {
 	.hdr_line	= "INTR;intr/s",
 	.name		= "A_IRQ",
 #endif
-	.nr		= &item_nr[2],
+	.nr		= -1,
 	.fsize		= STATS_IRQ_SIZE,
 	.msize		= STATS_IRQ_SIZE,
 	.opt_flags	= 0,
@@ -188,7 +159,7 @@ struct activity swap_act = {
 	.hdr_line	= "pswpin/s;pswpout/s",
 	.name		= "A_SWAP",
 #endif
-	.nr		= &item_nr[6],
+	.nr		= 1,
 	.fsize		= STATS_SWAP_SIZE,
 	.msize		= STATS_SWAP_SIZE,
 	.opt_flags	= 0,
@@ -215,7 +186,7 @@ struct activity paging_act = {
 		          "pgfree/s;pgscank/s;pgscand/s;pgsteal/s;%vmeff",
 	.name		= "A_PAGE",
 #endif
-	.nr		= &item_nr[7],
+	.nr		= 1,
 	.fsize		= STATS_PAGING_SIZE,
 	.msize		= STATS_PAGING_SIZE,
 	.opt_flags	= 0,
@@ -241,7 +212,7 @@ struct activity io_act = {
 	.hdr_line	= "tps;rtps;wtps;bread/s;bwrtn/s",
 	.name		= "A_IO",
 #endif
-	.nr		= &item_nr[8],
+	.nr		= 1,
 	.fsize		= STATS_IO_SIZE,
 	.msize		= STATS_IO_SIZE,
 	.opt_flags	= 0,
@@ -269,7 +240,7 @@ struct activity memory_act = {
 		          "kbswpfree;kbswpused;%swpused;kbswpcad;%swpcad",
 	.name		= "A_MEMORY",
 #endif
-	.nr		= &item_nr[9],
+	.nr		= 1,
 	.fsize		= STATS_MEMORY_SIZE,
 	.msize		= STATS_MEMORY_SIZE,
 	.opt_flags	= 0,
@@ -295,7 +266,7 @@ struct activity ktables_act = {
 	.hdr_line	= "dentunusd;file-nr;inode-nr;pty-nr",
 	.name		= "A_KTABLES",
 #endif
-	.nr		= &item_nr[10],
+	.nr		= 1,
 	.fsize		= STATS_KTABLES_SIZE,
 	.msize		= STATS_KTABLES_SIZE,
 	.opt_flags	= 0,
@@ -321,7 +292,7 @@ struct activity queue_act = {
 	.hdr_line	= "runq-sz;plist-sz;ldavg-1;ldavg-5;ldavg-15",
 	.name		= "A_QUEUE",
 #endif
-	.nr		= &item_nr[11],
+	.nr		= 1,
 	.fsize		= STATS_QUEUE_SIZE,
 	.msize		= STATS_QUEUE_SIZE,
 	.opt_flags	= 0,
@@ -347,7 +318,7 @@ struct activity serial_act = {
 	.hdr_line	= "TTY;rcvin/s;txmtin/s;framerr/s;prtyerr/s;brk/s;ovrun/s",
 	.name		= "A_SERIAL",
 #endif
-	.nr		= &item_nr[3],
+	.nr		= -1,
 	.fsize		= STATS_SERIAL_SIZE,
 	.msize		= STATS_SERIAL_SIZE,
 	.opt_flags	= 0,
@@ -373,7 +344,7 @@ struct activity disk_act = {
 	.hdr_line	= "DEV;tps;rd_sec/s;wr_sec/s;avgrq-sz;avgqu-sz;await;svctm;%util",
 	.name		= "A_DISK",
 #endif
-	.nr		= &item_nr[4],
+	.nr		= -1,
 	.fsize		= STATS_DISK_SIZE,
 	.msize		= STATS_DISK_SIZE,
 	.opt_flags	= 0,
@@ -399,7 +370,7 @@ struct activity net_dev_act = {
 	.hdr_line	= "IFACE;rxpck/s;txpck/s;rxkB/s;txkB/s;rxcmp/s;txcmp/s;rxmcst/s",
 	.name		= "A_NET_DEV",
 #endif
-	.nr		= &item_nr[5],
+	.nr		= -1,
 	.fsize		= STATS_NET_DEV_SIZE,
 	.msize		= STATS_NET_DEV_SIZE,
 	.opt_flags	= 0,
@@ -426,7 +397,7 @@ struct activity net_edev_act = {
 		          "txcarr/s;rxfram/s;rxfifo/s;txfifo/s",
 	.name		= "A_NET_EDEV",
 #endif
-	.nr		= &item_nr[5],
+	.nr		= -1,
 	.fsize		= STATS_NET_EDEV_SIZE,
 	.msize		= STATS_NET_EDEV_SIZE,
 	.opt_flags	= 0,
@@ -452,7 +423,7 @@ struct activity net_nfs_act = {
 	.hdr_line	= "call/s;retrans/s;read/s;write/s;access/s;getatt/s",
 	.name		= "A_NET_NFS",
 #endif
-	.nr		= &item_nr[12],
+	.nr		= 1,
 	.fsize		= STATS_NET_NFS_SIZE,
 	.msize		= STATS_NET_NFS_SIZE,
 	.opt_flags	= 0,
@@ -479,7 +450,7 @@ struct activity net_nfsd_act = {
 		          "sread/s;swrite/s;saccess/s;sgetatt/s",
 	.name		= "A_NET_NFSD",
 #endif
-	.nr		= &item_nr[12],
+	.nr		= 1,
 	.fsize		= STATS_NET_NFSD_SIZE,
 	.msize		= STATS_NET_NFSD_SIZE,
 	.opt_flags	= 0,
@@ -505,7 +476,7 @@ struct activity net_sock_act = {
 	.hdr_line	= "totsck;tcpsck;udpsck;rawsck;ip-frag;tcp-tw",
 	.name		= "A_NET_SOCK",
 #endif
-	.nr		= &item_nr[13],
+	.nr		= 1,
 	.fsize		= STATS_NET_SOCK_SIZE,
 	.msize		= STATS_NET_SOCK_SIZE,
 	.opt_flags	= 0,
@@ -531,7 +502,7 @@ struct activity net_ip_act = {
 	.hdr_line	= "irec/s;fwddgm/s;idel/s;orq/s;asmrq/s;asmok/s;fragok/s;fragcrt/s",
 	.name		= "A_NET_IP",
 #endif
-	.nr		= &item_nr[14],
+	.nr		= 1,
 	.fsize		= STATS_NET_IP_SIZE,
 	.msize		= STATS_NET_IP_SIZE,
 	.opt_flags	= 0,
@@ -557,7 +528,7 @@ struct activity net_eip_act = {
 	.hdr_line	= "ihdrerr/s;iadrerr/s;iukwnpr/s;idisc/s;odisc/s;onort/s;asmf/s;fragf/s",
 	.name		= "A_NET_EIP",
 #endif
-	.nr		= &item_nr[14],
+	.nr		= 1,
 	.fsize		= STATS_NET_EIP_SIZE,
 	.msize		= STATS_NET_EIP_SIZE,
 	.opt_flags	= 0,
@@ -584,7 +555,7 @@ struct activity net_icmp_act = {
 		          "otmr/s;iadrmk/s;iadrmkr/s;oadrmk/s;oadrmkr/s",
 	.name		= "A_NET_ICMP",
 #endif
-	.nr		= &item_nr[14],
+	.nr		= 1,
 	.fsize		= STATS_NET_ICMP_SIZE,
 	.msize		= STATS_NET_ICMP_SIZE,
 	.opt_flags	= 0,
@@ -611,7 +582,7 @@ struct activity net_eicmp_act = {
 		          "iparmpb/s;oparmpb/s;isrcq/s;osrcq/s;iredir/s;oredir/s",
 	.name		= "A_NET_EICMP",
 #endif
-	.nr		= &item_nr[14],
+	.nr		= 1,
 	.fsize		= STATS_NET_EICMP_SIZE,
 	.msize		= STATS_NET_EICMP_SIZE,
 	.opt_flags	= 0,
@@ -637,7 +608,7 @@ struct activity net_tcp_act = {
 	.hdr_line	= "active/s;passive/s;iseg/s;oseg/s",
 	.name		= "A_NET_TCP",
 #endif
-	.nr		= &item_nr[14],
+	.nr		= 1,
 	.fsize		= STATS_NET_TCP_SIZE,
 	.msize		= STATS_NET_TCP_SIZE,
 	.opt_flags	= 0,
@@ -663,7 +634,7 @@ struct activity net_etcp_act = {
 	.hdr_line	= "atmptf/s;estres/s;retrans/s;isegerr/s;orsts/s",
 	.name		= "A_NET_ETCP",
 #endif
-	.nr		= &item_nr[14],
+	.nr		= 1,
 	.fsize		= STATS_NET_ETCP_SIZE,
 	.msize		= STATS_NET_ETCP_SIZE,
 	.opt_flags	= 0,
@@ -689,7 +660,7 @@ struct activity net_udp_act = {
 	.hdr_line	= "idgm/s;odgm/s;noport/s;idgmerr/s",
 	.name		= "A_NET_UDP",
 #endif
-	.nr		= &item_nr[14],
+	.nr		= 1,
 	.fsize		= STATS_NET_UDP_SIZE,
 	.msize		= STATS_NET_UDP_SIZE,
 	.opt_flags	= 0,
@@ -715,7 +686,7 @@ struct activity net_sock6_act = {
 	.hdr_line	= "tcp6sck;udp6sck;raw6sck;ip6-frag",
 	.name		= "A_NET_SOCK6",
 #endif
-	.nr		= &item_nr[15],
+	.nr		= 1,
 	.fsize		= STATS_NET_SOCK6_SIZE,
 	.msize		= STATS_NET_SOCK6_SIZE,
 	.opt_flags	= 0,
@@ -742,7 +713,7 @@ struct activity net_ip6_act = {
 			  "imcpck6/s;omcpck6/s;fragok6/s;fragcr6/s",
 	.name		= "A_NET_IP6",
 #endif
-	.nr		= &item_nr[16],
+	.nr		= 1,
 	.fsize		= STATS_NET_IP6_SIZE,
 	.msize		= STATS_NET_IP6_SIZE,
 	.opt_flags	= 0,
@@ -769,7 +740,7 @@ struct activity net_eip6_act = {
 			  "inort6/s;onort6/s;asmf6/s;fragf6/s;itrpck6/s",
 	.name		= "A_NET_EIP6",
 #endif
-	.nr		= &item_nr[16],
+	.nr		= 1,
 	.fsize		= STATS_NET_EIP6_SIZE,
 	.msize		= STATS_NET_EIP6_SIZE,
 	.opt_flags	= 0,
@@ -797,7 +768,7 @@ struct activity net_icmp6_act = {
 			  "inbad6/s;onbad6/s",
 	.name		= "A_NET_ICMP6",
 #endif
-	.nr		= &item_nr[16],
+	.nr		= 1,
 	.fsize		= STATS_NET_ICMP6_SIZE,
 	.msize		= STATS_NET_ICMP6_SIZE,
 	.opt_flags	= 0,
@@ -824,7 +795,7 @@ struct activity net_eicmp6_act = {
 		          "iprmpb6/s;oprmpb6/s;iredir6/s;oredir6/s;ipck2b6/s;opck2b6/s",
 	.name		= "A_NET_EICMP6",
 #endif
-	.nr		= &item_nr[16],
+	.nr		= 1,
 	.fsize		= STATS_NET_EICMP6_SIZE,
 	.msize		= STATS_NET_EICMP6_SIZE,
 	.opt_flags	= 0,
@@ -850,7 +821,7 @@ struct activity net_udp6_act = {
 	.hdr_line	= "idgm6/s;odgm6/s;noport6/s;idgmer6/s",
 	.name		= "A_NET_UDP6",
 #endif
-	.nr		= &item_nr[16],
+	.nr		= 1,
 	.fsize		= STATS_NET_UDP6_SIZE,
 	.msize		= STATS_NET_UDP6_SIZE,
 	.opt_flags	= 0,
@@ -876,7 +847,7 @@ struct activity pwr_cpufreq_act = {
 	.hdr_line	= "CPU;MHz",
 	.name		= "A_PWR_CPUFREQ",
 #endif
-	.nr		= &item_nr[0],
+	.nr		= -1,
 	.fsize		= STATS_PWR_CPUFREQ_SIZE,
 	.msize		= STATS_PWR_CPUFREQ_SIZE,
 	.opt_flags	= 0,

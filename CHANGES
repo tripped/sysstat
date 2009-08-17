@@ -1,5 +1,15 @@
 Changes:
 
+2009/07/19: Version 9.0.4 - Sebastien Godard (sysstat <at> orange.fr)
+	* [Jonathan Kamens]: Fix double free/memory corruption bug
+	  with sadc.
+	* [Jeroen Roovers]: Get entirely rid of implicit rule for
+	  libsyscom.a in Makefile to fix a problem with parallel
+	  execution.
+	* sysstat.ioconf configuration file updated.
+	* NLS updated.
+	* CREDITS file updated.
+
 2009/05/24: Version 9.0.3 - Sebastien Godard (sysstat <at> orange.fr)
 	* [Michael Blakeley]: Option -z added to iostat. This option
 	  tells iostat to omit output for any devices for which there

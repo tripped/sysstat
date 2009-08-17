@@ -193,10 +193,10 @@ void list_fields(unsigned int act_id)
 		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
 			continue;
 		
-		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0)) {
+		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
 			if (!HAS_MULTIPLE_OUTPUTS(act[i]->options)) {
 				printf(";%s", act[i]->hdr_line);
-				if ((*act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {
+				if ((act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {
 					printf("[...]");
 				}
 			}
@@ -206,7 +206,7 @@ void list_fields(unsigned int act_id)
 				for (hl = strtok(hline, "|"); hl; hl = strtok(NULL, "|"), msk <<= 1) {
 					if ((hl != NULL) && (act[i]->opt_flags & msk)) {
 						printf(";%s", hl);
-						if ((*act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {
+						if ((act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {
 							printf("[...]");
 						}
 					}
@@ -255,7 +255,7 @@ void write_mech_stats(int curr, unsigned long dt, unsigned long long itv,
 		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
 			continue;
 		
-		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0)) {
+		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
 			
 			if (NEEDS_GLOBAL_ITV(act[i]->options)) {
 				(*act[i]->f_render)(act[i], isdb, pre, curr, g_itv);
@@ -300,7 +300,7 @@ int write_parsable_stats(int curr, int reset, long *cnt, int use_tm_start,
 	static __nr_t cpu_nr = -1;
 	
 	if (cpu_nr < 0) {
-		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 	}
 
 	/*
@@ -401,7 +401,7 @@ void write_xml_stats(int curr, int tab, __nr_t cpu_nr)
 	for (i = 0; i < NR_ACT; i++) {
 		
 		if (CLOSE_MARKUP(act[i]->options) ||
-		    (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0))) {
+		    (IS_SELECTED(act[i]->options) && (act[i]->nr > 0))) {
 			
 			if (NEEDS_GLOBAL_ITV(act[i]->options)) {
 				(*act[i]->f_xml_print)(act[i], curr, tab, g_itv);
@@ -535,7 +535,7 @@ void display_file_header(char *dfile, struct file_magic *file_magic,
 	static __nr_t cpu_nr = -1;
 	
 	if (cpu_nr < 0) {
-		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 	}
 	
 	printf(_("System activity data file: %s (%#x)\n"),
@@ -562,7 +562,7 @@ void display_file_header(char *dfile, struct file_magic *file_magic,
 		if ((p = get_activity_position(act, id_seq[i])) < 0) {
 			PANIC(id_seq[i]);
 		}
-		printf("%02d: %s\t(x%d)\n", act[p]->id,	act[p]->name, *act[p]->nr);
+		printf("%02d: %s\t(x%d)\n", act[p]->id,	act[p]->name, act[p]->nr);
 	}
 
 	exit(0);
@@ -707,7 +707,7 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 	static __nr_t cpu_nr = -1;
 	
 	if (cpu_nr < 0) {
-		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 	}
 
 	/* Save current file position */

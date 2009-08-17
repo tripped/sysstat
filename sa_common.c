@@ -80,9 +80,9 @@ void allocate_structures(struct activity *act[])
 	int i, j;
 
 	for (i = 0; i < NR_ACT; i++) {
-		if (*act[i]->nr > 0) {
+		if (act[i]->nr > 0) {
 			for (j = 0; j < 3; j++) {
-				SREALLOC(act[i]->buf[j], void, act[i]->msize * *act[i]->nr);
+				SREALLOC(act[i]->buf[j], void, act[i]->msize * act[i]->nr);
 			}
 		}
 	}
@@ -101,7 +101,7 @@ void free_structures(struct activity *act[])
 	int i, j;
 
 	for (i = 0; i < NR_ACT; i++) {
-		if (*act[i]->nr > 0) {
+		if (act[i]->nr > 0) {
 			for (j = 0; j < 3; j++) {
 				if (act[i]->buf[j]) {
 					free(act[i]->buf[j]);
@@ -442,7 +442,7 @@ unsigned int check_net_dev_reg(struct activity *a, int curr, int ref,
 
 	sndc = (struct stats_net_dev *) a->buf[curr] + pos;
 
-	while (index < *a->nr) {
+	while (index < a->nr) {
 		sndp = (struct stats_net_dev *) a->buf[ref] + index;
 		if (!strcmp(sndc->interface, sndp->interface)) {
 			/*
@@ -512,7 +512,7 @@ unsigned int check_net_dev_reg(struct activity *a, int curr, int ref,
 	}
 
 	/* Network interface not found: Look for the first free structure */
-	for (index = 0; index < *a->nr; index++) {
+	for (index = 0; index < a->nr; index++) {
 		sndp = (struct stats_net_dev *) a->buf[ref] + index;
 		if (!strcmp(sndp->interface, "?")) {
 			memset(sndp, 0, STATS_NET_DEV_SIZE);
@@ -520,7 +520,7 @@ unsigned int check_net_dev_reg(struct activity *a, int curr, int ref,
 			break;
 		}
 	}
-	if (index >= *a->nr) {
+	if (index >= a->nr) {
 		/* No free structure: Default is structure of same rank */
 		index = pos;
 	}
@@ -557,7 +557,7 @@ unsigned int check_net_edev_reg(struct activity *a, int curr, int ref,
 
 	snedc = (struct stats_net_edev *) a->buf[curr] + pos;
 
-	while (index < *a->nr) {
+	while (index < a->nr) {
 		snedp = (struct stats_net_edev *) a->buf[ref] + index;
 		if (!strcmp(snedc->interface, snedp->interface)) {
 			/*
@@ -587,7 +587,7 @@ unsigned int check_net_edev_reg(struct activity *a, int curr, int ref,
 	}
 
 	/* Network interface not found: Look for the first free structure */
-	for (index = 0; index < *a->nr; index++) {
+	for (index = 0; index < a->nr; index++) {
 		snedp = (struct stats_net_edev *) a->buf[ref] + index;
 		if (!strcmp(snedp->interface, "?")) {
 			memset(snedp, 0, STATS_NET_EDEV_SIZE);
@@ -595,7 +595,7 @@ unsigned int check_net_edev_reg(struct activity *a, int curr, int ref,
 			break;
 		}
 	}
-	if (index >= *a->nr) {
+	if (index >= a->nr) {
 		/* No free structure: Default is structure of same rank */
 		index = pos;
 	}
@@ -630,7 +630,7 @@ int check_disk_reg(struct activity *a, int curr, int ref, int pos)
 
 	sdc = (struct stats_disk *) a->buf[curr] + pos;
 
-	while (index < *a->nr) {
+	while (index < a->nr) {
 		sdp = (struct stats_disk *) a->buf[ref] + index;
 		if ((sdc->major == sdp->major) &&
 		    (sdc->minor == sdp->minor)) {
@@ -655,7 +655,7 @@ int check_disk_reg(struct activity *a, int curr, int ref, int pos)
 	}
 
 	/* Disk not found: Look for the first free structure */
-	for (index = 0; index < *a->nr; index++) {
+	for (index = 0; index < a->nr; index++) {
 		sdp = (struct stats_disk *) a->buf[ref] + index;
 		if (!(sdp->major + sdp->minor)) {
 			memset(sdp, 0, STATS_DISK_SIZE);
@@ -664,7 +664,7 @@ int check_disk_reg(struct activity *a, int curr, int ref, int pos)
 			break;
 		}
 	}
-	if (index >= *a->nr) {
+	if (index >= a->nr) {
 		/* No free structure found: Default is structure of same rank */
 		index = pos;
 	}
@@ -968,11 +968,11 @@ void copy_structures(struct activity *act[], unsigned int id_seq[],
 			continue;
 
 		if (((p = get_activity_position(act, id_seq[i])) < 0) ||
-		    (*act[p]->nr < 1)) {
+		    (act[p]->nr < 1)) {
 			PANIC(1);
 		}
 
-		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * *act[p]->nr);
+		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * act[p]->nr);
 
 	}
 }
@@ -1008,17 +1008,17 @@ void read_file_stat_bunch(struct activity *act[], int curr, int ifd, int act_nr,
 				exit(2);
 			}
 		}
-		else if ((*act[p]->nr > 1) && (act[p]->msize > act[p]->fsize)) {
-			for (j = 0; j < *act[p]->nr; j++) {
+		else if ((act[p]->nr > 1) && (act[p]->msize > act[p]->fsize)) {
+			for (j = 0; j < act[p]->nr; j++) {
 				sa_fread(ifd, (char *) act[p]->buf[curr] + j * act[p]->msize,
 					 act[p]->fsize, HARD_SIZE);
 			}
 		}
-		else if (*act[p]->nr > 0) {
-			sa_fread(ifd, act[p]->buf[curr], act[p]->fsize * *act[p]->nr, HARD_SIZE);
+		else if (act[p]->nr > 0) {
+			sa_fread(ifd, act[p]->buf[curr], act[p]->fsize * act[p]->nr, HARD_SIZE);
 		}
 		else {
-			PANIC(*act[p]->nr);
+			PANIC(act[p]->nr);
 		}
 	}
 }
@@ -1111,7 +1111,7 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 				act[p]->msize = fal->size;
 			}
 			act[p]->fsize = fal->size;
-			*act[p]->nr   = fal->nr;
+			act[p]->nr    = fal->nr;
 			id_seq[j++]   = fal->id;
 		}
 	}

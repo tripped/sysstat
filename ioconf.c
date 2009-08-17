@@ -374,7 +374,6 @@ char *ioc_name(unsigned int major, unsigned int minor)
 
 	p = ioconf[major];
 
-
 	/* Invalid major or minor numbers? */
 	if ((p == NULL) || (minor >= (p->blkp->dcount * p->blkp->pcount))) {
 		/*

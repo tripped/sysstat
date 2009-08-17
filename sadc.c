@@ -218,8 +218,8 @@ void reset_stats(void)
 	int i;
 
 	for (i = 0; i < NR_ACT; i++) {
-		if ((*act[i]->nr > 0) && act[i]->_buf0 && !IS_REMANENT(act[i]->options)) {
-			memset(act[i]->_buf0, 0, act[i]->msize * *act[i]->nr);
+		if ((act[i]->nr > 0) && act[i]->_buf0 && !IS_REMANENT(act[i]->options)) {
+			memset(act[i]->_buf0, 0, act[i]->msize * act[i]->nr);
 		}
 	}
 }
@@ -237,14 +237,12 @@ void sa_sys_init(void)
 
 		if (act[i]->f_count) {
 			/* Number of items is not a constant and should be calculated */
-			if (*act[i]->nr < 0) {
-				*act[i]->nr = (*act[i]->f_count)(act[i]);
-			}
+			act[i]->nr = (*act[i]->f_count)(act[i]);
 		}
 
-		if (*act[i]->nr > 0) {
+		if (act[i]->nr > 0) {
 			/* Allocate structures for current activity */
-			SREALLOC(act[i]->_buf0, void, act[i]->msize * *act[i]->nr);
+			SREALLOC(act[i]->_buf0, void, act[i]->msize * act[i]->nr);
 		}
 		else {
 			/* No items found: Invalidate current activity */
@@ -267,7 +265,7 @@ void sa_sys_free(void)
 
 	for (i = 0; i < NR_ACT; i++) {
 
-		if (*act[i]->nr > 0) {
+		if (act[i]->nr > 0) {
 			if (act[i]->_buf0) {
 				free(act[i]->_buf0);
 				act[i]->_buf0 = NULL;
@@ -462,7 +460,7 @@ void setup_file_hdr(int fd)
 
 		if (IS_COLLECTED(act[p]->options)) {
 			file_act.id   = act[p]->id;
-			file_act.nr   = *act[p]->nr;
+			file_act.nr   = act[p]->nr;
 			file_act.size = act[p]->fsize;
 
 			if ((n = write_all(fd, &file_act, FILE_ACTIVITY_SIZE))
@@ -565,8 +563,8 @@ void write_stats(int ofd)
 			continue;
 
 		if (IS_COLLECTED(act[p]->options)) {
-			if ((n = write_all(ofd, act[p]->_buf0, act[p]->fsize * *act[p]->nr)) !=
-			    (act[p]->fsize * *act[p]->nr)) {
+			if ((n = write_all(ofd, act[p]->_buf0, act[p]->fsize * act[p]->nr)) !=
+			    (act[p]->fsize * act[p]->nr)) {
 				p_write_error();
 			}
 		}
@@ -718,7 +716,7 @@ void open_ofile(int *ofd, char ofile[])
 					/* Unknown activity in list or item size has changed */
 					goto append_error;
 
-				if (*act[p]->nr != file_act.nr) {
+				if (act[p]->nr != file_act.nr) {
 					if (IS_REMANENT(act[p]->options) || !file_act.nr)
 						/*
 						 * Remanent structures cannot have a different number of items.
@@ -730,8 +728,8 @@ void open_ofile(int *ofd, char ofile[])
 						 * Force number of items (serial lines, network interfaces...)
 						 * to that of the file, and reallocate structures.
 						 */
-						*act[p]->nr = file_act.nr;
-						SREALLOC(act[p]->_buf0, void, act[p]->msize * *act[p]->nr);
+						act[p]->nr = file_act.nr;
+						SREALLOC(act[p]->_buf0, void, act[p]->msize * act[p]->nr);
 					}
 				}
 				/* Save activity sequence */
@@ -764,7 +762,7 @@ append_error:
 void read_stats(void)
 {
 	int i;
-	__nr_t cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
+	__nr_t cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 
 	/*
 	 * Init uptime0. So if /proc/uptime cannot fill it,

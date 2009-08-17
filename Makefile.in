@@ -175,10 +175,8 @@ sa_wrap.o: sa_wrap.c sa.h rd_stats.h
 
 # Explicit rules needed to prevent possible file corruption
 # when using parallel execution.
-libsyscom.a: libsyscom.a(common.o ioconf.o)
-	$(AR) rv $@ common.o
-	$(AR) rv $@ ioconf.o
-	$(AR) s $@
+libsyscom.a: common.o ioconf.o
+	$(AR) rvs $@ $?
 
 librdstats.a: librdstats.a(rd_stats.o)
 

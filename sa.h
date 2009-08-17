@@ -324,9 +324,13 @@ struct activity {
 	 */
 	char *name;
 	/*
-	 * Number of item.
+	 * Number of items on the system.
+	 * A negative value (-1) is the default value and indicates that this number
+	 * has still not been calculated by the f_count() function.
+	 * A value of 0 means that this number has been calculated, but no items have
+	 * been found.
 	 */
-	__nr_t *nr;
+	__nr_t nr;
 	/*
 	 * Size of an item.
 	 * This is the size of the corresponding structure, as read from or written

@@ -167,7 +167,7 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 		
 		scc = (struct stats_cpu *) ((char *) a->buf[curr]  + i * a->msize);
 		scp = (struct stats_cpu *) ((char *) a->buf[!curr] + i * a->msize);
@@ -414,7 +414,7 @@ __print_funct_t render_irq_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 	
-	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 
 		sic = (struct stats_irq *) ((char *) a->buf[curr]  + i * a->msize);
 		sip = (struct stats_irq *) ((char *) a->buf[!curr] + i * a->msize);
@@ -795,7 +795,7 @@ __print_funct_t render_serial_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		ssc = (struct stats_serial *) ((char *) a->buf[curr]  + i * a->msize);
 		ssp = (struct stats_serial *) ((char *) a->buf[!curr] + i * a->msize);
@@ -866,7 +866,7 @@ __print_funct_t render_disk_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		sdc = (struct stats_disk *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -960,7 +960,7 @@ __print_funct_t render_net_dev_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		sndc = (struct stats_net_dev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -1034,7 +1034,7 @@ __print_funct_t render_net_edev_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		snedc = (struct stats_net_edev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -2135,7 +2135,7 @@ __print_funct_t render_pwr_cpufreq_stats(struct activity *a, int isdb, char *pre
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 		
 		spc = (struct stats_pwr_cpufreq *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -2280,7 +2280,7 @@ __print_funct_t xml_print_cpu_stats(struct activity *a, int curr, int tab,
 		xprintf(tab++, "<cpu-load-all>");
 	}
 
-	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 		
 		scc = (struct stats_cpu *) ((char *) a->buf[curr]  + i * a->msize);
 		scp = (struct stats_cpu *) ((char *) a->buf[!curr] + i * a->msize);
@@ -2431,7 +2431,7 @@ __print_funct_t xml_print_irq_stats(struct activity *a, int curr, int tab,
 	xprintf(tab++, "<interrupts>");
 	xprintf(tab++, "<int-global per=\"second\">");
 
-	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 
 		sic = (struct stats_irq *) ((char *) a->buf[curr]  + i * a->msize);
 		sip = (struct stats_irq *) ((char *) a->buf[!curr] + i * a->msize);
@@ -2731,7 +2731,7 @@ __print_funct_t xml_print_serial_stats(struct activity *a, int curr, int tab,
 	xprintf(tab, "<serial per=\"second\">");
 	tab++;
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		ssc = (struct stats_serial *) ((char *) a->buf[curr]  + i * a->msize);
 		ssp = (struct stats_serial *) ((char *) a->buf[!curr] + i * a->msize);
@@ -2783,7 +2783,7 @@ __print_funct_t xml_print_disk_stats(struct activity *a, int curr, int tab,
 	xprintf(tab, "<disk per=\"second\">");
 	tab++;
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		sdc = (struct stats_disk *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -2849,13 +2849,13 @@ __print_funct_t xml_print_net_dev_stats(struct activity *a, int curr, int tab,
 	int i, j;
 	struct stats_net_dev *sndc, *sndp;
 
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
 	tab++;
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		sndc = (struct stats_net_dev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -2907,13 +2907,13 @@ __print_funct_t xml_print_net_edev_stats(struct activity *a, int curr, int tab,
 	int i, j;
 	struct stats_net_edev *snedc, *snedp;
 
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
 	tab++;
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		snedc = (struct stats_net_edev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -2970,7 +2970,7 @@ __print_funct_t xml_print_net_nfs_stats(struct activity *a, int curr, int tab,
 		*snnc = (struct stats_net_nfs *) a->buf[curr],
 		*snnp = (struct stats_net_nfs *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3015,7 +3015,7 @@ __print_funct_t xml_print_net_nfsd_stats(struct activity *a, int curr, int tab,
 		*snndc = (struct stats_net_nfsd *) a->buf[curr],
 		*snndp = (struct stats_net_nfsd *) a->buf[!curr];
 
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3069,7 +3069,7 @@ __print_funct_t xml_print_net_sock_stats(struct activity *a, int curr, int tab,
 	struct stats_net_sock
 		*snsc = (struct stats_net_sock *) a->buf[curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3114,7 +3114,7 @@ __print_funct_t xml_print_net_ip_stats(struct activity *a, int curr, int tab,
 		*snic = (struct stats_net_ip *) a->buf[curr],
 		*snip = (struct stats_net_ip *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3163,7 +3163,7 @@ __print_funct_t xml_print_net_eip_stats(struct activity *a, int curr, int tab,
 		*sneic = (struct stats_net_eip *) a->buf[curr],
 		*sneip = (struct stats_net_eip *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3212,7 +3212,7 @@ __print_funct_t xml_print_net_icmp_stats(struct activity *a, int curr, int tab,
 		*snic = (struct stats_net_icmp *) a->buf[curr],
 		*snip = (struct stats_net_icmp *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3273,7 +3273,7 @@ __print_funct_t xml_print_net_eicmp_stats(struct activity *a, int curr, int tab,
 		*sneic = (struct stats_net_eicmp *) a->buf[curr],
 		*sneip = (struct stats_net_eicmp *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3330,7 +3330,7 @@ __print_funct_t xml_print_net_tcp_stats(struct activity *a, int curr, int tab,
 		*sntc = (struct stats_net_tcp *) a->buf[curr],
 		*sntp = (struct stats_net_tcp *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3371,7 +3371,7 @@ __print_funct_t xml_print_net_etcp_stats(struct activity *a, int curr, int tab,
 		*snetc = (struct stats_net_etcp *) a->buf[curr],
 		*snetp = (struct stats_net_etcp *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3414,7 +3414,7 @@ __print_funct_t xml_print_net_udp_stats(struct activity *a, int curr, int tab,
 		*snuc = (struct stats_net_udp *) a->buf[curr],
 		*snup = (struct stats_net_udp *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3454,7 +3454,7 @@ __print_funct_t xml_print_net_sock6_stats(struct activity *a, int curr, int tab,
 	struct stats_net_sock6
 		*snsc = (struct stats_net_sock6 *) a->buf[curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3495,7 +3495,7 @@ __print_funct_t xml_print_net_ip6_stats(struct activity *a, int curr, int tab,
 		*snic = (struct stats_net_ip6 *) a->buf[curr],
 		*snip = (struct stats_net_ip6 *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3548,7 +3548,7 @@ __print_funct_t xml_print_net_eip6_stats(struct activity *a, int curr, int tab,
 		*sneic = (struct stats_net_eip6 *) a->buf[curr],
 		*sneip = (struct stats_net_eip6 *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3603,7 +3603,7 @@ __print_funct_t xml_print_net_icmp6_stats(struct activity *a, int curr, int tab,
 		*snic = (struct stats_net_icmp6 *) a->buf[curr],
 		*snip = (struct stats_net_icmp6 *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3670,7 +3670,7 @@ __print_funct_t xml_print_net_eicmp6_stats(struct activity *a, int curr, int tab
 		*sneic = (struct stats_net_eicmp6 *) a->buf[curr],
 		*sneip = (struct stats_net_eicmp6 *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3725,7 +3725,7 @@ __print_funct_t xml_print_net_udp6_stats(struct activity *a, int curr, int tab,
 		*snuc = (struct stats_net_udp6 *) a->buf[curr],
 		*snup = (struct stats_net_udp6 *) a->buf[!curr];
 	
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_network(tab, OPEN_XML_MARKUP);
@@ -3766,7 +3766,7 @@ __print_funct_t xml_print_pwr_cpufreq_stats(struct activity *a, int curr, int ta
 	struct stats_pwr_cpufreq *spc;
 	char cpuno[8];
 
-	if (!IS_SELECTED(a->options) || (*a->nr <= 0))
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
 		goto close_xml_markup;
 
 	xml_markup_power_management(tab, OPEN_XML_MARKUP);
@@ -3774,7 +3774,7 @@ __print_funct_t xml_print_pwr_cpufreq_stats(struct activity *a, int curr, int ta
 
 	xprintf(tab++, "<cpu-frequency unit=\"MHz\">");
 	
-	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 		
 		spc = (struct stats_pwr_cpufreq *) ((char *) a->buf[curr]  + i * a->msize);
 	

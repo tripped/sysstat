@@ -164,7 +164,7 @@ __read_funct_t wrap_read_stat_cpu(struct activity *a)
 		= (struct stats_cpu *) a->_buf0;
 	
 	/* Read CPU statistics */
-	read_stat_cpu(st_cpu, *a->nr, &record_hdr.uptime, &record_hdr.uptime0);
+	read_stat_cpu(st_cpu, a->nr, &record_hdr.uptime, &record_hdr.uptime0);
 	
 	return;
 }
@@ -208,7 +208,7 @@ __read_funct_t wrap_read_stat_irq(struct activity *a)
 		= (struct stats_irq *) a->_buf0;
 
 	/* Read interrupts stats */
-	read_stat_irq(st_irq, *a->nr);
+	read_stat_irq(st_irq, a->nr);
 	
 	return;
 }
@@ -353,13 +353,13 @@ __read_funct_t wrap_read_disk(struct activity *a)
 
 	/* Try to read stats from /proc/diskstats, /proc/partitions or /proc/stat */
 	if (HAS_DISKSTATS(flags)) {
-		read_diskstats_disk(st_disk, *a->nr, COLLECT_PARTITIONS(a->opt_flags));
+		read_diskstats_disk(st_disk, a->nr, COLLECT_PARTITIONS(a->opt_flags));
 	}
 	else if (HAS_PPARTITIONS(flags)) {
-		read_partitions_disk(st_disk, *a->nr);
+		read_partitions_disk(st_disk, a->nr);
 	}
 	else {
-		read_stat_disk(st_disk, *a->nr);
+		read_stat_disk(st_disk, a->nr);
 	}
 
 	return;
@@ -382,7 +382,7 @@ __read_funct_t wrap_read_tty_driver_serial(struct activity *a)
 		= (struct stats_serial *) a->_buf0;
 
 	/* Read serial lines stats */
-	read_tty_driver_serial(st_serial, *a->nr);
+	read_tty_driver_serial(st_serial, a->nr);
 	
 	return;
 }
@@ -426,7 +426,7 @@ __read_funct_t wrap_read_net_dev(struct activity *a)
 		= (struct stats_net_dev *) a->_buf0;
 
 	/* Read network interfaces stats */
-	read_net_dev(st_net_dev, *a->nr);
+	read_net_dev(st_net_dev, a->nr);
 	
 	return;
 }
@@ -448,7 +448,7 @@ __read_funct_t wrap_read_net_edev(struct activity *a)
 		= (struct stats_net_edev *) a->_buf0;
 
 	/* Read network interfaces errors stats */
-	read_net_edev(st_net_edev, *a->nr);
+	read_net_edev(st_net_edev, a->nr);
 	
 	return;
 }
@@ -822,7 +822,7 @@ __read_funct_t wrap_read_cpuinfo(struct activity *a)
 		= (struct stats_pwr_cpufreq *) a->_buf0;
 
 	/* Read CPU frequency stats */
-	read_cpuinfo(st_pwr_cpufreq, *a->nr);
+	read_cpuinfo(st_pwr_cpufreq, a->nr);
 	
 	return;
 }

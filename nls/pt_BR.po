@@ -1,239 +1,438 @@
-# Portuguese translations for sysstat package.
-# Copyright (C) 2007 Free Software Foundation
+# Brazilian Portuguese translations for sysstat package.
+# Copyright (C) 2009 Free Software Foundation
 # This file is distributed under the same license as the sysstat package.
-# Jo�o Victor Duarte Martins <jvdm@sdf.lonestar.org>, 2007.
+# João Victor Duarte Martins <jvdm@sdf.lonestar.org>, 2009.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 8.1.1\n"
+"Project-Id-Version: sysstat 9.0.3\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2008-02-09 18:30+0100\n"
-"PO-Revision-Date: 2008-02-10 13:58-0200\n"
-"Last-Translator: Jo�o Victor Duarte Martins <jvdm@sdf.lonestar.org>\n"
+"POT-Creation-Date: 2009-05-17 16:16+0200\n"
+"PO-Revision-Date: 2009-06-01 22:33-0300\n"
+"Last-Translator: João Victor Duarte Martins <jvdm@sdf.lonestar.org>\n"
 "Language-Team: Brazilian Portuguese <ldp-br@bazar.conectiva.com.br>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: common.c:58
+#: common.c:57
 #, c-format
 msgid "sysstat version %s\n"
-msgstr "sysstat vers�o %s\n"
+msgstr "sysstat versão %s\n"
 
-#: common.c:197 common.c:449 ioconf.c:471 mpstat.c:324 sa_common.c:810
-#: sadc.c:590 sadc.c:599 sadc.c:660 sadc.c:761
+#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
+#: sa_common.c:1052 sadc.c:591 sadc.c:600 sadc.c:660
 #, c-format
 msgid "Cannot open %s: %s\n"
-msgstr "N�o � poss�vel abrir %s: %s\n"
+msgstr "Não é possível abrir %s: %s\n"
 
-#: common.c:241
+#: iostat.c:81 mpstat.c:83 pidstat.c:77 sar.c:88
 #, c-format
-msgid "Cannot handle so many processors!\n"
-msgstr "N�o � poss�vel lidar com tantos processadores!\n"
-
-#: iostat.c:78 mpstat.c:71 pidstat.c:77 sadc.c:81 sadf.c:81 sar.c:79
-msgid "Usage:"
-msgstr "Uso:"
-
-#: iostat.c:78 mpstat.c:71 pidstat.c:77 sadc.c:81 sadf.c:81 sar.c:79
-msgid "options..."
-msgstr "op��es..."
-
-#: iostat.c:78 mpstat.c:72 pidstat.c:77 sadc.c:81 sadf.c:81 sar.c:79 sar.c:89
-msgid "interval"
-msgstr "intervalo"
-
-#: iostat.c:78 mpstat.c:72 pidstat.c:77 sadc.c:81 sadf.c:82 sar.c:79
-msgid "count"
-msgstr "vezes"
-
-#: iostat.c:80 mpstat.c:74 pidstat.c:79 sadc.c:83 sadf.c:84 sar.c:81
-#, c-format
-msgid "Options are:\n"
-msgstr "As op��es s�o:\n"
+msgid "Usage: %s [ options ] [ <interval> [ <count> ] ]\n"
+msgstr "Uso: %s [ opções ] [ <intervalo> [ <contagem> ]\n"
 
 #: iostat.c:84
-msgid "device"
-msgstr "dispositivo"
-
-#: iostat.c:1245
 #, c-format
-msgid "Time: %s\n"
-msgstr "Hora: %s\n"
+msgid ""
+"Options are:\n"
+"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
+"[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"
+msgstr ""
+"As opções são:\n"
+"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
+"[ <dispositivo> [...] | ALL ] [ -p [ <dispositivo> [,...] | ALL ] ]\n"
 
-#: iostat.c:1575
+#: mpstat.c:86
 #, c-format
-msgid "-x and -p options are mutually exclusive\n"
-msgstr "as op��es -x e -p s�o mutuamente exclusivas\n"
+msgid ""
+"Options are:\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
+msgstr ""
+"As opções são:\n"
+"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 
-#: mpstat.c:77 sadf.c:89 sar.c:89
-msgid "cpu"
-msgstr "cpu"
-
-#: mpstat.c:279 pidstat.c:1364 sar.c:962
+#: mpstat.c:457 pidstat.c:1683 sar.c:354
 msgid "Average:"
-msgstr "M�dia:"
+msgstr "Média:"
 
-#: mpstat.c:630 sar.c:169
+#: mpstat.c:769
 #, c-format
 msgid "Not that many processors!\n"
-msgstr "N�o esse tanto de processadores!\n"
+msgstr "Não esse tanto de processadores!\n"
 
-#: pidstat.c:83
-msgid "command"
-msgstr "comando"
+#: pidstat.c:80
+#, c-format
+msgid ""
+"Options are:\n"
+"[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
+"[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+msgstr ""
+"As opções são:\n"
+"[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
+"[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:177 sar.c:1717
+#: pidstat.c:197 sar.c:968
 #, c-format
 msgid "Requested activities not available\n"
-msgstr "As atividade requisitadas n�o est�o dispon�veis\n"
+msgstr "As atividade requisitadas não estão disponíveis\n"
 
-#: sa_common.c:708
+#: rd_stats.c:2289
+#, c-format
+msgid "Cannot handle so many processors!\n"
+msgstr "Não é possível lidar com tantos processadores!\n"
+
+#: sa_common.c:866
 #, c-format
 msgid "Error while reading system activity file: %s\n"
 msgstr "Erro ao ler o arquivo de atividades do sistema: %s\n"
 
-#: sa_common.c:718
+#: sa_common.c:876
 #, c-format
 msgid "End of system activity file unexpected\n"
 msgstr "Fim inesperado do arquivo de atividades do sistema\n"
 
-#: sa_common.c:736
+#: sa_common.c:894
 #, c-format
 msgid "File created using sar/sadc from sysstat version %d.%d.%d"
-msgstr "Arquivo criado usando o sar/sadc da vers�o %d.%d.%d do sysstat"
+msgstr "Arquivo criado usando o sar/sadc da versão %d.%d.%d do sysstat"
 
-#: sa_common.c:766
+#: sa_common.c:925
 #, c-format
 msgid "Invalid system activity file: %s\n"
-msgstr "Arquivo de atividades do sistema inv�lido: %s\n"
+msgstr "Arquivo de atividades do sistema inválido: %s\n"
 
-#: sa_common.c:773
+#: sa_common.c:932
 #, c-format
 msgid "Current sysstat version can no longer read the format of this file (%#x)\n"
-msgstr "A vers�o atual do sysstat n�o consegue mais ler o formato deste arquivo (%#x)\n"
+msgstr "A versão atual do sysstat não consegue mais ler o formato deste arquivo (%#x)\n"
 
-#: sa_common.c:853
+#: sa_common.c:1135
 #, c-format
 msgid "Requested activities not available in file %s\n"
-msgstr "Atividades requisitadas n�o est�o dispon�veis no arquivo %s\n"
+msgstr "Atividades requisitadas não estão disponíveis no arquivo %s\n"
 
-#: sadc.c:81
-msgid "outfile"
-msgstr "arquivo de sa�da"
+#: sadc.c:76
+#, c-format
+msgid "Usage: %s [ options ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
+msgstr "Uso: %s [ opções ] [ <intervalo> [ <contagem> ] ] [ <arq_de_saida> ]\n"
 
-#: sadc.c:86
-msgid "comment"
-msgstr "coment�rio"
+#: sadc.c:79
+#, c-format
+msgid ""
+"Options are:\n"
+"[ -C <comment> ] [ -F ] [ -L ] [ -V ]\n"
+"[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"
+msgstr ""
+"As opções são:\n"
+"[ -C <comment> ] [ -F ] [ -L ] [ -V ]\n"
+"[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"
 
-#: sadc.c:111
+#: sadc.c:199
 #, c-format
 msgid "Cannot write data to system activity file: %s\n"
-msgstr "N�o � poss�vel escrever dados no arquivo de atividades do sistema: %s\n"
+msgstr "Não é possível escrever dados no arquivo de atividades do sistema: %s\n"
 
-#: sadc.c:445
+#: sadc.c:478
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
-msgstr "N�o � poss�vel escrever o cabe�alho do arquivo de atividades do sistema: %s\n"
+msgstr "Não é possível escrever o cabeçalho do arquivo de atividades do sistema: %s\n"
 
-#: sadc.c:706
+#: sadc.c:754
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
-msgstr "N�o � poss�vel inserir dados no final deste arquivo (%s)\n"
+msgstr "Não é possível inserir dados no final deste arquivo (%s)\n"
 
-#: sadf.c:82
-msgid "datafile"
-msgstr "arquivo de dados"
+#: sadf.c:85
+#, c-format
+msgid "Usage: %s [ options ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
+msgstr "Uso: %s [ opções ] [ <intervalo> [ <contagem> ] ] [ <arq_de_dados> ]\n"
 
-#: sadf.c:89 sar.c:90
-msgid "hh:mm:ss"
-msgstr "hh:mm:ss"
+# TODO verificar o que é <sar_options>
+#: sadf.c:88
+#, c-format
+msgid ""
+"Options are:\n"
+"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_options> ]\n"
+msgstr ""
+"As opções são:\n"
+"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -- <sar_options> ]\n"
 
-# d�vida aqui: sar_options?
-#: sadf.c:89
-msgid "sar_options..."
-msgstr "sar_options..."
-
-#: sadf.c:1767
+#: sadf.c:541
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr "Arquivo de dados das atividades do sistema: %s (%#x)\n"
 
-#: sadf.c:1775
+#: sadf.c:550
 #, c-format
 msgid "Host: "
 msgstr "Computador: "
 
-#: sadf.c:1780
-#, c-format
-msgid "Activity flag: %#x\n"
-msgstr "Sinalizador de atividade: %#x\n"
-
-#: sadf.c:1781
+#: sadf.c:556
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr "Tamanho de um 'long int': %d\n"
 
-#: sadf.c:1782
+#: sadf.c:558
 #, c-format
-msgid "Number of CPU: %u\n"
-msgstr "N�mero de CPU: %u\n"
+msgid "List of activities:\n"
+msgstr "Lista de atividades:\n"
 
-#: sadf.c:1783
+#: sar.c:104
 #, c-format
-msgid "Number of interrupts per CPU: %u\n"
-msgstr "N�mero de interrup��es por CPU: %u\n"
+msgid ""
+"Options are:\n"
+"[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -m ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
+"[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+"[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+"[ -n { <keyword> [,...] | ALL } ]\n"
+"[ -o [ <filename> ] | -f [ <filename> ] ]\n"
+"[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+msgstr ""
+"As opções são:\n"
+"[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -m ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
+"[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+"[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+"[ -n { <palavra_chave> [,...] | ALL } ]\n"
+"[ -o [ <arquivo> ] | -f [ <arquivo> ] ]\n"
+"[ -i <intervalo> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 
-#: sadf.c:1784
+#: sar.c:126
 #, c-format
-msgid "Number of disks: %u\n"
-msgstr "N�mero de discos: %u\n"
+msgid "Main options and reports:\n"
+msgstr "Opções principais e relatórios:\n"
 
-#: sadf.c:1785
+#: sar.c:127
 #, c-format
-msgid "Number of serial lines: %u\n"
-msgstr "N�mero de linhas seriais: %u\n"
+msgid "\t-b\tI/O and transfer rate statistics\n"
+msgstr "\t-b\tE/S e estatísticas de taxa de transferência\n"
 
-#: sadf.c:1786
+#: sar.c:128
 #, c-format
-msgid "Number of network interfaces: %u\n"
-msgstr "N�mero de interfaces de rede: %u\n"
+msgid "\t-B\tPaging statistics\n"
+msgstr "\t-B\tEstatísticas de paginação\n"
 
-#: sar.c:89
-msgid "int"
-msgstr "int"
+#: sar.c:129
+#, c-format
+msgid "\t-d\tBlock device statistics\n"
+msgstr "\t-d\tEstatísticas de dispositivos de bloco\n"
 
-#: sar.c:89
-msgid "filename"
-msgstr "nome do arquivo"
+#: sar.c:130
+#, c-format
+msgid ""
+"\t-I { <int> | SUM | ALL | XALL }\n"
+"\t\tInterrupts statistics\n"
+msgstr ""
+"\t-I { <int> | SUM | ALL | XALL }\n"
+"\t\tEstatísticas de Interrupção\n"
+
+#: sar.c:132
+#, c-format
+msgid "\t-m\tPower management statistics\n"
+msgstr "\t-B\tEstatísticas de gerencia de energia\n"
+
+#: sar.c:133
+#, c-format
+msgid ""
+"\t-n { <keyword> [,...] | ALL }\n"
+"\t\tNetwork statistics\n"
+"\t\tKeywords are:\n"
+"\t\tDEV\tNetwork interfaces\n"
+"\t\tEDEV\tNetwork interfaces (errors)\n"
+"\t\tNFS\tNFS client\n"
+"\t\tNFSD\tNFS server\n"
+"\t\tSOCK\tSockets\t(v4)\n"
+"\t\tIP\tIP traffic\t(v4)\n"
+"\t\tEIP\tIP traffic\t(v4) (errors)\n"
+"\t\tICMP\tICMP traffic\t(v4)\n"
+"\t\tEICMP\tICMP traffic\t(v4) (errors)\n"
+"\t\tTCP\tTCP traffic\t(v4)\n"
+"\t\tETCP\tTCP traffic\t(v4) (errors)\n"
+"\t\tUDP\tUDP traffic\t(v4)\n"
+"\t\tSOCK6\tSockets\t(v6)\n"
+"\t\tIP6\tIP traffic\t(v6)\n"
+"\t\tEIP6\tIP traffic\t(v6) (errors)\n"
+"\t\tICMP6\tICMP traffic\t(v6)\n"
+"\t\tEICMP6\tICMP traffic\t(v6) (errors)\n"
+"\t\tUDP6\tUDP traffic\t(v6)\n"
+msgstr ""
+"\t-n { <palavra_chave> [,...] | ALL }\n"
+"\t\tEstatísticas de Rede\n"
+"\t\tPalavras chave são:\n"
+"\t\tDEV\tInterfaces de Rede\n"
+"\t\tEDEV\tInterfaces de Rede (erros)\n"
+"\t\tNFS\tCliente NFS\n"
+"\t\tNFSD\tServidor NFS\n"
+"\t\tSOCK\tSockets\t(v4)\n"
+"\t\tIP\tTráfico IP\t(v4)\n"
+"\t\tEIP\tTráfico IP\t(v4) (erros)\n"
+"\t\tICMP\tTráfico ICMP\t(v4)\n"
+"\t\tEICMP\tTráfico ICMP\t(v4) (erros)\n"
+"\t\tTCP\tTráfico TCP\t(v4)\n"
+"\t\tETCP\tTráfico TCP\t(v4) (erros)\n"
+"\t\tUDP\tTráfico UDP\t(v4)\n"
+"\t\tSOCK6\tSockets\t(v6)\n"
+"\t\tIP6\tTráfico IP\t(v6)\n"
+"\t\tEIP6\tTráfico IP\t(v6) (erros)\n"
+"\t\tICMP6\tTráfico ICMP\t(v6)\n"
+"\t\tEICMP6\tTráfico ICMP\t(v6) (erros)\n"
+"\t\tUDP6\tTráfico UDP\t(v6)\n"
+
+#: sar.c:154
+#, c-format
+msgid "\t-q\tQueue length and load average statistics\n"
+msgstr "\t-q\tTamanho da fila e estatísticas da média de carga\n"
+
+#: sar.c:155
+#, c-format
+msgid "\t-r\tMemory utilization statistics\n"
+msgstr "\t-r\tEstatísticas de utilização de memória\n"
+
+#: sar.c:156
+#, c-format
+msgid "\t-R\tMemory statistics\n"
+msgstr "\t-R\tEstatísticas de memória\n"
+
+#: sar.c:157
+#, c-format
+msgid "\t-S\tSwap space utilization statistics\n"
+msgstr "\t-S\tEstatísticas de utilização de espaço de permuta (Swap)\n"
+
+#: sar.c:158
+#, c-format
+msgid ""
+"\t-u [ ALL ]\n"
+"\t\tCPU utilization statistics\n"
+msgstr ""
+"\t-u [ ALL ]\n"
+"\t\tEstatística de utilização da UCP\n"
+
+#: sar.c:160
+#, c-format
+msgid "\t-v\tKernel table statistics\n"
+msgstr "\t-v\tEstatísticas da tabela do Núcleo (Kernel)\n"
 
 #: sar.c:161
 #, c-format
-msgid "Not an SMP machine...\n"
-msgstr "N�o � uma m�quina SMP...\n"
+msgid "\t-w\tTask creation and system switching statistics\n"
+msgstr "\t-w\tEstatísticas de criação de tarefas e trocas de contexto\n"
 
-#: sar.c:1545
+#: sar.c:162
+#, c-format
+msgid "\t-W\tSwapping statistics\n"
+msgstr "\t-W\tEstatísticas de Permutação de Memória (Swapping)\n"
+
+#: sar.c:163
+#, c-format
+msgid "\t-y\tTTY device statistics\n"
+msgstr "\t-y\tEstatísticas de dispositivos TTY\n"
+
+#: sar.c:206
+#, c-format
+msgid "End of data collecting unexpected\n"
+msgstr "Fim inesperado da coleta de dados\n"
+
+#: sar.c:774
 #, c-format
 msgid "Invalid data format\n"
-msgstr "Formato de dados inv�lido\n"
+msgstr "Formato de dados inválido\n"
 
-#: sar.c:1549
+#: sar.c:778
 #, c-format
 msgid "Using a wrong data collector from a different sysstat version\n"
-msgstr "Usando um coletador de dados errado de uma vers�o diferente do sysstat\n"
+msgstr "Usando um coletador de dados errado de uma versão diferente do sysstat\n"
 
-#: sar.c:1932
+#: sar.c:798
+#, c-format
+msgid "Inconsistent input data\n"
+msgstr "Dados de entrada inconsistentes\n"
+
+#: sar.c:1203
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
-msgstr "As op��es -f e -o s�o mutuamente exclusivas\n"
+msgstr "As opções -f e -o são mutuamente exclusivas\n"
 
-#: sar.c:1938
+#: sar.c:1209
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
-msgstr "N�o est� sendo lido de um arquivo de atividade do sistema (utilize a op��o -f)\n"
+msgstr "Não está sendo lido de um arquivo de atividade do sistema (utilize a opção -f)\n"
 
-#: sar.c:2036
+#: sar.c:1310
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
-msgstr "N�o � poss�vel encontrar o coletor de dados (%s)\n"
+msgstr "Não é possível encontrar o coletor de dados (%s)\n"
+
+#~ msgid "Usage:"
+#~ msgstr "Uso:"
+
+#~ msgid "options..."
+#~ msgstr "opções..."
+
+#~ msgid "interval"
+#~ msgstr "intervalo"
+
+#~ msgid "count"
+#~ msgstr "vezes"
+
+#~ msgid "device"
+#~ msgstr "dispositivo"
+
+#~ msgid "Time: %s\n"
+#~ msgstr "Hora: %s\n"
+
+#, fuzzy
+#~ msgid "-x and -p options are mutually exclusive\n"
+#~ msgstr "As opções -f e -o são mutuamente exclusivas\n"
+
+#~ msgid "cpu"
+#~ msgstr "cpu"
+
+#~ msgid "command"
+#~ msgstr "comando"
+
+#~ msgid "outfile"
+#~ msgstr "arquivo de saída"
+
+#~ msgid "comment"
+#~ msgstr "comentário"
+
+#~ msgid "datafile"
+#~ msgstr "arquivo de dados"
+
+#~ msgid "hh:mm:ss"
+#~ msgstr "hh:mm:ss"
+
+# dúvida aqui: sar_options?
+#~ msgid "sar_options..."
+#~ msgstr "sar_options..."
+
+#~ msgid "Activity flag: %#x\n"
+#~ msgstr "Sinalizador de atividade: %#x\n"
+
+#~ msgid "Number of CPU: %u\n"
+#~ msgstr "Número de CPU: %u\n"
+
+#~ msgid "Number of interrupts per CPU: %u\n"
+#~ msgstr "Número de interrupções por CPU: %u\n"
+
+#~ msgid "Number of disks: %u\n"
+#~ msgstr "Número de discos: %u\n"
+
+#~ msgid "Number of serial lines: %u\n"
+#~ msgstr "Número de linhas seriais: %u\n"
+
+#~ msgid "Number of network interfaces: %u\n"
+#~ msgstr "Número de interfaces de rede: %u\n"
+
+#~ msgid "int"
+#~ msgstr "int"
+
+#~ msgid "filename"
+#~ msgstr "nome do arquivo"
+
+#~ msgid "Not an SMP machine...\n"
+#~ msgstr "Não é uma máquina SMP...\n"

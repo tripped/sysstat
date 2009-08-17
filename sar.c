@@ -289,7 +289,7 @@ int check_line_hdr(void)
 					rc = TRUE;
 				}
 			}
-			else if (*act[i]->nr > 1) {
+			else if (act[i]->nr > 1) {
 				rc = TRUE;
 			}
 			/* Stop now since we have only one selected activity */
@@ -341,7 +341,7 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 	static __nr_t cpu_nr = -1;
 	
 	if (cpu_nr < 0)
-		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 
 	/* Interval value in jiffies */
 	g_itv = get_interval(record_hdr[2].uptime, record_hdr[curr].uptime);
@@ -362,7 +362,7 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
 			continue;
 		
-		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0)) {
+		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
 			/* Display current average activity statistics */
 			if (NEEDS_GLOBAL_ITV(act[i]->options))
 				(*act[i]->f_print_avg)(act[i], 2, curr, g_itv);
@@ -412,7 +412,7 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 	static __nr_t cpu_nr = -1;
 
 	if (cpu_nr < 0)
-		cpu_nr = *act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 
 	/* Check time (1) */
 	if (read_from_file) {
@@ -469,7 +469,7 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
 			continue;
 
-		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0)) {
+		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
 			/* Display current activity statistics */
 			if (NEEDS_GLOBAL_ITV(act[i]->options))
 				(*act[i]->f_print)(act[i], !curr, curr, g_itv);
@@ -502,8 +502,8 @@ void write_stats_startup(int curr)
 	record_hdr[!curr].ust_time    = record_hdr[curr].ust_time;
 
 	for (i = 0; i < NR_ACT; i++) {
-		if (IS_SELECTED(act[i]->options) && (*act[i]->nr > 0))
-			memset(act[i]->buf[!curr], 0, act[i]->msize * *act[i]->nr);
+		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0))
+			memset(act[i]->buf[!curr], 0, act[i]->msize * act[i]->nr);
 	}
 	
 	flags |= S_F_SINCE_BOOT;
@@ -625,7 +625,7 @@ void read_sadc_stat_bunch(int curr)
 			PANIC(1);
 		}
 		
-		if (sa_read(act[p]->buf[curr], act[p]->fsize * *act[p]->nr)) {
+		if (sa_read(act[p]->buf[curr], act[p]->fsize * act[p]->nr)) {
 			print_read_error();
 		}
 	}
@@ -680,7 +680,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 					 BITMAP_SIZE(act[p]->bitmap->b_size));
 		}
 		else {
-			inc = *act[p]->nr;
+			inc = act[p]->nr;
 		}
 	}
 	if (inc < 0) {
@@ -800,7 +800,7 @@ void read_header_data(void)
 		}
 
 		id_seq[i]   = file_act.id;	/* We necessarily have "i < NR_ACT" */
-		*act[p]->nr = file_act.nr;
+		act[p]->nr  = file_act.nr;
 	}
 
 	while (i < NR_ACT) {
@@ -841,7 +841,7 @@ void read_stats_from_file(char from_file[])
 
 	/* Print report header */
 	print_report_hdr(flags, &rectime, &file_hdr,
-			 *act[get_activity_position(act, A_CPU)]->nr);
+			 act[get_activity_position(act, A_CPU)]->nr);
 
 	/* Read system statistics from file */
 	do {
@@ -979,7 +979,7 @@ void read_stats(void)
 
 	/* Print report header */
 	print_report_hdr(flags, &rectime, &file_hdr,
-			 *act[get_activity_position(act, A_CPU)]->nr);
+			 act[get_activity_position(act, A_CPU)]->nr);
 
 	/* Read system statistics sent by the data collector */
 	read_sadc_stat_bunch(0);

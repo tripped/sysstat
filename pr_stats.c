@@ -73,7 +73,7 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 		}
 	}
 	
-	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 		
 		/*
 		 * The size of a->buf[...] CPU structure may be different from the default
@@ -85,7 +85,7 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 		scp = (struct stats_cpu *) ((char *) a->buf[prev] + i * a->msize);
 
 		/*
-		 * Note: *a->nr is in [1, NR_CPUS + 1].
+		 * Note: a->nr is in [1, NR_CPUS + 1].
 		 * Bitmap size is provided for (NR_CPUS + 1) CPUs.
 		 * Anyway, NR_CPUS may vary between the version of sysstat
 		 * used by sadc to create a file, and the version of sysstat
@@ -200,13 +200,13 @@ __print_funct_t print_irq_stats(struct activity *a, int prev, int curr,
 		printf("\n%-11s      INTR    intr/s\n", timestamp[!curr]);
 	}
 	
-	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 
 		sic = (struct stats_irq *) ((char *) a->buf[curr] + i * a->msize);
 		sip = (struct stats_irq *) ((char *) a->buf[prev] + i * a->msize);
 		
 		/*
-		 * Note: *a->nr is in [0, NR_IRQS + 1].
+		 * Note: a->nr is in [0, NR_IRQS + 1].
 		 * Bitmap size is provided for (NR_IRQS + 1) interrupts.
 		 * Anyway, NR_IRQS may vary between the version of sysstat
 		 * used by sadc to create a file, and the version of sysstat
@@ -719,7 +719,7 @@ __print_funct_t print_serial_stats(struct activity *a, int prev, int curr,
 		       "     brk/s   ovrun/s\n", timestamp[!curr]);
 	}
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		ssc = (struct stats_serial *) ((char *) a->buf[curr] + i * a->msize);
 		ssp = (struct stats_serial *) ((char *) a->buf[prev] + i * a->msize);
@@ -770,7 +770,7 @@ __print_funct_t print_disk_stats(struct activity *a, int prev, int curr,
 		       timestamp[!curr]);
 	}
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		sdc = (struct stats_disk *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -832,7 +832,7 @@ __print_funct_t print_net_dev_stats(struct activity *a, int prev, int curr,
 		       "   rxcmp/s   txcmp/s  rxmcst/s\n", timestamp[!curr]);
 	}
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		sndc = (struct stats_net_dev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -878,7 +878,7 @@ __print_funct_t print_net_edev_stats(struct activity *a, int prev, int curr,
 		       timestamp[!curr]);
 	}
 
-	for (i = 0; i < *a->nr; i++) {
+	for (i = 0; i < a->nr; i++) {
 
 		snedc = (struct stats_net_edev *) ((char *) a->buf[curr] + i * a->msize);
 
@@ -1623,12 +1623,12 @@ void stub_print_pwr_cpufreq_stats(struct activity *a, int prev, int curr, int di
 	
 	if (!avg_cpufreq) {
 		/* Allocate array of CPU frequency */
-		if ((avg_cpufreq = (unsigned long long *) malloc(sizeof(unsigned long long) * *a->nr))
+		if ((avg_cpufreq = (unsigned long long *) malloc(sizeof(unsigned long long) * a->nr))
 		    == NULL) {
 			perror("malloc");
 			exit(4);
 		}
-		memset(avg_cpufreq, 0, sizeof(unsigned long long) * *a->nr);
+		memset(avg_cpufreq, 0, sizeof(unsigned long long) * a->nr);
 	}
 	
 	if (dis) {
@@ -1636,7 +1636,7 @@ void stub_print_pwr_cpufreq_stats(struct activity *a, int prev, int curr, int di
 		       timestamp[!curr]);
 	}
 
-	for (i = 0; (i < *a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 		
 		/*
 		 * The size of a->buf[...] CPU structure may be different from the default
@@ -1647,7 +1647,7 @@ void stub_print_pwr_cpufreq_stats(struct activity *a, int prev, int curr, int di
 		spc = (struct stats_pwr_cpufreq *) ((char *) a->buf[curr] + i * a->msize);
 
 		/*
-		 * Note: *a->nr is in [1, NR_CPUS + 1].
+		 * Note: a->nr is in [1, NR_CPUS + 1].
 		 * Bitmap size is provided for (NR_CPUS + 1) CPUs.
 		 * Anyway, NR_CPUS may vary between the version of sysstat
 		 * used by sadc to create a file, and the version of sysstat

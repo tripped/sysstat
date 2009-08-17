@@ -3,8 +3,11 @@
 #
 #  Copyright (C) 2004, Red Hat, Inc.
 #
+#  Maintained by Sebastien Godard (sysstat [at] orange.fr)
+#
 #  This file gives iostat and sadc a clue about how to find whole
 #   disk devices in /proc/partitions and /proc/diskstats
+#  Authoritative source is: linux/Documentation/devices.txt
 #
 # line format, general record:
 #   major:name:ctrlpre:ctrlno:devfmt:devcnt:partpre:partcnt:description
@@ -72,12 +75,21 @@
 69:8:5:
 70:8:6:
 71:8:7:
+128:8:8:
+129:8:9:
+130:8:10:
+131:8:11:
+132:8:12:
+133:8:13:
+134:8:14:
+135:8:15:
 
 9:md:*:0:d:256:*:1:Metadisk (Software RAID) devices  (md0..md255)
 
 #10:0:0:NODEV
 
-11:sr:*:0:d:256:*:1:CDROM - CDROM (sr0..sr255)
+#11:sr:*:0:d:256:*:1:CDROM - CDROM (sr0..sr255) (deprecated)
+11:scd:*:0:d:256:*:1:CDROM - CDROM (scd0..scd255)
 
 #12:0:0:MSCDEX CD-ROM Callback
 
@@ -139,6 +151,14 @@
 53:48:5:
 54:48:6:
 55:48:7:
+136:48:8:
+137:48:9:
+138:48:10:
+139:48:11:
+140:48:12:
+141:48:13:
+142:48:14:
+143:48:15:
 
 # 56, 57: see IDE, dev 3:
 
@@ -207,16 +227,24 @@
 
 # 114..159 NODEV
 
-160:sx8/:*:0:d:8:p:32:Promise SATA SX8 Unit %d
+120:emcpower:*:0:a:16:*:16:EMC PowerPath Unit %d
+
+#160:sx8/:*:0:d:8:p:32:Promise SATA SX8 Unit %d
+#161:160:1:
+160:carmel/:*:0:d:8:p:32:Carmel 8-port SATA Disks (carmel/0 - carmel/7)
 161:160:1:
 
 # 162..198 UNUSED
+
+180:ub:*:0:a:32:p:8:USB block devices
 
 #199:0:0:Veritas Volume Manager (VxVM) Volumes
 #200:0:0:NODEV
 #201:0:0:Veritas VxVM Dynamic Multipathing Driver
 
-# 202..230: UNUSED
+202:xvd:*:0:a:16:p:16:Xen Virtual Block Device
+
+# 203..230: UNUSED
 
 232:emcpower:*:0:a:16:*:16:EMC PowerPath Unit %d
 233:232:1:

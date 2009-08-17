@@ -6,10 +6,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 9.0.2\n"
+"Project-Id-Version: sysstat 9.0.3\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-04-01 10:36+0200\n"
-"PO-Revision-Date: 2009-04-02 18:21+0900\n"
+"POT-Creation-Date: 2009-05-17 16:16+0200\n"
+"PO-Revision-Date: 2009-05-28 06:21+0900\n"
 "Last-Translator: Hideki Yamane (Debian-JP) <henrich@debian.or.jp>\n"
 "Language-Team: Japanese <translation-team-ja@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
@@ -22,7 +22,7 @@ msgid "sysstat version %s\n"
 msgstr "sysstat バージョン %s\n"
 
 #: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
-#: sa_common.c:1046 sadc.c:591 sadc.c:600 sadc.c:660
+#: sa_common.c:1052 sadc.c:591 sadc.c:600 sadc.c:660
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr "%s を開けません: %s\n"
@@ -36,11 +36,11 @@ msgstr "使い方: %s [ オプション ] [ <間隔> [ <回数> ] ]\n"
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
 "[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"
 msgstr ""
 "利用可能なオプション:\n"
-"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ]\n"
+"[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
 "[ <デバイス> [ ... ] | ALL ] [ -p [ <デバイス> [,...] | ALL ] ]\n"
 
 #: mpstat.c:86
@@ -53,7 +53,7 @@ msgstr ""
 "[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <CPU> [,...] | ALL } ] [ -V ]\n"
 
 # sar.c:
-#: mpstat.c:457 pidstat.c:1683 sar.c:350
+#: mpstat.c:457 pidstat.c:1683 sar.c:354
 msgid "Average:"
 msgstr "平均値:"
 
@@ -73,7 +73,7 @@ msgstr ""
 "[ -C <コマンド> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:197 sar.c:964
+#: pidstat.c:197 sar.c:968
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "要求された動作情報は利用できません\n"
@@ -83,32 +83,32 @@ msgstr "要求された動作情報は利用できません\n"
 msgid "Cannot handle so many processors!\n"
 msgstr "そんなに大量のプロセッサは扱えません!\n"
 
-#: sa_common.c:860
+#: sa_common.c:866
 #, c-format
 msgid "Error while reading system activity file: %s\n"
 msgstr "システム動作情報ファイルの読み込み中にエラーが起きました: %s\n"
 
-#: sa_common.c:870
+#: sa_common.c:876
 #, c-format
 msgid "End of system activity file unexpected\n"
 msgstr "システム動作情報ファイルが途中で予期無く終了しました\n"
 
-#: sa_common.c:888
+#: sa_common.c:894
 #, c-format
 msgid "File created using sar/sadc from sysstat version %d.%d.%d"
 msgstr "sysstat バージョン %d.%d.%d の sar/sadc を使って作られたファイル"
 
-#: sa_common.c:919
+#: sa_common.c:925
 #, c-format
 msgid "Invalid system activity file: %s\n"
 msgstr "システム動作情報ファイルの形式が正しくありません: %s\n"
 
-#: sa_common.c:926
+#: sa_common.c:932
 #, c-format
 msgid "Current sysstat version can no longer read the format of this file (%#x)\n"
 msgstr "sysstat の現在のバージョンではこのデータファイル (%#x) の形式を読み込めなくなっています\n"
 
-#: sa_common.c:1129
+#: sa_common.c:1135
 #, c-format
 msgid "Requested activities not available in file %s\n"
 msgstr "要求された動作情報はファイル %s 内にはありません\n"
@@ -162,22 +162,22 @@ msgstr ""
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar のオプション...> ]\n"
 
-#: sadf.c:527
+#: sadf.c:541
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr "システム動作情報ファイル: %s (%#x)\n"
 
-#: sadf.c:536
+#: sadf.c:550
 #, c-format
 msgid "Host: "
 msgstr "ホスト名: "
 
-#: sadf.c:542
+#: sadf.c:556
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr "long int のサイズ: %d\n"
 
-#: sadf.c:544
+#: sadf.c:558
 #, c-format
 msgid "List of activities:\n"
 msgstr "動作情報のリスト:\n"
@@ -337,32 +337,32 @@ msgstr "\t-y\tTTY デバイスの状態\n"
 msgid "End of data collecting unexpected\n"
 msgstr "データの収集が予期無く終了しました\n"
 
-#: sar.c:770
+#: sar.c:774
 #, c-format
 msgid "Invalid data format\n"
 msgstr "データ形式が正しくありません\n"
 
-#: sar.c:774
+#: sar.c:778
 #, c-format
 msgid "Using a wrong data collector from a different sysstat version\n"
 msgstr "異なるバージョンの sysstat のデータ収集プログラムによる不正なデータを使っています\n"
 
-#: sar.c:794
+#: sar.c:798
 #, c-format
 msgid "Inconsistent input data\n"
 msgstr "矛盾した入力データです\n"
 
-#: sar.c:1199
+#: sar.c:1203
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "-f と -o オプションは相互に排他的です\n"
 
-#: sar.c:1205
+#: sar.c:1209
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "システム動作情報ファイルの読み込みがありません (-f オプションを使ってください)\n"
 
-#: sar.c:1306
+#: sar.c:1310
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "データ収集プログラム (%s) が見つかりません\n"

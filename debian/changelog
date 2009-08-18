@@ -1,10 +1,11 @@
-sysstat (9.0.4-1) UNRELEASED; urgency=low
+sysstat (9.0.4-1) unstable; urgency=low
 
   * New upstream release
     + memory corruption bug fixed by upstream (closes: #507659).
   * Standards-Version: 3.8.3.
+  * Remove deprecated dh_desktop call from debian/rules.
 
- -- Robert Luberda <robert@debian.org>  Mon, 17 Aug 2009 07:34:12 +0200
+ -- Robert Luberda <robert@debian.org>  Tue, 18 Aug 2009 06:29:03 +0200
 
 sysstat (9.0.3-2) unstable; urgency=low
 
@@ -16,7 +17,7 @@ sysstat (9.0.3-1) unstable; urgency=low
 
   * New upstream release
   * Standards-Version: 3.8.1 (no changes)
-  * Update Braziliian Portuguese debconf translation (closes: #519253).
+  * Update Brazilian Portuguese debconf translation (closes: #519253).
   * Support status action in init.d script (closes: #526051).
   * Mention cron.daily's job in README.Debian (closes: #524219).
 

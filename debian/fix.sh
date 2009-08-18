@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: fix.sh,v 1.8 2008-01-03 22:30:06 robert Exp $
+# $Id: fix.sh 1459 2009-08-18 04:28:45Z robert $
 
 set -e 
 
@@ -37,6 +37,7 @@ for file in `echo $FFILES`; do
 	sed -e 's|usr/lib/sa|usr/lib/sysstat|g' \
 	    -e 's|var/log/sa|var/log/sysstat|g' \
 	    -e 's|usr/local/lib/sa|usr/local/lib/sysstat|g' \
+	    -e 's|^\.IX|.\\"&|' \
 	    -e "$man_re" \
 		< _tmp_ > "$file"
 	chmod --reference=_tmp_ "$file" 

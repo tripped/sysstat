@@ -1,5 +1,13 @@
 Changes:
 
+2009/09/20: Version 9.0.5 - Sebastien Godard (sysstat <at> orange.fr)
+	* sysstat should now be able to pretty print device names whose
+	  minor numbers are greater than or equal to 256. (Tests have
+	  been made on a large 26TB RHEL5/PP Linux cluster.)
+	* sadc manual page updated.
+	* NLS updated.
+	* FAQ updated.
+
 2009/07/19: Version 9.0.4 - Sebastien Godard (sysstat <at> orange.fr)
 	* [Jonathan Kamens]: Fix double free/memory corruption bug
 	  with sadc.

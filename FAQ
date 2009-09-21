@@ -52,6 +52,7 @@ Also tell me what version your kernel is).
       analysis and capacity planning?
 2.21. The sar command displays some weird output values...
 2.22. What happened to sar's options -h, -H, -x and -X?
+2.23. What is the exact meaning of the <count> parameter for sar and sadc?
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -509,6 +510,26 @@ made available. You should now use the sadf command instead of sar -h or
 sar -H, and the pidstat command instead of sar -x or sar -X. Please read
 their manual page to learn some more about their respective options.
 
+~~
+
+2.23. What is the exact meaning of the <count> parameter for sar and sadc?
+
+For sadc, <count> is the number of data samples collected.
+For sar, <count> is the number of records to display (a record contains
+the average values for counters over the given time interval - See 2.16).
+
+Starting with an empty file <file>:
+
+sadc <file> 1 6 	will write 6 data samples to file.
+sar -f <file> 1 6 	6 is invalid because there are only 5 intervals.
+
+Based on the <count> value entered for sadc the "valid" <count> values for
+sar are 1 through 5. Any value greater than 5 for sar will give the
+same output as 5 in this example. So entering sar -f <file> 1 2000
+for a file populated with the output of sadc 1 6 <file> will give the
+same output as sar -f <file> 1 5. Note that it all depends on the number
+of data samples pre-existing in the data file. If the file is empty
+when first running sadc then the above is true.
 
 3. QUESTIONS RELATING TO IOSTAT
 ###############################

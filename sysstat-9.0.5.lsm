@@ -1,7 +1,7 @@
 Begin4
 Title:		sysstat - the sar, sadf, mpstat, iostat and pidstat commands for Linux
-Version:	9.0.4
-Entered-date:	2009-07-19
+Version:	9.0.5
+Entered-date:	2009-09-20
 Description:	The sysstat package contains the sar, sadf, mpstat, iostat,
 		pidstat and sa tools for Linux.
 		The sar command collects and reports system activity
@@ -26,10 +26,10 @@ Keywords:	system administration, sar, sadf, iostat, mpstat, pidstat, system acco
 Author:		sebastien.godard@orange.fr (Sebastien Godard)
 Maintained-by:	sebastien.godard@orange.fr (Sebastien Godard)
 Primary-site:	http://pagesperso-orange.fr/sebastien.godard/
-		288kB sysstat-9.0.4.tar.gz
-		235kB sysstat-9.0.4.tar.bz2
-		292kB sysstat-9.0.4-1.src.rpm
-		249kB sysstat-9.0.4-1.i586.rpm
+		288kB sysstat-9.0.5.tar.gz
+		235kB sysstat-9.0.5.tar.bz2
+		292kB sysstat-9.0.5-1.src.rpm
+		270kB sysstat-9.0.5-1.i586.rpm
 Alternate-site:	ibiblio.org /pub/linux/system/status
 Copying-policy:	GPL
 End

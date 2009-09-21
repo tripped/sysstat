@@ -41,6 +41,7 @@
 
 static unsigned int ioc_parsed = 0;
 static struct ioc_entry *ioconf[MAX_BLKDEV + 1];
+static unsigned int ioc_refnr[MAX_BLKDEV + 1];
 
 /*
  ***************************************************************************
@@ -158,6 +159,9 @@ int ioc_init(void)
 		strncpy(ioconf_name, IOCONF, 64);
 	}
 	ioconf_name[63] = '\0';
+	
+	/* Init ioc_refnr array */
+	memset(ioc_refnr, 0, sizeof(ioc_refnr));
 
 	while (fgets(buf, IOC_LINESIZ, fp)) {
 
@@ -212,7 +216,9 @@ int ioc_init(void)
 				IOC_ALLOC(iocp->desc, char, IOC_DESCLEN + 1);
 				strncpy(iocp->desc, desc, IOC_DESCLEN);
 			}
+			ioc_refnr[indirect]++;
 			ioconf[major] = iocp;
+			iocp->basemajor = indirect;
 			iocp->blkp = ioconf[indirect]->blkp;
 			iocp->live = 0;
 			iocp = NULL;
@@ -321,6 +327,7 @@ int ioc_init(void)
 		iocp->live = 1;
 		iocp->blkp = blkp;
 		iocp->desc = NULL;
+		iocp->basemajor = major;
 		ioconf[major] = iocp;
 		strncpy(blkp->desc, desc, IOC_DESCLEN);
 		blkp = NULL; iocp = NULL;
@@ -375,7 +382,7 @@ char *ioc_name(unsigned int major, unsigned int minor)
 	p = ioconf[major];
 
 	/* Invalid major or minor numbers? */
-	if ((p == NULL) || (minor >= (p->blkp->dcount * p->blkp->pcount))) {
+	if ((p == NULL) || ((minor & 0xff) >= (p->blkp->dcount * p->blkp->pcount))) {
 		/*
 		 * That minor test is only there for IDE-style devices
 		 * that have no minors over 128.
@@ -399,9 +406,14 @@ char *ioc_name(unsigned int major, unsigned int minor)
 	 * (we parse once but may generate lots of names)
 	 */
 	base = p->ctrlno * p->blkp->dcount;
-	offset = minor / p->blkp->pcount;
-	if (!p->blkp->ctrl_explicit)
+	if (minor >= 256) {
+		base += p->blkp->dcount * (ioc_refnr[p->basemajor] + 1) * (minor >> 8);
+	}
+
+	offset = (minor & 0xff) / p->blkp->pcount;
+	if (!p->blkp->ctrl_explicit) {
 		offset += base;
+	}
 
 	/*
 	 * These sprintfs can't be coalesced because the first might

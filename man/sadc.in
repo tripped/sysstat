@@ -1,4 +1,4 @@
-.TH SADC 8 "MARCH 2009" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "AUGUST 2009" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
@@ -76,7 +76,7 @@ This comment can then be displayed with option -C of
 .IP -F
 The creation of
 .I outfile
-will be forced. If the file already exists and has not the format expected by
+will be forced. If the file already exists and has a format unknown to
 .B sadc
 then it will be truncated. This may be useful for daily data files
 created by an older version of
@@ -143,6 +143,11 @@ The
 .B XALL
 keyword is equivalent to specifying all the keywords above (including
 keyword extensions) and therefore all possible activities are collected.
+
+Important note: The activities (including optional ones) saved in an existing
+data file prevail over those selected with option -S.
+As a consequence, appending data to an existing data file will result in
+option -S being ignored.
 .IP -V
 Print version number then exit.
 

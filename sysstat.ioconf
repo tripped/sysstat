@@ -16,12 +16,12 @@
 #  name:		base of device name
 #  ctrlpre:		string to use in generating controller designators
 #			 eg: the c in c0d2p6, decimal formatting implied
-#                        '*' means none or irrelevant
+#			'*' means none or irrelevant
+#			'x': exception... record contains a specific name
+#                       for a specific minor #, stored in the ctrlno field
 #  ctrlno:		which controller of this type is this
 #  devfmt:		type of device naming convention
 #	a:		alpha: xxa, xxb, ... xxaa, xxab, ... xxzz
-#       x:		exception... record contains a specific name
-#                        for a specific minor #, stored in the devcnt field
 #	%string:	string to use in generating drive designators,
 #			 eg: the 'd' in c0d2p6 , decimal formatting implied
 #	d:		no special translations (decimal formatting)

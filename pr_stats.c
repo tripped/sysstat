@@ -793,7 +793,7 @@ __print_funct_t print_disk_stats(struct activity *a, int prev, int curr,
 			dev_name = get_devname(sdc->major, sdc->minor,
 					       USE_PRETTY_OPTION(flags));
 		}
-
+		
 		printf("%-11s %9s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",
 		       timestamp[curr],
 		       /* Confusion possible here between index and minor numbers */

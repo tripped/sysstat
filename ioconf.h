@@ -13,7 +13,7 @@
 #define IOC_NAMELEN	31
 #define IOC_DESCLEN	63
 #define IOC_DEVLEN	47
-#define IOC_MAXMINOR	255
+#define IOC_MAXMINOR	2047
 #define IOC_LINESIZ	255
 #define IOC_PARTLEN	7
 #define IOC_FMTLEN	15
@@ -69,6 +69,7 @@ struct blk_config {
 struct ioc_entry {
 	int live;			/* is this a Direct entry? */
 	unsigned int ctrlno;		/* controller number */
+	unsigned int basemajor;		/* Major number of the template */
 	char *desc;			/* (dynamic) per-controller description */
 	struct blk_config *blkp;	/* the real info, may be a shared ref */
 };

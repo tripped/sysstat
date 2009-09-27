@@ -1,0 +1,3 @@
+# The sysstat's stop action does nothing, there's no point in providing
+# the stop links in rc0.d & rc6.d (see bug #495545).
+sysstat: init.d-script-possible-missing-stop /etc/init.d/sysstat 0 6

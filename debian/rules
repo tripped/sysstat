@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules 1459 2009-08-18 04:28:45Z robert $
+# $Id: rules 1466 2009-09-27 07:05:39Z robert $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -101,6 +101,7 @@ binary-common:
 
 	sh debian/fix.sh $(PACKAGE)
 
+	dh_lintian
 	dh_strip
 	dh_link
 	dh_compress

@@ -1,9 +1,10 @@
-sysstat (9.0.5-1) UNRELEASED; urgency=low
+sysstat (9.0.5-1) unstable; urgency=low
 
-  * NOT RELEASED YET
-  * New upstream release
+  * New upstream release.
+  * Add an override for `init.d-script-possible-missing-stop' lintian's 
+    warning.
 
- -- Robert Luberda <robert@debian.org>  Mon, 21 Sep 2009 23:44:13 +0200
+ -- Robert Luberda <robert@debian.org>  Sun, 27 Sep 2009 09:04:11 +0200
 
 sysstat (9.0.4-1) unstable; urgency=low
 
@@ -84,7 +85,7 @@ sysstat (8.1.8-1) unstable; urgency=low
   * Add debian-sa1 script and ran it from cron.d job (closes: #499461). 
   * If sar cannot open a data file, print a message indicating that sysstat
     might not be enabled (closes: #511418).
-  * Remove stop links from rc0 and rc6 run levels.
+  * Remove stop links from rc0 and rc6 run levels (cf. #495545).
   * Remove the "sysstat not enabled" warning from out init script (closes:
     #507493).
   * Switch to v7 debhelper's compat level, use dh_prep instead of `dh_clean -k'.

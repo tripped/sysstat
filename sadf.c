@@ -86,7 +86,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+			  "[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 			  "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 			  "[ -- <sar_options> ]\n"));
 	exit(1);
@@ -296,7 +296,7 @@ int write_parsable_stats(int curr, int reset, long *cnt, int use_tm_start,
 {
 	unsigned long long dt, itv, g_itv;
 	char cur_time[26];
-	static int cross_day = 0;
+	static int cross_day = FALSE;
 	static __nr_t cpu_nr = -1;
 	
 	if (cpu_nr < 0) {
@@ -322,7 +322,7 @@ int write_parsable_stats(int curr, int reset, long *cnt, int use_tm_start,
 	if (use_tm_start && record_hdr[!curr].ust_time &&
 	    (record_hdr[curr].ust_time > record_hdr[!curr].ust_time) &&
 	    (record_hdr[curr].hour < record_hdr[!curr].hour)) {
-		cross_day = 1;
+		cross_day = TRUE;
 	}
 
 	if (cross_day) {
@@ -366,23 +366,76 @@ int write_parsable_stats(int curr, int reset, long *cnt, int use_tm_start,
  * Display XML activity records
  *
  * IN:
- * @curr	Index in array for current sample statistics.
- * @tab		Number of tabulations to print.
- * @cpu_nr	Number of processors.
+ * @curr		Index in array for current sample statistics.
+ * @use_tm_start	Set to TRUE if option -s has been used.
+ * @use_tm_end		Set to TRUE if option -e has been used.
+ * @reset		Set to TRUE if last_uptime should be reinitialized
+ *			(used in next_slice() function).
+ * @tab			Number of tabulations to print.
+ * @cpu_nr		Number of processors.
+ *
+ * OUT:
+ * @cnt			Set to 0 to indicate that no other lines of stats
+ * 			should be displayed.
+ *
+ * RETURNS:
+ * 1 if stats have been successfully displayed.
  ***************************************************************************
  */
-void write_xml_stats(int curr, int tab, __nr_t cpu_nr)
+int write_xml_stats(int curr, int use_tm_start, int use_tm_end, int reset,
+		    long *cnt, int tab, __nr_t cpu_nr)
 {
 	int i;
 	unsigned long long dt, itv, g_itv;
 	char cur_time[XML_TIMESTAMP_LEN];
+	static int cross_day = FALSE;
 
 	/* Fill timestamp structure (rectime) for current record */
 	sadf_get_record_timestamp_struct(curr);
 
+	/*
+	 * Check time (1).
+	 * For this first check, we use the time interval entered on
+	 * the command line. This is equivalent to sar's option -i which
+	 * selects records at seconds as close as possible to the number
+	 * specified by the interval parameter.
+	 */
+	if (!next_slice(record_hdr[2].uptime0, record_hdr[curr].uptime0,
+			reset, interval))
+		/* Not close enough to desired interval */
+		return 0;
+
+	/* Check if we are beginning a new day */
+	if (use_tm_start && record_hdr[!curr].ust_time &&
+	    (record_hdr[curr].ust_time > record_hdr[!curr].ust_time) &&
+	    (record_hdr[curr].hour < record_hdr[!curr].hour)) {
+		cross_day = TRUE;
+	}
+
+	if (cross_day) {
+		/*
+		 * This is necessary if we want to properly handle something like:
+		 * sar -s time_start -e time_end with
+		 * time_start(day D) > time_end(day D+1)
+		 */
+		loctime.tm_hour += 24;
+	}
+
+	/* Check time (2) */
+	if (use_tm_start && (datecmp(&loctime, &tm_start) < 0))
+		/* it's too soon... */
+		return 0;
+
 	/* Get interval values */
 	get_itv_value(&record_hdr[curr], &record_hdr[!curr],
 		      cpu_nr, &itv, &g_itv);
+
+	/* Check time (3) */
+	if (use_tm_end && (datecmp(&loctime, &tm_end) > 0)) {
+		/* It's too late... */
+		*cnt = 0;
+		return 0;
+	}
 
 	dt = itv / HZ;
 	/* Correct rounding error for dt */
@@ -395,7 +448,6 @@ void write_xml_stats(int curr, int tab, __nr_t cpu_nr)
 
         xprintf(tab, "<timestamp %s interval=\"%llu\">", cur_time, dt);
 	tab++;
-
 
 	/* Display XML statistics */
 	for (i = 0; i < NR_ACT; i++) {
@@ -413,6 +465,8 @@ void write_xml_stats(int curr, int tab, __nr_t cpu_nr)
 	}
 
 	xprintf(--tab, "</timestamp>");
+
+	return 1;
 }
 
 /*
@@ -420,16 +474,23 @@ void write_xml_stats(int curr, int tab, __nr_t cpu_nr)
  * Display XML restart records
  *
  * IN:
- * @curr	Index in array for current sample statistics.
- * @tab		Number of tabulations to print.
+ * @curr		Index in array for current sample statistics.
+ * @use_tm_start	Set to TRUE if option -s has been used.
+ * @use_tm_end		Set to TRUE if option -e has been used.
+ * @tab			Number of tabulations to print.
  ***************************************************************************
  */
-void write_xml_restarts(int curr, int tab)
+void write_xml_restarts(int curr, int use_tm_start, int use_tm_end, int tab)
 {
 	char cur_time[64];
 
 	/* Fill timestamp structure for current record */
 	sadf_get_record_timestamp_struct(curr);
+	
+	/* The record must be in the interval specified by -s/-e options */
+	if ((use_tm_start && (datecmp(&loctime, &tm_start) < 0)) ||
+	    (use_tm_end && (datecmp(&loctime, &tm_end) > 0)))
+		return;
 
 	strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
 	xprintf(tab, "<boot %s/>", cur_time);
@@ -440,12 +501,14 @@ void write_xml_restarts(int curr, int tab)
  * Display XML COMMENT records
  *
  * IN:
- * @curr	Index in array for current sample statistics.
- * @tab		Number of tabulations to print.
- * @ifd		Input file descriptor.
+ * @curr		Index in array for current sample statistics.
+ * @use_tm_start	Set to TRUE if option -s has been used.
+ * @use_tm_end		Set to TRUE if option -e has been used.
+ * @tab			Number of tabulations to print.
+ * @ifd			Input file descriptor.
  ***************************************************************************
  */
-void write_xml_comments(int curr, int tab, int ifd)
+void write_xml_comments(int curr, int use_tm_start, int use_tm_end, int tab, int ifd)
 {
 	char cur_time[64];
 	char file_comment[MAX_COMMENT_LEN];
@@ -455,6 +518,11 @@ void write_xml_comments(int curr, int tab, int ifd)
 
 	/* Fill timestamp structure for current record */
 	sadf_get_record_timestamp_struct(curr);
+
+	/* The record must be in the interval specified by -s/-e options */
+	if ((use_tm_start && (datecmp(&loctime, &tm_start) < 0)) ||
+	    (use_tm_end && (datecmp(&loctime, &tm_end) > 0)))
+		return;
 
 	strftime(cur_time, 64, "date=\"%Y-%m-%d\" time=\"%H:%M:%S\"", &rectime);
 	xprintf(tab, "<comment %s com=\"%s\"/>", cur_time, file_comment);
@@ -681,7 +749,6 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 					(*cnt)--;
 				}
 			}
-
 			*reset = FALSE;
 		}
 	}
@@ -702,7 +769,8 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 void xml_display_loop(int ifd, struct file_activity *file_actlst)
 {
 	int curr, tab = 0, rtype;
-	int eosaf = TRUE;
+	int eosaf = TRUE, next, reset = FALSE;
+	long cnt = 1;
 	off_t fpos;
 	static __nr_t cpu_nr = -1;
 	
@@ -737,6 +805,7 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 				 */
 				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
 						     file_actlst);
+				sadf_get_record_timestamp_struct(0);
 			}
 
 			if (!eosaf && (rtype == R_COMMENT)) {
@@ -750,9 +819,16 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 				}
 			}
 		}
-		while (!eosaf && ((rtype == R_RESTART) || (rtype == R_COMMENT)));
+		while (!eosaf && ((rtype == R_RESTART) || (rtype == R_COMMENT) ||
+			(tm_start.use && (datecmp(&loctime, &tm_start) < 0)) ||
+			(tm_end.use && (datecmp(&loctime, &tm_end) >=0))));
+
+		/* Save the first stats collected. Used for example in next_slice() function */
+		copy_structures(act, id_seq, record_hdr, 2, 0);
 
 		curr = 1;
+		cnt = count;
+		reset = TRUE;
 
 		if (!eosaf) {
 			do {
@@ -765,8 +841,17 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 					read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
 							     file_actlst);
 
-					write_xml_stats(curr, tab, cpu_nr);
-					curr ^= 1;
+					/* next is set to 1 when we were close enough to desired interval */
+					next = write_xml_stats(curr, tm_start.use, tm_end.use, reset,
+							&cnt, tab, cpu_nr);
+
+					if (next) {
+						curr ^= 1;
+						if (cnt > 0) {
+							cnt--;
+						}
+					}
+					reset = FALSE;
 				}
 
 				if (!eosaf && (rtype == R_COMMENT)) {
@@ -776,7 +861,28 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 					}
 				}
 			}
-			while (!eosaf && (rtype != R_RESTART));
+			while (cnt && !eosaf && (rtype != R_RESTART));
+
+			if (!cnt) {
+				/* Go to next Linux restart, if possible */
+				do {
+					eosaf = sa_fread(ifd, &record_hdr[curr], RECORD_HEADER_SIZE,
+							 SOFT_SIZE);
+					rtype = record_hdr[curr].record_type;
+					if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
+						read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
+								     file_actlst);
+					}
+					else if (!eosaf && (rtype == R_COMMENT)) {
+						/* Ignore COMMENT record */
+						if (lseek(ifd, MAX_COMMENT_LEN, SEEK_CUR) < MAX_COMMENT_LEN) {
+							perror("lseek");
+						}
+					}
+				}
+				while (!eosaf && (rtype != R_RESTART));
+			}
+			reset = TRUE;
 		}
 	}
 	while (!eosaf);
@@ -800,7 +906,7 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 						     file_actlst);
 			}
 			if (rtype == R_RESTART) {
-				write_xml_restarts(0, tab);
+				write_xml_restarts(0, tm_start.use, tm_end.use, tab);
 			}
 			else if (rtype == R_COMMENT) {
 				/* Ignore COMMENT record */
@@ -820,24 +926,27 @@ void xml_display_loop(int ifd, struct file_activity *file_actlst)
 	}
 
 	/* Last, process COMMENT entries to display comments */
-	xprintf(tab++, "<comments>");
-	do {
-		if ((eosaf = sa_fread(ifd, &record_hdr[0], RECORD_HEADER_SIZE,
-				      SOFT_SIZE)) == 0) {
+	if (DISPLAY_COMMENT(flags)) {
+		xprintf(tab++, "<comments>");
+		do {
+			if ((eosaf = sa_fread(ifd, &record_hdr[0], RECORD_HEADER_SIZE,
+				              SOFT_SIZE)) == 0) {
 
-			rtype = record_hdr[0].record_type;
-			if ((rtype != R_RESTART) && (rtype != R_COMMENT)) {
-				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
-						     file_actlst);
-			}
-			if (rtype == R_COMMENT) {
-				write_xml_comments(0, tab, ifd);
+				rtype = record_hdr[0].record_type;
+				if ((rtype != R_RESTART) && (rtype != R_COMMENT)) {
+					read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
+							     file_actlst);
+				}
+				if (rtype == R_COMMENT) {
+					write_xml_comments(0, tm_start.use, tm_end.use,
+							   tab, ifd);
+				}
 			}
 		}
+		while (!eosaf);
+		xprintf(--tab, "</comments>");
 	}
-	while (!eosaf);
-	xprintf(--tab, "</comments>");
-
+	
 	xprintf(--tab, "</host>");
 	xprintf(--tab, "</sysstat>");
 }
@@ -891,7 +1000,8 @@ void main_display_loop(int ifd, struct file_activity *file_actlst)
 		/* Save the first stats collected. Will be used to compute the average */
 		copy_structures(act, id_seq, record_hdr, 2, 0);
 
-		reset = TRUE;	/* Set flag to reset last_uptime variable */
+		/* Set flag to reset last_uptime variable. Should be done after a LINUX RESTART record */
+		reset = TRUE;
 
 		/* Save current file position */
 		if ((fpos = lseek(ifd, 0, SEEK_CUR)) < 0) {
@@ -954,6 +1064,10 @@ void main_display_loop(int ifd, struct file_activity *file_actlst)
 				if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
 					read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
 							     file_actlst);
+				}
+				else if (!eosaf && (rtype == R_COMMENT)) {
+					/* This was a COMMENT record: print it */
+					sadf_print_special(curr, tm_start.use, tm_end.use, R_COMMENT, ifd);
 				}
 			}
 			while (!eosaf && (rtype != R_RESTART));
@@ -1105,6 +1219,10 @@ int main(int argc, char **argv)
 
 					switch (*(argv[opt] + i)) {
 
+					case 'C':
+						flags |= S_F_COMMENT;
+						break;
+							
 					case 'd':
 						if (format && (format != S_O_DB_OPTION)) {
 							usage(argv[0]);

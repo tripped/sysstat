@@ -1,8 +1,8 @@
-.TH SADF 1 "DECEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADF 1 "OCTOBER 2009" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadf \- Display data collected by sar in multiple formats.
 .SH SYNOPSIS
-.B sadf [ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ] [ -P {
+.B sadf [ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ] [ -P {
 .I cpu
 .B [,...] | ALL } ] [ -s [
 .I hh:mm:ss
@@ -69,6 +69,10 @@ with those of
 Not specifying any flags selects only CPU activity.
 
 .SH OPTIONS
+.IP -C
+Tell
+.B sadf
+to display comments present in file.
 .IP -D
 This option is equivalent to option -d below, except that the timestamp
 is always expressed in seconds since the epoch (00:00:00 UTC 01/01/1970).

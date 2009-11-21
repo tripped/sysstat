@@ -940,6 +940,9 @@ int main(int argc, char **argv)
 	int stdfd = 0, ofd = -1;
 	long count = 0;
 
+	/* Get HZ */
+	get_HZ();
+	
 	/* Compute page shift in kB */
 	get_kb_shift();
 

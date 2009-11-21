@@ -885,7 +885,7 @@ void read_stats_from_file(char from_file[])
 
 		/* Read and write stats located between two possible Linux restarts */
 		for (i = 0; i < NR_ACT; i++) {
-			
+
 			if (!id_seq[i])
 				continue;
 			
@@ -927,6 +927,10 @@ void read_stats_from_file(char from_file[])
 				if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
 					read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
 							     file_actlst);
+				}
+				else if (!eosaf && (rtype == R_COMMENT)) {
+					/* This was a COMMENT record: print it */
+					sar_print_special(curr, tm_start.use, tm_end.use, R_COMMENT, ifd);
 				}
 			}
 			while (!eosaf && (rtype != R_RESTART));

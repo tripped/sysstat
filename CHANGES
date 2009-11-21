@@ -1,5 +1,24 @@
 Changes:
 
+2009/11/11: Version 9.0.6 - Sebastien Godard (sysstat <at> orange.fr)
+	* "sadf -x" now takes into account options -s and -e (which
+	  specify a starting and ending time) and also interval and
+	  count parameters [DEBIAN bug#546259].
+	* Option -C added to sadf. Use it to tell sadf to display comments
+	  present in file (also works with XML format).
+	* sar and sadf sometimes didn't handle COMMENT records properly.
+	  This is now fixed.
+	* XML output (displayed by sadf -x) modified for kernel tables
+	  statistics.
+	* XSD and DTD documents updated.
+	* [Yibin Shen]: HZ variable was not explicitly set in sadc.c. This is now fixed.
+	* sargraph added (sargraph is a shell script used to make graphs
+	  based on sadf XML output).
+	* sadf manual page updated.
+	* FAQ updated.
+	* NLS updated.
+	* CREDITS file updated.
+
 2009/09/20: Version 9.0.5 - Sebastien Godard (sysstat <at> orange.fr)
 	* sysstat should now be able to pretty print device names whose
 	  minor numbers are greater than or equal to 256. (Tests have

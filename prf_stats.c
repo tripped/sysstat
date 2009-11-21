@@ -2664,21 +2664,15 @@ __print_funct_t xml_print_ktables_stats(struct activity *a, int curr, int tab,
 	struct stats_ktables
 		*skc = (struct stats_ktables *) a->buf[curr];
 	
-	xprintf(tab, "<kernel per=\"second\">");
-
-	xprintf(++tab, "<dentunusd>%u</dentunusd>",
-		skc->dentry_stat);
-	
-	xprintf(tab, "<file-nr>%u</file-nr>",
-		skc->file_used);
-	
-	xprintf(tab, "<inode-nr>%u</inode-nr>",
-		skc->inode_used);
-	
-	xprintf(tab, "<pty-nr>%u</pty-nr>",
+	xprintf(tab, "<kernel "
+		"dentunusd=\"%u\" "
+		"file-nr=\"%u\" "
+		"inode-nr=\"%u\" "
+		"pty-nr=\"%u\"/>",
+		skc->dentry_stat,
+		skc->file_used,
+		skc->inode_used,
 		skc->pty_nr);
-
-	xprintf(--tab, "</kernel>");
 }
 
 /*

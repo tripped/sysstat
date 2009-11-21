@@ -1,9 +1,10 @@
-sysstat (9.0.6-1) UNRELEASED; urgency=low
+sysstat (9.0.6-1) unstable; urgency=low
 
-  * NOT RELEASED YET
-  * New upstream release
+  * New upstream release:
+    + sadf improved (closes: #546259).
+  * Install a new sargraph script into examples.
 
- -- Robert Luberda <robert@debian.org>  Sat, 21 Nov 2009 09:52:23 +0100
+ -- Robert Luberda <robert@debian.org>  Sat, 21 Nov 2009 21:34:09 +0100
 
 sysstat (9.0.5-1) unstable; urgency=low
 

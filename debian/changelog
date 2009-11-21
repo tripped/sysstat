@@ -1,3 +1,10 @@
+sysstat (9.0.6-1) UNRELEASED; urgency=low
+
+  * NOT RELEASED YET
+  * New upstream release
+
+ -- Robert Luberda <robert@debian.org>  Sat, 21 Nov 2009 09:52:23 +0100
+
 sysstat (9.0.5-1) unstable; urgency=low
 
   * New upstream release.

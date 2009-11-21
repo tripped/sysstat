@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-07-30 22:15+0200\n"
+"POT-Creation-Date: 2009-10-19 08:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr ""
 
-#: ioconf.c:490 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
+#: ioconf.c:490 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2242
 #: sa_common.c:1052 sadc.c:589 sadc.c:598 sadc.c:658
 #, c-format
 msgid "Cannot open %s: %s\n"
@@ -66,12 +66,12 @@ msgid ""
 "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
 
-#: pidstat.c:197 sar.c:968
+#: pidstat.c:197 sar.c:972
 #, c-format
 msgid "Requested activities not available\n"
 msgstr ""
 
-#: rd_stats.c:2289
+#: rd_stats.c:2288
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr ""
@@ -144,27 +144,27 @@ msgstr ""
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_options> ]\n"
 msgstr ""
 
-#: sadf.c:541
+#: sadf.c:609
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr ""
 
-#: sadf.c:550
+#: sadf.c:618
 #, c-format
 msgid "Host: "
 msgstr ""
 
-#: sadf.c:556
+#: sadf.c:624
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr ""
 
-#: sadf.c:558
+#: sadf.c:626
 #, c-format
 msgid "List of activities:\n"
 msgstr ""
@@ -307,17 +307,17 @@ msgstr ""
 msgid "Inconsistent input data\n"
 msgstr ""
 
-#: sar.c:1203
+#: sar.c:1207
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr ""
 
-#: sar.c:1209
+#: sar.c:1213
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr ""
 
-#: sar.c:1310
+#: sar.c:1314
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr ""

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--DTD v2.5 for sysstat. See sadf.h -->
+<!--DTD v2.6 for sysstat. See sadf.h -->
 <!ELEMENT boot EMPTY>
 <!ATTLIST boot
 	date CDATA #REQUIRED
@@ -90,9 +90,12 @@
 	intr CDATA #REQUIRED
 	value CDATA #REQUIRED
 >
-<!ELEMENT kernel (dentunusd, file-nr, inode-nr, pty-nr)>
+<!ELEMENT kernel EMPTY>
 <!ATTLIST kernel
-	per CDATA #REQUIRED
+	dentunusd CDATA #REQUIRED
+	file-nr CDATA #REQUIRED
+	inode-nr CDATA #REQUIRED
+	pty-nr CDATA #REQUIRED
 >
 <!ELEMENT memfree (#PCDATA)>
 <!ELEMENT memory (memfree, memused, memused-percent, buffers, cached, commit, commit-percent, swpfree, swpused, swpused-percent, swpcad, swpcad-percent, frmpg, bufpg, campg)>

@@ -3,12 +3,13 @@
 #
 # Bram Schoenmakers <bramschoenmakers@kde.nl>, 2007.
 # Benno Schulenberg <benno@vertaalt.nl>, 2008.
+# Erwin Poeze <erwin.poeze@gmail.com>, 2009, 2010.
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat-9.0.3\n"
+"Project-Id-Version: sysstat-9.0.6\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-05-17 16:16+0200\n"
-"PO-Revision-Date: 2009-06-27 10:33+0100\n"
+"POT-Creation-Date: 2009-10-19 08:56+0200\n"
+"PO-Revision-Date: 2010-02-27 21:29+0100\n"
 "Last-Translator: Erwin Poeze <erwin.poeze@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
 "MIME-Version: 1.0\n"
@@ -21,8 +22,8 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr "sysstat-versie %s\n"
 
-#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
-#: sa_common.c:1052 sadc.c:591 sadc.c:600 sadc.c:660
+#: ioconf.c:490 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2242
+#: sa_common.c:1052 sadc.c:589 sadc.c:598 sadc.c:658
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr "Kan %s niet openen: %s\n"
@@ -73,12 +74,12 @@ msgstr ""
 "[ -C <commando> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:197 sar.c:968
+#: pidstat.c:197 sar.c:972
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "De gevraagde activiteiten zijn niet beschikbaar\n"
 
-#: rd_stats.c:2289
+#: rd_stats.c:2288
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr "Kan niet zoveel processoren bijhouden!\n"
@@ -134,12 +135,12 @@ msgstr ""
 msgid "Cannot write data to system activity file: %s\n"
 msgstr "Kan geen gegevens schrijven naar het activiteitsbestand: %s\n"
 
-#: sadc.c:478
+#: sadc.c:476
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
 msgstr "Kan geen kopregels schrijven naar het activiteitsbestand: %s\n"
 
-#: sadc.c:754
+#: sadc.c:752
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
 msgstr "Kan geen gegevens toevoegen aan bestand %s\n"
@@ -153,31 +154,31 @@ msgstr "Gebruik:  %s [OPTIE...] [<interval> [<aantal>]] [<gegevensbestand>]\n"
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_options> ]\n"
 msgstr ""
 "Mogelijke opties zijn:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
-"[ -- <SAR-optie...> ]\n"
+"[ -- <SAR-opties...> ]\n"
 
-#: sadf.c:541
+#: sadf.c:609
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr "Bestand systeemactiviteit: %s (%#x)\n"
 
-#: sadf.c:550
+#: sadf.c:618
 #, c-format
 msgid "Host: "
 msgstr "Host: "
 
-#: sadf.c:556
+#: sadf.c:624
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr "Lengte van lange integer: %d\n"
 
-#: sadf.c:558
+#: sadf.c:626
 #, c-format
 msgid "List of activities:\n"
 msgstr "Lijst van activiteiten:\n"
@@ -351,17 +352,17 @@ msgstr "Een verkeerde gegevensverzamelaar van een andere sysstat-versie wordt ge
 msgid "Inconsistent input data\n"
 msgstr "Inconsistente gegevens gelezen\n"
 
-#: sar.c:1203
+#: sar.c:1207
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "Opties '-f' en '-o' gaan niet samen.\n"
 
-#: sar.c:1209
+#: sar.c:1213
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "Er wordt geen activiteitsbestand gelezen (gebruik optie '-f')\n"
 
-#: sar.c:1310
+#: sar.c:1314
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "Kan de gegevensverzamelaar niet vinden (%s)\n"

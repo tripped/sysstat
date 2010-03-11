@@ -2,14 +2,14 @@
 # Copyright (C) 2008 Free Software Foundation, Inc.
 # This file is distributed under the same license as the sysstat package.
 # Sébastien GODARD <sysstat [at] orange.fr>, 1999.
-# Nicolas Provost <nprovost@quadriv.com>, 2009.
+# Nicolas Provost <nprovost AT quadriv DOT com>, 2009.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 9.0.3\n"
+"Project-Id-Version: sysstat 9.0.6\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-05-17 16:16+0200\n"
-"PO-Revision-Date: 2009-05-25 08:28+0100\n"
+"POT-Creation-Date: 2009-10-19 08:56+0200\n"
+"PO-Revision-Date: 2009-12-22 18:18+0100\n"
 "Last-Translator: Nicolas Provost <nprovost@quadriv.com>\n"
 "Language-Team: French <traduc@traduc.org>\n"
 "MIME-Version: 1.0\n"
@@ -21,8 +21,8 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr "sysstat version %s\n"
 
-#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
-#: sa_common.c:1052 sadc.c:591 sadc.c:600 sadc.c:660
+#: ioconf.c:490 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2242
+#: sa_common.c:1052 sadc.c:589 sadc.c:598 sadc.c:658
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr "Impossible d'ouvrir %s : %s\n"
@@ -73,12 +73,12 @@ msgstr ""
 "[ -C <commande> ] [ -d ] [ -h ] [ -I ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:197 sar.c:968
+#: pidstat.c:197 sar.c:972
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "Statistiques demandées non disponibles\n"
 
-#: rd_stats.c:2289
+#: rd_stats.c:2288
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr "Impossible de gérer autant de processeurs !\n"
@@ -134,12 +134,12 @@ msgstr ""
 msgid "Cannot write data to system activity file: %s\n"
 msgstr "Impossible d'écrire les données dans le fichier d'activité système : %s\n"
 
-#: sadc.c:478
+#: sadc.c:476
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
 msgstr "Impossible d'écrire l'entête du fichier d'activité système : %s\n"
 
-#: sadc.c:754
+#: sadc.c:752
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
 msgstr "Impossible d'ajouter des données à la fin de ce fichier (%s)\n"
@@ -153,31 +153,31 @@ msgstr "Utilisation: %s [ options... ] [ <intervalle> [ <itérations> ] ] [ <fich
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_options> ]\n"
 msgstr ""
 "Options possibles :\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <options_sar...> ]\n"
 
-#: sadf.c:541
+#: sadf.c:609
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr "Fichier des données d'activité système : %s (%#x)\n"
 
-#: sadf.c:550
+#: sadf.c:618
 #, c-format
 msgid "Host: "
 msgstr "Hôte : "
 
-#: sadf.c:556
+#: sadf.c:624
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr "Taille d'un \"long int\" : %d\n"
 
-#: sadf.c:558
+#: sadf.c:626
 #, c-format
 msgid "List of activities:\n"
 msgstr "Liste de statistiques :\n"
@@ -351,17 +351,17 @@ msgstr "Utilisation d'un mauvais collecteur de données venant d'une autre versio
 msgid "Inconsistent input data\n"
 msgstr "Données inconsistantes en entrée\n"
 
-#: sar.c:1203
+#: sar.c:1207
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "Les options -f et -o ne peuvent être utilisées ensemble\n"
 
-#: sar.c:1209
+#: sar.c:1213
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "Pas de fichier d'activité système lisible (utilisez l'option -f)\n"
 
-#: sar.c:1310
+#: sar.c:1314
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "Impossible de trouver le collecteur de données (%s)\n"

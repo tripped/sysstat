@@ -1,14 +1,15 @@
 # Indonesian translations for sysstat package.
 # Copyright (C) 2008 THE sysstat'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the sysstat package.
+#
 # Andhika Padmawan <andhika.padmawan@gmail.com>, 2009.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 9.0.4\n"
+"Project-Id-Version: sysstat 9.0.6\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-07-18 15:20+0200\n"
-"PO-Revision-Date: 2009-07-20 20:34+0700\n"
+"POT-Creation-Date: 2009-10-19 08:56+0200\n"
+"PO-Revision-Date: 2009-11-14 05:34+0700\n"
 "Last-Translator: Andhika Padmawan <andhika.padmawan@gmail.com>\n"
 "Language-Team: Indonesian <translation-team-id@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
@@ -20,7 +21,7 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr "sysstat versi %s\n"
 
-#: ioconf.c:478 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
+#: ioconf.c:490 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2242
 #: sa_common.c:1052 sadc.c:589 sadc.c:598 sadc.c:658
 #, c-format
 msgid "Cannot open %s: %s\n"
@@ -71,12 +72,12 @@ msgstr ""
 "[ -C <perintah> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:197 sar.c:968
+#: pidstat.c:197 sar.c:972
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "Aktivitas yang diminta tak tersedia\n"
 
-#: rd_stats.c:2289
+#: rd_stats.c:2288
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr "Tak dapat menangani begitu banyak prosesor!\n"
@@ -151,31 +152,31 @@ msgstr "Penggunaan: %s [ opsi ] [ <interval> [ <hitungan> ] ] [ <berkas data> ]\
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_options> ]\n"
 msgstr ""
 "Opsinya adalah:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
+"[ -P { <cpu> [,...] | ALL } ] [ -s [ <jj:mm:dd> ] ] [ -e [ <jj:mm:dd> ] ]\n"
 "[ -- <opsi_sar> ]\n"
 
-#: sadf.c:541
+#: sadf.c:609
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr "Berkas data aktivitas sistem: %s (%#x)\n"
 
-#: sadf.c:550
+#: sadf.c:618
 #, c-format
 msgid "Host: "
 msgstr "Host: "
 
-#: sadf.c:556
+#: sadf.c:624
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr "Ukuran interval panjang: %d\n"
 
-#: sadf.c:558
+#: sadf.c:626
 #, c-format
 msgid "List of activities:\n"
 msgstr "Senarai aktivitas:\n"
@@ -349,17 +350,17 @@ msgstr "Menggunakan pengumpul data yang salah dari versi sysstat yang berbeda\n"
 msgid "Inconsistent input data\n"
 msgstr "Data masukan tidak konsisten\n"
 
-#: sar.c:1203
+#: sar.c:1207
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "opsi -f dan -o secara mutual eksklusif\n"
 
-#: sar.c:1209
+#: sar.c:1213
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "Tak membaca dari berkas aktivitas sistem (gunakan opsi -f)\n"
 
-#: sar.c:1310
+#: sar.c:1314
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "Tak dapat menemukan pengumpul data (%s)\n"

@@ -2311,6 +2311,7 @@ int get_irqcpu_nr(int max_nr_irqcpu, int cpu_nr)
 	FILE *fp;
 	char *line = NULL;
 	unsigned int irq = 0;
+	int p;
 
 	if ((fp = fopen(INTERRUPTS, "r")) == NULL)
 		return 0;       /* No interrupts file */
@@ -2319,8 +2320,10 @@ int get_irqcpu_nr(int max_nr_irqcpu, int cpu_nr)
 
 	while ((fgets(line, INTERRUPTS_LINE + 11 * cpu_nr , fp) != NULL) &&
 	       (irq < max_nr_irqcpu)) {
-		if (line[3] == ':')
+		p = strcspn(line, ":");
+		if ((p > 0) && (p < 8)) {
 			irq++;
+		}
 	}
 
 	fclose(fp);

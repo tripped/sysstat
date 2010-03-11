@@ -1,5 +1,12 @@
 Changes:
 
+2010/02/28: Version 9.0.6.1 - Sebastien Godard (sysstat <at> orange.fr)
+	* Because of a change in /proc/interrupts file format, mpstat
+	  was no longer counting the proper number of interrupts. This
+	  is now fixed.
+	* iostat manual page updated.
+	* NLS updated.
+
 2009/11/11: Version 9.0.6 - Sebastien Godard (sysstat <at> orange.fr)
 	* "sadf -x" now takes into account options -s and -e (which
 	  specify a starting and ending time) and also interval and
@@ -12,7 +19,7 @@ Changes:
 	  statistics.
 	* XSD and DTD documents updated.
 	* [Yibin Shen]: HZ variable was not explicitly set in sadc.c. This is now fixed.
-	* sargraph added (sargraph is a shell script used to make graphs
+	* [Lans Carstensen]: sargraph added (sargraph is a shell script used to make graphs
 	  based on sadf XML output).
 	* sadf manual page updated.
 	* FAQ updated.

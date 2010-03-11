@@ -2,7 +2,7 @@
 # vim:ft=sh:et
 ### BEGIN INIT INFO
 # Provides:          sysstat
-# Required-Start:    $local_fs $syslog
+# Required-Start:    $remote_fs $local_fs $syslog
 # Required-Stop:
 # Default-Start:     2 3 4 5
 # Default-Stop:

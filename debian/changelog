@@ -5,8 +5,9 @@ sysstat (9.0.6.1-1) unstable; urgency=low
   * Remove asterisks from sysstat.NEWS (lintian).
   * copyright: refer to non-symlinked GPL files (lintian). 
   * Standards-Version: 3.8.4 (no changes).
+  * Ignore erros from `update-alternatives --display' (closes: #563570).
 
- -- Robert Luberda <robert@debian.org>  Thu, 11 Mar 2010 15:30:01 +0100
+ -- Robert Luberda <robert@debian.org>  Thu, 11 Mar 2010 15:37:21 +0100
 
 sysstat (9.0.6-2) unstable; urgency=low
 

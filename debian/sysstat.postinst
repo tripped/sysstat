@@ -1,6 +1,6 @@
 #! /bin/sh
 # vim:ts=4:et
-# $Id: sysstat.postinst 1478 2010-01-03 14:01:06Z robert $
+# $Id: sysstat.postinst 1483 2010-03-11 14:47:23Z robert $
 
 set -e
 
@@ -99,7 +99,7 @@ if [ "$1" = "configure" ] ; then
     db_stop || true
 
 
-    if ! update-alternatives --display sar | grep -q '^/usr/bin/sar\.sysstat'; then
+    if ! update-alternatives --display sar 2>/dev/null | grep -q '^/usr/bin/sar\.sysstat'; then
         update-alternatives --install /usr/bin/sar sar /usr/bin/sar.sysstat 0 \
                             --slave /usr/share/man/man1/sar.1.gz sar.1.gz \
                             /usr/share/man/man1/sar.sysstat.1.gz

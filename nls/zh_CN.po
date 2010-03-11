@@ -6,12 +6,12 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 9.0.3\n"
+"Project-Id-Version: sysstat 9.0.6\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-05-17 16:16+0200\n"
-"PO-Revision-Date: 2009-05-25 18:10中国标准时间\n"
+"POT-Creation-Date: 2009-10-19 08:56+0200\n"
+"PO-Revision-Date: 2009-11-13 21:48+0800\n"
 "Last-Translator: Ji ZhengYu <zhengyuji@gmail.com>\n"
-"Language-Team: Chinese (simplified) <translation-team-zh-cn@lists.sourceforge.net>\n"
+"Language-Team: Chinese (simplified) <i18n-zh@googlegroups.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -21,8 +21,8 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr "sysstat 版本 %s\n"
 
-#: ioconf.c:479 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
-#: sa_common.c:1052 sadc.c:591 sadc.c:600 sadc.c:660
+#: ioconf.c:490 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2242
+#: sa_common.c:1052 sadc.c:589 sadc.c:598 sadc.c:658
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr "无法打开 %s: %s\n"
@@ -72,12 +72,12 @@ msgstr ""
 "[ -C <命令> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <进程号> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:197 sar.c:968
+#: pidstat.c:197 sar.c:972
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "所需的运行记录无法获得\n"
 
-#: rd_stats.c:2289
+#: rd_stats.c:2288
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr "处理器太多，无法处理！\n"
@@ -133,12 +133,12 @@ msgstr ""
 msgid "Cannot write data to system activity file: %s\n"
 msgstr "无法将数据写入系统运行记录文件: %s\n"
 
-#: sadc.c:478
+#: sadc.c:476
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
 msgstr "无法写系统运行记录文件开始部分: %s\n"
 
-#: sadc.c:754
+#: sadc.c:752
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
 msgstr "无法向文件 (%s) 中追加记录\n"
@@ -152,31 +152,31 @@ msgstr "用法: %s [ 选项 ] [ <时间间隔> [ <次数> ] ] [ <数据文件> ]
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_options> ]\n"
 msgstr ""
 "选项:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <时:分:秒> ] ] [ -e [ <时:分:秒> ] ]\n"
 "[ -- <sar 选项> ]\n"
 
-#: sadf.c:541
+#: sadf.c:609
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr "系统运行记录数据文件: %s (%#x)\n"
 
-#: sadf.c:550
+#: sadf.c:618
 #, c-format
 msgid "Host: "
 msgstr "主机:"
 
-#: sadf.c:556
+#: sadf.c:624
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr "长整型数的字节大小: %d\n"
 
-#: sadf.c:558
+#: sadf.c:626
 #, c-format
 msgid "List of activities:\n"
 msgstr "运行记录列表:\n"
@@ -350,17 +350,17 @@ msgstr "正在使用来自不同版本 sysstat 的错误的数据收集器\n"
 msgid "Inconsistent input data\n"
 msgstr "所取数据前后不一致\n"
 
-#: sar.c:1203
+#: sar.c:1207
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "-f 和 -o 选项不能同时使用\n"
 
-#: sar.c:1209
+#: sar.c:1213
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "无法查看系统活动记录文件 (用 -f 选项)\n"
 
-#: sar.c:1310
+#: sar.c:1314
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "无法找到数据收集器 (%s)\n"

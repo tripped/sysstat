@@ -2,13 +2,13 @@
 # Copyright (C) 2009 sysstat COPYRIGHT HOLDER
 # This file is distributed under the same license as the sysstat package.
 #
-# Rihards Prieditis <rprieditis@gmail.com>, 2009.
+# Rihards Prieditis <rprieditis@gmail.com>, 2009, 2010.
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat-9.0.4\n"
+"Project-Id-Version: sysstat-9.0.6\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-07-18 15:20+0200\n"
-"PO-Revision-Date: 2009-07-20 10:52+0100\n"
+"POT-Creation-Date: 2009-10-19 08:56+0200\n"
+"PO-Revision-Date: 2010-02-11 12:57+0000\n"
 "Last-Translator: Rihards Prieditis <rprieditis@gmail.com>\n"
 "Language-Team: Latvian <translation-team-lv@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
@@ -22,7 +22,7 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr "sysstat versija %s\n"
 
-#: ioconf.c:478 iostat.c:504 rd_stats.c:69 rd_stats.c:2126 rd_stats.c:2243
+#: ioconf.c:490 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2242
 #: sa_common.c:1052 sadc.c:589 sadc.c:598 sadc.c:658
 #, c-format
 msgid "Cannot open %s: %s\n"
@@ -31,7 +31,7 @@ msgstr "Nevar atvērt %s: %s\n"
 #: iostat.c:81 mpstat.c:83 pidstat.c:77 sar.c:88
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ]\n"
-msgstr "Lietošana: %s [iespējas] [<intervāls> [<skaits>]]\n"
+msgstr "Lietošana: %s [izvēles] [<intervāls> [<skaits>]]\n"
 
 #: iostat.c:84
 #, c-format
@@ -40,7 +40,7 @@ msgid ""
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
 "[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"
 msgstr ""
-"Iespējas ir:\n"
+"Izvēles ir:\n"
 "[ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
 "[ <ierīce> [...] | ALL ] [ -p [ <ierīce> [,...] | ALL ] ]\n"
 
@@ -50,7 +50,7 @@ msgid ""
 "Options are:\n"
 "[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 msgstr ""
-"Iespējas ir:\n"
+"Izvēles ir:\n"
 "[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 
 #: mpstat.c:457 pidstat.c:1683 sar.c:354
@@ -69,19 +69,19 @@ msgid ""
 "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
-"Iespējas ir:\n"
+"Izvēles ir:\n"
 "[ -C <kommanda> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
-#: pidstat.c:197 sar.c:968
+#: pidstat.c:197 sar.c:972
 #, c-format
 msgid "Requested activities not available\n"
 msgstr "Pieprasītās darbības nav pieejamas\n"
 
-#: rd_stats.c:2289
+#: rd_stats.c:2288
 #, c-format
 msgid "Cannot handle so many processors!\n"
-msgstr "Nevar vadīt tik daudz procesorus!\n"
+msgstr "Nevar vadīt tik daudz procesoru!\n"
 
 #: sa_common.c:866
 #, c-format
@@ -116,7 +116,7 @@ msgstr "Pieprasītās darbības nav pieejamas failā %s\n"
 #: sadc.c:76
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
-msgstr "Lietošana: %s [ iespējas ] [ <intervāls> [ <skaits> ] ] [ <izejasfails> ]\n"
+msgstr "Lietošana: %s [ izvēles ] [ <intervāls> [ <skaits> ] ] [ <izejasfails> ]\n"
 
 #: sadc.c:79
 #, c-format
@@ -125,7 +125,7 @@ msgid ""
 "[ -C <comment> ] [ -F ] [ -L ] [ -V ]\n"
 "[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"
 msgstr ""
-"Iespējas ir:\n"
+"Izvēles ir:\n"
 "[ -C <komentārs> ] [ -F ] [ -L ] [ -V ]\n"
 "[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"
 
@@ -147,37 +147,37 @@ msgstr "Nevar apvienot datus sistēmas aktivitātes failā: %s\n"
 #: sadf.c:85
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
-msgstr "Lietošana: %s [ iespējas ] [ <intervāls> [ <skaits> ] ] [ <datufails> ]\n"
+msgstr "Lietošana: %s [ Izvēles ] [ <intervāls> [ <skaits> ] ] [ <datufails> ]\n"
 
 #: sadf.c:88
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_options> ]\n"
 msgstr ""
-"Iespējas ir:\n"
-"[ -d | -D | -H | -p | -x ] [ -h ] [ -t ] [ -V ]\n"
+"Izvēles ir:\n"
+"[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_iespējas> ]\n"
 
-#: sadf.c:541
+#: sadf.c:609
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
 msgstr "Sistēmas aktivitātes datu fails: %s (%#x)\n"
 
-#: sadf.c:550
+#: sadf.c:618
 #, c-format
 msgid "Host: "
 msgstr "Resursdators:"
 
-#: sadf.c:556
+#: sadf.c:624
 #, c-format
 msgid "Size of a long int: %d\n"
 msgstr "Izmērs lielajam int: %d\n"
 
-#: sadf.c:558
+#: sadf.c:626
 #, c-format
 msgid "List of activities:\n"
 msgstr "Darbību saraksts:\n"
@@ -193,7 +193,7 @@ msgid ""
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr ""
-"Iespējas ir:\n"
+"Izvēles ir:\n"
 "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -m ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
 "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
@@ -209,7 +209,7 @@ msgstr "Galvenās iespējas un ziņojumi:\n"
 #: sar.c:127
 #, c-format
 msgid "\t-b\tI/O and transfer rate statistics\n"
-msgstr "\t-b\tI/O un pārraides normas statistika\n"
+msgstr "\t-b\tI/O un pārraides ātrums statistika\n"
 
 #: sar.c:128
 #, c-format
@@ -351,17 +351,17 @@ msgstr "Tiek izmantots nepareizs datu vācējs, no iepriekšējās sysstat versi
 msgid "Inconsistent input data\n"
 msgstr "Nesaderīgs datu ievads\n"
 
-#: sar.c:1203
+#: sar.c:1207
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr "-f un -o iespējas ir savstarpēji izslēdzošas\n"
 
-#: sar.c:1209
+#: sar.c:1213
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr "Netiek lasīts no sistēmas aktivitātes faila (izmantojies -f iespēju)\n"
 
-#: sar.c:1310
+#: sar.c:1314
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr "Nevar atrast datu vācēju (%s)\n"

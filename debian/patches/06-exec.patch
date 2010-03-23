@@ -1,0 +1,14 @@
+Merge the following change from Ubuntu:
+    - remove call to execvp() as it's not needed and has potential
+      security problems.
+
+--- sysstat-9.0.6.1.orig/sar.c
++++ sysstat-9.0.6.1/sar.c
+@@ -1306,7 +1306,6 @@
+ 
+ 		/* Call now the data collector */
+ 		execv(SADC_PATH, args);
+-		execvp(SADC, args);
+ 		/*
+ 		 * Note: Don't use execl/execlp since we don't have a fixed number of
+ 		 * args to give to sadc.

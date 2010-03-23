@@ -43,7 +43,6 @@
 #define _(string) (string)
 #endif
 
-static char defaultFileUsed = 0; /* Debian: fix for bug#511418 */
 extern struct act_bitmap cpu_bitmap;
 
 /*
@@ -313,7 +312,6 @@ void set_default_file(struct tm *rectime, char *datafile)
 	snprintf(datafile, MAX_FILE_LEN,
 		 "%s/sa%02d", SA_DIR, rectime->tm_mday);
 	datafile[MAX_FILE_LEN - 1] = '\0';
-	defaultFileUsed = 1; /* Debian: fix for bug#511418 */
 }
 
 /*
@@ -718,7 +716,6 @@ void free_bitmaps(struct activity *act[])
 	for (i = 0; i < NR_ACT; i++) {
 		if (act[i]->bitmap && act[i]->bitmap->b_array) {
 			free(act[i]->bitmap->b_array);
-
 			/* Set pointer to NULL to prevent it from being freed again */
 			act[i]->bitmap->b_array = NULL;
 		}
@@ -749,10 +746,7 @@ int get_activity_position(struct activity *act[], unsigned int act_flag)
 	}
 
 	if (i == NR_ACT)
-	{
-		abort();
 		return -1;
-	}
 
 	return i;
 }
@@ -1055,12 +1049,7 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 
 	/* Open sa data file */
 	if ((*ifd = open(dfile, O_RDONLY)) < 0) {
-		const int saved_errno=errno; /* Debian: fix for bug#511418 */
 		fprintf(stderr, _("Cannot open %s: %s\n"), dfile, strerror(errno));
-		if (saved_errno == ENOENT && defaultFileUsed) /* Debian: fix for bug#511418 */
-		{
-			fprintf(stderr, "Please check if data collecting is enabled in /etc/default/sysstat\n");
-		}
 		exit(2);
 	}
 

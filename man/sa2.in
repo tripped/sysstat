@@ -30,11 +30,6 @@ command daily, place the following entry in your root or adm crontab file:
 This will generate a daily report called
 .IR @SA_DIR@/sar dd
 It will also remove reports more than one week old.
-.SS Debian note                                                                                      
-The Debian sysstat package has already placed such an entry in your system crontab.                  
-Please refer to the                                                                                  
-.I /usr/share/doc/sysstat/README.Debian                                                              
-file for details.   
 .SH FILES
 .IR @SA_DIR@/sar dd
 .RS

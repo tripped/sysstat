@@ -1,3 +1,13 @@
+sysstat (9.0.6.1-2) unstable; urgency=low
+
+  * Switch to dpkg-source 3.0 (quilt) format:
+    + split *.diff.gz into patches 00 to 06;
+    + omit some debugging cruft that was included
+      in *.diff.gz by accident.
+  * 
+
+ -- Robert Luberda <robert@debian.org>  Tue, 23 Mar 2010 22:04:10 +0100
+
 sysstat (9.0.6.1-1) unstable; urgency=low
 
   * New upstream release.

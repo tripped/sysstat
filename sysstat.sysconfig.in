@@ -1,7 +1,6 @@
-# @PACKAGE_NAME@ configuration file.
+# @PACKAGE_NAME@-@PACKAGE_VERSION@ configuration file.
 
 # How long to keep log files (in days).
-# Used by sa2(8) script
 # If value is greater than 28, then log files are kept in
 # multiple directories, one for each month.
 HISTORY=@HISTORY@

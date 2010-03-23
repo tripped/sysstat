@@ -1,0 +1,53 @@
+Fix paths and typos in isag script and man page.
+
+--- sysstat-9.0.6.1.orig/contrib/isag/isag.1
++++ sysstat-9.0.6.1/contrib/isag/isag.1
+@@ -37,7 +37,7 @@
+ .\" real vertical bar.  \*(C+ will give a nicer C++.  Capital omega is used
+ .\" to do unbreakable dashes and therefore won't be available.  \*(C` and
+ .\" \*(C' expand to `' in nroff, nothing in troff, for use with C<>
+-.tr \(*W-|\(bv\*(Tr
++.\".tr \(*W-|\(bv\*(Tr
+ .ds C+ C\v'-.1v'\h'-1p'\s-2+\h'-1p'+\s0\v'.1v'\h'-1p'
+ .ie n \{\
+ .    ds -- \(*W-
+@@ -181,7 +181,7 @@
+ .Ip "y limits for each kind of graph" 2
+ .IX Item "y limits for each kind of graph"
+ .PP
+-It seems usefull, because new run doesn't need new settings to obtain same scale.
++It seems useful, because new run doesn't need new settings to obtain same scale.
+ .SH "PREREQUSITIES"
+ .IX Header "PREREQUSITIES"
+ Here is list of prerequsities including versioning and built-in features.
+--- sysstat-9.0.6.1.orig/contrib/isag/isag.in
++++ sysstat-9.0.6.1/contrib/isag/isag.in
+@@ -211,7 +211,7 @@
+ set gnuplot	"/usr/bin/gnuplot"
+ set grep	"/bin/grep"
+ set sh		"/bin/sh"
+-set gunzip	"/usr/bin/gunzip"
++set gunzip	"/bin/gunzip"
+ set sed		"/bin/sed"
+ 
+ # default placement of config file
+@@ -278,7 +278,7 @@
+ set sar_data_mask "sa\[0-9\]\[0-9\]"
+ set prefix "@prefix@"
+ set exec_prefix "@exec_prefix@"
+-set sar "@bindir@/sar"
++set sar "@bindir@/sar.sysstat"
+ 
+ # following check added: Thu Mar 18 21:44:52 GMT+1 2004
+ if { 1 != [file executable $sar]} {
+--- sysstat-9.0.6.1.orig/contrib/isag/README-isag
++++ sysstat-9.0.6.1/contrib/isag/README-isag
+@@ -9,7 +9,7 @@
+ Send bug reports to <linux_monitor@volny.cz>.
+ 
+ Note that the path to daily data files is hard coded in isag and
+-its value is "/var/log/sa".
++its value is "/var/log/sysstat".
+ Also isag assumes that sar is installed in /usr/bin directory.
+ Update isag script if sar is located elsewhere.
+ 

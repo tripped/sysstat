@@ -52,6 +52,7 @@ MAN_DIR = @AuxMandir@
 endif
 MAN1_DIR = $(MAN_DIR)/man1
 MAN8_DIR = $(MAN_DIR)/man8
+
 ifndef DOC_DIR
 DOC_DIR = @docdir@
 endif
@@ -60,9 +61,9 @@ NLS_DIR = $(PREFIX)/share/locale
 SYSCONFIG_DIR = @SYSCONFIG_DIR@
 
 # Compiler flags
-CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe 
+CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe -O2
 DFLAGS = @DFLAGS@
-LFLAGS = @LDFLAGS@
+LFLAGS =  -s
 # DFLAGS may already contain SMP_RACE definition
 DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
 
@@ -209,9 +210,8 @@ else
 locales:
 endif
 
-.PHONY: nls/sysstat.pot
-nls/sysstat.pot: | $(wildcard *.c)
-	$(XGETTEXT) -o $@ -k_ --msgid-bugs-address="sysstat <at> orange.fr" $|
+nls/sysstat.pot: $(wildcard *.c)
+	$(XGETTEXT) -o $@ -k_ --msgid-bugs-address="sysstat <at> orange.fr" $^
 
 # Phony targets
 .PHONY: clean distclean install install_base install_all uninstall \
@@ -319,7 +319,7 @@ ifeq ($(CLEAN_SA_DIR),y)
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
 endif
 	mkdir -p $(DESTDIR)$(BIN_DIR)
-	#mkdir -p $(DESTDIR)$(DOC_DIR)
+	mkdir -p $(DESTDIR)$(DOC_DIR)
 	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
 	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
 	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
@@ -335,12 +335,12 @@ endif
 	$(INSTALL_DATA) sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
 	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
 ifeq ($(INSTALL_DOC),y)
-#	$(INSTALL_DATA) CHANGES $(DESTDIR)$(DOC_DIR)
-#	$(INSTALL_DATA) COPYING $(DESTDIR)$(DOC_DIR)
-#	$(INSTALL_DATA) CREDITS $(DESTDIR)$(DOC_DIR)
-#	$(INSTALL_DATA) README $(DESTDIR)$(DOC_DIR)
-#	$(INSTALL_DATA) FAQ $(DESTDIR)$(DOC_DIR)
-#	$(INSTALL_DATA) *.lsm $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) CHANGES $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) COPYING $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) CREDITS $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) README $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) FAQ $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) *.lsm $(DESTDIR)$(DOC_DIR)
 endif
 
 install_all: install_base crontab sysstat \
@@ -542,7 +542,7 @@ clean:
 	rm -f sadc sar sadf iostat mpstat pidstat *.o *.a core TAGS
 	find nls -name "*.gmo" -exec rm -f {} \;
 
-almost-distclean: clean 
+almost-distclean: clean nls/sysstat.pot
 	rm -f sa1 sa2 sysstat crontab version.h sysconfig.h
 	rm -f sysstat.sysconfig sysstat.crond sysstat.cron.daily
 	rm -f sysstat.cron.hourly sysstat.crond.sample sysstat.crond.sample.in

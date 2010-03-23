@@ -9,7 +9,7 @@ isag is (C) 2000,2001 by David Doubrava <linux_monitor@volny.cz>.
 Send bug reports to <linux_monitor@volny.cz>.
 
 Note that the path to daily data files is hard coded in isag and
-its value is "/var/log/sysstat".
+its value is "/var/log/sa".
 Also isag assumes that sar is installed in /usr/bin directory.
 Update isag script if sar is located elsewhere.
 

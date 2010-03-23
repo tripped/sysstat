@@ -562,7 +562,6 @@ void write_stats(int ofd)
 		if ((p = get_activity_position(act, id_seq[i])) < 0)
 			continue;
 
-		if(act[p]->fsize != act[p]->msize) abort();
 		if (IS_COLLECTED(act[p]->options)) {
 			if ((n = write_all(ofd, act[p]->_buf0, act[p]->fsize * act[p]->nr)) !=
 			    (act[p]->fsize * act[p]->nr)) {

@@ -5,7 +5,7 @@ sysstat (9.0.6.1-2) unstable; urgency=low
     + omit some debugging cruft that was included in *.diff.gz by accident.
   * 07-remove_fdatasync.patch: remove calls to fdatasync (closes: 559686).
 
- -- Robert Luberda <robert@debian.org>  Tue, 23 Mar 2010 22:11:58 +0100
+ -- Robert Luberda <robert@debian.org>  Tue, 23 Mar 2010 22:21:52 +0100
 
 sysstat (9.0.6.1-1) unstable; urgency=low
 

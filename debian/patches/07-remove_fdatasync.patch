@@ -1,3 +1,5 @@
+Remove calls to fdatasync (closes: #559686). 
+Upstream is going to do the same in next release.
 Index: sysstat/sadc.c
 ===================================================================
 --- sysstat.orig/sadc.c	2010-03-23 22:09:57.000000000 +0100

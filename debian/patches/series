@@ -6,3 +6,4 @@
 05-defaultfile_message.patch
 05-scripts.patch
 06-exec.patch
+07-remove_fdatasync.patch

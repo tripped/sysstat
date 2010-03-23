@@ -1,0 +1,31 @@
+Index: sysstat/sadc.c
+===================================================================
+--- sysstat.orig/sadc.c	2010-03-23 22:09:57.000000000 +0100
++++ sysstat/sadc.c	2010-03-23 22:11:45.000000000 +0100
+@@ -864,11 +864,13 @@
+ 			 */
+ 			do_sa_rotat = FALSE;
+ 
++#if 0 /* Debian bug #559686 */
+ 			if (fdatasync(ofd) < 0) {
+ 				/* Flush previous file */
+ 				perror("fdatasync");
+ 				exit(4);
+ 			}
++#endif
+ 			close(ofd);
+ 			strcpy(ofile, new_ofile);
+ 
+@@ -896,10 +898,12 @@
+ 
+ 		/* Flush data */
+ 		fflush(stdout);
++#if 0 /* Debian bug #559686 */
+ 		if (ofile[0] && (fdatasync(ofd) < 0)) {
+ 			perror("fdatasync");
+ 			exit(4);
+ 		}
++#endif
+ 
+ 		if (count > 0) {
+ 			count--;

@@ -1,6 +1,6 @@
 /*
  * activity.c: Define system activities available for sar/sadc.
- * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -832,7 +832,7 @@ struct activity net_udp6_act = {
 /* CPU frequency */
 struct activity pwr_cpufreq_act = {
 	.id		= A_PWR_CPUFREQ,
-	.options	= AO_CLOSE_MARKUP,
+	.options	= AO_NULL,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_cpu_nr,
 	.f_read		= wrap_read_cpuinfo,
@@ -853,6 +853,84 @@ struct activity pwr_cpufreq_act = {
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= &cpu_bitmap
+};
+
+/* Fan */
+struct activity pwr_fan_act = {
+	.id		= A_PWR_FAN,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= wrap_get_fan_nr,
+	.f_read		= wrap_read_fan,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_pwr_fan_stats,
+	.f_print_avg	= print_avg_pwr_fan_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_pwr_fan_stats,
+	.f_xml_print	= xml_print_pwr_fan_stats,
+	.hdr_line	= "device;FAN;rpm;drpm",
+	.name		= "A_PWR_FAN",
+#endif
+	.nr		= -1,
+	.fsize		= STATS_PWR_FAN_SIZE,
+	.msize		= STATS_PWR_FAN_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL
+};
+
+/* Temperature */
+struct activity pwr_temp_act = {
+	.id		= A_PWR_TEMP,
+	.options	= AO_NULL,
+#ifdef SOURCE_SADC
+	.f_count	= wrap_get_temp_nr,
+	.f_read		= wrap_read_temp,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_pwr_temp_stats,
+	.f_print_avg	= print_avg_pwr_temp_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_pwr_temp_stats,
+	.f_xml_print	= xml_print_pwr_temp_stats,
+	.hdr_line	= "device;TEMP;degC;%temp",
+	.name		= "A_PWR_TEMP",
+#endif
+	.nr		= -1,
+	.fsize		= STATS_PWR_TEMP_SIZE,
+	.msize		= STATS_PWR_TEMP_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL
+};
+
+/* Voltage inputs */
+struct activity pwr_in_act = {
+	.id		= A_PWR_IN,
+	.options	= AO_CLOSE_MARKUP,
+#ifdef SOURCE_SADC
+	.f_count	= wrap_get_in_nr,
+	.f_read		= wrap_read_in,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_pwr_in_stats,
+	.f_print_avg	= print_avg_pwr_in_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_pwr_in_stats,
+	.f_xml_print	= xml_print_pwr_in_stats,
+	.hdr_line	= "device;IN;inV;%in",
+	.name		= "A_PWR_IN",
+#endif
+	.nr		= -1,
+	.fsize		= STATS_PWR_IN_SIZE,
+	.msize		= STATS_PWR_IN_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL
 };
 
 
@@ -889,6 +967,8 @@ struct activity *act[NR_ACT] = {
 	&net_icmp6_act,
 	&net_eicmp6_act,
 	&net_udp6_act,
-	&pwr_cpufreq_act
+	&pwr_cpufreq_act,
+	&pwr_fan_act,
+	&pwr_temp_act,
+	&pwr_in_act
 };
-

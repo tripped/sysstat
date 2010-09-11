@@ -1,9 +1,10 @@
-.TH IOSTAT 1 "DECEMBER 2009" Linux "Linux User's Manual" -*- nroff -*-
+.TH IOSTAT 1 "JUNE 2010" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 iostat \- Report Central Processing Unit (CPU) statistics and input/output
-statistics for devices, partitions and network filesystems (NFS).
+statistics for devices and partitions.
 .SH SYNOPSIS
-.B iostat [ -c ] [ -d ] [ -N ] [ -n ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ] [
+.ie 'yes'@WITH_DEBUG@' \{
+.B iostat [ -c ] [ -d ] [ --debuginfo ] [ -N ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ] [
 .I device
 .B [...] | ALL ] [ -p [
 .I device
@@ -12,6 +13,18 @@ statistics for devices, partitions and network filesystems (NFS).
 .B [
 .I count
 .B ] ]
+.\}
+.el \{
+.B iostat [ -c ] [ -d ] [ -N ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ] [
+.I device
+.B [...] | ALL ] [ -p [
+.I device
+.B [,...] | ALL ] ] [
+.I interval
+.B [
+.I count
+.B ] ]
+.\}
 .SH DESCRIPTION
 The
 .B iostat
@@ -34,8 +47,6 @@ CPU statistics. On
 multiprocessor systems, CPU statistics are calculated system-wide
 as averages among all processors. A device header row is displayed
 followed by a line of statistics for each device that is configured.
-When option -n is used, an NFS header row is displayed followed by
-a line of statistics for each network filesystem that is mounted.
 
 The
 .I interval
@@ -127,23 +138,16 @@ If the
 keyword is given on the command line, then statistics are
 displayed for every device defined by the system, including those
 that have never been used.
+Transfer rates are shown in 1K blocks by default, unless the environment
+variable POSIXLY_CORRECT is set, in which case 512-byte blocks are used.
 The report may show the following fields,
 depending on the flags used:
 
 .B Device:
 .RS
 .RS
-This column gives the device (or partition) name, which is displayed as
-.IR hdisk n
-with 2.2 kernels, for the nth device. It is displayed as
-.IR dev m-n
-with 2.4 kernels, where
-.B m
-is the major number of the device, and
-.B n
-a distinctive number.
-With newer kernels, the device name as listed in the /dev directory
-is displayed.
+This column gives the device (or partition) name as listed in the /dev
+directory.
 
 .RE
 .B tps
@@ -154,72 +158,27 @@ device. Multiple logical requests can be combined into a single I/O
 request to the device. A transfer is of indeterminate size.
 
 .RE
-.B Blk_read/s
+.B Blk_read/s (kB_read/s, MB_read/s)
 .RS
 Indicate the amount of data read from the device expressed in a number of
-blocks per second. Blocks are equivalent to sectors with kernels 2.4 and later
-and therefore have a size of 512 bytes. With older kernels, a block is of
-indeterminate size.
+blocks (kilobytes, megabytes) per second. Blocks are equivalent to sectors
+and therefore have a size of 512 bytes.
 
 .RE
-.B Blk_wrtn/s
+.B Blk_wrtn/s (kB_wrtn/s, MB_wrtn/s)
 .RS
 Indicate the amount of data written to the device expressed in a number of
-blocks per second.
+blocks (kilobytes, megabytes) per second.
 
 .RE
-.B Blk_read
+.B Blk_read (kB_read, MB_read)
 .RS
-The total number of blocks read.
+The total number of blocks (kilobytes, megabytes) read.
 
 .RE
-.B Blk_wrtn
+.B Blk_wrtn (kB_wrtn, MB_wrtn)
 .RS
-The total number of blocks written.
-
-.RE
-.B kB_read/s
-.RS
-Indicate the amount of data read from the device expressed in kilobytes
-per second.
-
-.RE
-.B kB_wrtn/s
-.RS
-Indicate the amount of data written to the device expressed in kilobytes
-per second.
-
-.RE
-.B kB_read
-.RS
-The total number of kilobytes read.
-
-.RE
-.B kB_wrtn
-.RS
-The total number of kilobytes written.
-
-.RE
-.B MB_read/s
-.RS
-Indicate the amount of data read from the device expressed in megabytes
-per second.
-
-.RE
-.B MB_wrtn/s
-.RS
-Indicate the amount of data written to the device expressed in megabytes
-per second.
-
-.RE
-.B MB_read
-.RS
-The total number of megabytes read.
-
-.RE
-.B MB_wrtn
-.RS
-The total number of megabytes written.
+The total number of blocks (kilobytes, megabytes) written.
 
 .RE
 .B rrqm/s
@@ -234,42 +193,22 @@ The number of write requests merged per second that were queued to the device.
 .RE
 .B r/s
 .RS
-The number of read requests that were issued to the device per second.
+The number (after merges) of read requests completed per second for the device.
 
 .RE
 .B w/s
 .RS
-The number of write requests that were issued to the device per second.
+The number (after merges) of write requests completed per second for the device.
 
 .RE
-.B rsec/s
+.B rsec/s (rkB/s, rMB/s)
 .RS
-The number of sectors read from the device per second.
+The number of sectors (kilobytes, megabytes) read from the device per second.
 
 .RE
-.B wsec/s
+.B wsec/s (wkB/s, wMB/s)
 .RS
-The number of sectors written to the device per second.
-
-.RE
-.B rkB/s
-.RS
-The number of kilobytes read from the device per second.
-
-.RE
-.B wkB/s
-.RS
-The number of kilobytes written to the device per second.
-
-.RE
-.B rMB/s
-.RS
-The number of megabytes read from the device per second.
-
-.RE
-.B wMB/s
-.RS
-The number of megabytes written to the device per second.
+The number of sectors (kilobytes, megabytes) written to the device per second.
 
 .RE
 .B avgrq-sz
@@ -289,10 +228,25 @@ to be served. This includes the time spent by the requests in queue and
 the time spent servicing them.
 
 .RE
+.B r_await
+.RS
+The average time (in milliseconds) for read requests issued to the device
+to be served. This includes the time spent by the requests in queue and
+the time spent servicing them.
+
+.RE
+.B w_await
+.RS
+The average time (in milliseconds) for write requests issued to the device
+to be served. This includes the time spent by the requests in queue and
+the time spent servicing them.
+
+.RE
 .B svctm
 .RS
 The average service time (in milliseconds) for I/O requests that were issued
-to the device.
+to the device. Warning! Do not trust this field any more.
+This field will be removed in a future sysstat version.
 
 .RE
 .B %util
@@ -302,156 +256,22 @@ Percentage of CPU time during which I/O requests were issued to the device
 value is close to 100%.
 .RE
 .RE
-.IP "Network Filesystem report"
-The Network Filesystem (NFS) report provides statistics for each mounted network filesystem.
-The report shows the following fields:
-
-.B Filesystem:
-.RS
-.RS
-This columns shows the hostname of the NFS server followed by a colon and
-by the directory name where the network filesystem is mounted.
-
-.RE
-.B rBlk_nor/s
-.RS
-Indicate the number of blocks read by applications via the read(2) system
-call interface. A block has a size of 512 bytes.
-
-.RE
-.B wBlk_nor/s
-.RS
-Indicate the number of blocks written by applications via the write(2) system
-call interface.
-
-.RE
-.B rBlk_dir/s
-.RS
-Indicate the number of blocks read from files opened with the O_DIRECT flag.
-
-.RE
-.B wBlk_dir/s
-.RS
-Indicate the number of blocks written to files opened with the O_DIRECT flag.
-
-.RE
-.B rBlk_svr/s
-.RS
-Indicate the number of blocks read from the server by the NFS client via an
-NFS READ request.
-
-.RE
-.B wBlk_svr/s
-.RS
-Indicate the number of blocks written to the server by the NFS client via an
-NFS WRITE request.
-
-.RE
-.B rkB_nor/s
-.RS
-Indicate the number of kilobytes read by applications via the read(2) system
-call interface.
-
-.RE
-.B wkB_nor/s
-.RS
-Indicate the number of kilobytes written by applications via the write(2) system
-call interface.
-
-.RE
-.B rkB_dir/s
-.RS
-Indicate the number of kilobytes read from files opened with the O_DIRECT flag.
-
-.RE
-.B wkB_dir/s
-.RS
-Indicate the number of kilobytes written to files opened with the O_DIRECT flag.
-
-.RE
-.B rkB_svr/s
-.RS
-Indicate the number of kilobytes read from the server by the NFS client via an
-NFS READ request.
-
-.RE
-.B wkB_svr/s
-.RS
-Indicate the number of kilobytes written to the server by the NFS client via an
-NFS WRITE request.
-
-.RE
-.B rMB_nor/s
-.RS
-Indicate the number of megabytes read by applications via the read(2) system
-call interface.
-
-.RE
-.B wMB_nor/s
-.RS
-Indicate the number of megabytes written by applications via the write(2) system
-call interface.
-
-.RE
-.B rMB_dir/s
-.RS
-Indicate the number of megabytes read from files opened with the O_DIRECT flag.
-
-.RE
-.B wMB_dir/s
-.RS
-Indicate the number of megabytes written to files opened with the O_DIRECT flag.
-
-.RE
-.B rMB_svr/s
-.RS
-Indicate the number of megabytes read from the server by the NFS client via an
-NFS READ request.
-
-.RE
-.B wMB_svr/s
-.RS
-Indicate the number of megabytes written to the server by the NFS client via an
-NFS WRITE request.
-
-.RE
-.B ops/s
-.RS
-Indicate the number of operations that were issued to the filesystem per second.
-
-.RE
-.B rops/s
-.RS
-Indicate the number of 'read' operations that were issued to the filesystem 
-per second.
-
-.RE
-.B wops/s
-.RS
-Indicate the number of 'write' operations that were issued to the filesystem
-per second.
-.RE
-.RE
 .SH OPTIONS
 .IP -c
 Display the CPU utilization report.
 .IP -d
 Display the device utilization report.
-.IP -h
-Make the NFS report displayed by option -n easier to read by a human.
+.if 'yes'@WITH_DEBUG@' \{
+.IP --debuginfo
+Print debug output to stderr.
+.\}
 .IP -k
-Display statistics in kilobytes per second instead of blocks per second.
-Data displayed are valid only with kernels 2.4 and later.
+Display statistics in kilobytes per second.
 .IP -m
-Display statistics in megabytes per second instead of blocks or
-kilobytes per second.
-Data displayed are valid only with kernels 2.4 and later.
+Display statistics in megabytes per second.
 .IP -N
 Display the registered device mapper names for any device mapper devices.
 Useful for viewing LVM2 statistics.
-.IP -n
-Display the network filesystem (NFS) report. This option works only with kernel
-2.6.17 and later.
 .IP "-p [ { device [,...] | ALL } ]"
 The -p option displays statistics for
 block devices and all their partitions that are used by the system.
@@ -461,7 +281,6 @@ and all its partitions are displayed. Last, the
 keyword indicates that statistics have to be displayed for all the block
 devices and partitions defined by the system, including those that have
 never been used.
-Note that this option works only with post 2.5 kernels.
 .IP -t
 Print the time for each report displayed. The timestamp format may depend
 on the value of the S_TIME_FORMAT environment variable (see below).
@@ -469,11 +288,6 @@ on the value of the S_TIME_FORMAT environment variable (see below).
 Print version number then exit.
 .IP -x
 Display extended statistics.
-This option works with
-post 2.5 kernels since it needs /proc/diskstats file or a mounted sysfs to
-get the statistics. This option may also work with older kernels (e.g. 2.4)
-only if extended statistics are available in /proc/partitions (the kernel
-needs to be patched for that).
 .IP -z
 Tell iostat to omit output for any devices for which there was no activity
 during the sample period.
@@ -481,7 +295,7 @@ during the sample period.
 .SH ENVIRONMENT
 The
 .B iostat
-command takes into account the following environment variable:
+command takes into account the following environment variables:
 
 .IP S_TIME_FORMAT
 If this variable exists and its value is
@@ -492,6 +306,10 @@ header. The
 command will use the ISO 8601 format (YYYY-MM-DD) instead.
 The timestamp displayed with option -t will also be compliant with ISO 8601
 format.
+
+.IP POSIXLY_CORRECT
+When this variable is set, transfer rates are shown in 512-byte blocks instead
+of the default 1K blocks.
 
 .SH EXAMPLES
 .B iostat
@@ -525,7 +343,12 @@ filesystem must be mounted for
 .B iostat
 to work.
 
-Extended statistics are available only with post 2.5 kernels.
+Kernels older than 2.6.x are no longer supported.
+
+The average service time (svctm field) value is meaningless,
+as I/O statistics are calculated at block level, and we don't know
+when the disk driver starts to process a request. For this reason,
+this field will be removed in a future sysstat version. 
 .SH FILES
 .I /proc/stat
 contains system statistics.
@@ -533,14 +356,11 @@ contains system statistics.
 .I /proc/uptime
 contains system uptime.
 
-.I /proc/partitions
-contains disk statistics (for pre 2.5 kernels that have been patched).
-
 .I /proc/diskstats
-contains disks statistics (for post 2.5 kernels).
+contains disks statistics.
 
 .I /sys
-contains statistics for block devices (post 2.5 kernels).
+contains statistics for block devices.
 
 .I /proc/self/mountstats
 contains statistics for network filesystems.
@@ -550,6 +370,8 @@ Sebastien Godard (sysstat <at> orange.fr)
 .BR sar (1),
 .BR pidstat (1),
 .BR mpstat (1),
-.BR vmstat (8)
+.BR vmstat (8),
+.BR nfsiostat (1),
+.BR cifsiostat (1)
 
 .I http://pagesperso-orange.fr/sebastien.godard/

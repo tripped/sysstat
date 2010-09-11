@@ -1,6 +1,6 @@
 /*
  * sar/sadc: Report system activity
- * (C) 1999-2009 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SA_H
@@ -17,7 +17,7 @@
  */
 
 /* Number of activities */
-#define NR_ACT	30
+#define NR_ACT	33
 
 /* Activities */
 #define A_CPU		1
@@ -50,6 +50,9 @@
 #define A_NET_EICMP6	28
 #define A_NET_UDP6	29
 #define A_PWR_CPUFREQ	30
+#define A_PWR_FAN	31
+#define A_PWR_TEMP	32
+#define A_PWR_IN	33
 
 
 /* Macro used to flag an activity that should be collected */
@@ -72,47 +75,45 @@
 #define S_F_INTERVAL_SET	0x00000010
 #define S_F_TRUE_TIME		0x00000020
 #define S_F_LOCK_FILE		0x00000040
-#define S_F_HAS_PPARTITIONS	0x00000080
-#define S_F_HAS_DISKSTATS	0x00000100
+/* Unused			0x00000080 */
+/* Unused			0x00000100 */
 #define S_F_FILE_LOCKED		0x00000200
 #define S_F_PER_PROC		0x00000400
 #define S_F_HORIZONTALLY	0x00000800
 #define S_F_COMMENT		0x00001000
 
-#define WANT_SINCE_BOOT(m)	(((m) & S_F_SINCE_BOOT)      == S_F_SINCE_BOOT)
-#define WANT_SA_ROTAT(m)	(((m) & S_F_SA_ROTAT)        == S_F_SA_ROTAT)
-#define USE_PRETTY_OPTION(m)	(((m) & S_F_DEV_PRETTY)      == S_F_DEV_PRETTY)
-#define FORCE_FILE(m)		(((m) & S_F_FORCE_FILE)      == S_F_FORCE_FILE)
-#define INTERVAL_SET(m)		(((m) & S_F_INTERVAL_SET)    == S_F_INTERVAL_SET)
-#define PRINT_TRUE_TIME(m)	(((m) & S_F_TRUE_TIME)       == S_F_TRUE_TIME)
-#define LOCK_FILE(m)		(((m) & S_F_LOCK_FILE)       == S_F_LOCK_FILE)
-#define HAS_PPARTITIONS(m)	(((m) & S_F_HAS_PPARTITIONS) == S_F_HAS_PPARTITIONS)
-#define HAS_DISKSTATS(m)	(((m) & S_F_HAS_DISKSTATS)   == S_F_HAS_DISKSTATS)
-#define FILE_LOCKED(m)		(((m) & S_F_FILE_LOCKED)     == S_F_FILE_LOCKED)
-#define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC)        == S_F_PER_PROC)
-#define DISPLAY_HORIZONTALLY(m)	(((m) & S_F_HORIZONTALLY)    == S_F_HORIZONTALLY)
-#define DISPLAY_COMMENT(m)	(((m) & S_F_COMMENT)         == S_F_COMMENT)
+#define WANT_SINCE_BOOT(m)	(((m) & S_F_SINCE_BOOT)   == S_F_SINCE_BOOT)
+#define WANT_SA_ROTAT(m)	(((m) & S_F_SA_ROTAT)     == S_F_SA_ROTAT)
+#define USE_PRETTY_OPTION(m)	(((m) & S_F_DEV_PRETTY)   == S_F_DEV_PRETTY)
+#define FORCE_FILE(m)		(((m) & S_F_FORCE_FILE)   == S_F_FORCE_FILE)
+#define INTERVAL_SET(m)		(((m) & S_F_INTERVAL_SET) == S_F_INTERVAL_SET)
+#define PRINT_TRUE_TIME(m)	(((m) & S_F_TRUE_TIME)    == S_F_TRUE_TIME)
+#define LOCK_FILE(m)		(((m) & S_F_LOCK_FILE)    == S_F_LOCK_FILE)
+#define FILE_LOCKED(m)		(((m) & S_F_FILE_LOCKED)  == S_F_FILE_LOCKED)
+#define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC)     == S_F_PER_PROC)
+#define DISPLAY_HORIZONTALLY(m)	(((m) & S_F_HORIZONTALLY) == S_F_HORIZONTALLY)
+#define DISPLAY_COMMENT(m)	(((m) & S_F_COMMENT)      == S_F_COMMENT)
 
 /* Output flags for options -R / -r / -S */
 #define AO_F_MEM_DIA		0x00000001
 #define AO_F_MEM_AMT		0x00000002
 #define AO_F_MEM_SWAP		0x00000004
 
-#define DISPLAY_MEMORY(m)	(((m) & AO_F_MEM_DIA)        == AO_F_MEM_DIA)
-#define DISPLAY_MEM_AMT(m)	(((m) & AO_F_MEM_AMT)        == AO_F_MEM_AMT)
-#define DISPLAY_SWAP(m)		(((m) & AO_F_MEM_SWAP)       == AO_F_MEM_SWAP)
+#define DISPLAY_MEMORY(m)	(((m) & AO_F_MEM_DIA)     == AO_F_MEM_DIA)
+#define DISPLAY_MEM_AMT(m)	(((m) & AO_F_MEM_AMT)     == AO_F_MEM_AMT)
+#define DISPLAY_SWAP(m)		(((m) & AO_F_MEM_SWAP)    == AO_F_MEM_SWAP)
 
 /* Output flags for option -u [ ALL ] */
 #define AO_F_CPU_DEF		0x00000001
 #define AO_F_CPU_ALL		0x00000002
 
-#define DISPLAY_CPU_DEF(m)	(((m) & AO_F_CPU_DEF)        == AO_F_CPU_DEF)
-#define DISPLAY_CPU_ALL(m)	(((m) & AO_F_CPU_ALL)        == AO_F_CPU_ALL)
+#define DISPLAY_CPU_DEF(m)	(((m) & AO_F_CPU_DEF)     == AO_F_CPU_DEF)
+#define DISPLAY_CPU_ALL(m)	(((m) & AO_F_CPU_ALL)     == AO_F_CPU_ALL)
 
 /* Output flags for option -d */
 #define AO_F_DISK_PART		0x00000001
 
-#define COLLECT_PARTITIONS(m)	(((m) & AO_F_DISK_PART)      == AO_F_DISK_PART)
+#define COLLECT_PARTITIONS(m)	(((m) & AO_F_DISK_PART)   == AO_F_DISK_PART)
 
 /*
  ***************************************************************************
@@ -147,6 +148,10 @@
 #define K_IPV6		"IPV6"
 #define K_POWER		"POWER"
 #define K_XDISK		"XDISK"
+#define K_CPU		"CPU"
+#define K_FAN		"FAN"
+#define K_TEMP		"TEMP"
+#define K_IN		"IN"
 
 /* sadc program */
 #define SADC		"sadc"
@@ -444,7 +449,7 @@ struct file_header {
 	unsigned int sa_nr_act		__attribute__ ((aligned (8)));
 	/*
 	 * Current day, month and year.
-	 * No need to save DST (daylight saving time) flag, since it is not taken
+	 * No need to save DST (Daylight Saving Time) flag, since it is not taken
 	 * into account by the strftime() function used to print the timestamp.
 	 */
 	unsigned char sa_day;
@@ -602,6 +607,12 @@ extern __nr_t
 	wrap_get_disk_nr(struct activity *);
 extern __nr_t
 	wrap_get_iface_nr(struct activity *);
+extern __nr_t
+	wrap_get_fan_nr(struct activity *);
+extern __nr_t
+	wrap_get_temp_nr(struct activity *);
+extern __nr_t
+	wrap_get_in_nr(struct activity *);
 
 /* Functions used to read activities statistics */
 extern __read_funct_t
@@ -664,6 +675,12 @@ extern __read_funct_t
 	wrap_read_net_udp6(struct activity *);
 extern __read_funct_t
 	wrap_read_cpuinfo(struct activity *);
+extern __read_funct_t
+	wrap_read_fan(struct activity *);
+extern __read_funct_t
+	wrap_read_temp(struct activity *);
+extern __read_funct_t
+	wrap_read_in(struct activity *);
 
 /* Other functions */
 extern void
@@ -712,6 +729,8 @@ extern int
 	parse_sar_I_opt(char * [], int *, struct activity * []);
 extern int
 	parse_sa_P_opt(char * [], int *, unsigned int *, struct activity * []);
+extern int
+	parse_sar_m_opt(char * [], int *, struct activity * []);
 extern int
 	parse_sar_n_opt(char * [], int *, struct activity * []);
 extern int

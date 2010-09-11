@@ -1,6 +1,6 @@
 /*
  * prf_stats.c: Funtions used by sadf to display statistics
- * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -162,7 +162,7 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
 __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 				 int curr, unsigned long long g_itv)
 {
-	int i;
+	int i, cpu_offline;
 	struct stats_cpu *scc, *scp;
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
@@ -250,8 +250,32 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 				       ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv));
 			}
 			else {
-				/* Recalculate itv for current proc */
-				g_itv = get_per_cpu_interval(scc, scp);
+				/*
+				 * If the CPU is offline then it is omited from /proc/stat:
+				 * All the fields couldn't have been read and the sum of them is zero.
+				 * (Remember that guest time is already included in user mode.)
+				 */
+				if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
+				     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
+				     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
+					/*
+					 * Set current struct fields (which have been set to zero)
+					 * to values from previous iteration. Hence their values won't
+					 * jump from zero when the CPU comes back online.
+					 */
+					*scc = *scp;
+					
+					g_itv = 0;
+					cpu_offline = TRUE;
+				}
+				else {
+					/*
+					 * Recalculate itv for current proc.
+					 * If the result is 0, then current CPU is a tickless one.
+					 */
+					g_itv = get_per_cpu_interval(scc, scp);
+					cpu_offline = FALSE;
+				}
 
 				if (DISPLAY_CPU_DEF(a->opt_flags)) {
 					render(isdb, pre, PT_NOFLAG,
@@ -260,7 +284,7 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 					       cons(iv, i - 1, NOVAL),	/* how we pass format args  */
 					       NOVAL,
 					       !g_itv ?
-					       0.0 :			/* CPU is offline */
+					       0.0 :			/* CPU is offline or tickless */
 					       ll_sp_value(scp->cpu_user, scc->cpu_user, g_itv));
 				}
 				else if (DISPLAY_CPU_ALL(a->opt_flags)) {
@@ -268,7 +292,7 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 					       "cpu%d\t%%usr", "%d", cons(iv, i - 1, NOVAL),
 					       NOVAL,
 					       !g_itv ?
-					       0.0 :			/* CPU is offline */
+					       0.0 :			/* CPU is offline or tickless */
 					       ll_sp_value(scp->cpu_user - scp->cpu_guest,
 							   scc->cpu_user - scc->cpu_guest, g_itv));
 				}
@@ -337,11 +361,12 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 				}
 				
 				if (!g_itv) {
-					/* CPU is offline */
+					/* CPU is offline or tickless */
 					render(isdb, pre, pt_newlin,
 					       "cpu%d\t%%idle", NULL, cons(iv, i - 1, NOVAL),
 					       NOVAL,
-					       0.0);
+					       cpu_offline ?
+					       0.0 : 100.0);
 				}
 				else {
 					render(isdb, pre, pt_newlin,
@@ -2163,6 +2188,181 @@ __print_funct_t render_pwr_cpufreq_stats(struct activity *a, int isdb, char *pre
 
 /*
  ***************************************************************************
+ * Display fan statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_pwr_fan_stats(struct activity *a, int isdb, char *pre,
+				     int curr, unsigned long long itv)
+{
+	int i;
+	struct stats_pwr_fan *spc;
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+
+	for (i = 0; i < a->nr; i++) {
+		spc = (struct stats_pwr_fan *) ((char *) a->buf[curr] + i * a->msize);
+
+		if (isdb) {
+			render(isdb, pre, PT_USEINT,
+			       "%s\tfan%d\trpm",
+			       "%s", cons(iv, spc->device, i + 1, NOVAL),
+			       i + 1,
+			       NOVAL);
+			render(isdb, pre, PT_NOFLAG,
+			       "%s\trpm",
+			       NULL, cons(iv, spc->device, NOVAL),
+			       NOVAL,
+			       spc->rpm);
+			render(isdb, pre, pt_newlin,
+			       "%s\tdrpm",
+			       NULL, cons(iv, spc->device, NOVAL),
+			       NOVAL,
+			       spc->rpm - spc->rpm_min);
+		}
+		else {
+			render(isdb, pre, PT_NOFLAG,
+			       "fan%d\trpm",
+			       "%d", cons(iv, i + 1, NOVAL),
+			       NOVAL,
+			       spc->rpm);
+			render(isdb, pre, pt_newlin,
+			       "fan%d\tdrpm",
+			       "%d", cons(iv, i + 1, NOVAL),
+			       NOVAL,
+			       spc->rpm - spc->rpm_min);
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display temperature statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_pwr_temp_stats(struct activity *a, int isdb, char *pre,
+                                        int curr, unsigned long long itv)
+{
+	int i;
+	struct stats_pwr_temp *spc;
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+
+	for (i = 0; i < a->nr; i++) {
+		spc = (struct stats_pwr_temp *) ((char *) a->buf[curr] + i * a->msize);
+
+		if (isdb) {
+			render(isdb, pre, PT_USEINT,
+			       "%s\ttemp%d\tdegC",
+			       "%s", cons(iv, spc->device, i + 1, NOVAL),
+			       i + 1,
+			       NOVAL);
+			render(isdb, pre, PT_NOFLAG,
+			       "%s\tdegC",
+			       NULL, cons(iv, spc->device, NOVAL),
+			       NOVAL,
+			       spc->temp);
+			render(isdb, pre, pt_newlin,
+			       "%s\t%%temp",
+			       NULL, cons(iv, spc->device, NOVAL),
+			       NOVAL,
+			       (spc->temp_max - spc->temp_min) ?
+			       (spc->temp - spc->temp_min) / (spc->temp_max - spc->temp_min) * 100 :
+			       0.0);
+
+		}
+		else {
+			render(isdb, pre, PT_NOFLAG,
+			       "temp%d\tdegC",
+			       "%s", cons(iv, i + 1, NOVAL),
+			       NOVAL,
+			       spc->temp);
+			render(isdb, pre, pt_newlin,
+			       "temp%d\t%%temp",
+			       "%s", cons(iv, i + 1, NOVAL),
+			       NOVAL,
+			       (spc->temp_max - spc->temp_min) ?
+			       (spc->temp - spc->temp_min) / (spc->temp_max - spc->temp_min) * 100 :
+			       0.0);
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display voltage inputs statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_pwr_in_stats(struct activity *a, int isdb, char *pre,
+				    int curr, unsigned long long itv)
+{
+	int i;
+	struct stats_pwr_in *spc;
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+
+	for (i = 0; i < a->nr; i++) {
+		spc = (struct stats_pwr_in *) ((char *) a->buf[curr] + i * a->msize);
+
+		if (isdb) {
+			render(isdb, pre, PT_USEINT,
+			       "%s\tin%d\tinV",
+			       "%s", cons(iv, spc->device, i, NOVAL),
+			       i,
+			       NOVAL);
+			render(isdb, pre, PT_NOFLAG,
+			       "%s\tinV",
+			       NULL, cons(iv, spc->device, NOVAL),
+			       NOVAL,
+			       spc->in);
+			render(isdb, pre, pt_newlin,
+			       "%s\t%%in",
+			       NULL, cons(iv, spc->device, NOVAL),
+			       NOVAL,
+			       (spc->in_max - spc->in_min) ?
+			       (spc->in - spc->in_min) / (spc->in_max - spc->in_min) * 100 :
+			       0.0);
+
+		}
+		else {
+			render(isdb, pre, PT_NOFLAG,
+			       "in%d\tinV",
+			       "%s", cons(iv, i, NOVAL),
+			       NOVAL,
+			       spc->in);
+			render(isdb, pre, pt_newlin,
+			       "in%d\t%%in",
+			       "%s", cons(iv, i, NOVAL),
+			       NOVAL,
+			       (spc->in_max - spc->in_min) ?
+			       (spc->in - spc->in_min) / (spc->in_max - spc->in_min) * 100 :
+			       0.0);
+		}
+	}
+}
+
+/*
+ ***************************************************************************
  * Print tabulations
  *
  * IN:
@@ -2269,7 +2469,7 @@ void xml_markup_power_management(int tab, int action)
 __print_funct_t xml_print_cpu_stats(struct activity *a, int curr, int tab,
 				    unsigned long long g_itv)
 {
-	int i;
+	int i, cpu_offline;
 	struct stats_cpu *scc, *scp;
 	char cpuno[8];
 
@@ -2296,33 +2496,60 @@ __print_funct_t xml_print_cpu_stats(struct activity *a, int curr, int tab,
 			else {
 				sprintf(cpuno, "%d", i - 1);
 
-				/* Recalculate interval for current proc */
-				g_itv = get_per_cpu_interval(scc, scp);
+				/*
+				 * If the CPU is offline then it is omited from /proc/stat:
+				 * All the fields couldn't have been read and the sum of them is zero.
+				 * (Remember that guest time is already included in user mode.)
+				 */
+				if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
+				     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
+				     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
+					/*
+					 * Set current struct fields (which have been set to zero)
+					 * to values from previous iteration. Hence their values won't
+					 * jump from zero when the CPU comes back online.
+					 */
+					*scc = *scp;
+
+					g_itv = 0;
+					cpu_offline = TRUE;
+				}
+				else {
+					/*
+					 * Recalculate interval for current proc.
+					 * If result is 0 then current CPU is a tickless one.
+					 */
+					g_itv = get_per_cpu_interval(scc, scp);
+					cpu_offline = FALSE;
+				}
 				
 				if (!g_itv) {
-					/* Current CPU is offline */
+					/* Current CPU is offline or tickless */
 					if (DISPLAY_CPU_DEF(a->opt_flags)) {
 						xprintf(tab, "<cpu number=\"%d\" "
-							"user=\"0.00\" "
-							"nice=\"0.00\" "
-							"system=\"0.00\" "
-							"iowait=\"0.00\" "
-							"steal=\"0.00\" "
-							"idle=\"0.00\"/>",
-							i - 1);
+							"user=\"%.2f\" "
+							"nice=\"%.2f\" "
+							"system=\"%.2f\" "
+							"iowait=\"%.2f\" "
+							"steal=\"%.2f\" "
+							"idle=\"%.2f\"/>",
+							i - 1, 0.0, 0.0, 0.0, 0.0, 0.0,
+							cpu_offline ? 0.0 : 100.0);
 					}
 					else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 						xprintf(tab, "<cpu number=\"%d\" "
-							"usr=\"0.00\" "
-							"nice=\"0.00\" "
-							"sys=\"0.00\" "
-							"iowait=\"0.00\" "
-							"steal=\"0.00\" "
-							"irq=\"0.00\" "
-							"soft=\"0.00\" "
-							"guest=\"0.00\" "
-							"idle=\"0.00\"/>",
-							i - 1);
+							"usr=\"%.2f\" "
+							"nice=\"%.2f\" "
+							"sys=\"%.2f\" "
+							"iowait=\"%.2f\" "
+							"steal=\"%.2f\" "
+							"irq=\"%.2f\" "
+							"soft=\"%.2f\" "
+							"guest=\"%.2f\" "
+							"idle=\"%.2f\"/>",
+							i - 1, 0.0, 0.0, 0.0, 0.0,
+							0.0, 0.0, 0.0, 0.0,
+							cpu_offline ? 0.0 : 100.0);
 					}
 					continue;
 				}
@@ -3792,6 +4019,142 @@ __print_funct_t xml_print_pwr_cpufreq_stats(struct activity *a, int curr, int ta
 	}
 	
 	xprintf(--tab, "</cpu-frequency>");
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_power_management(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display fan statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_pwr_fan_stats(struct activity *a, int curr, int tab,
+					unsigned long long itv)
+{
+	int i;
+	struct stats_pwr_fan *spc;
+
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_power_management(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab++, "<fan-speed unit=\"rpm\">");
+
+	for (i = 0; i < a->nr; i++) {
+		spc = (struct stats_pwr_fan *) ((char *) a->buf[curr]  + i * a->msize);
+
+		xprintf(tab, "<fan number=\"%d\" rpm=\"%llu\" drpm=\"%llu\" device=\"%s\"/>",
+			i + 1,
+			(unsigned long long) spc->rpm,
+			(unsigned long long) (spc->rpm - spc->rpm_min),
+			spc->device);
+	}
+
+	xprintf(--tab, "</fan-speed>");
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_power_management(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display temperature statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_pwr_temp_stats(struct activity *a, int curr, int tab,
+                                           unsigned long long itv)
+{
+	int i;
+	struct stats_pwr_temp *spc;
+
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_power_management(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab++, "<temperature unit=\"degree Celsius\">");
+
+	for (i = 0; i < a->nr; i++) {
+		spc = (struct stats_pwr_temp *) ((char *) a->buf[curr]  + i * a->msize);
+
+		xprintf(tab, "<temp number=\"%d\" degC=\"%.2f\" percent-temp=\"%.2f\" device=\"%s\"/>",
+			i + 1,
+			spc->temp,
+			(spc->temp_max - spc->temp_min) ?
+			(spc->temp - spc->temp_min) / (spc->temp_max - spc->temp_min) * 100 :
+			0.0,
+			spc->device);
+	}
+
+	xprintf(--tab, "</temperature>");
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_power_management(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display voltage inputs statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_pwr_in_stats(struct activity *a, int curr, int tab,
+				       unsigned long long itv)
+{
+	int i;
+	struct stats_pwr_in *spc;
+
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_power_management(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	xprintf(tab++, "<voltage-input unit=\"V\">");
+
+	for (i = 0; i < a->nr; i++) {
+		spc = (struct stats_pwr_in *) ((char *) a->buf[curr]  + i * a->msize);
+
+		xprintf(tab, "<in number=\"%d\" inV=\"%.2f\" percent-in=\"%.2f\" device=\"%s\"/>",
+			i,
+			spc->in,
+			(spc->in_max - spc->in_min) ?
+			(spc->in - spc->in_min) / (spc->in_max - spc->in_min) * 100 :
+			0.0,
+			spc->device);
+	}
+
+	xprintf(--tab, "</voltage-input>");
 	tab--;
 
 close_xml_markup:

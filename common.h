@@ -1,10 +1,13 @@
 /*
  * sysstat: System performance tools for Linux
- * (C) 1999-2009 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _COMMON_H
 #define _COMMON_H
+
+/* Maximum length of sensors device name */
+#define MAX_SENSORS_DEV_LEN	20
 
 #include <time.h>
 #include <sched.h>	/* For __CPU_SETSIZE */
@@ -49,7 +52,6 @@
 #define MEMINFO		"/proc/meminfo"
 #define SYSFS_BLOCK	"/sys/block"
 #define SYSFS_DEVCPU	"/sys/devices/system/cpu"
-#define NFSMOUNTSTATS	"/proc/self/mountstats"
 #define S_STAT		"stat"
 #define DEVMAP_DIR	"/dev/mapper"
 
@@ -168,8 +170,6 @@ extern time_t
 	get_localtime(struct tm *);
 extern time_t
 	get_time(struct tm *);
-extern int
-	get_nfs_mount_nr(void);
 unsigned long long
 	get_per_cpu_interval(struct stats_cpu *, struct stats_cpu *);
 extern int

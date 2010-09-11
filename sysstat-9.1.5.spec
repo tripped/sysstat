@@ -1,6 +1,6 @@
-Summary: 	SAR, SADF, MPSTAT, IOSTAT and PIDSTAT for Linux
+Summary: 	SAR, SADF, MPSTAT, IOSTAT, NFSIOSTAT, CIFSIOSTAT and PIDSTAT for Linux
 Name: 		sysstat
-Version: 	9.0.6.1
+Version: 	9.1.5
 Release: 	1
 License: 	GPL
 Group: 		Applications/System
@@ -11,8 +11,8 @@ BuildRoot:	%{_tmppath}/%{name}-%{version}-root-%(id -u -n)
 Requires:	gettext
 
 %description
-The sysstat package contains the sar, sadf, mpstat, iostat, pidstat
-and sa tools for Linux.
+The sysstat package contains the sar, sadf, mpstat, iostat, pidstat,
+nfsiostat, cifsiostat and sa tools for Linux.
 The sar command collects and reports system activity information.
 The information collected by sar can be saved in a file in a binary
 format for future inspection. The statistics reported by sar concern
@@ -25,6 +25,8 @@ various formats (CSV, XML, etc.).
 The iostat command reports CPU utilization and I/O statistics for disks.
 The mpstat command reports global and per-processor statistics.
 The pidstat command reports statistics for Linux tasks (processes).
+The nfsiostat command reports I/O statistics for network filesystems.
+The cifsiostat command reports I/O statistics for CIFS filesystems.
 
 %prep 
 %setup 

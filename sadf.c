@@ -1194,6 +1194,18 @@ int main(int argc, char **argv)
 			opt++;
 		}
 
+		else if (!strcmp(argv[opt], "-m")) {
+			if (argv[++opt] && sar_options) {
+				/* Parse sar's option -m */
+				if (parse_sar_m_opt(argv, &opt, act)) {
+					usage(argv[0]);
+				}
+			}
+			else {
+				usage(argv[0]);
+			}
+		}
+
 		else if (!strcmp(argv[opt], "-n")) {
 			if (argv[++opt] && sar_options) {
 				/* Parse sar's option -n */

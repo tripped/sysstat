@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: sysstat 9.0.6\n"
+"Project-Id-Version: sysstat 9.1.1\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2009-10-19 08:56+0200\n"
-"PO-Revision-Date: 2010-02-13 18:50+0930\n"
+"POT-Creation-Date: 2010-02-21 11:47+0100\n"
+"PO-Revision-Date: 2010-03-06 19:48+0930\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <vi-VN@googlegroups.com>\n"
 "MIME-Version: 1.0\n"
@@ -22,13 +22,13 @@ msgstr ""
 msgid "sysstat version %s\n"
 msgstr "sysstat phiên bản %s\n"
 
-#: ioconf.c:490 iostat.c:504 rd_stats.c:69 rd_stats.c:2125 rd_stats.c:2242
-#: sa_common.c:1052 sadc.c:589 sadc.c:598 sadc.c:658
+#: ioconf.c:490 rd_stats.c:69 rd_stats.c:1842 sa_common.c:1052 sadc.c:589
+#: sadc.c:598 sadc.c:658
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr "Không thể mở %s: %s\n"
 
-#: iostat.c:81 mpstat.c:83 pidstat.c:77 sar.c:88
+#: iostat.c:81 mpstat.c:86 pidstat.c:77 sar.c:88
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ]\n"
 msgstr "Sử dụng: %s [ tùy_chọn... ] [ <khoảng> [ <đếm> ] ]\n"
@@ -46,24 +46,29 @@ msgstr ""
 "\n"
 "ALL\ttất cả\n"
 
-#: mpstat.c:86
+#: iostat.c:340
+#, c-format
+msgid "Cannot find disk data\n"
+msgstr "Không tìm thấy dữ liệu về đĩa\n"
+
+#: mpstat.c:89
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
+"[ -A ] [ -I { SUM | CPU | SCPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 msgstr ""
 "Tùy chọn:\n"
-"[ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
+"[ -A ] [ -I { SUM | CPU | SCPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 "\n"
 "SUM\ttổng\n"
 "CPU, cpu\tđơn vị xử lý trung tâm\n"
 "ALL\ttất cả\n"
 
-#: mpstat.c:457 pidstat.c:1683 sar.c:354
+#: mpstat.c:504 pidstat.c:1683 sar.c:354
 msgid "Average:"
 msgstr "Trung bình:"
 
-#: mpstat.c:769
+#: mpstat.c:847
 #, c-format
 msgid "Not that many processors!\n"
 msgstr "Quá nhiều bộ xử lý !\n"
@@ -89,7 +94,7 @@ msgstr ""
 msgid "Requested activities not available\n"
 msgstr "Hoạt động yêu cầu vẫn không sẵn sàng\n"
 
-#: rd_stats.c:2288
+#: rd_stats.c:1888
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr "Quá nhiều bộ xử lý để xử lý !\n"
@@ -204,16 +209,16 @@ msgstr "Danh sách các hoạt động:\n"
 #, c-format
 msgid ""
 "Options are:\n"
-"[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -m ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
-"[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+"[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -m ] [ -p ] [ -q ] [ -r ]\n"
+"[ -R ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
 "[ -n { <keyword> [,...] | ALL } ]\n"
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr ""
 "Tùy chọn:\n"
-" -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -m ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
-"[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+" -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -m ] [ -p ] [ -q ] [ -r ]\n"
+"[ -R ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
 "[ -n { <từ_khoá> [,...] | ALL } ]\n"
 "[ -o [ <tên_tập_tin> ] | -f [ <tên_tập_tin> ] ]\n"

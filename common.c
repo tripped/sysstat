@@ -264,43 +264,6 @@ int get_sysfs_dev_nr(int display_partitions)
 
 /*
  ***************************************************************************
- * Find number of NFS-mounted points that are registered in
- * /proc/self/mountstats.
- *
- * RETURNS:
- * Number of NFS-mounted points.
- ***************************************************************************
- */
-int get_nfs_mount_nr(void)
-{
-	FILE *fp;
-	char line[8192];
-	char type_name[10];
-	unsigned int nfs = 0;
-
-	if ((fp = fopen(NFSMOUNTSTATS, "r")) == NULL)
-		/* File non-existent */
-		return 0;
-
-	while (fgets(line, 8192, fp) != NULL) {
-
-		if ((strstr(line, "mounted")) && (strstr(line, "on")) &&
-		    (strstr(line, "with")) && (strstr(line, "fstype"))) {
-	
-			sscanf(strstr(line, "fstype") + 6, "%10s", type_name);
-			if ((!strncmp(type_name, "nfs", 3)) && (strncmp(type_name, "nfsd", 4))) {
-				nfs ++;
-			}
-		}
-	}
-
-	fclose(fp);
-
-	return nfs;
-}
-
-/*
- ***************************************************************************
  * Print banner.
  *
  * IN:
@@ -420,7 +383,7 @@ int is_device(char *name)
 	while ((slash = strchr(name, '/'))) {
 		*slash = '!';
 	}
-	snprintf(syspath, sizeof(syspath), "/sys/block/%s", name);
+	snprintf(syspath, sizeof(syspath), "%s/%s", SYSFS_BLOCK, name);
 	
 	return !(access(syspath, F_OK));
 }

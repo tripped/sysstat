@@ -1,4 +1,4 @@
-.TH PIDSTAT 1 "DECEMBER 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH PIDSTAT 1 "JUNE 2010" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 pidstat \- Report statistics for Linux tasks.
 .SH SYNOPSIS
@@ -6,7 +6,7 @@ pidstat \- Report statistics for Linux tasks.
 .I comm
 .B ] [ -d ] [ -h ] [ -I ] [ -l ] [ -p {
 .I pid
-.B [,...] | SELF | ALL } ] [ -r ] [ -t ] [ -T { TASK | CHILD | ALL } ] [ -u ] [ -V ] [ -w ] [
+.B [,...] | SELF | ALL } ] [ -r ] [ -s ] [ -t ] [ -T { TASK | CHILD | ALL } ] [ -u ] [ -V ] [ -w ] [
 .I interval
 .B [
 .I count
@@ -60,6 +60,7 @@ Not specifying any flags selects only CPU activity.
 .IP "-C comm"
 Display only tasks whose command name includes the string
 .IR comm .
+This string can be a regular expression.
 .IP -d
 Report I/O statistics (kernels 2.6.20 and later only).
 The following values are displayed:
@@ -181,6 +182,32 @@ and collected during the interval of time.
 .RS
 The command name of the task which is being monitored
 together with its children.
+.RE
+.RE
+.IP -s
+Report stack utilization.
+The following values are displayed:
+
+.B PID
+.RS
+.RS
+The identification number of the task being monitored.
+.RE
+
+.B StkSize
+.RS
+The amount of memory in kilobytes reserved for the task as stack,
+but not necessarily used.
+.RE
+
+.B StkRef
+.RS
+The amount of memory in kilobytes used as stack, referenced by the task.
+.RE
+
+.B Command
+.RS
+The command name of the task.
 .RE
 .RE
 .IP -t
@@ -364,8 +391,14 @@ at two second intervals.
 .RS
 Display five reports of page faults and memory statistics for
 PID 1643 at two second intervals.
-
 .RE
+
+.B pidstat -C """fox|bird"" -r -p ALL
+.RS
+Display global page faults and memory statistics for all the
+processes whose command name includes the string "fox" or "bird".
+.RE
+
 .B pidstat -T CHILD -r 2 5
 .RS
 Display five reports of page faults statistics at two second intervals

@@ -1,6 +1,6 @@
 /*
  * sysstat - sa_wrap.c: Functions used in activity.c
- * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -115,8 +115,7 @@ __nr_t wrap_get_cpu_nr(struct activity *a)
 
 /*
  ***************************************************************************
- * Get number of devices in /proc/{diskstats,partitions}
- * or number of disk_io entries in /proc/stat.
+ * Get number of devices in /proc/diskstats.
  * Always done, since disk stats must be read at least for sar -b
  * if not for sar -d.
  *
@@ -132,16 +131,7 @@ __nr_t wrap_get_disk_nr(struct activity *a)
 	__nr_t n = 0;
 	unsigned int f = COLLECT_PARTITIONS(a->opt_flags);
 	
-	n = get_disk_nr(&f);
-
-	if (f == READ_DISKSTATS) {
-		flags |= S_F_HAS_DISKSTATS;
-	}
-	else if (f == READ_PPARTITIONS) {
-		flags |= S_F_HAS_PPARTITIONS;
-	}
-	
-	if (n > 0)
+	if ((n = get_disk_nr(f)) > 0)
 		return n + NR_DISK_PREALLOC;
 	
 	return 0;
@@ -273,10 +263,8 @@ __read_funct_t wrap_read_swap(struct activity *a)
 	struct stats_swap *st_swap
 		= (struct stats_swap *) a->_buf0;
 
-	/* Try to read stats from /proc/vmstat, otherwise from /proc/stat */
-	if (!read_vmstat_swap(st_swap)) {
-		read_stat_swap(st_swap);
-	}
+	/* Read stats from /proc/vmstat */
+	read_vmstat_swap(st_swap);
 	
 	return;
 }
@@ -297,10 +285,8 @@ __read_funct_t wrap_read_paging(struct activity *a)
 	struct stats_paging *st_paging
 		= (struct stats_paging *) a->_buf0;
 
-	/* Try to read stats from /proc/vmstat, otherwise from /proc/stat */
-	if (!read_vmstat_paging(st_paging)) {
-		read_stat_paging(st_paging);
-	}
+	/* Read stats from /proc/vmstat */
+	read_vmstat_paging(st_paging);
 	
 	return;
 }
@@ -321,16 +307,8 @@ __read_funct_t wrap_read_io(struct activity *a)
 	struct stats_io *st_io
 		= (struct stats_io *) a->_buf0;
 
-	/* Try to read stats from /proc/diskstats, /proc/partitions or /proc/stat */
-	if (HAS_DISKSTATS(flags)) {
-		read_diskstats_io(st_io);
-	}
-	else if (HAS_PPARTITIONS(flags)) {
-		read_ppartitions_io(st_io);
-	}
-	else {
-		read_stat_io(st_io);
-	}
+	/* Read stats from /proc/diskstats */
+	read_diskstats_io(st_io);
 
 	return;
 }
@@ -351,16 +329,8 @@ __read_funct_t wrap_read_disk(struct activity *a)
 	struct stats_disk *st_disk
 		= (struct stats_disk *) a->_buf0;
 
-	/* Try to read stats from /proc/diskstats, /proc/partitions or /proc/stat */
-	if (HAS_DISKSTATS(flags)) {
-		read_diskstats_disk(st_disk, a->nr, COLLECT_PARTITIONS(a->opt_flags));
-	}
-	else if (HAS_PPARTITIONS(flags)) {
-		read_partitions_disk(st_disk, a->nr);
-	}
-	else {
-		read_stat_disk(st_disk, a->nr);
-	}
+	/* Read stats from /proc/diskstats */
+	read_diskstats_disk(st_disk, a->nr, COLLECT_PARTITIONS(a->opt_flags));
 
 	return;
 }
@@ -824,5 +794,119 @@ __read_funct_t wrap_read_cpuinfo(struct activity *a)
 	/* Read CPU frequency stats */
 	read_cpuinfo(st_pwr_cpufreq, a->nr);
 	
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Get number of fan structures to allocate.
+ *
+ * IN:
+ * @a  Activity structure.
+ *
+ * RETURNS:
+ * Number of structures.
+ ***************************************************************************
+ */
+__nr_t wrap_get_fan_nr(struct activity *a)
+{
+	return (get_fan_nr());
+}
+
+/*
+ ***************************************************************************
+ * Read fan statistics.
+ *
+ * IN:
+ * @a  Activity structure.
+ *
+ * OUT:
+ * @a  Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_fan(struct activity *a)
+{
+	struct stats_pwr_fan *st_pwr_fan
+		= (struct stats_pwr_fan *) a->_buf0;
+
+	/* Read fan stats */
+	read_fan(st_pwr_fan, a->nr);
+
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Get number of temp structures to allocate.
+ *
+ * IN:
+ * @a  Activity structure.
+ *
+ * RETURNS:
+ * Number of structures.
+ ***************************************************************************
+ */
+__nr_t wrap_get_temp_nr(struct activity *a)
+{
+	return (get_temp_nr());
+}
+
+/*
+ ***************************************************************************
+ * Read temperature statistics.
+ *
+ * IN:
+ * @a  Activity structure.
+ *
+ * OUT:
+ * @a  Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_temp(struct activity *a)
+{
+	struct stats_pwr_temp *st_pwr_temp
+		= (struct stats_pwr_temp *) a->_buf0;
+
+	/* Read temperature stats */
+	read_temp(st_pwr_temp, a->nr);
+
+	return;
+}
+
+/*
+ ***************************************************************************
+ * Get number of voltage input structures to allocate.
+ *
+ * IN:
+ * @a  Activity structure.
+ *
+ * RETURNS:
+ * Number of structures.
+ ***************************************************************************
+ */
+__nr_t wrap_get_in_nr(struct activity *a)
+{
+	return (get_in_nr());
+}
+
+/*
+ ***************************************************************************
+ * Read voltage input statistics.
+ *
+ * IN:
+ * @a  Activity structure.
+ *
+ * OUT:
+ * @a  Activity structure with statistics.
+ ***************************************************************************
+ */
+__read_funct_t wrap_read_in(struct activity *a)
+{
+	struct stats_pwr_in *st_pwr_in
+		= (struct stats_pwr_in *) a->_buf0;
+
+	/* Read voltage input stats */
+	read_in(st_pwr_in, a->nr);
+
 	return;
 }

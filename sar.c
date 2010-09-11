@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -102,10 +102,10 @@ void usage(char *progname)
 
 	print_usage_title(progname);
 	fprintf(stderr, _("Options are:\n"
-			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -m ] [ -p ] [ -q ] [ -r ] [ -R ]\n"
-			  "[ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
+			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ]\n"
+			  "[ -R ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 			  "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
-			  "[ -n { <keyword> [,...] | ALL } ]\n"
+			  "[ -m { <keyword> [,...] | ALL } ] [ -n { <keyword> [,...] | ALL } ]\n"
 			  "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 			  "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"));
 	exit(1);
@@ -129,7 +129,13 @@ void display_help(char *progname)
 	fprintf(stderr, _("\t-d\tBlock device statistics\n"));
 	fprintf(stderr, _("\t-I { <int> | SUM | ALL | XALL }\n"
 			  "\t\tInterrupts statistics\n"));
-	fprintf(stderr, _("\t-m\tPower management statistics\n"));
+	fprintf(stderr, _("\t-m { <keyword> [,...] | ALL }\n"
+			  "\t\tPower management statistics\n"
+			  "\t\tKeywords are:\n"
+			  "\t\tCPU\tCPU clock frequency\n"
+			  "\t\tFAN\tFans speed\n"
+			  "\t\tIN\tVoltage inputs\n"
+			  "\t\tTEMP\tDevices temperature\n"));
 	fprintf(stderr, _("\t-n { <keyword> [,...] | ALL }\n"
 			  "\t\tNetwork statistics\n"
 			  "\t\tKeywords are:\n"
@@ -1014,7 +1020,7 @@ void read_stats(void)
 			    NO_RESET, ALL_ACTIVITIES);
 
 		if (record_hdr[curr].record_type == R_LAST_STATS) {
-			/* File rotation is happening: re-read header data sent by sadc */
+			/* File rotation is happening: Re-read header data sent by sadc */
 			read_header_data();
 			allocate_structures(act);
 		}
@@ -1139,6 +1145,18 @@ int main(int argc, char **argv)
 				usage(argv[0]);
 			}
 			flags |= S_F_INTERVAL_SET;
+		}
+
+		else if (!strcmp(argv[opt], "-m")) {
+			if (argv[++opt]) {
+				/* Parse option -m */
+				if (parse_sar_m_opt(argv, &opt, act)) {
+					usage(argv[0]);
+				}
+			}
+			else {
+				usage(argv[0]);
+			}
 		}
 
 		else if (!strcmp(argv[opt], "-n")) {

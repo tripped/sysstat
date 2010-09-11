@@ -1,4 +1,4 @@
-.TH SADC 8 "AUGUST 2009" Linux "Linux User's Manual" -*- nroff -*-
+.TH SADC 8 "AUGUST 2010" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sadc \- System activity data collector.
 .SH SYNOPSIS
@@ -185,6 +185,8 @@ filesystem must be mounted for the
 command to work.
 
 All the statistics are not necessarily available, depending on the kernel version used.
+.B sadc
+assumes that you are using at least a 2.6 kernel.
 .SH FILES
 .IR @SA_DIR@/sa dd
 .RS
@@ -201,7 +203,6 @@ Sebastien Godard (sysstat <at> orange.fr)
 .BR sar (1),
 .BR sa1 (8),
 .BR sa2 (8),
-.BR sadf (1),
-.BR isag (1)
+.BR sadf (1)
 
 .I http://pagesperso-orange.fr/sebastien.godard/

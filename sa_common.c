@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -634,13 +634,13 @@ int check_disk_reg(struct activity *a, int curr, int ref, int pos)
 		    (sdc->minor == sdp->minor)) {
 			/*
 			 * Disk found.
-			 * If a counter has decreased, then we may assume that the
-			 * corresponding device was unregistered, then registered again.
-			 * NB: AFAIK, such a device cannot be unregistered with current
-			 * kernels.
+			 * If all the counters have decreased then the likelyhood
+			 * is that the disk has been unregistered and a new disk inserted.
+			 * If only one or two have decreased then the likelyhood
+			 * is that the counter has simply wrapped.
 			 */
-			if ((sdc->nr_ios < sdp->nr_ios) ||
-			    (sdc->rd_sect < sdp->rd_sect) ||
+			if ((sdc->nr_ios < sdp->nr_ios) &&
+			    (sdc->rd_sect < sdp->rd_sect) &&
 			    (sdc->wr_sect < sdp->wr_sect)) {
 
 				memset(sdp, 0, STATS_DISK_SIZE);
@@ -1200,10 +1200,6 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			SELECT_ACTIVITY(A_DISK);
 			break;
 
-		case 'm':
-			SELECT_ACTIVITY(A_PWR_CPUFREQ);
-			break;
-
 		case 'p':
 			*flags |= S_F_DEV_PRETTY;
 			break;
@@ -1275,6 +1271,52 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			return 1;
 		}
 	}
+	return 0;
+}
+
+/*
+ ***************************************************************************
+ * Parse sar "-m" option.
+ *
+ * IN:
+ * @argv	Arguments list.
+ * @opt		Index in list of arguments.
+ *
+ * OUT:
+ * @act		Array of selected activities.
+ *
+ * RETURNS:
+ * 0 on success, 1 otherwise.
+ ***************************************************************************
+ */
+int parse_sar_m_opt(char *argv[], int *opt, struct activity *act[])
+{
+	char *t;
+
+	for (t = strtok(argv[*opt], ","); t; t = strtok(NULL, ",")) {
+		if (!strcmp(t, K_CPU)) {
+			SELECT_ACTIVITY(A_PWR_CPUFREQ);
+		}
+		else if (!strcmp(t, K_FAN)) {
+			SELECT_ACTIVITY(A_PWR_FAN);
+		}
+		else if (!strcmp(t, K_IN)) {
+			SELECT_ACTIVITY(A_PWR_IN);
+		}
+		else if (!strcmp(t, K_TEMP)) {
+			SELECT_ACTIVITY(A_PWR_TEMP);
+		}
+		else if (!strcmp(t, K_ALL)) {
+			SELECT_ACTIVITY(A_PWR_CPUFREQ);
+			SELECT_ACTIVITY(A_PWR_FAN);
+			SELECT_ACTIVITY(A_PWR_IN);
+			SELECT_ACTIVITY(A_PWR_TEMP);
+		}
+		else
+			return 1;
+	}
+
+	(*opt)++;
 	return 0;
 }
 

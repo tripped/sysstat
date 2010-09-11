@@ -99,7 +99,8 @@ The following people have contributed to 'sysstat' in one way or another:
 	hotplug CPU to sysstat.
 
 	Ivana Varekova <varekova [at] redhat.com> added support for iostat
-	NFS statistics. Ivana also added support for autoconf.
+	NFS statistics. Ivana also added support for autoconf, and created
+	cifsiostat command.
 
 	Nils Philippsen <nphilipp [at] redhat.com> made history configurable.
 
@@ -120,6 +121,14 @@ The following people have contributed to 'sysstat' in one way or another:
 	option -l to pidstat to display the process command name and
 	arguments.
 
+	Mario Konrad <Mario.Konrad [at] gmx.net> added regular expressions
+	support to pidstat'x option -C. He also added option -s to pidstat
+	to display task stack statistics.
+
+	Jan Kaluza <jkaluza [at] redhat.com> contributed several patches
+	to sysstat. Among them, he added some more power management
+	statistics to sar.
+
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
@@ -132,7 +141,7 @@ I would also thank the following people for their hints or bug reports
 	Xavier Bru <xavier.bru@bul[...].net>
 	Jason Burnett <jason@jnj[...].org>
 	Mark J. Cox <mjc@red[...].com>
-	Jean Dagenais <jean.dagenais@integral.com>
+	Jean Dagenais <jean.dagenais@int[...].com>
 	Nicolas Denis <denisn@wan[...].fr>
 	Andrew Donkin <ard@wai[...].nz>
 	Greg Edwards <edwardsg@sgi[...].com>
@@ -156,11 +165,13 @@ I would also thank the following people for their hints or bug reports
 	Neculai Macarie <macarie.neculai@nex[...].com>
 	Robert Macaulay <Robert_Macaulay@Del[...].com>
 	Pierre Machard <pmachard@deb[...].org>
+	Jérôme Marchand <jmarchan@red[...].com>
 	Alan Matsuoka <alanm@red[...].com>
 	Rodney J. Mertz <rjm@elv[...].com>
 	Roy Millar <100044.14@com[...].com>
 	Chris Minshull <CMinshull@nyx[...].com>
 	Pascal Monschein <ext.astek.monschein@snc[...].fr>
+	Chris Morrow <cmorrow@ver[...].com>
 	David J. Morse <David_J_Morse@Del[...].com>
 	Hariprasad Nellitheertha <hari@in.[...].com>
 	Giulio Orsero <giulioo@pob[...].com>

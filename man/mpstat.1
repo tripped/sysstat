@@ -1,8 +1,8 @@
-.TH MPSTAT 1 "MAY 2009" Linux "Linux User's Manual" -*- nroff -*-
+.TH MPSTAT 1 "JANUARY 2010" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 mpstat \- Report processors related statistics.
 .SH SYNOPSIS
-.B mpstat [ -A ] [ -I { SUM | CPU | ALL } ] [ -u ] [ -P {
+.B mpstat [ -A ] [ -I { SUM | CPU | SCPU | ALL } ] [ -u ] [ -P {
 .I cpu
 .B [,...] | ALL } ] [ -V ] [
 .I interval
@@ -46,7 +46,7 @@ command generates reports continuously.
 .IP -A
 This option is equivalent to specifying
 .BR "-I ALL -u -P ALL"
-.IP "-I { SUM | CPU | ALL }"
+.IP "-I { SUM | CPU | SCPU | ALL }"
 Report interrupts statistics.
 
 With the
@@ -75,6 +75,12 @@ With the
 .B CPU
 keyword, the number of each individual interrupt received per
 second by the CPU or CPUs is displayed.
+
+With the
+.B SCPU
+keyword, the number of each individual software interrupt received per
+second by the CPU or CPUs is displayed. This option works only
+with kernels 2.6.31 and later.
 
 The
 .B ALL

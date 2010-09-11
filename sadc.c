@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -45,6 +45,11 @@
 #define _(string) gettext(string)
 #else
 #define _(string) (string)
+#endif
+
+#ifdef HAVE_SENSORS
+#include "sensors/sensors.h"
+#include "sensors/error.h"
 #endif
 
 #define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
@@ -133,6 +138,8 @@ void parse_sadc_S_option(char *argv[], int opt)
 		else if (!strcmp(p, K_POWER)) {
 			/* Select activities related to power management */
 			COLLECT_ACTIVITY(A_PWR_CPUFREQ);
+			COLLECT_ACTIVITY(A_PWR_FAN);
+			COLLECT_ACTIVITY(A_PWR_TEMP);
 		}
 		else if (!strcmp(p, K_ALL) || !strcmp(p, K_XALL)) {
 			/* Select all activities */
@@ -208,9 +215,6 @@ void p_write_error(void)
  * Then, they are init'ed again each time before reading the various system
  * stats to make sure that no stats from a previous reading will remain (eg.
  * if some network interfaces or block devices have been unregistered).
- * Exception are structures used to store CPU statistics, which are init'ed
- * when allocated, but not before reading stats, in order to keep the values
- * of CPUs that have been set offline (disabled).
  ***************************************************************************
  */
 void reset_stats(void)
@@ -218,7 +222,7 @@ void reset_stats(void)
 	int i;
 
 	for (i = 0; i < NR_ACT; i++) {
-		if ((act[i]->nr > 0) && act[i]->_buf0 && !IS_REMANENT(act[i]->options)) {
+		if ((act[i]->nr > 0) && act[i]->_buf0) {
 			memset(act[i]->_buf0, 0, act[i]->msize * act[i]->nr);
 		}
 	}
@@ -896,10 +900,6 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
 
 		/* Flush data */
 		fflush(stdout);
-		if (ofile[0] && (fdatasync(ofd) < 0)) {
-			perror("fdatasync");
-			exit(4);
-		}
 
 		if (count > 0) {
 			count--;
@@ -947,6 +947,14 @@ int main(int argc, char **argv)
 
 	ofile[0] = comment[0] = '\0';
 
+#ifdef HAVE_SENSORS
+	/* Initialize sensors, let it use the default cfg file */
+	int err = sensors_init(NULL);
+	if (err) {
+		fprintf(stderr, "sensors_init: %s\n", sensors_strerror(err));
+	}
+#endif /* HAVE_SENSORS */
+	
 #ifdef USE_NLS
 	/* Init National Language Support */
 	init_nls();
@@ -1094,6 +1102,11 @@ int main(int argc, char **argv)
 
 	/* Main loop */
 	rw_sa_stat_loop(count, &rectime, stdfd, ofd, ofile);
+
+#ifdef HAVE_SENSORS
+	/* Cleanup sensors */
+	sensors_cleanup();
+#endif /* HAVE_SENSORS */
 
 	/* Free structures */
 	sa_sys_free();

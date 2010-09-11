@@ -1,6 +1,6 @@
 /*
  * rd_stats.c: Read system statistics
- * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -41,6 +41,9 @@
 #define _(string) (string)
 #endif
 
+#ifdef HAVE_SENSORS
+#include "sensors/sensors.h"
+#endif
 
 /*
  ***************************************************************************
@@ -75,8 +78,8 @@ void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
 		if (!strncmp(line, "cpu ", 4)) {
 
 			/*
-			 * Some fields may not exist with pre 2.5 kernels,
-			 * so reset the structure.
+			 * All the fields don't necessarily exist,
+			 * depending on the kernel version used.
 			 */
 			memset(st_cpu, 0, STATS_CPU_SIZE);
 
@@ -111,7 +114,7 @@ void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
 
 		else if (!strncmp(line, "cpu", 3)) {
 			if (nbr > 1) {
-				/* For pre 2.5 kernels */
+				/* All the fields don't necessarily exist */
 				memset(&sc, 0, STATS_CPU_SIZE);
 				/*
 				 * Read the number of jiffies spent in the different modes
@@ -342,26 +345,21 @@ void read_meminfo(struct stats_memory *st_memory)
  *
  * OUT:
  * @st_swap	Structure with statistics.
- *
- * RETURNS:
- * FALSE if stats haven't been found in this file, or TRUE otherwise.
  ***************************************************************************
  */
-unsigned int read_vmstat_swap(struct stats_swap *st_swap)
+void read_vmstat_swap(struct stats_swap *st_swap)
 {
 	FILE *fp;
 	char line[128];
-	int ok = FALSE;
 
 	if ((fp = fopen(VMSTAT, "r")) == NULL)
-		return ok;
+		return;
 
 	while (fgets(line, 128, fp) != NULL) {
 
 		if (!strncmp(line, "pswpin ", 7)) {
 			/* Read number of swap pages brought in */
 			sscanf(line + 7, "%lu", &st_swap->pswpin);
-			ok = TRUE;
 		}
 		else if (!strncmp(line, "pswpout ", 8)) {
 			/* Read number of swap pages brought out */
@@ -369,39 +367,6 @@ unsigned int read_vmstat_swap(struct stats_swap *st_swap)
 		}
 	}
 	
-	fclose(fp);
-	
-	return ok;
-}
-
-/*
- ***************************************************************************
- * Read swapping statistics from /proc/stat.
- *
- * IN:
- * @st_swap	Structure where stats will be saved.
- *
- * OUT:
- * @st_swap	Structure with statistics.
- ***************************************************************************
- */
-void read_stat_swap(struct stats_swap *st_swap)
-{
-	FILE *fp;
-	char line[8192];
-
-	if ((fp = fopen(STAT, "r")) == NULL)
-		return;
-
-	while (fgets(line, 8192, fp) != NULL) {
-
-		if (!strncmp(line, "swap ", 5)) {
-			/* Read number of swap pages brought in and out */
-			sscanf(line + 5, "%lu %lu",
-			       &st_swap->pswpin, &st_swap->pswpout);
-		}
-	}
-
 	fclose(fp);
 }
 
@@ -414,20 +379,16 @@ void read_stat_swap(struct stats_swap *st_swap)
  *
  * OUT:
  * @st_paging	Structure with statistics.
- *
- * RETURNS:
- * FALSE if stats haven't been found in this file, or TRUE otherwise.
  ***************************************************************************
  */
-int read_vmstat_paging(struct stats_paging *st_paging)
+void read_vmstat_paging(struct stats_paging *st_paging)
 {
 	FILE *fp;
 	char line[128];
 	unsigned long pgtmp;
-	int ok = FALSE;
 
 	if ((fp = fopen(VMSTAT, "r")) == NULL)
-		return ok;
+		return;
 
 	st_paging->pgsteal = 0;
 	st_paging->pgscan_kswapd = st_paging->pgscan_direct = 0;
@@ -437,7 +398,6 @@ int read_vmstat_paging(struct stats_paging *st_paging)
 		if (!strncmp(line, "pgpgin ", 7)) {
 			/* Read number of pages the system paged in */
 			sscanf(line + 7, "%lu", &st_paging->pgpgin);
-			ok = TRUE;
 		}
 		else if (!strncmp(line, "pgpgout ", 8)) {
 			/* Read number of pages the system paged out */
@@ -472,39 +432,6 @@ int read_vmstat_paging(struct stats_paging *st_paging)
 		}
 	}
 	
-	fclose(fp);
-	
-	return ok;
-}
-
-/*
- ***************************************************************************
- * Read paging statistics from /proc/stat.
- *
- * IN:
- * @st_paging	Structure where stats will be saved.
- *
- * OUT:
- * @st_paging	Structure with statistics.
- ***************************************************************************
- */
-void read_stat_paging(struct stats_paging *st_paging)
-{
-	FILE *fp;
-	char line[8192];
-
-	if ((fp = fopen(STAT, "r")) == NULL)
-		return;
-
-	while (fgets(line, 8192, fp) != NULL) {
-
-		if (!strncmp(line, "page ", 5)) {
-			/* Read number of pages the system paged in and out */
-			sscanf(line + 5, "%lu %lu",
-			       &st_paging->pgpgin, &st_paging->pgpgout);
-		}
-	}
-
 	fclose(fp);
 }
 
@@ -551,131 +478,6 @@ void read_diskstats_io(struct stats_io *st_io)
 		}
 	}
 	
-	fclose(fp);
-}
-
-/*
- ***************************************************************************
- * Read I/O and transfer rates statistics from /proc/partitions.
- *
- * IN:
- * @st_io	Structure where stats will be saved.
- *
- * OUT:
- * @st_io	Structure with statistics.
- ***************************************************************************
- */
-void read_ppartitions_io(struct stats_io *st_io)
-{
-	FILE *fp;
-	char line[256];
-	unsigned int major, minor;
-	unsigned long rd_ios, wr_ios;
-	unsigned long long rd_sec, wr_sec;
-
-	if ((fp = fopen(PPARTITIONS, "r")) == NULL)
-		return;
-
-	while (fgets(line, 256, fp) != NULL) {
-
-		if (sscanf(line, "%u %u %*u %*s %lu %*u %llu %*u %lu %*u %llu",
-			   &major, &minor,
-			   &rd_ios, &rd_sec, &wr_ios, &wr_sec) == 6) {
-
-			if (ioc_iswhole(major, minor)) {
-				/*
-				 * OK: It's a device and not a partition.
-				 * Note: Structure should have been initialized first!
-				 */
-				st_io->dk_drive      += rd_ios + wr_ios;
-				st_io->dk_drive_rio  += rd_ios;
-				st_io->dk_drive_rblk += (unsigned int) rd_sec;
-				st_io->dk_drive_wio  += wr_ios;
-				st_io->dk_drive_wblk += (unsigned int) wr_sec;
-			}
-		}
-	}
-
-	fclose(fp);
-}
-
-/*
- ***************************************************************************
- * Read I/O and transfer rates statistics from /proc/stat.
- *
- * IN:
- * @st_io	Structure where stats will be saved.
- *
- * OUT:
- * @st_io	Structure with statistics.
- ***************************************************************************
- */
-void read_stat_io(struct stats_io *st_io)
-{
-	FILE *fp;
-	char line[8192];
-	unsigned int u_tmp[NR_DISKS - 1];
-	unsigned int v_tmp[5];
-	int pos;
-
-	if ((fp = fopen(STAT, "r")) == NULL)
-		return;
-
-	while (fgets(line, 8192, fp) != NULL) {
-
-
-		if (!strncmp(line, "disk ", 5)) {
-			/* Read number of I/O done since the last reboot */
-			sscanf(line + 5, "%u %u %u %u",
-			       &st_io->dk_drive, &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-			st_io->dk_drive += u_tmp[0] + u_tmp[1] + u_tmp[2];
-		}
-		else if (!strncmp(line, "disk_rio ", 9)) {
-			/* Read number of read I/O */
-			sscanf(line + 9, "%u %u %u %u",
-			       &st_io->dk_drive_rio, &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-			st_io->dk_drive_rio += u_tmp[0] + u_tmp[1] + u_tmp[2];
-		}
-		else if (!strncmp(line, "disk_wio ", 9)) {
-			/* Read number of write I/O */
-			sscanf(line + 9, "%u %u %u %u",
-			       &st_io->dk_drive_wio, &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-			st_io->dk_drive_wio += u_tmp[0] + u_tmp[1] + u_tmp[2];
-		}
-		else if (!strncmp(line, "disk_rblk ", 10)) {
-			/* Read number of blocks read from disk */
-			sscanf(line + 10, "%u %u %u %u",
-			       &st_io->dk_drive_rblk, &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-			st_io->dk_drive_rblk += u_tmp[0] + u_tmp[1] + u_tmp[2];
-		}
-		else if (!strncmp(line, "disk_wblk ", 10)) {
-			/* Read number of blocks written to disk */
-			sscanf(line + 10, "%u %u %u %u",
-			       &st_io->dk_drive_wblk, &u_tmp[0], &u_tmp[1], &u_tmp[2]);
-			st_io->dk_drive_wblk += u_tmp[0] + u_tmp[1] + u_tmp[2];
-		}
-		else if (!strncmp(line, "disk_io: ", 9)) {
-
-			pos = 9;
-
-			/* Read disks I/O statistics (for 2.4 kernels) */
-			while (pos < strlen(line) - 1) {
-				/* Beware: A CR is already included in the line */
-				sscanf(line + pos, "(%*u,%*u):(%u,%u,%u,%u,%u) ",
-				       &v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3], &v_tmp[4]);
-
-				/* Note: Structure should have been initialized first! */
-				st_io->dk_drive += v_tmp[0];
-				st_io->dk_drive_rio  += v_tmp[1];
-				st_io->dk_drive_rblk += v_tmp[2];
-				st_io->dk_drive_wio  += v_tmp[3];
-				st_io->dk_drive_wblk += v_tmp[4];
-
-				pos += strcspn(line + pos, " ") + 1;
-			}
-		}
-	}
-
 	fclose(fp);
 }
 
@@ -739,114 +541,6 @@ void read_diskstats_disk(struct stats_disk *st_disk, int nbr, int read_part)
 
 /*
  ***************************************************************************
- * Read block devices statistics from /proc/partitions.
- *
- * IN:
- * @st_disk	Structure where stats will be saved.
- * @nbr		Maximum number of block devices.
- *
- * OUT:
- * @st_disk	Structure with statistics.
- ***************************************************************************
- */
-void read_partitions_disk(struct stats_disk *st_disk, int nbr)
-{
-	FILE *fp;
-	char line[256];
-	int dsk = 0;
-	struct stats_disk *st_disk_i;
-	unsigned int major, minor;
-	unsigned long rd_ios, wr_ios, rd_ticks, wr_ticks, tot_ticks, rq_ticks;
-	unsigned long long rd_sec, wr_sec;
-
-	if ((fp = fopen(PPARTITIONS, "r")) == NULL)
-		return;
-
-	while ((fgets(line, 256, fp) != NULL) && (dsk < nbr)) {
-
-		if (sscanf(line, "%u %u %*u %*s %lu %*u %llu %lu %lu %*u %llu"
-			   " %lu %*u %lu %lu",
-			   &major, &minor, &rd_ios, &rd_sec, &rd_ticks, &wr_ios,
-			   &wr_sec, &wr_ticks, &tot_ticks, &rq_ticks) == 10) {
-
-			if (!rd_ios && !wr_ios)
-				/* Unused device: ignore it */
-				continue;
-
-			if (ioc_iswhole(major, minor)) {
-				/* OK: it's a device and not a partition */
-				st_disk_i = st_disk + dsk++;
-				st_disk_i->major     = major;
-				st_disk_i->minor     = minor;
-				st_disk_i->nr_ios    = rd_ios + wr_ios;
-				st_disk_i->rd_sect   = rd_sec;
-				st_disk_i->wr_sect   = wr_sec;
-				st_disk_i->rd_ticks  = rd_ticks;
-				st_disk_i->wr_ticks  = wr_ticks;
-				st_disk_i->tot_ticks = tot_ticks;
-				st_disk_i->rq_ticks  = rq_ticks;
-			}
-		}
-	}
-
-	fclose(fp);
-}
-
-/*
- ***************************************************************************
- * Read block devices statistics from /proc/stat.
- *
- * IN:
- * @st_disk	Structure where stats will be saved.
- * @nbr		Maximum number of block devices.
- *
- * OUT:
- * @st_disk	Structure with statistics.
- ***************************************************************************
- */
-void read_stat_disk(struct stats_disk *st_disk, int nbr)
-{
-	FILE *fp;
-	struct stats_disk *st_disk_i;
-	char line[8192];
-	int dsk = 0;
-	unsigned int v_tmp[5], v_major, v_index;
-	int pos;
-
-	if ((fp = fopen(STAT, "r")) == NULL)
-		return;
-
-	while (fgets(line, 8192, fp) != NULL) {
-
-		if (!strncmp(line, "disk_io: ", 9)) {
-
-			pos = 9;
-
-			/* Read disks I/O statistics (for 2.4 kernels) */
-			while (pos < strlen(line) - 1) {
-				/* Beware: a CR is already included in the line */
-				sscanf(line + pos, "(%u,%u):(%u,%u,%u,%u,%u) ",
-				       &v_major, &v_index,
-				       &v_tmp[0], &v_tmp[1], &v_tmp[2], &v_tmp[3], &v_tmp[4]);
-
-				if (dsk < nbr) {
-					st_disk_i = st_disk + dsk++;
-					st_disk_i->major   = v_major;
-					st_disk_i->minor   = v_index;
-					st_disk_i->nr_ios  = v_tmp[0];
-					st_disk_i->rd_sect = v_tmp[2];
-					st_disk_i->wr_sect = v_tmp[4];
-				}
-				pos += strcspn(line + pos, " ") + 1;
-			}
-		}
-	}
-
-	fclose(fp);
-}
-
-/*
- ***************************************************************************
  * Read serial lines statistics from /proc/tty/driver/serial.
  *
  * IN:
@@ -859,8 +553,6 @@ void read_stat_disk(struct stats_disk *st_disk, int nbr)
  */
 void read_tty_driver_serial(struct stats_serial *st_serial, int nbr)
 {
-#ifndef SMP_RACE
-	
 	FILE *fp;
 	struct stats_serial *st_serial_i;
 	int sl = 0;
@@ -906,7 +598,6 @@ void read_tty_driver_serial(struct stats_serial *st_serial, int nbr)
 	}
 
 	fclose(fp);
-#endif
 }
 
 /*
@@ -1951,16 +1642,6 @@ int get_irq_nr(void)
  ***************************************************************************
  */
 int get_serial_nr(void)
-#ifdef SMP_RACE
-{
-	/*
-	 * Ignore serial lines if SMP_RACE flag is defined.
-	 * This is because there is an SMP race in some 2.2.x kernels that
-	 * may be triggered when reading the /proc/tty/driver/serial file.
-	 */
-	return 0;
-}
-#else
 {
 	FILE *fp;
 	char line[256];
@@ -1983,7 +1664,6 @@ int get_serial_nr(void)
 
 	return sl;
 }
-#endif
 
 /*
  ***************************************************************************
@@ -2065,116 +1745,25 @@ int get_diskstats_dev_nr(int count_part, int only_used_dev)
 
 /*
  ***************************************************************************
- * Find number of devices and partitions that have statistics in
- * /proc/partitions.
- *
- * IN:
- * @count_part	Set to TRUE if devices _and_ partitions are to be counted.
- *
- * RETURNS:
- * Number of devices (and partitions) that have statistics.
- ***************************************************************************
- */
-int get_ppartitions_dev_nr(int count_part)
-{
-	FILE *fp;
-	char line[256];
-	int dev = 0;
-	unsigned int major, minor, tmp;
-
-	if ((fp = fopen(PPARTITIONS, "r")) == NULL)
-		/* File non-existent */
-		return 0;
-
-	while (fgets(line, 256, fp) != NULL) {
-		if (sscanf(line, "%u %u %*u %*s %u", &major, &minor, &tmp) == 3) {
-			/*
-			 * We have just read a line from /proc/partitions containing stats
-			 * for a device or a partition (i.e. this is not a fake line:
-			 * header, blank line,... or a line without stats!)
-			 */
-			if (!count_part && !ioc_iswhole(major, minor))
-				/* This was a partition, and we don't want to count it */
-				continue;
-			dev++;
-		}
-	}
-
-	fclose(fp);
-
-	return dev;
-}
-
-/*
- ***************************************************************************
- * Find number of disk entries that are registered on the
- * "disk_io:" line in /proc/stat.
- *
- * RETURNS:
- * Number of disk entries.
- ***************************************************************************
- */
-unsigned int get_disk_io_nr(void)
-{
-	FILE *fp;
-	char line[8192];
-	unsigned int dsk = 0;
-	int pos;
-
-	if ((fp = fopen(STAT, "r")) == NULL) {
-		fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
-		exit(2);
-	}
-
-	while (fgets(line, 8192, fp) != NULL) {
-
-		if (!strncmp(line, "disk_io: ", 9)) {
-			for (pos = 9; pos < strlen(line) - 1; pos += strcspn(line + pos, " ") + 1) {
-				dsk++;
-			}
-		}
-	}
-
-	fclose(fp);
-
-	return dsk;
-}
-
-/*
- ***************************************************************************
- * Get number of devices in /proc/{diskstats,partitions}
- * or number of disk_io entries in /proc/stat.
+ * Get number of devices in /proc/diskstats.
  *
  * IN:
  * @f	Non zero (true) if disks *and* partitions should be counted, and
  *	zero (false) if only disks must be counted.
  *
- * OUT:
- * @f	Flag specifying the file used to count number of devices.
- *
  * RETURNS:
  * Number of devices.
  ***************************************************************************
  */
-int get_disk_nr(unsigned int *f)
+int get_disk_nr(unsigned int f)
 {
 	int disk_nr;
 	
 	/*
 	 * Partitions are taken into account by sar -d only with
-	 * kernels 2.6.25 and later. So the @f flag is used only
-	 * when reading /proc/diskstats but not /proc/partitions.
+	 * kernels 2.6.25 and later.
 	 */
-	if ((disk_nr = get_diskstats_dev_nr(*f, CNT_USED_DEV)) > 0) {
-		*f = READ_DISKSTATS;
-	}
-	else if ((disk_nr = get_ppartitions_dev_nr(CNT_DEV)) > 0) {
-		*f = READ_PPARTITIONS;
-	}
-	else {
-		disk_nr = get_disk_io_nr();
-		*f = READ_PROC_STAT;
-	}
+	disk_nr = get_diskstats_dev_nr(f, CNT_USED_DEV);
 
 	return disk_nr;
 }
@@ -2295,9 +1884,10 @@ int get_cpu_nr(unsigned int max_nr_cpus)
 /*
  ***************************************************************************
  * Find number of interrupts available per processor (use
- * /proc/interrupts file). Called on SMP machines only.
+ * /proc/interrupts file or /proc/softirqs).
  *
  * IN:
+ * @file		/proc file to read (interrupts or softirqs).
  * @max_nr_irqcpu       Maximum number of interrupts per processor that
  *                      sadc can handle.
  * @cpu_nr		Number of processors.
@@ -2306,14 +1896,14 @@ int get_cpu_nr(unsigned int max_nr_cpus)
  * Number of interrupts per processor + a pre-allocation constant.
  ***************************************************************************
  */
-int get_irqcpu_nr(int max_nr_irqcpu, int cpu_nr)
+int get_irqcpu_nr(char *file, int max_nr_irqcpu, int cpu_nr)
 {
 	FILE *fp;
 	char *line = NULL;
 	unsigned int irq = 0;
 	int p;
 
-	if ((fp = fopen(INTERRUPTS, "r")) == NULL)
+	if ((fp = fopen(file, "r")) == NULL)
 		return 0;       /* No interrupts file */
 
 	SREALLOC(line, char, INTERRUPTS_LINE + 11 * cpu_nr);
@@ -2321,7 +1911,7 @@ int get_irqcpu_nr(int max_nr_irqcpu, int cpu_nr)
 	while ((fgets(line, INTERRUPTS_LINE + 11 * cpu_nr , fp) != NULL) &&
 	       (irq < max_nr_irqcpu)) {
 		p = strcspn(line, ":");
-		if ((p > 0) && (p < 8)) {
+		if ((p > 0) && (p < 16)) {
 			irq++;
 		}
 	}
@@ -2387,4 +1977,261 @@ void read_cpuinfo(struct stats_pwr_cpufreq *st_pwr_cpufreq, int nbr)
 		/* Compute average CPU frequency for this machine */
 		st_pwr_cpufreq->cpufreq /= nr;
 	}
+}
+
+#ifdef HAVE_SENSORS
+/*
+ ***************************************************************************
+ * Count the number of sensors of given type on the machine.
+ *
+ * IN:
+ * @type	Type of sensors.
+ *
+ * RETURNS:
+ * Number of sensors.
+ ***************************************************************************
+ */
+int get_sensors_nr(sensors_feature_type type) {
+	int count = 0;
+	const sensors_chip_name *chip;
+	const sensors_feature *feature;
+	int chip_nr = 0;
+	int i;
+
+	while ((chip = sensors_get_detected_chips(NULL, &chip_nr))) {
+		i = 0;
+		while ((feature = sensors_get_features(chip, &i))) {
+			if (feature->type == type) {
+				count++;
+			}
+		}
+	}
+
+	return count;
+}
+#endif /* HAVE_SENSORS */
+
+/*
+ ***************************************************************************
+ * Count the number of fans on the machine.
+ *
+ * RETURNS:
+ * Number of fans.
+ ***************************************************************************
+ */
+int get_fan_nr(void)
+{
+#ifdef HAVE_SENSORS
+	return get_sensors_nr(SENSORS_FEATURE_FAN);
+#else
+	return 0;
+#endif /* HAVE_SENSORS */
+}
+
+/*
+ ***************************************************************************
+ * Read fan statistics.
+ *
+ * IN:
+ * @st_pwr_fan	Structure where stats will be saved.
+ * @nbr		Total number of fans.
+ *
+ * OUT:
+ * @st_pwr_fan Structure with statistics.
+ ***************************************************************************
+ */
+void read_fan(struct stats_pwr_fan *st_pwr_fan, int nbr)
+{
+#ifdef HAVE_SENSORS
+	int count = 0;
+	const sensors_chip_name *chip;
+	const sensors_feature *feature;
+	const sensors_subfeature *sub;
+	struct stats_pwr_fan *st_pwr_fan_i;
+	int chip_nr = 0;
+	int i, j;
+
+	memset(st_pwr_fan, 0, STATS_PWR_FAN_SIZE);
+	int err = 0;
+
+	while ((chip = sensors_get_detected_chips(NULL, &chip_nr))) {
+		i = 0;
+		while ((feature = sensors_get_features(chip, &i))) {
+			if ((feature->type == SENSORS_FEATURE_FAN) && (count < nbr)) {
+				j = 0;
+				st_pwr_fan_i = st_pwr_fan + count;
+				sensors_snprintf_chip_name(st_pwr_fan_i->device, MAX_SENSORS_DEV_LEN, chip);
+				
+				while ((sub = sensors_get_all_subfeatures(chip, feature, &j))) {
+					if ((sub->type == SENSORS_SUBFEATURE_FAN_INPUT) &&
+					    (sub->flags & SENSORS_MODE_R)) {
+						if ((err = sensors_get_value(chip, sub->number, &st_pwr_fan_i->rpm))) {
+							st_pwr_fan_i->rpm = 0;
+						}
+					}
+					else if ((sub->type == SENSORS_SUBFEATURE_FAN_MIN)) {
+						if ((err = sensors_get_value(chip, sub->number, &st_pwr_fan_i->rpm_min))) {
+							st_pwr_fan_i->rpm_min = 0;
+						}
+					}
+				}
+				count++;
+			}
+		}
+	}
+#endif /* HAVE_SENSORS */
+}
+
+/*
+ ***************************************************************************
+ * Count the number of temperature sensors on the machine.
+ *
+ * RETURNS:
+ * Number of temperature sensors.
+ ***************************************************************************
+ */
+int get_temp_nr(void)
+{
+#ifdef HAVE_SENSORS
+	return get_sensors_nr(SENSORS_FEATURE_TEMP);
+#else
+	return 0;
+#endif /* HAVE_SENSORS */
+
+}
+
+/*
+ ***************************************************************************
+ * Read device temperature statistics.
+ *
+ * IN:
+ * @st_pwr_temp	Structure where stats will be saved.
+ * @nbr		Total number of fans.
+ *
+ * OUT:
+ * @st_pwr_temp	Structure with statistics.
+ ***************************************************************************
+ */
+void read_temp(struct stats_pwr_temp *st_pwr_temp, int nbr)
+{
+#ifdef HAVE_SENSORS
+	int count = 0;
+	const sensors_chip_name *chip;
+	const sensors_feature *feature;
+	const sensors_subfeature *sub;
+	struct stats_pwr_temp *st_pwr_temp_i;
+	int chip_nr = 0;
+	int i, j;
+
+	memset(st_pwr_temp, 0, STATS_PWR_TEMP_SIZE);
+	int err = 0;
+
+	while ((chip = sensors_get_detected_chips(NULL, &chip_nr))) {
+		i = 0;
+		while ((feature = sensors_get_features(chip, &i))) {
+			if ((feature->type == SENSORS_FEATURE_TEMP) && (count < nbr)) {
+				j = 0;
+				st_pwr_temp_i = st_pwr_temp + count;
+				sensors_snprintf_chip_name(st_pwr_temp_i->device, MAX_SENSORS_DEV_LEN, chip);
+				
+				while ((sub = sensors_get_all_subfeatures(chip, feature, &j))) {
+					if ((sub->type == SENSORS_SUBFEATURE_TEMP_INPUT) &&
+						(sub->flags & SENSORS_MODE_R)) {
+						if ((err = sensors_get_value(chip, sub->number, &st_pwr_temp_i->temp))) {
+							st_pwr_temp_i->temp = 0;
+						}
+					}
+					else if ((sub->type == SENSORS_SUBFEATURE_TEMP_MIN)) {
+						if ((err = sensors_get_value(chip, sub->number, &st_pwr_temp_i->temp_min))) {
+							st_pwr_temp_i->temp_min = 0;
+						}
+					}
+					else if ((sub->type == SENSORS_SUBFEATURE_TEMP_MAX)) {
+						if ((err = sensors_get_value(chip, sub->number, &st_pwr_temp_i->temp_max))) {
+							st_pwr_temp_i->temp_max = 0;
+						}
+					}
+				}
+				count++;
+			}
+		}
+	}
+#endif /* HAVE_SENSORS */
+}
+
+/*
+ ***************************************************************************
+ * Count the number of voltage inputs on the machine.
+ *
+ * RETURNS:
+ * Number of voltage inputs.
+ ***************************************************************************
+ */
+int get_in_nr(void)
+{
+#ifdef HAVE_SENSORS
+	return get_sensors_nr(SENSORS_FEATURE_IN);
+#else
+	return 0;
+#endif /* HAVE_SENSORS */
+
+}
+
+/*
+ ***************************************************************************
+ * Read voltage inputs statistics.
+ *
+ * IN:
+ * @st_pwr_in	Structure where stats will be saved.
+ * @nbr		Total number of voltage inputs.
+ *
+ * OUT:
+ * @st_pwr_in	Structure with statistics.
+ ***************************************************************************
+ */
+void read_in(struct stats_pwr_in *st_pwr_in, int nbr)
+{
+#ifdef HAVE_SENSORS
+	int count = 0;
+	const sensors_chip_name *chip;
+	const sensors_feature *feature;
+	const sensors_subfeature *sub;
+	struct stats_pwr_in *st_pwr_in_i;
+	int chip_nr = 0;
+	int i, j;
+
+	memset(st_pwr_in, 0, STATS_PWR_IN_SIZE);
+	int err = 0;
+
+	while ((chip = sensors_get_detected_chips(NULL, &chip_nr))) {
+		i = 0;
+		while ((feature = sensors_get_features(chip, &i))) {
+			if ((feature->type == SENSORS_FEATURE_IN) && (count < nbr)) {
+				j = 0;
+				st_pwr_in_i = st_pwr_in + count;
+				sensors_snprintf_chip_name(st_pwr_in_i->device, MAX_SENSORS_DEV_LEN, chip);
+
+				while ((sub = sensors_get_all_subfeatures(chip, feature, &j))) {
+					if ((sub->type == SENSORS_SUBFEATURE_IN_INPUT) &&
+						(sub->flags & SENSORS_MODE_R)) {
+						if ((err = sensors_get_value(chip, sub->number, &st_pwr_in_i->in))) {
+							st_pwr_in_i->in = 0;
+						}
+					}
+					else if ((sub->type == SENSORS_SUBFEATURE_IN_MIN)) {
+						if ((err = sensors_get_value(chip, sub->number, &st_pwr_in_i->in_min))) {
+							st_pwr_in_i->in_min = 0;
+						}
+					}
+					else if ((sub->type == SENSORS_SUBFEATURE_IN_MAX)) {
+						if ((err = sensors_get_value(chip, sub->number, &st_pwr_in_i->in_max))) {
+							st_pwr_in_i->in_max = 0;
+						}
+					}
+				}
+				count++;
+			}
+		}
+	}
+#endif /* HAVE_SENSORS */
 }

@@ -1,6 +1,6 @@
 /*
  * rd_stats.h: Include file used to read system statistics
- * (C) 1999-2009 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _RD_STATS_H
@@ -482,6 +482,41 @@ struct stats_pwr_cpufreq {
 #define STATS_PWR_CPUFREQ_SIZE	(sizeof(struct stats_pwr_cpufreq))
 
 /*
+ * Structure for fan statistics.
+ */
+struct stats_pwr_fan {
+	double  rpm				__attribute__ ((aligned (8)));
+	double  rpm_min				__attribute__ ((aligned (8)));
+	char    device[MAX_SENSORS_DEV_LEN]	__attribute__ ((aligned (8)));
+};
+
+#define STATS_PWR_FAN_SIZE     (sizeof(struct stats_pwr_fan))
+
+/*
+ * Structure for device temperature statistics.
+ */
+struct stats_pwr_temp {
+	double  temp				__attribute__ ((aligned (8)));
+	double  temp_min			__attribute__ ((aligned (8)));
+	double  temp_max			__attribute__ ((aligned (8)));
+	char    device[MAX_SENSORS_DEV_LEN]	__attribute__ ((aligned (8)));
+};
+
+#define STATS_PWR_TEMP_SIZE    (sizeof(struct stats_pwr_temp))
+
+/*
+ * Structure for voltage inputs statistics.
+ */
+struct stats_pwr_in {
+	double  in				__attribute__ ((aligned (8)));
+	double  in_min				__attribute__ ((aligned (8)));
+	double  in_max				__attribute__ ((aligned (8)));
+	char    device[MAX_SENSORS_DEV_LEN]	__attribute__ ((aligned (8)));
+};
+
+#define STATS_PWR_IN_SIZE    (sizeof(struct stats_pwr_in))
+
+/*
  ***************************************************************************
  * Prototypes for functions used to read system statistics
  ***************************************************************************
@@ -498,26 +533,14 @@ extern void
 	read_loadavg(struct stats_queue *);
 extern void
 	read_meminfo(struct stats_memory *);
-extern unsigned int
+extern void
 	read_vmstat_swap(struct stats_swap *);
 extern void
-	read_stat_swap(struct stats_swap *);
-extern int
 	read_vmstat_paging(struct stats_paging *);
-extern void
-	read_stat_paging(struct stats_paging *);
 extern void
 	read_diskstats_io(struct stats_io *);
 extern void
-	read_ppartitions_io(struct stats_io *);
-extern void
-	read_stat_io(struct stats_io *);
-extern void
 	read_diskstats_disk(struct stats_disk *, int, int);
-extern void
-	read_partitions_disk(struct stats_disk *, int);
-extern void
-	read_stat_disk(struct stats_disk *, int);
 extern void
 	read_tty_driver_serial(struct stats_serial *, int);
 extern void
@@ -562,6 +585,12 @@ extern void
 	read_net_udp6(struct stats_net_udp6 *);
 extern void
 	read_cpuinfo(struct stats_pwr_cpufreq *, int);
+extern void
+	read_fan(struct stats_pwr_fan *, int);
+extern void
+	read_temp(struct stats_pwr_temp *, int);
+extern void
+	read_in(struct stats_pwr_in *, int);
 
 /*
  ***************************************************************************
@@ -578,15 +607,16 @@ extern int
 extern int
 	get_diskstats_dev_nr(int, int);
 extern int
-	get_ppartitions_dev_nr(int);
-extern unsigned int
-	get_disk_io_nr(void);
-extern int
-	get_disk_nr(unsigned int *);
+	get_disk_nr(unsigned int);
 extern int
 	get_cpu_nr(unsigned int);
 extern int
-	get_irqcpu_nr(int, int);
-
+	get_irqcpu_nr(char *, int, int);
+extern int
+	get_fan_nr(void);
+extern int
+	get_temp_nr(void);
+extern int
+	get_in_nr(void);
 
 #endif /* _RD_STATS_H */

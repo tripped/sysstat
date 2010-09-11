@@ -1,6 +1,6 @@
 /*
  * pidstat: Report statistics for Linux tasks
- * (C) 2007-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 2007-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -28,6 +28,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <regex.h>
 
 #include "version.h"
 #include "pidstat.h"
@@ -78,7 +79,8 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -t ] [ -u ] [ -V ] [ -w ]\n"
+			  "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -s ]\n"
+			  "[ -t ] [ -u ] [ -V ] [ -w ]\n"
 			  "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"));
 	exit(1);
 }
@@ -185,7 +187,7 @@ void check_flags(void)
 
 	/* Check that requested activities are available */
 	if (DISPLAY_TASK_STATS(tskflag)) {
-		act |= P_A_CPU + P_A_MEM + P_A_IO + P_A_CTXSW;
+		act |= P_A_CPU + P_A_MEM + P_A_IO + P_A_CTXSW + P_A_STACK;
 	}
 	if (DISPLAY_CHILD_STATS(tskflag)) {
 		act |= P_A_CPU + P_A_MEM;
@@ -386,6 +388,67 @@ int read_proc_pid_status(unsigned int pid, struct pid_stats *pst,
 }
 
 /*
+  *****************************************************************************
+  * Read information from /proc/#[/task/##}/smaps.
+  *
+  * @pid		Process whose stats are to be read.
+  * @pst		Pointer on structure where stats will be saved.
+  * @tgid		If !=0, thread whose stats are to be read.
+  *
+  * OUT:
+  * @pst		Pointer on structure where stats have been saved.
+  *
+  * RETURNS:
+  * 0 if stats have been successfully read, and 1 otherwise.
+  *****************************************************************************
+  */
+int read_proc_pid_smap(unsigned int pid, struct pid_stats *pst, unsigned int tgid)
+{
+	FILE *fp;
+	char filename[128], line[256];
+	int state = 0;
+
+	if (tgid) {
+		sprintf(filename, TASK_SMAP, tgid, pid);
+	}
+	else {
+		sprintf(filename, PID_SMAP, pid);
+	}
+
+	if ((fp = fopen(filename, "rt")) == NULL)
+		/* No such process */
+		return 1;
+
+	while ((state < 3) && (fgets(line, sizeof(line), fp) != NULL)) {
+		switch (state) {
+			case 0:
+				if (strstr(line, "[stack]")) {
+					state = 1;
+				}
+				break;
+			case 1:
+				if (strstr(line, "Size:")) {
+					sscanf(line + sizeof("Size:"), "%lu", &pst->stack_size);
+					state = 2;
+				}
+				break;
+			case 2:
+				if (strstr(line, "Referenced:")) {
+					sscanf(line + sizeof("Referenced:"), "%lu", &pst->stack_ref);
+					state = 3;
+				}
+				break;
+		}
+	}
+
+	fclose(fp);
+
+	pst->pid = pid;
+	pst->tgid = tgid;
+	return 0;
+}
+
+/*
  *****************************************************************************
  * Read process command line from /proc/#[/task/##]/cmdline.
  *
@@ -531,6 +594,11 @@ int read_pid_stats(unsigned int pid, struct pid_stats *pst,
 	
 	if (read_proc_pid_status(pid, pst, tgid))
 		return 1;
+
+	if (DISPLAY_STACK(actflag)) {
+		if (read_proc_pid_smap(pid, pst, tgid))
+			return 1;
+	}
 
 	if (DISPLAY_IO(actflag))
 		/* Assume that /proc/#/task/#/io exists! */
@@ -813,8 +881,8 @@ void read_stats(int curr)
  ***************************************************************************
  * Get current PID to display.
  * First, check that PID exists. *Then* check that it's an active process
- * and/or that the string (entered on the command line with option -C) is
- * found in command name.
+ * and/or that the string (entered on the command line with options -C or
+ * -X) is found in command name.
  *
  * IN:
  * @prev	Index in array where stats used as reference are.
@@ -839,7 +907,8 @@ int get_pid_to_display(int prev, int curr, int p, unsigned int activity,
 		       unsigned int pflag,
 		       struct pid_stats **psti, struct pid_stats **pstj)
 {
-	int q;
+	int q, rc;
+	regex_t regex;
 
 	*psti = st_pid_list[curr] + p;
 
@@ -945,8 +1014,19 @@ int get_pid_to_display(int prev, int curr, int p, unsigned int activity,
 		*pstj = st_pid_list[prev] + p;
 	}
 
-	if (COMMAND_STRING(pidflag) && !(strstr((*psti)->comm, commstr)))
-		return -1;	/* String not found in command name */
+	if (COMMAND_STRING(pidflag)) {
+
+		if (regcomp(&regex, commstr, REG_EXTENDED | REG_NOSUB) != 0)
+			/* Error in preparing regex structure */
+			return -1;
+		
+		rc = regexec(&regex, (*psti)->comm, 0, NULL, 0);
+		regfree(&regex);
+
+		if (rc)
+			/* regex pattern not found in command name */
+			return -1;
+	}
 
 	return 1;
 }
@@ -1000,7 +1080,7 @@ void print_line_id(char *timestamp, struct pid_stats *pst)
 
 /*
  ***************************************************************************
- * Display all statistics for tasks in one line format
+ * Display all statistics for tasks in one line format.
  *
  * IN:
  * @prev	Index in array where stats used as reference are.
@@ -1025,14 +1105,21 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 
 	if (dis) {
 		PRINT_ID_HDR("#      Time", pidflag);
-		if (DISPLAY_CPU(actflag))
+		if (DISPLAY_CPU(actflag)) {
 			printf("    %%usr %%system  %%guest    %%CPU   CPU");
-		if (DISPLAY_MEM(actflag))
+		}
+		if (DISPLAY_MEM(actflag)) {
 			printf("  minflt/s  majflt/s     VSZ    RSS   %%MEM");
-		if (DISPLAY_IO(actflag))
+		}
+		if (DISPLAY_STACK(actflag)) {
+			printf(" StkSize  StkRef");
+		}
+		if (DISPLAY_IO(actflag)) {
 			printf("   kB_rd/s   kB_wr/s kB_ccwr/s");
-		if (DISPLAY_CTXSW(actflag))
+		}
+		if (DISPLAY_CTXSW(actflag)) {
 			printf("   cswch/s nvcswch/s");
+		}
 		printf("  Command\n");
 	}
 
@@ -1069,6 +1156,12 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 			       psti->vsz,
 			       psti->rss,
 			       tlmkb ? SP_VALUE(0, psti->rss, tlmkb) : 0.0);
+		}
+
+		if (DISPLAY_STACK(actflag)) {
+			printf("  %6lu  %6lu",
+			       psti->stack_size,
+			       psti->stack_ref);
 		}
 
 		if (DISPLAY_IO(actflag)) {
@@ -1319,7 +1412,7 @@ int write_pid_child_cpu_stats(int prev, int curr, int dis, int disp_avg,
 
 /*
  ***************************************************************************
- * Display memory statistics for tasks.
+ * Display memory and/or stack size statistics for tasks.
  *
  * IN:
  * @prev	Index in array where stats used as reference are.
@@ -1349,7 +1442,13 @@ int write_pid_task_memory_stats(int prev, int curr, int dis, int disp_avg,
 
 	if (dis) {
 		PRINT_ID_HDR(prev_string, pidflag);
-		printf("  minflt/s  majflt/s     VSZ    RSS   %%MEM  Command\n");
+		if (DISPLAY_MEM(actflag)) {
+			printf("  minflt/s  majflt/s     VSZ    RSS   %%MEM");
+		}
+		if (DISPLAY_STACK(actflag)) {
+			printf(" StkSize  StkRef");
+		}
+		printf("  Command\n");
 	}
 	
 	for (p = 0; p < pid_nr; p++) {
@@ -1361,8 +1460,14 @@ int write_pid_task_memory_stats(int prev, int curr, int dis, int disp_avg,
 	
 		/* This will be used to compute average */
 		if (!disp_avg) {
-			psti->total_vsz = pstj->total_vsz + psti->vsz;
-			psti->total_rss = pstj->total_rss + psti->rss;
+			if (DISPLAY_MEM(actflag)) {
+				psti->total_vsz = pstj->total_vsz + psti->vsz;
+				psti->total_rss = pstj->total_rss + psti->rss;
+			}
+			if (DISPLAY_STACK(actflag)) {
+				psti->total_stack_size = pstj->total_stack_size + psti->stack_size;
+				psti->total_stack_ref  = pstj->total_stack_ref  + psti->stack_ref;
+			}
 			psti->rt_asum_count = pstj->rt_asum_count + 1;
 		}
 
@@ -1371,23 +1476,41 @@ int write_pid_task_memory_stats(int prev, int curr, int dis, int disp_avg,
 			continue;
 
 		print_line_id(curr_string, psti);
-		printf(" %9.2f %9.2f ",
-		       S_VALUE(pstj->minflt, psti->minflt, itv),
-		       S_VALUE(pstj->majflt, psti->majflt, itv));
-		if (disp_avg) {
-			printf("%7.0f %6.0f %6.2f",
-			       (double) psti->total_vsz / psti->rt_asum_count,
-			       (double) psti->total_rss / psti->rt_asum_count,
-			       tlmkb ?
-			       SP_VALUE(0, psti->total_rss / psti->rt_asum_count, tlmkb)
-			       : 0.0);
+		
+		if (DISPLAY_MEM(actflag)) {
+			printf(" %9.2f %9.2f ",
+			       S_VALUE(pstj->minflt, psti->minflt, itv),
+			       S_VALUE(pstj->majflt, psti->majflt, itv));
+
+			if (disp_avg) {
+				printf("%7.0f %6.0f %6.2f",
+				       (double) psti->total_vsz / psti->rt_asum_count,
+				       (double) psti->total_rss / psti->rt_asum_count,
+				       tlmkb ?
+				       SP_VALUE(0, psti->total_rss / psti->rt_asum_count, tlmkb)
+				       : 0.0);
+			}
+			else {
+				printf("%7lu %6lu %6.2f",
+				       psti->vsz,
+				       psti->rss,
+				       tlmkb ? SP_VALUE(0, psti->rss, tlmkb) : 0.0);
+			}
 		}
-		else {
-			printf("%7lu %6lu %6.2f",
-			       psti->vsz,
-			       psti->rss,
-			       tlmkb ? SP_VALUE(0, psti->rss, tlmkb) : 0.0);
+		
+		if (DISPLAY_STACK(actflag)) {
+			if (disp_avg) {
+				printf("%7.0f %7.0f",
+				       (double) psti->total_stack_size / psti->rt_asum_count,
+				       (double) psti->total_stack_ref  / psti->rt_asum_count);
+			}
+			else {
+				printf("%7lu %7lu",
+				       psti->stack_size,
+				       psti->stack_ref);
+			}
 		}
+
 		print_comm(psti);
 		again = 1;
 	}
@@ -1634,14 +1757,14 @@ int write_stats_core(int prev, int curr, int dis, int disp_avg,
 			}
 		}
 
-		/* Display memory stats */
-		if (DISPLAY_MEM(actflag)) {
+		/* Display memory and/or stack stats */
+		if (DISPLAY_MEM(actflag) || DISPLAY_STACK(actflag)) {
 
 			if (DISPLAY_TASK_STATS(tskflag)) {
 				again += write_pid_task_memory_stats(prev, curr, dis, disp_avg,
 								     prev_string, curr_string, itv);
 			}
-			if (DISPLAY_CHILD_STATS(tskflag)) {
+			if (DISPLAY_CHILD_STATS(tskflag) && DISPLAY_MEM(actflag)) {
 				again += write_pid_child_memory_stats(prev, curr, dis, disp_avg,
 								      prev_string, curr_string);
 			}
@@ -1947,6 +2070,12 @@ int main(int argc, char **argv)
 				case 'r':
 					/* Display memory usage */
 					actflag |= P_A_MEM;
+					dis_hdr++;
+					break;
+					
+				case 's':
+					/* Display stack sizes */
+					actflag |= P_A_STACK;
 					dis_hdr++;
 					break;
 	

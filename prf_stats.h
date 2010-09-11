@@ -1,6 +1,6 @@
 /*
  * pr_stats.h: Include file used to display system statistics
- * (C) 1999-2009 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _PRF_STATS_H
@@ -103,6 +103,12 @@ extern __print_funct_t render_net_udp6_stats
 	(struct activity *, int, char *, int, unsigned long long);
 extern __print_funct_t render_pwr_cpufreq_stats
 	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_pwr_fan_stats
+	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_pwr_temp_stats
+	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_pwr_in_stats
+	(struct activity *, int, char *, int, unsigned long long);
 
 /* Functions used to display statistics in XML */
 extern void xprintf
@@ -166,6 +172,12 @@ extern __print_funct_t xml_print_net_eicmp6_stats
 extern __print_funct_t xml_print_net_udp6_stats
 	(struct activity *, int, int, unsigned long long);
 extern __print_funct_t xml_print_pwr_cpufreq_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_pwr_fan_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_pwr_temp_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t xml_print_pwr_in_stats
 	(struct activity *, int, int, unsigned long long);
 
 #endif /* _PRF_STATS_H */

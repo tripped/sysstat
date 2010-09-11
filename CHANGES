@@ -1,11 +1,81 @@
 Changes:
 
-2010/02/28: Version 9.0.6.1 - Sebastien Godard (sysstat <at> orange.fr)
+2010/09/11: Version 9.1.5 - Sebastien Godard (sysstat <at> orange.fr)
+	* Added voltage inputs statistics to sar and sadc.
+	* Added %temp field to device temperature statistics (sar -m TEMP).
+	* Added drpm field to fan speed statistics (sar -m FAN).
+	* XSD and DTD documents updated.
+	* sar manual page updated. Indicate that svctm field should
+	  no longer be trusted.
+	* Removed link to isag(1) from man pages.
+	* NLS updated. Czech translation added.
+	* Sample crontabs and sysstat init script: Don't collect disk
+	  data by default.
+	* Code cleaned.
+
+2010/07/29: Version 9.1.4 - Sebastien Godard (sysstat <at> orange.fr)
+	* [Jan Kaluza]: Added fan speed and device temperature
+	  statistics to sar and sadc.
+	* [Jan Kaluza]: Configure script updated. Now check for
+	  lm_sensors library.
+	* Configure script updated: Added --disable-sensors option.
+	* Configure script updated: Removed --enable-smp-race option.
+	* iconfig script updated.
+	* sar manual page updated.
+	* XSD and DTD documents updated.
+	* [Ivana Varekova]: sysstat init script updated.
+	* Default owner for sadc/sar crontab is now root.
+	* Various fixes in cifsiostat and nfsiostat manual pages.
+	* NLS updated.
+
+2010/06/27: Version 9.1.3 - Sebastien Godard (sysstat <at> orange.fr)
+	* [Ivana Varekova]: Move NFS code out from iostat and create
+	  the new nfsiostat command.
+	* [Ivana Varekova]: Added cifsiostat command. This command
+	  displays CIFS statistics.
+	* [Mario Konrad]: Added regular expressions support to pidstat's
+	  option -C.
+	* [Mario Konrad]: Added option -s to pidstat to display stack
+	  statistics.
+	* [Ivana Varekova]: Fixed condition used by sar to distinguish
+	  betwwen a counter reset by a newly registered device and a
+	  counter overflow.
+	* [Jan Kaluza]: Added --debuginfo option to iostat.
+	* [Jan Kaluza]: Added --enable-debuginfo option to configure script.
+	* iconfig configuration script updated.
+	* iostat manual page updated. Indicate that svctm field should
+	  no longer be trusted.
+	* pidstat manual page updated.
+	* autoconf script updated.
+	* NLS updated.
+	* README and CREDITS files updated.
+
+2010/05/23: Version 9.1.2 - Sebastien Godard (sysstat <at> orange.fr)
+	* Added r_await and w_await fields to iostat's extended statistics.
+	* Added support for tickless CPUs in sar and mpstat.
+	* NLS was not taken into account when mpstat or sar were displaying
+	  some null statistics. This is now fixed.
+	* sadc no longer syncs data with its output file contents. It
+	  put a pain on flash devices as it undermined any tuning of
+	  the vm's write behavior [DEBIAN Bug#559686].
+	* NLS updated. Basque translation added.
+	* iostat, sar and sa1 manual pages updated.
+	* CREDITS file updated.
+
+2010/02/28: Version 9.1.1 - Sebastien Godard (sysstat <at> orange.fr)
+	* Remove support for kernels older than 2.6.x.
+	* iostat now takes into account POSIXLY_CORRECT environment
+	  variable. iostat default output for disk utilization is
+	  expressed in kB/s, unless this variable is set (in which case
+	  the output is expressed in blocks/s).
+	* mpstat can now display per processor software interrupts
+	  statistics. This requires Linux kernel 2.6.31 or later.
 	* Because of a change in /proc/interrupts file format, mpstat
 	  was no longer counting the proper number of interrupts. This
 	  is now fixed.
-	* iostat manual page updated.
+	* Manual pages updated.
 	* NLS updated.
+	* Code cleaned.
 
 2009/11/11: Version 9.0.6 - Sebastien Godard (sysstat <at> orange.fr)
 	* "sadf -x" now takes into account options -s and -e (which
@@ -18,9 +88,10 @@ Changes:
 	* XML output (displayed by sadf -x) modified for kernel tables
 	  statistics.
 	* XSD and DTD documents updated.
-	* [Yibin Shen]: HZ variable was not explicitly set in sadc.c. This is now fixed.
-	* [Lans Carstensen]: sargraph added (sargraph is a shell script used to make graphs
-	  based on sadf XML output).
+	* [Yibin Shen]: HZ variable was not explicitly set in sadc.c. This
+	  is now fixed.
+	* [Lans Carstensen]: sargraph added (sargraph is a shell script
+	  used to make graphs based on sadf XML output).
 	* sadf manual page updated.
 	* FAQ updated.
 	* NLS updated.

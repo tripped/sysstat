@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://pagesperso-orange.fr/sebastien.godard/sysstat" targetNamespace="http://pagesperso-orange.fr/sebastien.godard/sysstat" elementFormDefault="qualified">
-<xs:annotation><xs:appinfo>-- XML Schema v2.6 for sysstat. See sadf.h --</xs:appinfo></xs:annotation>
+<xs:annotation><xs:appinfo>-- XML Schema v2.8 for sysstat. See sadf.h --</xs:appinfo></xs:annotation>
 
     <xs:element name="queue" type="queue-type"></xs:element>
 
@@ -455,6 +455,51 @@
     	</xs:restriction>
     </xs:simpleType>
 
+    <xs:element name="fan-speed" type="fan-speed-type"></xs:element>
+
+    <xs:complexType name="fan-speed-type">
+    	<xs:sequence>
+    		<xs:element name="fan" type="fan-type"></xs:element>
+    	</xs:sequence>
+    	<xs:attribute name="unit" type="fanunit-type"></xs:attribute>
+    </xs:complexType>
+
+    <xs:simpleType name="fanunit-type">
+    	<xs:restriction base="xs:string">
+    		<xs:enumeration value="rpm"></xs:enumeration>
+    	</xs:restriction>
+    </xs:simpleType>
+
+   <xs:element name="temperature" type="temperature-type"></xs:element>
+
+   <xs:complexType name="temperature-type">
+   	<xs:sequence>
+   		<xs:element name="temp" type="temp-type"></xs:element>
+	</xs:sequence>
+	<xs:attribute name="unit" type="tempunit-type"></xs:attribute>
+    </xs:complexType>
+
+    <xs:simpleType name="tempunit-type">
+    	<xs:restriction base="xs:string">
+    		<xs:enumeration value="degree Celsius"></xs:enumeration>
+    	</xs:restriction>
+    </xs:simpleType>
+
+   <xs:element name="voltage-input" type="voltage-input-type"></xs:element>
+
+   <xs:complexType name="voltage-input-type">
+   	<xs:sequence>
+   		<xs:element name="in" type="in-type"></xs:element>
+	</xs:sequence>
+	<xs:attribute name="unit" type="inunit-type"></xs:attribute>
+   </xs:complexType>
+
+    <xs:simpleType name="inunit-type">
+	<xs:restriction base="xs:string">
+		<xs:enumeration value="V"></xs:enumeration>
+	</xs:restriction>
+   </xs:simpleType>
+
     <xs:element name="irq" type="irq-type"></xs:element>
 
     <xs:complexType name="irq-type">
@@ -468,6 +513,33 @@
 	<xs:attribute name="number" type="xs:string"></xs:attribute>
     	<xs:attribute name="frequency" type="hundredth-type"></xs:attribute>
     </xs:complexType>
+
+    <xs:element name="fan" type="fan-type"></xs:element>
+
+    <xs:complexType name="fan-type">
+    	<xs:attribute name="number" type="xs:nonNegativeInteger"></xs:attribute>
+	<xs:attribute name="rpm" type="xs:nonNegativeInteger"></xs:attribute>
+	<xs:attribute name="drpm" type="xs:integer"></xs:attribute>
+    	<xs:attribute name="device" type="xs:string"></xs:attribute>
+    </xs:complexType>
+
+    <xs:element name="temp" type="temp-type"></xs:element>
+
+    <xs:complexType name="temp-type">
+	<xs:attribute name="number" type="xs:nonNegativeInteger"></xs:attribute>
+	<xs:attribute name="degC" type="hundredth-type"></xs:attribute>
+	<xs:attribute name="percent-temp" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="device" type="xs:string"></xs:attribute>
+    </xs:complexType>
+
+   <xs:element name="in" type="in-type"></xs:element>
+
+   <xs:complexType name="in-type">
+	<xs:attribute name="number" type="xs:nonNegativeInteger"></xs:attribute>
+	<xs:attribute name="inV" type="hundredth-type"></xs:attribute>
+	<xs:attribute name="percent-in" type="hundredth-type"></xs:attribute>
+	<xs:attribute name="device" type="xs:string"></xs:attribute>
+   </xs:complexType>
 
     <xs:element name="cpu" type="cpu-type"></xs:element>
 
@@ -563,6 +635,9 @@
     		<xs:element name="cpu-frequency" type="cpu-frequency-type"
     			minOccurs="1">
     		</xs:element>
+    		<xs:element name="fan-speed" type="fan-speed-type"></xs:element>
+    		<xs:element name="temperature" type="temperature-type"></xs:element>
+    		<xs:element name="voltage-input" type="voltage-input-type"></xs:element>
     	</xs:sequence>
     </xs:complexType>
 

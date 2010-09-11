@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--DTD v2.6 for sysstat. See sadf.h -->
+<!--DTD v2.8 for sysstat. See sadf.h -->
 <!ELEMENT boot EMPTY>
 <!ATTLIST boot
 	date CDATA #REQUIRED
@@ -386,7 +386,7 @@
 	brk CDATA #REQUIRED
 	ovrun CDATA #REQUIRED
 >
-<!ELEMENT power-management (cpu-frequency)>
+<!ELEMENT power-management (cpu-frequency, fan-speed, temperature, voltage-input)>
 <!ELEMENT cpu-frequency (cpufreq+)>
 <!ATTLIST cpu-frequency
 	unit CDATA #REQUIRED
@@ -396,3 +396,37 @@
 	number CDATA #REQUIRED
 	frequency CDATA #REQUIRED
 >
+<!ELEMENT fan-speed (fanspd+)>
+<!ATTLIST fan-speed
+	unit CDATA #REQUIRED
+>
+<!ELEMENT fanspd EMPTY>
+<!ATTLIST fanspd
+	number CDATA #REQUIRED
+	rpm CDATA #REQUIRED
+	drpm CDATA #REQUIRED
+	device CDATA #REQUIRED
+>
+<!ELEMENT temperature (temp+)>
+<!ATTLIST temperature
+	unit CDATA #REQUIRED
+>
+<!ELEMENT temp EMPTY>
+<!ATTLIST temp
+	number CDATA #REQUIRED
+	degC CDATA #REQUIRED
+	percent-temp CDATA #REQUIRED
+	device CDATA #REQUIRED
+>
+<!ELEMENT voltage-input (in+)>
+<!ATTLIST voltage-input
+        unit CDATA #REQUIRED
+>
+<!ELEMENT in EMPTY>
+<!ATTLIST in
+	number CDATA #REQUIRED
+	inV CDATA #REQUIRED
+	percent-in CDATA #REQUIRED
+	device CDATA #REQUIRED
+>
+

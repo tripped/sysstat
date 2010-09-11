@@ -1,4 +1,4 @@
-.TH SA1 8 "AUGUST 2008" Linux "Linux User's Manual" -*- nroff -*-
+.TH SA1 8 "AUGUST 2010" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 sa1 \- Collect and store binary data in the system activity daily data file.
 .SH SYNOPSIS
@@ -23,7 +23,9 @@ parameters specify that the record should be written
 .I count
 times at
 .I interval
-seconds. If you do not specify these parameters, a single record is written.
+seconds. If no arguments are given to
+.B sa1
+then a single record is written.
 
 The
 .B sa1
@@ -61,7 +63,6 @@ Sebastien Godard (sysstat <at> orange.fr)
 .BR sar (1),
 .BR sadc (8),
 .BR sa2 (8),
-.BR sadf (1),
-.BR isag (1)
+.BR sadf (1)
 
 .I http://pagesperso-orange.fr/sebastien.godard/

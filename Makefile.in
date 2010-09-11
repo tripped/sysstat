@@ -64,7 +64,6 @@ SYSCONFIG_DIR = @SYSCONFIG_DIR@
 CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe -O2
 DFLAGS = @DFLAGS@
 LFLAGS =  -s
-# DFLAGS may already contain SMP_RACE definition
 DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
 
 # Commands
@@ -148,7 +147,7 @@ NLSPOT= $(NLSPO:.po=.pot)
 % : %.o
 	$(CC) -o $@ $(CFLAGS) $^ $(LFLAGS)
 
-all: sadc sar sadf iostat mpstat pidstat locales
+all: sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat locales
 
 common.o: common.c version.h common.h ioconf.h sysconfig.h
 
@@ -204,6 +203,14 @@ mpstat.o: mpstat.c mpstat.h version.h common.h rd_stats.h
 
 mpstat: mpstat.o librdstats.a libsyscom.a
 
+nfsiostat.o: nfsiostat.c nfsiostat.h version.h common.h
+
+nfsiostat: nfsiostat.o librdstats.a libsyscom.a
+
+cifsiostat.o: cifsiostat.c cifsiostat.h version.h common.h
+
+cifsiostat: cifsiostat.o librdstats.a libsyscom.a
+
 ifdef REQUIRE_NLS
 locales: $(NLSGMO)
 else
@@ -237,6 +244,10 @@ ifeq ($(INSTALL_DOC),y)
 	$(INSTALL_DATA) $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
 	rm -f $(DESTDIR)$(MAN1_DIR)/pidstat.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/pidstat.1 $(DESTDIR)$(MAN1_DIR)
+	rm -f $(DESTDIR)$(MAN1_DIR)/nfsiostat.1*
+	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat.1 $(DESTDIR)$(MAN1_DIR)
+	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
+	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
 ifeq ($(INSTALL_ISAG),y)
 	$(INSTALL_DATA) $(MANGRPARG) contrib/isag/isag.1 $(DESTDIR)$(MAN1_DIR)
 endif
@@ -249,6 +260,8 @@ ifeq ($(COMPRESS_MANPG),y)
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/iostat.1
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/mpstat.1
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/pidstat.1
+	$(ZIP) $(DESTDIR)$(MAN1_DIR)/nfsiostat.1
+	$(ZIP) $(DESTDIR)$(MAN1_DIR)/cifsiostat.1
 ifeq ($(INSTALL_ISAG),y)
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/isag.1
 endif
@@ -258,9 +271,11 @@ endif
 install_nls: locales
 ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/cs/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/da/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/eu/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/fi/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/id/LC_MESSAGES
@@ -283,9 +298,11 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/zh_CN/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/zh_TW/LC_MESSAGES
 	$(INSTALL_DATA) nls/af.gmo $(DESTDIR)$(NLS_DIR)/af/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/cs.gmo $(DESTDIR)$(NLS_DIR)/cs/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/da.gmo $(DESTDIR)$(NLS_DIR)/da/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/de.gmo $(DESTDIR)$(NLS_DIR)/de/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/es.gmo $(DESTDIR)$(NLS_DIR)/es/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/eu.gmo $(DESTDIR)$(NLS_DIR)/eu/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/fi.gmo $(DESTDIR)$(NLS_DIR)/fi/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/fr.gmo $(DESTDIR)$(NLS_DIR)/fr/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/id.gmo $(DESTDIR)$(NLS_DIR)/id/LC_MESSAGES/$(PACKAGE).mo
@@ -329,6 +346,8 @@ endif
 	$(INSTALL_BIN) iostat $(DESTDIR)$(BIN_DIR)
 	$(INSTALL_BIN) mpstat $(DESTDIR)$(BIN_DIR)
 	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
+	$(INSTALL_BIN) nfsiostat $(DESTDIR)$(BIN_DIR)
+	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
 ifeq ($(INSTALL_ISAG),y)
 	$(INSTALL_BIN) contrib/isag/isag $(DESTDIR)$(BIN_DIR)
 endif
@@ -390,6 +409,8 @@ ifeq ($(INSTALL_DOC),y)
 	rm -f $(DESTDIR)$(MAN1_DIR)/iostat.1*
 	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1*
 	rm -f $(DESTDIR)$(MAN1_DIR)/pidstat.1*
+	rm -f $(DESTDIR)$(MAN1_DIR)/nfsiostat.1*
+	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
 ifeq ($(INSTALL_ISAG),y)
 	rm -f $(DESTDIR)$(MAN1_DIR)/isag.1
 endif
@@ -398,9 +419,11 @@ endif
 uninstall_nls:
 ifdef REQUIRE_NLS
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/cs/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/da/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/eu/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/fi/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/id/LC_MESSAGES/$(PACKAGE).mo
@@ -423,9 +446,11 @@ ifdef REQUIRE_NLS
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/zh_CN/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/zh_TW/LC_MESSAGES/$(PACKAGE).mo
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/cs/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/da/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/eu/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fi/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/id/LC_MESSAGES
@@ -448,9 +473,11 @@ ifdef REQUIRE_NLS
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/zh_CN/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/zh_TW/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/af
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/cs
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/da
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/de
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/es
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/eu
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fi
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/fr
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/id
@@ -483,6 +510,8 @@ uninstall_base: uninstall_man uninstall_nls
 	rm -f $(DESTDIR)$(BIN_DIR)/iostat
 	rm -f $(DESTDIR)$(BIN_DIR)/mpstat
 	rm -f $(DESTDIR)$(BIN_DIR)/pidstat
+	rm -f $(DESTDIR)$(BIN_DIR)/nfsiostat
+	rm -f $(DESTDIR)$(BIN_DIR)/cifsiostat
 ifeq ($(INSTALL_ISAG),y)
 	rm -f $(DESTDIR)$(BIN_DIR)/isag
 endif
@@ -539,7 +568,7 @@ po-files:
 endif
 
 clean:
-	rm -f sadc sar sadf iostat mpstat pidstat *.o *.a core TAGS
+	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat *.o *.a core TAGS
 	find nls -name "*.gmo" -exec rm -f {} \;
 
 almost-distclean: clean nls/sysstat.pot
@@ -547,7 +576,7 @@ almost-distclean: clean nls/sysstat.pot
 	rm -f sysstat.sysconfig sysstat.crond sysstat.cron.daily
 	rm -f sysstat.cron.hourly sysstat.crond.sample sysstat.crond.sample.in
 	rm -f contrib/isag/isag
-	rm -f man/sa1.8 man/sa2.8 man/sadc.8 man/sadf.1 man/sar.1
+	rm -f man/sa1.8 man/sa2.8 man/sadc.8 man/sadf.1 man/sar.1 man/iostat.1
 	rm -f *.log config.status
 	rm -rf autom4te.cache
 	rm -f *.save *.old .*.swp data

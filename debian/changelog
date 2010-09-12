@@ -1,3 +1,13 @@
+sysstat (9.1.5-1) experimental; urgency=low
+
+  * New upstream development release.
+  * Standards-Version: 3.9.1 (no changes).
+  * Bump debhpelper's compat level to 8.
+  * Remove conflict with anicent version of atsar.
+  * Add libsensors-dev4 to build-depends.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 12 Sep 2010 16:18:47 +0200
+
 sysstat (9.0.6.1-2) unstable; urgency=low
 
   * Switch to dpkg-source 3.0 (quilt) format:
@@ -12,7 +22,7 @@ sysstat (9.0.6.1-1) unstable; urgency=low
   * New upstream release.
   * sysstat.initd: add $remote_fs dependency (linitan).
   * Remove asterisks from sysstat.NEWS (lintian).
-  * copyright: refer to non-symlinked GPL files (lintian). 
+  * copyright: refer to non-symlinked GPL files (lintian).
   * Standards-Version: 3.8.4 (no changes).
   * Ignore erros from `update-alternatives --display' (closes: #563570).
 
@@ -20,7 +30,7 @@ sysstat (9.0.6.1-1) unstable; urgency=low
 
 sysstat (9.0.6-2) unstable; urgency=low
 
-  * Remove both stop link from rc1.d, and the lintian override 
+  * Remove both stop link from rc1.d, and the lintian override
     (closes: #562660).
   * Fix spelling typo in isag(1).
 
@@ -37,7 +47,7 @@ sysstat (9.0.6-1) unstable; urgency=low
 sysstat (9.0.5-1) unstable; urgency=low
 
   * New upstream release.
-  * Add an override for `init.d-script-possible-missing-stop' lintian's 
+  * Add an override for `init.d-script-possible-missing-stop' lintian's
     warning.
 
  -- Robert Luberda <robert@debian.org>  Sun, 27 Sep 2009 09:04:11 +0200
@@ -71,7 +81,7 @@ sysstat (9.0.1-1) unstable; urgency=low
 
   * New upstream release:
     + sar man page now mentions dependencies on sadc options (closes: #518438).
-  * Makefile.in: don't update sysstat.pot in clean. 
+  * Makefile.in: don't update sysstat.pot in clean.
 
  -- Robert Luberda <robert@debian.org>  Sun, 08 Mar 2009 19:01:43 +0100
 
@@ -118,7 +128,7 @@ sysstat (8.1.8-2) unstable; urgency=low
 sysstat (8.1.8-1) unstable; urgency=low
 
   * New upstream release.
-  * Add debian-sa1 script and ran it from cron.d job (closes: #499461). 
+  * Add debian-sa1 script and ran it from cron.d job (closes: #499461).
   * If sar cannot open a data file, print a message indicating that sysstat
     might not be enabled (closes: #511418).
   * Remove stop links from rc0 and rc6 run levels (cf. #495545).
@@ -145,9 +155,9 @@ sysstat (8.1.6-1) experimental; urgency=low
   * New upstream release:
     + Daily data files format has changed again.
     + NFS v4 support added to sar -n (closes: #434442);
-    + All sysstat commands are made consistent with how parameters are 
-      interpreted: "COMMAND <interval>" now generates a report continuously, 
-      "COMMAND <interval> 0" causes an error, "COMMAND 0" displays a report 
+    + All sysstat commands are made consistent with how parameters are
+      interpreted: "COMMAND <interval>" now generates a report continuously,
+      "COMMAND <interval> 0" causes an error, "COMMAND 0" displays a report
       since system startup (closes: #475707);
    + Option -S added to sadc, which replaces previous options -I or -d. Existing
      defaults file should be updated.
@@ -155,7 +165,7 @@ sysstat (8.1.6-1) experimental; urgency=low
   * Merge the following change from Ubuntu:
     - remove call to execvp() as it's not needed and has potential
       security problems.
-  * 
+  *
 
  -- Robert Luberda <robert@debian.org>  Sat, 01 Nov 2008 10:36:17 +0100
 
@@ -170,7 +180,7 @@ sysstat (8.1.2-2) unstable; urgency=low
 sysstat (8.1.2-1) experimental; urgency=low
 
   * New upstream version.
-  * Change doc-base section to System/Monitoring. 
+  * Change doc-base section to System/Monitoring.
 
  -- Robert Luberda <robert@debian.org>  Thu, 20 Mar 2008 21:31:25 +0100
 
@@ -183,7 +193,7 @@ sysstat (8.1.1-1) experimental; urgency=low
   * Update debian/copyright.
   * sysstat.sysconfig.in: remove @PACKAGE_VERSION@ from the file to avoid
     unnecessary dpkg conffile change prompt on each upgrade.
-  * Build with debhelper v6. 
+  * Build with debhelper v6.
 
  -- Robert Luberda <robert@debian.org>  Sun, 02 Mar 2008 15:16:27 +0100
 
@@ -228,7 +238,7 @@ sysstat (8.0.0-1) unstable; urgency=low
   * New upstream version (stable):
     + daily data files format has changed again.
   * Change isag's menu section to Applications/System/Monitoring (lintian).
-  * Update upstream e-mail in the copyright file. 
+  * Update upstream e-mail in the copyright file.
 
  -- Robert Luberda <robert@debian.org>  Mon, 03 Sep 2007 19:55:11 +0200
 
@@ -300,7 +310,7 @@ sysstat (7.0.4-3) unstable; urgency=low
 sysstat (7.0.4-2) unstable; urgency=low
 
   * Test and improve support for keeping sar logs for more then one month.
-  * sysstat.init: call sa1 instead of sadc in order not to duplicate part 
+  * sysstat.init: call sa1 instead of sadc in order not to duplicate part
     of sa1 code which would have to be added otherwise.
 
  -- Robert Luberda <robert@debian.org>  Sun, 11 Mar 2007 20:34:13 +0100
@@ -350,7 +360,7 @@ sysstat (7.0.0-1) unstable; urgency=low
   * debian/{copyright,control,watch}: Update upstream homepage URL.
   * Add desktop file for isag (closes: #382199).
   * sadc.c: simple fix allowing sadc to work with old data files.
-  * debian/control: isag now suggests the rcs package for the Help->About 
+  * debian/control: isag now suggests the rcs package for the Help->About
     menu option (Ubuntu#54558).
 
  -- Robert Luberda <robert@debian.org>  Thu, 10 Aug 2006 23:12:51 +0200
@@ -457,7 +467,7 @@ sysstat (6.0.0-2) unstable; urgency=low
 
   * Upload to unstable:
     + Number of days to keep log files in configurable since version 5.1.2
-      (closes: #312726). 
+      (closes: #312726).
 
  -- Robert Luberda <robert@debian.org>  Sat, 11 Jun 2005 19:15:30 +0200
 
@@ -625,7 +635,7 @@ sysstat (5.0.2-1) unstable; urgency=high
 
   * New upstream (stable) version.
   * isag: SECURITY FIX for temporary files handling vulnerability described
-    in DSA-460 and CVE CAN-2004-0108. 
+    in DSA-460 and CVE CAN-2004-0108.
     Create temporary directory with `mktemp -t -d' and ensure that all used
     temporary files are put there (closes: #237297).
   * Add Catalan translation of debconf templates (closes: #236648).
@@ -677,7 +687,7 @@ sysstat (4.1.6-1) unstable; urgency=low
 
 sysstat (4.1.5-2) unstable; urgency=low
 
-  * Fix a typo in fr.po (closes: #203481). 
+  * Fix a typo in fr.po (closes: #203481).
 
  -- Robert Luberda <robert@debian.org>  Wed, 30 Jul 2003 19:24:59 +0200
 
@@ -712,8 +722,8 @@ sysstat (4.1.3-1) unstable; urgency=low
 
   * New upstream version (development):
     + NOTE (from the upstream home page): iostat should now be fully compliant
-      with 2.5/2.6 kernels.  But it will no longer look for statistics in the 
-      /proc/partitions file.  Those who need to display extended statistics 
+      with 2.5/2.6 kernels.  But it will no longer look for statistics in the
+      /proc/partitions file.  Those who need to display extended statistics
       with iostat while still using an older 2.4 kernel must use sysstat 4.1.2
 
  -- Robert Luberda <robert@debian.org>  Sat, 17 May 2003 18:47:46 +0200
@@ -800,7 +810,7 @@ sysstat (4.0.5-1) unstable; urgency=low
   * Add new sargon script to examples directory.
   * Update debian/rules to debhelper v4 (esp. use dh_install instead of
     dh_movefiles).
-  * Oops, upstream changelog hasn't been included into binary package since 
+  * Oops, upstream changelog hasn't been included into binary package since
     version 3.3.5-1. Fixed now.
 
  -- Robert Luberda <robert@debian.org>  Thu, 16 May 2002 00:28:57 +0200
@@ -817,7 +827,7 @@ sysstat (4.0.3-2) unstable; urgency=low
 
   * sar.c: fixed a typo (closes: #135540).
     Thanks to Marcin Owsiany <porridge@debian.org> for a patch.
-   
+
   * Added Russian translation of debconf templates (closes: #137689).
     Thanks to Ilgiz Kalmetev <ilgiz@bashtelecom.ru>.
 
@@ -832,7 +842,7 @@ sysstat (4.0.3-1) unstable; urgency=low
 
 sysstat (4.0.2-2) unstable; urgency=low
 
-  * Applied patch YAMASHITA Junji to fix buffer overflow in some locales 
+  * Applied patch YAMASHITA Junji to fix buffer overflow in some locales
    (closes: #123089).
 
  -- Robert Luberda <robert@debian.org>  Sat, 22 Dec 2001 21:41:38 +0100

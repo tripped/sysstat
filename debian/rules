@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules 1476 2010-01-02 10:33:42Z robert $
+# $Id: rules 1498 2010-09-12 17:04:23Z robert $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -31,7 +31,6 @@ build-stamp:
 
 	./configure --prefix=/usr 			\
 		    --mandir=/usr/share/man		\
-		    --enable-smp-race			\
 		    --enable-yesterday			\
 		    --disable-man-group			\
 		    --disable-compress-manpg		\

@@ -1,6 +1,8 @@
 Minor fixes in config files
---- sysstat-9.0.6.1.orig/sysstat.sysconfig.in
-+++ sysstat-9.0.6.1/sysstat.sysconfig.in
+Index: sysstat/sysstat.sysconfig.in
+===================================================================
+--- sysstat.orig/sysstat.sysconfig.in	2010-09-11 23:06:05.000000000 +0200
++++ sysstat/sysstat.sysconfig.in	2010-09-11 23:06:35.000000000 +0200
 @@ -1,6 +1,7 @@
 -# @PACKAGE_NAME@-@PACKAGE_VERSION@ configuration file.
 +# @PACKAGE_NAME@ configuration file.
@@ -10,8 +12,10 @@ Minor fixes in config files
  # If value is greater than 28, then log files are kept in
  # multiple directories, one for each month.
  HISTORY=@HISTORY@
---- sysstat-9.0.6.1.orig/crontab.sample
-+++ sysstat-9.0.6.1/crontab.sample
+Index: sysstat/crontab.sample
+===================================================================
+--- sysstat.orig/crontab.sample	2010-09-11 23:06:05.000000000 +0200
++++ sysstat/crontab.sample	2010-09-11 23:06:35.000000000 +0200
 @@ -1,7 +1,4 @@
  # Crontab sample for root or adm
 -# Please update this crontab with the proper location
@@ -19,4 +23,4 @@ Minor fixes in config files
 -# /usr/lib/sa for example).
  #
  # 8am-7pm activity reports every 20 minutes during weekdays.
- # 0 8-18 * * 1-5 @SA_LIB_DIR@/sa1 -S DISK 1200 3 &
+ # 0 8-18 * * 1-5 @SA_LIB_DIR@/sa1 1200 3 &

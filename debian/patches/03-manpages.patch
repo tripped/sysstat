@@ -1,9 +1,11 @@
 Added README.Debian file and the 'Debian note' to sa1 and sa2 man pages
 to explain source of common problems (closes: #279049, #269712).
 
---- sysstat-9.0.6.1.orig/man/sa1.in
-+++ sysstat-9.0.6.1/man/sa1.in
-@@ -48,7 +48,11 @@
+Index: sysstat/man/sa1.in
+===================================================================
+--- sysstat.orig/man/sa1.in	2010-09-11 23:06:55.000000000 +0200
++++ sysstat/man/sa1.in	2010-09-11 23:06:59.000000000 +0200
+@@ -50,7 +50,11 @@
  activities, place the following entry in your root or adm crontab file:
  
  .B 0 8-18 * * 1-5 @SA_LIB_DIR@/sa1 1200 3 &
@@ -16,8 +18,10 @@ to explain source of common problems (closes: #279049, #269712).
  .SH FILES
  .IR @SA_DIR@/sa dd
  .RS
---- sysstat-9.0.6.1.orig/man/sa2.in
-+++ sysstat-9.0.6.1/man/sa2.in
+Index: sysstat/man/sa2.in
+===================================================================
+--- sysstat.orig/man/sa2.in	2010-09-11 23:06:55.000000000 +0200
++++ sysstat/man/sa2.in	2010-09-11 23:06:59.000000000 +0200
 @@ -30,6 +30,11 @@
  This will generate a daily report called
  .IR @SA_DIR@/sar dd

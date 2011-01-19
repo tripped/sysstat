@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -264,6 +264,38 @@ int get_sysfs_dev_nr(int display_partitions)
 
 /*
  ***************************************************************************
+ * Read /proc/devices file and get device-mapper major number.
+ * If device-mapper entry is not found in file, use DEFAULT_DEMAP_MAJOR
+ * number.
+ *
+ * RETURNS:
+ * Device-mapper major number.
+ ***************************************************************************
+ */
+unsigned int get_devmap_major(void)
+{
+	FILE *fp;
+	char line[128];
+	unsigned int dm_major = DEFAULT_DEVMAP_MAJOR;
+
+	if ((fp = fopen(DEVICES, "r")) == NULL)
+		return dm_major;
+
+	while (fgets(line, 128, fp) != NULL) {
+
+		if (strstr(line, "device-mapper")) {
+			/* Read device-mapper major number */
+			sscanf(line, "%u", &dm_major);
+		}
+	}
+
+	fclose(fp);
+
+	return dm_major;
+}
+
+/*
+ ***************************************************************************
  * Print banner.
  *
  * IN:
@@ -285,7 +317,10 @@ int print_gal_header(struct tm *rectime, char *sysname, char *release,
 	char *e;
 	int rc = 0;
 
-	if (((e = getenv(ENV_TIME_FMT)) != NULL) && !strcmp(e, K_ISO)) {
+	if (rectime == NULL) {
+		strcpy(cur_date, "?/?/?");
+	}
+	else if (((e = getenv(ENV_TIME_FMT)) != NULL) && !strcmp(e, K_ISO)) {
 		strftime(cur_date, sizeof(cur_date), "%Y-%m-%d", rectime);
 		rc = 1;
 	}

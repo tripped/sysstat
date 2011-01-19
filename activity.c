@@ -30,7 +30,8 @@
 #endif
 
 #ifdef SOURCE_SADF
-#include "prf_stats.h"
+#include "rndr_stats.h"
+#include "xml_stats.h"
 #endif
 
 /*
@@ -66,8 +67,11 @@ struct act_bitmap irq_bitmap = {
 struct activity cpu_act = {
 	.id		= A_CPU,
 	.options	= AO_COLLECTED + AO_REMANENT + AO_GLOBAL_ITV + AO_MULTIPLE_OUTPUTS,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_cpu_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_stat_cpu,
 #endif
 #ifdef SOURCE_SAR
@@ -82,6 +86,7 @@ struct activity cpu_act = {
 	.name		= "A_CPU",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_CPU_SIZE,
 	.msize		= STATS_CPU_SIZE,
 	.opt_flags	= AO_F_CPU_DEF,
@@ -93,8 +98,11 @@ struct activity cpu_act = {
 struct activity pcsw_act = {
 	.id		= A_PCSW,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_stat_pcsw,
 #endif
 #ifdef SOURCE_SAR
@@ -108,6 +116,7 @@ struct activity pcsw_act = {
 	.name		= "A_PCSW",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_PCSW_SIZE,
 	.msize		= STATS_PCSW_SIZE,
 	.opt_flags	= 0,
@@ -119,8 +128,11 @@ struct activity pcsw_act = {
 struct activity irq_act = {
 	.id		= A_IRQ,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_INT,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_irq_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_stat_irq,
 #endif
 #ifdef SOURCE_SAR
@@ -134,6 +146,7 @@ struct activity irq_act = {
 	.name		= "A_IRQ",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_IRQ_SIZE,
 	.msize		= STATS_IRQ_SIZE,
 	.opt_flags	= 0,
@@ -145,8 +158,11 @@ struct activity irq_act = {
 struct activity swap_act = {
 	.id		= A_SWAP,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_swap,
 #endif
 #ifdef SOURCE_SAR
@@ -160,6 +176,7 @@ struct activity swap_act = {
 	.name		= "A_SWAP",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_SWAP_SIZE,
 	.msize		= STATS_SWAP_SIZE,
 	.opt_flags	= 0,
@@ -171,8 +188,11 @@ struct activity swap_act = {
 struct activity paging_act = {
 	.id		= A_PAGE,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_paging,
 #endif
 #ifdef SOURCE_SAR
@@ -187,6 +207,7 @@ struct activity paging_act = {
 	.name		= "A_PAGE",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_PAGING_SIZE,
 	.msize		= STATS_PAGING_SIZE,
 	.opt_flags	= 0,
@@ -198,8 +219,11 @@ struct activity paging_act = {
 struct activity io_act = {
 	.id		= A_IO,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_io,
 #endif
 #ifdef SOURCE_SAR
@@ -213,6 +237,7 @@ struct activity io_act = {
 	.name		= "A_IO",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_IO_SIZE,
 	.msize		= STATS_IO_SIZE,
 	.opt_flags	= 0,
@@ -224,8 +249,11 @@ struct activity io_act = {
 struct activity memory_act = {
 	.id		= A_MEMORY,
 	.options	= AO_COLLECTED + AO_MULTIPLE_OUTPUTS,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_meminfo,
 #endif
 #ifdef SOURCE_SAR
@@ -236,11 +264,12 @@ struct activity memory_act = {
 	.f_render	= render_memory_stats,
 	.f_xml_print	= xml_print_memory_stats,
 	.hdr_line	= "frmpg/s;bufpg/s;campg/s|"
-		          "kbmemfree;kbmemused;%memused;kbbuffers;kbcached;kbcommit;%commit|"
+		          "kbmemfree;kbmemused;%memused;kbbuffers;kbcached;kbcommit;%commit;kbactive;kbinact|"
 		          "kbswpfree;kbswpused;%swpused;kbswpcad;%swpcad",
 	.name		= "A_MEMORY",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_MEMORY_SIZE,
 	.msize		= STATS_MEMORY_SIZE,
 	.opt_flags	= 0,
@@ -252,8 +281,11 @@ struct activity memory_act = {
 struct activity ktables_act = {
 	.id		= A_KTABLES,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_kernel_tables,
 #endif
 #ifdef SOURCE_SAR
@@ -267,6 +299,7 @@ struct activity ktables_act = {
 	.name		= "A_KTABLES",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_KTABLES_SIZE,
 	.msize		= STATS_KTABLES_SIZE,
 	.opt_flags	= 0,
@@ -278,8 +311,11 @@ struct activity ktables_act = {
 struct activity queue_act = {
 	.id		= A_QUEUE,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE + 1,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_loadavg,
 #endif
 #ifdef SOURCE_SAR
@@ -289,10 +325,11 @@ struct activity queue_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_queue_stats,
 	.f_xml_print	= xml_print_queue_stats,
-	.hdr_line	= "runq-sz;plist-sz;ldavg-1;ldavg-5;ldavg-15",
+	.hdr_line	= "runq-sz;plist-sz;ldavg-1;ldavg-5;ldavg-15;blocked",
 	.name		= "A_QUEUE",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_QUEUE_SIZE,
 	.msize		= STATS_QUEUE_SIZE,
 	.opt_flags	= 0,
@@ -304,8 +341,11 @@ struct activity queue_act = {
 struct activity serial_act = {
 	.id		= A_SERIAL,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_serial_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_tty_driver_serial,
 #endif
 #ifdef SOURCE_SAR
@@ -319,6 +359,7 @@ struct activity serial_act = {
 	.name		= "A_SERIAL",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_SERIAL_SIZE,
 	.msize		= STATS_SERIAL_SIZE,
 	.opt_flags	= 0,
@@ -330,8 +371,11 @@ struct activity serial_act = {
 struct activity disk_act = {
 	.id		= A_DISK,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DISK,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_disk_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_disk,
 #endif
 #ifdef SOURCE_SAR
@@ -345,6 +389,7 @@ struct activity disk_act = {
 	.name		= "A_DISK",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_DISK_SIZE,
 	.msize		= STATS_DISK_SIZE,
 	.opt_flags	= 0,
@@ -356,8 +401,11 @@ struct activity disk_act = {
 struct activity net_dev_act = {
 	.id		= A_NET_DEV,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_iface_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_dev,
 #endif
 #ifdef SOURCE_SAR
@@ -371,6 +419,7 @@ struct activity net_dev_act = {
 	.name		= "A_NET_DEV",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_DEV_SIZE,
 	.msize		= STATS_NET_DEV_SIZE,
 	.opt_flags	= 0,
@@ -382,8 +431,11 @@ struct activity net_dev_act = {
 struct activity net_edev_act = {
 	.id		= A_NET_EDEV,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_iface_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_edev,
 #endif
 #ifdef SOURCE_SAR
@@ -398,6 +450,7 @@ struct activity net_edev_act = {
 	.name		= "A_NET_EDEV",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_EDEV_SIZE,
 	.msize		= STATS_NET_EDEV_SIZE,
 	.opt_flags	= 0,
@@ -409,8 +462,11 @@ struct activity net_edev_act = {
 struct activity net_nfs_act = {
 	.id		= A_NET_NFS,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_nfs,
 #endif
 #ifdef SOURCE_SAR
@@ -424,6 +480,7 @@ struct activity net_nfs_act = {
 	.name		= "A_NET_NFS",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_NFS_SIZE,
 	.msize		= STATS_NET_NFS_SIZE,
 	.opt_flags	= 0,
@@ -435,8 +492,11 @@ struct activity net_nfs_act = {
 struct activity net_nfsd_act = {
 	.id		= A_NET_NFSD,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_nfsd,
 #endif
 #ifdef SOURCE_SAR
@@ -451,6 +511,7 @@ struct activity net_nfsd_act = {
 	.name		= "A_NET_NFSD",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_NFSD_SIZE,
 	.msize		= STATS_NET_NFSD_SIZE,
 	.opt_flags	= 0,
@@ -462,8 +523,11 @@ struct activity net_nfsd_act = {
 struct activity net_sock_act = {
 	.id		= A_NET_SOCK,
 	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_sock,
 #endif
 #ifdef SOURCE_SAR
@@ -477,6 +541,7 @@ struct activity net_sock_act = {
 	.name		= "A_NET_SOCK",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_SOCK_SIZE,
 	.msize		= STATS_NET_SOCK_SIZE,
 	.opt_flags	= 0,
@@ -488,8 +553,11 @@ struct activity net_sock_act = {
 struct activity net_ip_act = {
 	.id		= A_NET_IP,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_SNMP,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_ip,
 #endif
 #ifdef SOURCE_SAR
@@ -503,6 +571,7 @@ struct activity net_ip_act = {
 	.name		= "A_NET_IP",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_IP_SIZE,
 	.msize		= STATS_NET_IP_SIZE,
 	.opt_flags	= 0,
@@ -514,8 +583,11 @@ struct activity net_ip_act = {
 struct activity net_eip_act = {
 	.id		= A_NET_EIP,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_SNMP,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_eip,
 #endif
 #ifdef SOURCE_SAR
@@ -529,6 +601,7 @@ struct activity net_eip_act = {
 	.name		= "A_NET_EIP",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_EIP_SIZE,
 	.msize		= STATS_NET_EIP_SIZE,
 	.opt_flags	= 0,
@@ -540,8 +613,11 @@ struct activity net_eip_act = {
 struct activity net_icmp_act = {
 	.id		= A_NET_ICMP,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_SNMP,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_icmp,
 #endif
 #ifdef SOURCE_SAR
@@ -556,6 +632,7 @@ struct activity net_icmp_act = {
 	.name		= "A_NET_ICMP",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_ICMP_SIZE,
 	.msize		= STATS_NET_ICMP_SIZE,
 	.opt_flags	= 0,
@@ -567,8 +644,11 @@ struct activity net_icmp_act = {
 struct activity net_eicmp_act = {
 	.id		= A_NET_EICMP,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_SNMP,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_eicmp,
 #endif
 #ifdef SOURCE_SAR
@@ -583,6 +663,7 @@ struct activity net_eicmp_act = {
 	.name		= "A_NET_EICMP",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_EICMP_SIZE,
 	.msize		= STATS_NET_EICMP_SIZE,
 	.opt_flags	= 0,
@@ -594,8 +675,11 @@ struct activity net_eicmp_act = {
 struct activity net_tcp_act = {
 	.id		= A_NET_TCP,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_SNMP,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_tcp,
 #endif
 #ifdef SOURCE_SAR
@@ -609,6 +693,7 @@ struct activity net_tcp_act = {
 	.name		= "A_NET_TCP",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_TCP_SIZE,
 	.msize		= STATS_NET_TCP_SIZE,
 	.opt_flags	= 0,
@@ -620,8 +705,11 @@ struct activity net_tcp_act = {
 struct activity net_etcp_act = {
 	.id		= A_NET_ETCP,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_SNMP,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_etcp,
 #endif
 #ifdef SOURCE_SAR
@@ -635,6 +723,7 @@ struct activity net_etcp_act = {
 	.name		= "A_NET_ETCP",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_ETCP_SIZE,
 	.msize		= STATS_NET_ETCP_SIZE,
 	.opt_flags	= 0,
@@ -646,8 +735,11 @@ struct activity net_etcp_act = {
 struct activity net_udp_act = {
 	.id		= A_NET_UDP,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_SNMP,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_udp,
 #endif
 #ifdef SOURCE_SAR
@@ -661,6 +753,7 @@ struct activity net_udp_act = {
 	.name		= "A_NET_UDP",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_UDP_SIZE,
 	.msize		= STATS_NET_UDP_SIZE,
 	.opt_flags	= 0,
@@ -672,8 +765,11 @@ struct activity net_udp_act = {
 struct activity net_sock6_act = {
 	.id		= A_NET_SOCK6,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_IPV6,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_sock6,
 #endif
 #ifdef SOURCE_SAR
@@ -687,6 +783,7 @@ struct activity net_sock6_act = {
 	.name		= "A_NET_SOCK6",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_SOCK6_SIZE,
 	.msize		= STATS_NET_SOCK6_SIZE,
 	.opt_flags	= 0,
@@ -698,8 +795,11 @@ struct activity net_sock6_act = {
 struct activity net_ip6_act = {
 	.id		= A_NET_IP6,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_IPV6,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_ip6,
 #endif
 #ifdef SOURCE_SAR
@@ -714,6 +814,7 @@ struct activity net_ip6_act = {
 	.name		= "A_NET_IP6",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_IP6_SIZE,
 	.msize		= STATS_NET_IP6_SIZE,
 	.opt_flags	= 0,
@@ -725,8 +826,11 @@ struct activity net_ip6_act = {
 struct activity net_eip6_act = {
 	.id		= A_NET_EIP6,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_IPV6,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_eip6,
 #endif
 #ifdef SOURCE_SAR
@@ -741,6 +845,7 @@ struct activity net_eip6_act = {
 	.name		= "A_NET_EIP6",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_EIP6_SIZE,
 	.msize		= STATS_NET_EIP6_SIZE,
 	.opt_flags	= 0,
@@ -752,8 +857,11 @@ struct activity net_eip6_act = {
 struct activity net_icmp6_act = {
 	.id		= A_NET_ICMP6,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_IPV6,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_icmp6,
 #endif
 #ifdef SOURCE_SAR
@@ -769,6 +877,7 @@ struct activity net_icmp6_act = {
 	.name		= "A_NET_ICMP6",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_ICMP6_SIZE,
 	.msize		= STATS_NET_ICMP6_SIZE,
 	.opt_flags	= 0,
@@ -780,8 +889,11 @@ struct activity net_icmp6_act = {
 struct activity net_eicmp6_act = {
 	.id		= A_NET_EICMP6,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_IPV6,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_eicmp6,
 #endif
 #ifdef SOURCE_SAR
@@ -796,6 +908,7 @@ struct activity net_eicmp6_act = {
 	.name		= "A_NET_EICMP6",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_EICMP6_SIZE,
 	.msize		= STATS_NET_EICMP6_SIZE,
 	.opt_flags	= 0,
@@ -807,8 +920,11 @@ struct activity net_eicmp6_act = {
 struct activity net_udp6_act = {
 	.id		= A_NET_UDP6,
 	.options	= AO_CLOSE_MARKUP,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_IPV6,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_net_udp6,
 #endif
 #ifdef SOURCE_SAR
@@ -822,6 +938,7 @@ struct activity net_udp6_act = {
 	.name		= "A_NET_UDP6",
 #endif
 	.nr		= 1,
+	.nr2		= 1,
 	.fsize		= STATS_NET_UDP6_SIZE,
 	.msize		= STATS_NET_UDP6_SIZE,
 	.opt_flags	= 0,
@@ -833,8 +950,11 @@ struct activity net_udp6_act = {
 struct activity pwr_cpufreq_act = {
 	.id		= A_PWR_CPUFREQ,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_POWER,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_cpu_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_cpuinfo,
 #endif
 #ifdef SOURCE_SAR
@@ -848,6 +968,7 @@ struct activity pwr_cpufreq_act = {
 	.name		= "A_PWR_CPUFREQ",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_PWR_CPUFREQ_SIZE,
 	.msize		= STATS_PWR_CPUFREQ_SIZE,
 	.opt_flags	= 0,
@@ -859,8 +980,11 @@ struct activity pwr_cpufreq_act = {
 struct activity pwr_fan_act = {
 	.id		= A_PWR_FAN,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_POWER,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_fan_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_fan,
 #endif
 #ifdef SOURCE_SAR
@@ -874,6 +998,7 @@ struct activity pwr_fan_act = {
 	.name		= "A_PWR_FAN",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_PWR_FAN_SIZE,
 	.msize		= STATS_PWR_FAN_SIZE,
 	.opt_flags	= 0,
@@ -885,8 +1010,11 @@ struct activity pwr_fan_act = {
 struct activity pwr_temp_act = {
 	.id		= A_PWR_TEMP,
 	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_POWER,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_temp_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_temp,
 #endif
 #ifdef SOURCE_SAR
@@ -900,6 +1028,7 @@ struct activity pwr_temp_act = {
 	.name		= "A_PWR_TEMP",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_PWR_TEMP_SIZE,
 	.msize		= STATS_PWR_TEMP_SIZE,
 	.opt_flags	= 0,
@@ -910,9 +1039,12 @@ struct activity pwr_temp_act = {
 /* Voltage inputs */
 struct activity pwr_in_act = {
 	.id		= A_PWR_IN,
-	.options	= AO_CLOSE_MARKUP,
+	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_POWER,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_in_nr,
+	.f_count2	= NULL,
 	.f_read		= wrap_read_in,
 #endif
 #ifdef SOURCE_SAR
@@ -926,11 +1058,72 @@ struct activity pwr_in_act = {
 	.name		= "A_PWR_IN",
 #endif
 	.nr		= -1,
+	.nr2		= 1,
 	.fsize		= STATS_PWR_IN_SIZE,
 	.msize		= STATS_PWR_IN_SIZE,
 	.opt_flags	= 0,
 	.buf		= {NULL, NULL, NULL},
 	.bitmap		= NULL
+};
+
+/* Hugepages activity */
+struct activity huge_act = {
+	.id		= A_HUGE,
+	.options	= AO_COLLECTED,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DEFAULT,
+#ifdef SOURCE_SADC
+	.f_count	= NULL,
+	.f_count2	= NULL,
+	.f_read		= wrap_read_meminfo_huge,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_huge_stats,
+	.f_print_avg	= print_avg_huge_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_huge_stats,
+	.f_xml_print	= xml_print_huge_stats,
+	.hdr_line	= "kbhugfree;kbhugused;%hugused",
+	.name		= "A_HUGE",
+#endif
+	.nr		= 1,
+	.nr2		= 1,
+	.fsize		= STATS_HUGE_SIZE,
+	.msize		= STATS_HUGE_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL
+};
+
+/* CPU weighted frequency */
+struct activity pwr_wghfreq_act = {
+	.id		= A_PWR_WGHFREQ,
+	.options	= AO_CLOSE_MARKUP,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_POWER,
+#ifdef SOURCE_SADC
+	.f_count	= wrap_get_cpu_nr,
+	.f_count2	= wrap_get_freq_nr,
+	.f_read		= wrap_read_time_in_state,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_pwr_wghfreq_stats,
+	.f_print_avg	= print_pwr_wghfreq_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_pwr_wghfreq_stats,
+	.f_xml_print	= xml_print_pwr_wghfreq_stats,
+	.hdr_line	= "CPU;wghMHz",
+	.name		= "A_PWR_WGHFREQ",
+#endif
+	.nr		= -1,
+	.nr2		= 1,
+	.fsize		= STATS_PWR_WGHFREQ_SIZE,
+	.msize		= STATS_PWR_WGHFREQ_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= &cpu_bitmap
 };
 
 
@@ -970,5 +1163,7 @@ struct activity *act[NR_ACT] = {
 	&pwr_cpufreq_act,
 	&pwr_fan_act,
 	&pwr_temp_act,
-	&pwr_in_act
+	&pwr_in_act,
+	&huge_act,
+	&pwr_wghfreq_act
 };

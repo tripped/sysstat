@@ -1,6 +1,6 @@
 /*
  * sadf: system activity data formatter
- * (C) 1999-2009 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -32,7 +32,8 @@
 #include "sa.h"
 #include "common.h"
 #include "ioconf.h"
-#include "prf_stats.h"
+#include "rndr_stats.h"
+#include "xml_stats.h"
 
 #ifdef USE_NLS
 # include <locale.h>
@@ -48,6 +49,7 @@ char *sccsid(void) { return (SCCSID); }
 long interval = -1, count = 0;
 
 unsigned int flags = 0;
+unsigned int dm_major;		/* Device-mapper major number */
 unsigned int format = 0;	/* Output format */
 
 /* File header */
@@ -124,8 +126,9 @@ void sadf_get_record_timestamp_struct(int curr)
 {
 	struct tm *ltm;
 
-	ltm = localtime((const time_t *) &record_hdr[curr].ust_time);
-	loctime = *ltm;
+	if ((ltm = localtime((const time_t *) &record_hdr[curr].ust_time)) != NULL) {
+		loctime = *ltm;
+	}
 
 	if (!PRINT_TRUE_TIME(flags) ||
 	    ((format != S_O_DB_OPTION) && (format != S_O_XML_OPTION))) {
@@ -133,7 +136,9 @@ void sadf_get_record_timestamp_struct(int curr)
 		ltm = gmtime((const time_t *) &record_hdr[curr].ust_time);
 	}
 
-	rectime = *ltm;
+	if (ltm) {
+		rectime = *ltm;
+	}
 }
 
 /*
@@ -591,9 +596,9 @@ void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, i
  * Display data file header.
  *
  * IN:
- * @dfile	Name of system activity data file
- * @file_magic	System activity file magic header
- * @file_hdr	System activity file standard header
+ * @dfile	Name of system activity data file.
+ * @file_magic	System activity file magic header.
+ * @file_hdr	System activity file standard header.
  ***************************************************************************
  */
 void display_file_header(char *dfile, struct file_magic *file_magic,
@@ -601,7 +606,7 @@ void display_file_header(char *dfile, struct file_magic *file_magic,
 {
 	int i, p;
 	static __nr_t cpu_nr = -1;
-	
+
 	if (cpu_nr < 0) {
 		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 	}
@@ -630,7 +635,14 @@ void display_file_header(char *dfile, struct file_magic *file_magic,
 		if ((p = get_activity_position(act, id_seq[i])) < 0) {
 			PANIC(id_seq[i]);
 		}
-		printf("%02d: %s\t(x%d)\n", act[p]->id,	act[p]->name, act[p]->nr);
+		printf("%02d: %s\t(x%d)", act[p]->id, act[p]->name, act[p]->nr);
+		if (act[p]->f_count2 || (act[p]->nr2 > 1)) {
+			printf("\t(x%d)", act[p]->nr2);
+		}
+		if (act[p]->magic == ACTIVITY_MAGIC_UNKNOWN) {
+			printf(_("\t[Unknown activity format]"));
+		}
+		printf("\n");
 	}
 
 	exit(0);
@@ -1351,6 +1363,10 @@ int main(int argc, char **argv)
 
 	if (tm_start.use && tm_end.use && (tm_end.tm_hour < tm_start.tm_hour)) {
 		tm_end.tm_hour += 24;
+	}
+
+	if (USE_PRETTY_OPTION(flags)) {
+		dm_major = get_devmap_major();
 	}
 
 	/*

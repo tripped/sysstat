@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://pagesperso-orange.fr/sebastien.godard/sysstat" targetNamespace="http://pagesperso-orange.fr/sebastien.godard/sysstat" elementFormDefault="qualified">
-<xs:annotation><xs:appinfo>-- XML Schema v2.8 for sysstat. See sadf.h --</xs:appinfo></xs:annotation>
+<xs:annotation><xs:appinfo>-- XML Schema v2.10 for sysstat. See sadf.h --</xs:appinfo></xs:annotation>
 
     <xs:element name="queue" type="queue-type"></xs:element>
 
@@ -11,6 +11,7 @@
     	<xs:attribute name="ldavg-1" type="hundredth-type"></xs:attribute>
     	<xs:attribute name="ldavg-5" type="hundredth-type"></xs:attribute>
     	<xs:attribute name="ldavg-15" type="hundredth-type"></xs:attribute>
+    	<xs:attribute name="blocked" type="xs:nonNegativeInteger"></xs:attribute>
     </xs:complexType>
 
     <xs:element name="kernel" type="kernel-type"></xs:element>
@@ -41,6 +42,8 @@
     		<xs:element name="cached" type="xs:nonNegativeInteger"></xs:element>
     		<xs:element name="commit" type="xs:nonNegativeInteger"></xs:element>
     		<xs:element name="commit-percent" type="hundredth-type"></xs:element>
+    		<xs:element name="active" type="xs:nonNegativeInteger"></xs:element>
+    		<xs:element name="inactive" type="xs:nonNegativeInteger"></xs:element>
     		<xs:element name="swpfree" type="xs:nonNegativeInteger"></xs:element>
     		<xs:element name="swpused" type="xs:nonNegativeInteger"></xs:element>
     		<xs:element name="swpused-percent" type="hundredth-type"></xs:element>
@@ -51,6 +54,16 @@
     		<xs:element name="campg" type="hundredth-type"></xs:element>
     	</xs:sequence>
     	<xs:attribute name="unit" type="unit-type"></xs:attribute>
+    </xs:complexType>
+    
+    <xs:element name="hugepages" type="hugepages-type"></xs:element>
+
+    <xs:complexType name="hugepages-type">
+    	<xs:sequence>
+    		<xs:element name="hugfree" type="xs:nonNegativeInteger"></xs:element>
+		<xs:element name="hugused" type="xs:nonNegativeInteger"></xs:element>
+		<xs:element name="hugused-percent" type="hundredth-type"></xs:element>
+    	</xs:sequence>
     </xs:complexType>
     
     <xs:simpleType name="unit-type">
@@ -455,6 +468,15 @@
     	</xs:restriction>
     </xs:simpleType>
 
+    <xs:element name="cpu-weighted-frequency" type="cpu-weighted-frequency-type"></xs:element>
+
+    <xs:complexType name="cpu-weighted-frequency-type">
+    	<xs:sequence>
+		<xs:element name="cpuwfreq" type="cpuwfreq-type" minOccurs="1"></xs:element>
+    	</xs:sequence>
+	<xs:attribute name="unit" type="frequnit-type"></xs:attribute>
+    </xs:complexType>
+
     <xs:element name="fan-speed" type="fan-speed-type"></xs:element>
 
     <xs:complexType name="fan-speed-type">
@@ -512,6 +534,13 @@
     <xs:complexType name="cpufreq-type">
 	<xs:attribute name="number" type="xs:string"></xs:attribute>
     	<xs:attribute name="frequency" type="hundredth-type"></xs:attribute>
+    </xs:complexType>
+
+    <xs:element name="cpuwfreq" type="cpuwfreq-type"></xs:element>
+
+    <xs:complexType name="cpuwfreq-type">
+	<xs:attribute name="number" type="xs:string"></xs:attribute>
+	<xs:attribute name="weighted-frequency" type="hundredth-type"></xs:attribute>
     </xs:complexType>
 
     <xs:element name="fan" type="fan-type"></xs:element>
@@ -606,6 +635,7 @@
     		<xs:element name="paging" type="paging-type"></xs:element>
     		<xs:element name="io" type="io-type"></xs:element>
     		<xs:element name="memory" type="memory-type"></xs:element>
+    		<xs:element name="hugepages" type="hugepages-type"></xs:element>
     		<xs:element name="kernel" type="kernel-type"></xs:element>
     		<xs:element name="queue" type="queue-type"></xs:element>
     		<xs:element name="serial" type="serial-type"></xs:element>
@@ -638,6 +668,7 @@
     		<xs:element name="fan-speed" type="fan-speed-type"></xs:element>
     		<xs:element name="temperature" type="temperature-type"></xs:element>
     		<xs:element name="voltage-input" type="voltage-input-type"></xs:element>
+    		<xs:element name="cpu-weighted-frequency" type="cpu-weighted-frequency-type"></xs:element>
     	</xs:sequence>
     </xs:complexType>
 

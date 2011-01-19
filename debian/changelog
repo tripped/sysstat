@@ -1,11 +1,11 @@
-sysstat (9.1.7-1) UNRELEASED; urgency=low
+sysstat (9.1.7-1) experimental; urgency=low
 
-  * New upstream developement release.
+  * New upstream development release.
   * Format of data files has changed again (BTW. the debconf message
     was already fixed in 8.1.8-2, (LP: #342655)).
   * Refresh patches. Also rename 05-scripts.patch to 08-scripts.patch.
 
- -- Robert Luberda <robert@debian.org>  Wed, 19 Jan 2011 21:45:39 +0100
+ -- Robert Luberda <robert@debian.org>  Wed, 19 Jan 2011 22:07:33 +0100
 
 sysstat (9.1.5-1) experimental; urgency=low
 

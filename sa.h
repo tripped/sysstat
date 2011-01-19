@@ -17,7 +17,7 @@
  */
 
 /* Number of activities */
-#define NR_ACT	33
+#define NR_ACT	35
 
 /* Activities */
 #define A_CPU		1
@@ -53,6 +53,8 @@
 #define A_PWR_FAN	31
 #define A_PWR_TEMP	32
 #define A_PWR_IN	33
+#define A_HUGE		34
+#define A_PWR_WGHFREQ	35
 
 
 /* Macro used to flag an activity that should be collected */
@@ -93,6 +95,8 @@
 #define WANT_PER_PROC(m)	(((m) & S_F_PER_PROC)     == S_F_PER_PROC)
 #define DISPLAY_HORIZONTALLY(m)	(((m) & S_F_HORIZONTALLY) == S_F_HORIZONTALLY)
 #define DISPLAY_COMMENT(m)	(((m) & S_F_COMMENT)      == S_F_COMMENT)
+
+#define AO_F_NULL		0x00000000
 
 /* Output flags for options -R / -r / -S */
 #define AO_F_MEM_DIA		0x00000001
@@ -136,22 +140,32 @@
 #define K_TCP		"TCP"
 #define K_ETCP		"ETCP"
 #define K_UDP		"UDP"
-#define K_DISK		"DISK"
-#define K_INT		"INT"
-#define K_SNMP		"SNMP"
 #define K_SOCK6		"SOCK6"
 #define K_IP6		"IP6"
 #define K_EIP6		"EIP6"
 #define K_ICMP6		"ICMP6"
 #define K_EICMP6	"EICMP6"
 #define K_UDP6		"UDP6"
-#define K_IPV6		"IPV6"
-#define K_POWER		"POWER"
-#define K_XDISK		"XDISK"
 #define K_CPU		"CPU"
 #define K_FAN		"FAN"
 #define K_TEMP		"TEMP"
 #define K_IN		"IN"
+#define K_FREQ		"FREQ"
+
+#define K_INT		"INT"
+#define K_DISK		"DISK"
+#define K_XDISK		"XDISK"
+#define K_SNMP		"SNMP"
+#define K_IPV6		"IPV6"
+#define K_POWER		"POWER"
+
+/* Groups of activities */
+#define G_DEFAULT	0x00
+#define G_INT		0x01
+#define G_DISK		0x02
+#define G_SNMP		0x04
+#define G_IPV6		0x08
+#define G_POWER		0x10
 
 /* sadc program */
 #define SADC		"sadc"
@@ -171,6 +185,7 @@
 #define NR_IFACE_PREALLOC	2
 #define NR_SERIAL_PREALLOC	2
 #define NR_DISK_PREALLOC	3
+#define NR_FREQ_PREALLOC	0
 
 #define UTSNAME_LEN		65
 #define TIMESTAMP_LEN		16
@@ -250,7 +265,6 @@
 #define CLOSE_MARKUP(m)		(((m) & AO_CLOSE_MARKUP)     == AO_CLOSE_MARKUP)
 #define HAS_MULTIPLE_OUTPUTS(m)	(((m) & AO_MULTIPLE_OUTPUTS) == AO_MULTIPLE_OUTPUTS)
 
-
 /* Type for all functions counting items */
 #define __nr_t		int
 /* Type for all functions reading statistics */
@@ -274,7 +288,10 @@ struct act_bitmap {
 	int b_size;
 };
 
-/* Structure used to define an activity */
+/*
+ * Structure used to define an activity.
+ * Note; This structure can be modified without changing the format of data files.
+ */
 struct activity {
 	/*
 	 * This variable contains the identification value (A_...) for this activity.
@@ -285,8 +302,19 @@ struct activity {
 	 */
 	unsigned int options;
 	/*
+	 * Activity magical number. This number changes when activity format in file
+	 * is no longer compatible with the format of that same activity from
+	 * previous versions.
+	 */
+	unsigned int magic;
+	/*
+	 * an activity belongs to a group (and only one).
+	 * Groups are those selected with option -S of sadc.
+	 */
+	unsigned int group;
+	/*
 	 * The f_count() function is used to count the number of
-	 * items (serial lines, network interfaces, etc.).
+	 * items (serial lines, network interfaces, etc.) -> @nr
 	 * Such a function should _always_ return a value greater than
 	 * or equal to 0.
 	 *
@@ -297,6 +325,16 @@ struct activity {
 	 * sure that all items have been calculated (including #CPU, etc.)
 	 */
 	__nr_t (*f_count) (struct activity *);
+	/*
+	 * The f_count2() function is used to count the number of
+	 * sub-items -> @nr2
+	 * Such a function should _always_ return a value greater than
+	 * or equal to 0.
+	 *
+	 * A NULL value for this function pointer indicates that the number of items
+	 * is a constant (and @nr2 is set to this value).
+	 */
+	__nr_t (*f_count2) (struct activity *);
 	/*
 	 * This function reads the relevant file and fill the buffer
 	 * with statistics corresponding to given activity.
@@ -334,8 +372,25 @@ struct activity {
 	 * has still not been calculated by the f_count() function.
 	 * A value of 0 means that this number has been calculated, but no items have
 	 * been found.
+	 * A positive value (>0) has either been calculated or is a constant.
 	 */
 	__nr_t nr;
+	/*
+	 * Number of sub-items on the system.
+	 * @nr2 is in fact the second dimension of a matrix of items, the first
+	 * one being @nr. @nr is the number of lines, and @nr2 the number of columns.
+	 * A negative value (-1) is the default value and indicates that this number
+	 * has still not been calculated by the f_count2() function.
+	 * A value of 0 means that this number has been calculated, but no sub-items have
+	 * been found.
+	 * A positive value (>0) has either been calculated or is a constant.
+	 * Rules:
+	 * 1) IF @nr2 = 0 THEN @nr = 0
+	 *    Note: If @nr = 0, then @nr2 is undetermined (may be -1, 0 or >0).
+	 * 2) IF @nr > 0 THEN @nr2 > 0.
+	 *    Note: If @nr2 > 0 then @nr is undetermined (may be -1, 0 or >0).
+	 */
+	__nr_t nr2;
 	/*
 	 * Size of an item.
 	 * This is the size of the corresponding structure, as read from or written
@@ -367,7 +422,6 @@ struct activity {
 	 */
 	struct act_bitmap *bitmap;
 };
-
 
 /*
  ***************************************************************************
@@ -413,7 +467,7 @@ struct activity {
  * Modified to indicate that the format of the file is
  * no longer compatible with that of previous sysstat versions.
  */
-#define FORMAT_MAGIC	0x2170
+#define FORMAT_MAGIC	0x2171
 
 /* Structure for file magic header data */
 struct file_magic {
@@ -481,6 +535,16 @@ struct file_header {
 #define FILE_HEADER_SIZE	(sizeof(struct file_header))
 
 
+/*
+ * Base magical number for activities.
+ */
+#define ACTIVITY_MAGIC_BASE	0x8a
+/*
+ * Magical value used for activities with
+ * unknown format (used for sadf -H only).
+ */
+#define ACTIVITY_MAGIC_UNKNOWN	0x89
+
 /* List of activities saved in file */
 struct file_activity {
 	/*
@@ -488,9 +552,17 @@ struct file_activity {
 	 */
 	unsigned int id		__attribute__ ((aligned (4)));
 	/*
+	 * Activity magical number.
+	 */
+	unsigned int magic	__attribute__ ((packed));
+	/*
 	 * Number of items for this activity.
 	 */
 	__nr_t nr		__attribute__ ((packed));
+	/*
+	 * Number of sub-items for this activity.
+	 */
+	__nr_t nr2		__attribute__ ((packed));
 	/*
 	 * Size of an item structure.
 	 */
@@ -613,6 +685,8 @@ extern __nr_t
 	wrap_get_temp_nr(struct activity *);
 extern __nr_t
 	wrap_get_in_nr(struct activity *);
+extern __nr_t
+	wrap_get_freq_nr(struct activity *);
 
 /* Functions used to read activities statistics */
 extern __read_funct_t
@@ -681,6 +755,10 @@ extern __read_funct_t
 	wrap_read_temp(struct activity *);
 extern __read_funct_t
 	wrap_read_in(struct activity *);
+extern __read_funct_t
+	wrap_read_meminfo_huge(struct activity *);
+extern __read_funct_t
+	wrap_read_time_in_state(struct activity *);
 
 /* Other functions */
 extern void

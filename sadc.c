@@ -89,6 +89,29 @@ void usage(char *progname)
 
 /*
  ***************************************************************************
+ * Collect all activities belonging to a group.
+ *
+ * IN:
+ * @group_id	Group identification number.
+ * @opt_f	Optionnal flag to set.
+ ***************************************************************************
+ */
+void collect_group_activities(unsigned int group_id, unsigned int opt_f)
+{
+	int i;
+
+	for (i = 0; i < NR_ACT; i++) {
+		if (act[i]->group & group_id) {
+			act[i]->options |= AO_COLLECTED;
+			if (opt_f) {
+				act[i]->opt_flags |= opt_f;
+			}
+		}
+	}
+}
+
+/*
+ ***************************************************************************
  * Parse option -S, indicating which activities are to be collected.
  *
  * IN:
@@ -103,43 +126,28 @@ void parse_sadc_S_option(char *argv[], int opt)
 
 	for (p = strtok(argv[opt], ","); p; p = strtok(NULL, ",")) {
 		if (!strcmp(p, K_INT)) {
-			/* Select interrupt activity */
-			COLLECT_ACTIVITY(A_IRQ);
+			/* Select group of interrupt activities */
+			collect_group_activities(G_INT, AO_F_NULL);
 		}
 		else if (!strcmp(p, K_DISK)) {
-			/* Select disk activity */
-			COLLECT_ACTIVITY(A_DISK);
+			/* Select group of disk activities */
+			collect_group_activities(G_DISK, AO_F_NULL);
 		}
 		else if (!strcmp(p, K_XDISK)) {
-			/* Select disk and partition activity */
-			i = get_activity_position(act, A_DISK);
-			act[i]->options   |= AO_COLLECTED;
-			act[i]->opt_flags |= AO_F_DISK_PART;
+			/* Select group of disk and partition activities */
+			collect_group_activities(G_DISK, AO_F_DISK_PART);
 		}
 		else if (!strcmp(p, K_SNMP)) {
-			/* Select SNMP activities */
-			COLLECT_ACTIVITY(A_NET_IP);
-			COLLECT_ACTIVITY(A_NET_EIP);
-			COLLECT_ACTIVITY(A_NET_ICMP);
-			COLLECT_ACTIVITY(A_NET_EICMP);
-			COLLECT_ACTIVITY(A_NET_TCP);
-			COLLECT_ACTIVITY(A_NET_ETCP);
-			COLLECT_ACTIVITY(A_NET_UDP);
+			/* Select group of SNMP activities */
+			collect_group_activities(G_SNMP, AO_F_NULL);
 		}
 		else if (!strcmp(p, K_IPV6)) {
-			/* Select IPv6 activities */
-			COLLECT_ACTIVITY(A_NET_IP6);
-			COLLECT_ACTIVITY(A_NET_EIP6);
-			COLLECT_ACTIVITY(A_NET_ICMP6);
-			COLLECT_ACTIVITY(A_NET_EICMP6);
-			COLLECT_ACTIVITY(A_NET_UDP6);
-			COLLECT_ACTIVITY(A_NET_SOCK6);
+			/* Select group of IPv6 activities */
+			collect_group_activities(G_IPV6, AO_F_NULL);
 		}
 		else if (!strcmp(p, K_POWER)) {
-			/* Select activities related to power management */
-			COLLECT_ACTIVITY(A_PWR_CPUFREQ);
-			COLLECT_ACTIVITY(A_PWR_FAN);
-			COLLECT_ACTIVITY(A_PWR_TEMP);
+			/* Select group of activities related to power management */
+			collect_group_activities(G_POWER, AO_F_NULL);
 		}
 		else if (!strcmp(p, K_ALL) || !strcmp(p, K_XALL)) {
 			/* Select all activities */
@@ -148,8 +156,7 @@ void parse_sadc_S_option(char *argv[], int opt)
 			}
 			if (!strcmp(p, K_XALL)) {
 				/* Tell sadc to also collect partition statistics */
-				i = get_activity_position(act, A_DISK);
-				act[i]->opt_flags |= AO_F_DISK_PART;
+				collect_group_activities(G_DISK, AO_F_DISK_PART);
 			}
 		}
 		else if (strspn(argv[opt], DIGITS) == strlen(argv[opt])) {
@@ -157,14 +164,24 @@ void parse_sadc_S_option(char *argv[], int opt)
 			 * Although undocumented, option -S followed by a numerical value
 			 * enables the user to select each activity that should be
 			 * collected. "-S 0" unselects all activities but CPU.
+			 * A value greater than 255 enables the user to select groups
+			 * of activities.
 			 */
 			int act_id;
 
 			act_id = atoi(argv[opt]);
-			if ((act_id < 0) || (act_id > NR_ACT)) {
+			if (act_id > 255) {
+				act_id >>= 8;
+				for (i = 0; i < NR_ACT; i++) {
+					if (act[i]->group & act_id) {
+						act[i]->options |= AO_COLLECTED;
+					}
+				}
+			}
+			else if ((act_id < 0) || (act_id > NR_ACT)) {
 				usage(argv[0]);
 			}
-			if (!act_id) {
+			else if (!act_id) {
 				/* Unselect all activities but CPU */
 				for (i = 0; i < NR_ACT; i++) {
 					act[i]->options &= ~AO_COLLECTED;
@@ -223,7 +240,7 @@ void reset_stats(void)
 
 	for (i = 0; i < NR_ACT; i++) {
 		if ((act[i]->nr > 0) && act[i]->_buf0) {
-			memset(act[i]->_buf0, 0, act[i]->msize * act[i]->nr);
+			memset(act[i]->_buf0, 0, act[i]->msize * act[i]->nr * act[i]->nr2);
 		}
 	}
 }
@@ -245,8 +262,19 @@ void sa_sys_init(void)
 		}
 
 		if (act[i]->nr > 0) {
+			if (act[i]->f_count2) {
+				act[i]->nr2 = (*act[i]->f_count2)(act[i]);
+			}
+			/* else act[i]->nr2 is a constant and doesn't need to be calculated */
+			
+			if (!act[i]->nr2) {
+				act[i]->nr = 0;
+			}
+		}
+
+		if (act[i]->nr > 0) {
 			/* Allocate structures for current activity */
-			SREALLOC(act[i]->_buf0, void, act[i]->msize * act[i]->nr);
+			SREALLOC(act[i]->_buf0, void, act[i]->msize * act[i]->nr * act[i]->nr2);
 		}
 		else {
 			/* No items found: Invalidate current activity */
@@ -405,7 +433,7 @@ void fill_magic_header(struct file_magic *file_magic)
  * Fill system activity file header, then write it (or print it if stdout).
  *
  * IN:
- * @fd			Output file descriptor. May be stdout.
+ * @fd	Output file descriptor. May be stdout.
  ***************************************************************************
  */
 void setup_file_hdr(int fd)
@@ -463,9 +491,11 @@ void setup_file_hdr(int fd)
 			continue;
 
 		if (IS_COLLECTED(act[p]->options)) {
-			file_act.id   = act[p]->id;
-			file_act.nr   = act[p]->nr;
-			file_act.size = act[p]->fsize;
+			file_act.id    = act[p]->id;
+			file_act.magic = act[p]->magic;
+			file_act.nr    = act[p]->nr;
+			file_act.nr2   = act[p]->nr2;
+			file_act.size  = act[p]->fsize;
 
 			if ((n = write_all(fd, &file_act, FILE_ACTIVITY_SIZE))
 			    != FILE_ACTIVITY_SIZE)
@@ -491,8 +521,8 @@ write_error:
  * before the cron daemon is started to avoid conflict with sa1/sa2 scripts.
  *
  * IN:
- * @ofd			Output file descriptor.
- * @rtype		Record type to write (dummy or comment).
+ * @ofd		Output file descriptor.
+ * @rtype	Record type to write (dummy or comment).
  ***************************************************************************
  */
 void write_special_record(int ofd, int rtype)
@@ -536,7 +566,7 @@ void write_special_record(int ofd, int rtype)
  * Write stats (or print them if stdout).
  *
  * IN:
- * @ofd			Output file descriptor. May be stdout.
+ * @ofd		Output file descriptor. May be stdout.
  ***************************************************************************
  */
 void write_stats(int ofd)
@@ -567,8 +597,8 @@ void write_stats(int ofd)
 			continue;
 
 		if (IS_COLLECTED(act[p]->options)) {
-			if ((n = write_all(ofd, act[p]->_buf0, act[p]->fsize * act[p]->nr)) !=
-			    (act[p]->fsize * act[p]->nr)) {
+			if ((n = write_all(ofd, act[p]->_buf0, act[p]->fsize * act[p]->nr * act[p]->nr2)) !=
+			    (act[p]->fsize * act[p]->nr * act[p]->nr2)) {
 				p_write_error();
 			}
 		}
@@ -580,10 +610,10 @@ void write_stats(int ofd)
  * Create a system activity daily data file.
  *
  * IN:
- * @ofile		Name of output file.
+ * @ofile	Name of output file.
  *
  * OUT:
- * @ofd			Output file descriptor.
+ * @ofd		Output file descriptor.
  ***************************************************************************
  */
 void create_sa_file(int *ofd, char *ofile)
@@ -612,11 +642,11 @@ void create_sa_file(int *ofd, char *ofile)
  * Get descriptor for stdout.
  *
  * IN:
- * @stdfd		A value >= 0 indicates that stats data should also
- *			be written to stdout.
+ * @stdfd	A value >= 0 indicates that stats data should also
+ *		be written to stdout.
  *
  * OUT:
- * @stdfd		Stdout file descriptor.
+ * @stdfd	Stdout file descriptor.
  ***************************************************************************
  */
 void open_stdout(int *stdfd)
@@ -637,10 +667,10 @@ void open_stdout(int *stdfd)
  * We may enter this function several times (when we rotate a file).
  *
  * IN:
- * @ofile		Name of output file.
+ * @ofile	Name of output file.
  *
  * OUT:
- * @ofd			Output file descriptor.
+ * @ofd		Output file descriptor.
  ***************************************************************************
  */
 void open_ofile(int *ofd, char ofile[])
@@ -716,24 +746,29 @@ void open_ofile(int *ofd, char ofile[])
 
 				p = get_activity_position(act, file_act.id);
 
-				if ((p < 0) || (act[p]->fsize != file_act.size))
-					/* Unknown activity in list or item size has changed */
+				if ((p < 0) || (act[p]->fsize != file_act.size) ||
+				    (act[p]->magic != file_act.magic))
+					/*
+					 * Unknown activity in list or item size has changed or
+					 * unknown activity format.
+					 */
 					goto append_error;
 
-				if (act[p]->nr != file_act.nr) {
-					if (IS_REMANENT(act[p]->options) || !file_act.nr)
+				if ((act[p]->nr != file_act.nr) || (act[p]->nr2 != file_act.nr2)) {
+					if (IS_REMANENT(act[p]->options) || !file_act.nr || !file_act.nr2)
 						/*
 						 * Remanent structures cannot have a different number of items.
-						 * Also number of items should never be null.
+						 * Also number of items and subitems should never be null.
 						 */
 						goto append_error;
 					else {
 						/*
 						 * Force number of items (serial lines, network interfaces...)
-						 * to that of the file, and reallocate structures.
+						 * and sub-items to that of the file, and reallocate structures.
 						 */
-						act[p]->nr = file_act.nr;
-						SREALLOC(act[p]->_buf0, void, act[p]->msize * act[p]->nr);
+						act[p]->nr  = file_act.nr;
+						act[p]->nr2 = file_act.nr2;
+						SREALLOC(act[p]->_buf0, void, act[p]->msize * act[p]->nr * act[p]->nr2);
 					}
 				}
 				/* Save activity sequence */

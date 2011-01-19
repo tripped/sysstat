@@ -50,6 +50,8 @@ long interval = -1, count = 0;
 int dis = TRUE;
 
 unsigned int flags = 0;
+unsigned int dm_major;	/* Device-mapper major number */
+
 char timestamp[2][TIMESTAMP_LEN];
 
 unsigned long avg_count = 0;
@@ -102,7 +104,7 @@ void usage(char *progname)
 
 	print_usage_title(progname);
 	fprintf(stderr, _("Options are:\n"
-			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -p ] [ -q ] [ -r ]\n"
+			  "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -H ] [ -p ] [ -q ] [ -r ]\n"
 			  "[ -R ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
 			  "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
 			  "[ -m { <keyword> [,...] | ALL } ] [ -n { <keyword> [,...] | ALL } ]\n"
@@ -127,13 +129,15 @@ void display_help(char *progname)
 	fprintf(stderr, _("\t-b\tI/O and transfer rate statistics\n"));
 	fprintf(stderr, _("\t-B\tPaging statistics\n"));
 	fprintf(stderr, _("\t-d\tBlock device statistics\n"));
+	fprintf(stderr, _("\t-H\tHugepages utilization statistics\n"));
 	fprintf(stderr, _("\t-I { <int> | SUM | ALL | XALL }\n"
 			  "\t\tInterrupts statistics\n"));
 	fprintf(stderr, _("\t-m { <keyword> [,...] | ALL }\n"
 			  "\t\tPower management statistics\n"
 			  "\t\tKeywords are:\n"
-			  "\t\tCPU\tCPU clock frequency\n"
+			  "\t\tCPU\tCPU instantaneous clock frequency\n"
 			  "\t\tFAN\tFans speed\n"
+			  "\t\tFREQ\tCPU average clock frequency\n"
 			  "\t\tIN\tVoltage inputs\n"
 			  "\t\tTEMP\tDevices temperature\n"));
 	fprintf(stderr, _("\t-n { <keyword> [,...] | ALL }\n"
@@ -217,7 +221,7 @@ void print_read_error(void)
  ***************************************************************************
  * Check that every selected activity actually belongs to the sequence list.
  * If not, then the activity should be unselected since it will not be sent
- * by sadc. An activity can be unsent if its number of items is null.
+ * by sadc. An activity can be not sent if its number of items is null.
  *
  * IN:
  * @act_nr	Size of sequence list.
@@ -243,17 +247,20 @@ void reverse_check_act(unsigned int act_nr)
 
 /*
  ***************************************************************************
- * Fill the rectime structure with current record's time, based on current
- * record's time data saved in file.
+ * Fill the (struct tm) rectime structure with current record's time,
+ * based on current record's time data saved in file.
  * The resulting timestamp is expressed in the locale of the file creator
  * or in the user's own locale depending on whether option -t has been used
  * or not.
  *
  * IN:
  * @curr	Index in array for current sample statistics.
+ *
+ * RETURNS:
+ * 1 if an error was detected, or 0 otherwise.
  ***************************************************************************
 */
-void sar_get_record_timestamp_struct(int curr)
+int sar_get_record_timestamp_struct(int curr)
 {
 	struct tm *ltm;
 
@@ -265,9 +272,17 @@ void sar_get_record_timestamp_struct(int curr)
 		rectime.tm_sec  = record_hdr[curr].second;
 	}
 	else {
-		ltm = localtime((const time_t *) &record_hdr[curr].ust_time);
+		if ((ltm = localtime((const time_t *) &record_hdr[curr].ust_time)) == NULL)
+			/*
+			 * An error was detected.
+			 * The rectime structure has NOT been updated.
+			 */
+			return 1;
+		
 		rectime = *ltm;
 	}
+	
+	return 0;
 }
 
 /*
@@ -316,15 +331,22 @@ int check_line_hdr(void)
  *
  * OUT:
  * @cur_time	Timestamp string.
+ *
+ * RETURNS:
+ * 1 if an error was detected, or 0 otherwise.
  ***************************************************************************
 */
-void set_record_timestamp_string(int curr, char *cur_time, int len)
+int set_record_timestamp_string(int curr, char *cur_time, int len)
 {
 	/* Fill timestamp structure */
-	sar_get_record_timestamp_struct(curr);
+	if (sar_get_record_timestamp_struct(curr))
+		/* Error detected */
+		return 1;
 
 	/* Set cur_time date value */
 	strftime(cur_time, len, "%X", &rectime);
+
+	return 0;
 }
 
 /*
@@ -406,7 +428,7 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
  * @cnt			Number of remaining lines to display.
  *
  * RETURNS:
- * 1 if stats have been successfully displayed.
+ * 1 if stats have been successfully displayed, and 0 otherwise.
  ***************************************************************************
  */
 int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
@@ -429,9 +451,11 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 	}
 
 	/* Set previous timestamp */
-	set_record_timestamp_string(!curr, timestamp[!curr], 16);
+	if (set_record_timestamp_string(!curr, timestamp[!curr], 16))
+		return 0;
 	/* Set current timestamp */
-	set_record_timestamp_string(curr,  timestamp[curr],  16);
+	if (set_record_timestamp_string(curr,  timestamp[curr],  16))
+		return 0;
 
 	/* Check if we are beginning a new day */
 	if (use_tm_start && record_hdr[!curr].ust_time &&
@@ -508,8 +532,9 @@ void write_stats_startup(int curr)
 	record_hdr[!curr].ust_time    = record_hdr[curr].ust_time;
 
 	for (i = 0; i < NR_ACT; i++) {
-		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0))
-			memset(act[i]->buf[!curr], 0, act[i]->msize * act[i]->nr);
+		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
+			memset(act[i]->buf[!curr], 0, act[i]->msize * act[i]->nr * act[i]->nr2);
+		}
 	}
 	
 	flags |= S_F_SINCE_BOOT;
@@ -568,7 +593,7 @@ int sa_read(void *buffer, int size)
  * @ifd			Input file descriptor.
  *
  * RETURNS:
- * 1 if the record has been successfully displayed.
+ * 1 if the record has been successfully displayed, and 0 otherwise.
  ***************************************************************************
  */
 int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, int ifd)
@@ -576,7 +601,8 @@ int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, int
 	char cur_time[26];
 	int dp = 1;
 
-	set_record_timestamp_string(curr, cur_time, 26);
+	if (set_record_timestamp_string(curr, cur_time, 26))
+		return 0;
 
 	/* The record must be in the interval specified by -s/-e options */
 	if ((use_tm_start && (datecmp(&rectime, &tm_start) < 0)) ||
@@ -617,7 +643,7 @@ int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, int
 void read_sadc_stat_bunch(int curr)
 {
 	int i, p;
-	
+
 	/* Read record header (type is always R_STATS since it is read from sadc) */
 	if (sa_read(&record_hdr[curr], RECORD_HEADER_SIZE)) {
 		print_read_error();
@@ -630,8 +656,8 @@ void read_sadc_stat_bunch(int curr)
 		if ((p = get_activity_position(act, id_seq[i])) < 0) {
 			PANIC(1);
 		}
-		
-		if (sa_read(act[p]->buf[curr], act[p]->fsize * act[p]->nr)) {
+
+		if (sa_read(act[p]->buf[curr], act[p]->fsize * act[p]->nr * act[p]->nr2)) {
 			print_read_error();
 		}
 	}
@@ -800,13 +826,18 @@ void read_header_data(void)
 
 		p = get_activity_position(act, file_act.id);
 
-		if ((p < 0) || (act[p]->fsize != file_act.size) || !file_act.nr) {
+		if ((p < 0) || (act[p]->fsize != file_act.size)
+			    || !file_act.nr
+			    || !file_act.nr2
+			    || (act[p]->magic != file_act.magic)) {
+			/* Remember that we are reading data from sadc and not from a file... */
 			fprintf(stderr, _("Inconsistent input data\n"));
 			exit(3);
 		}
 
 		id_seq[i]   = file_act.id;	/* We necessarily have "i < NR_ACT" */
 		act[p]->nr  = file_act.nr;
+		act[p]->nr2 = file_act.nr2;
 	}
 
 	while (i < NR_ACT) {
@@ -871,7 +902,12 @@ void read_stats_from_file(char from_file[])
 				 */
 				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
 						     file_actlst);
-				sar_get_record_timestamp_struct(0);
+				if (sar_get_record_timestamp_struct(0))
+					/*
+					 * An error was detected.
+					 * The timestamp hasn't been updated.
+					 */
+					continue;
 			}
 		}
 		while ((rtype == R_RESTART) || (rtype == R_COMMENT) ||
@@ -889,7 +925,10 @@ void read_stats_from_file(char from_file[])
 			exit(2);
 		}
 
-		/* Read and write stats located between two possible Linux restarts */
+		/*
+		 * Read and write stats located between two possible Linux restarts.
+		 * Activities that should be displayed are saved in id_seq[] array.
+		 */
 		for (i = 0; i < NR_ACT; i++) {
 
 			if (!id_seq[i])
@@ -1046,7 +1085,7 @@ void read_stats(void)
  */
 int main(int argc, char **argv)
 {
-	int opt = 1, args_idx = 2;
+	int i, opt = 1, args_idx = 2;
 	int fd[2];
 	char from_file[MAX_FILE_LEN], to_file[MAX_FILE_LEN];
 	char ltemp[20];
@@ -1236,6 +1275,10 @@ int main(int argc, char **argv)
 		usage(argv[0]);
 	}
 
+	if (USE_PRETTY_OPTION(flags)) {
+		dm_major = get_devmap_major();
+	}
+	
 	if (!count) {
 		/*
 		 * count parameter not set: Display all the contents of the file
@@ -1311,12 +1354,34 @@ int main(int argc, char **argv)
 
 		/* Flags to be passed to sadc */
 		salloc(args_idx++, "-z");
-		salloc(args_idx++, "-S");
-		salloc(args_idx++, K_ALL);
-
-		/* Outfile arg */
+		
+		/* Writing data to a file (option -o) */
 		if (to_file[0]) {
+			/* Collect all possible activities (option -S ALL for sadc) */
+			salloc(args_idx++, "-S");
+			salloc(args_idx++, K_ALL);
+			/* Outfile arg */
 			salloc(args_idx++, to_file);
+		}
+		else {
+			/*
+			 * If option -o hasn't been used, then tell sadc
+			 * to collect only activities that will be displayed.
+			 */
+			int act_id = 0;
+			
+			for (i = 0; i < NR_ACT; i++) {
+				if (IS_SELECTED(act[i]->options)) {
+					act_id |= act[i]->group;
+				}
+			}
+			if (act_id) {
+				act_id <<= 8;
+				snprintf(ltemp, 19, "%d", act_id);
+				ltemp[19] = '\0';
+				salloc(args_idx++, "-S");
+				salloc(args_idx++, ltemp);
+			}
 		}
 
 		/* Last arg is NULL */

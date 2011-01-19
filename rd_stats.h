@@ -152,6 +152,8 @@ struct stats_memory {
 	unsigned long tlskb	__attribute__ ((aligned (8)));
 	unsigned long caskb	__attribute__ ((aligned (8)));
 	unsigned long comkb	__attribute__ ((aligned (8)));
+	unsigned long activekb	__attribute__ ((aligned (8)));
+	unsigned long inactkb	__attribute__ ((aligned (8)));
 };
 
 #define STATS_MEMORY_SIZE	(sizeof(struct stats_memory))
@@ -169,6 +171,7 @@ struct stats_ktables {
 /* Structure for queue and load statistics */
 struct stats_queue {
 	unsigned long nr_running	__attribute__ ((aligned (8)));
+	unsigned long procs_blocked	__attribute__ ((aligned (8)));
 	unsigned int  load_avg_1	__attribute__ ((aligned (8)));
 	unsigned int  load_avg_5	__attribute__ ((packed));
 	unsigned int  load_avg_15	__attribute__ ((packed));
@@ -514,7 +517,27 @@ struct stats_pwr_in {
 	char    device[MAX_SENSORS_DEV_LEN]	__attribute__ ((aligned (8)));
 };
 
-#define STATS_PWR_IN_SIZE    (sizeof(struct stats_pwr_in))
+#define STATS_PWR_IN_SIZE	(sizeof(struct stats_pwr_in))
+
+/* Structure for hugepages statistics */
+struct stats_huge {
+	unsigned long frhkb			__attribute__ ((aligned (8)));
+	unsigned long tlhkb			__attribute__ ((aligned (8)));
+};
+
+#define STATS_HUGE_SIZE	(sizeof(struct stats_memory))
+
+/*
+ * Structure for weighted CPU frequency statistics.
+ * In activity buffer: First structure is for global CPU utilisation ("all").
+ * Following structures are for each individual CPU (0, 1, etc.)
+ */
+struct stats_pwr_wghfreq {
+	unsigned long long 	time_in_state	__attribute__ ((aligned (16)));
+	unsigned long 		freq		__attribute__ ((aligned (16)));
+};
+
+#define STATS_PWR_WGHFREQ_SIZE	(sizeof(struct stats_pwr_wghfreq))
 
 /*
  ***************************************************************************
@@ -591,6 +614,10 @@ extern void
 	read_temp(struct stats_pwr_temp *, int);
 extern void
 	read_in(struct stats_pwr_in *, int);
+extern void
+	read_meminfo_huge(struct stats_huge *);
+extern void
+	read_time_in_state(struct stats_pwr_wghfreq *, int, int);
 
 /*
  ***************************************************************************
@@ -618,5 +645,7 @@ extern int
 	get_temp_nr(void);
 extern int
 	get_in_nr(void);
+extern int
+	get_freq_nr(void);
 
 #endif /* _RD_STATS_H */

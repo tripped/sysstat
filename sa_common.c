@@ -81,7 +81,7 @@ void allocate_structures(struct activity *act[])
 	for (i = 0; i < NR_ACT; i++) {
 		if (act[i]->nr > 0) {
 			for (j = 0; j < 3; j++) {
-				SREALLOC(act[i]->buf[j], void, act[i]->msize * act[i]->nr);
+				SREALLOC(act[i]->buf[j], void, act[i]->msize * act[i]->nr * act[i]->nr2);
 			}
 		}
 	}
@@ -382,8 +382,9 @@ void get_file_timestamp_struct(unsigned int flags, struct tm *rectime,
 		mktime(rectime);
 	}
 	else {
-		loc_t = localtime((const time_t *) &file_hdr->sa_ust_time);
-		*rectime = *loc_t;
+		if ((loc_t = localtime((const time_t *) &file_hdr->sa_ust_time)) != NULL) {
+			*rectime = *loc_t;
+		}
 	}
 }
 
@@ -796,6 +797,9 @@ int get_activity_nr(struct activity *act[], unsigned int option, int count_outpu
  *
  * IN:
  * @act		Array of activities.
+ *
+ * OUT:
+ * @act		Array of activities, all of the being selected.
  ***************************************************************************
  */
 void select_all_activities(struct activity *act[])
@@ -813,10 +817,10 @@ void select_all_activities(struct activity *act[])
  * Also select CPU "all" if no other CPU has been selected.
  *
  * IN:
- * @act	Array of activities.
+ * @act		Array of activities.
  *
  * OUT:
- * @act	Array of activities with CPU activity selected if needed.
+ * @act		Array of activities with CPU activity selected if needed.
  ***************************************************************************
  */
 void select_default_activity(struct activity *act[])
@@ -962,12 +966,11 @@ void copy_structures(struct activity *act[], unsigned int id_seq[],
 			continue;
 
 		if (((p = get_activity_position(act, id_seq[i])) < 0) ||
-		    (act[p]->nr < 1)) {
+		    (act[p]->nr < 1) || (act[p]->nr2 < 1)) {
 			PANIC(1);
 		}
-
-		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * act[p]->nr);
-
+		
+		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * act[p]->nr * act[p]->nr2);
 	}
 }
 
@@ -986,30 +989,36 @@ void copy_structures(struct activity *act[], unsigned int id_seq[],
 void read_file_stat_bunch(struct activity *act[], int curr, int ifd, int act_nr,
 			  struct file_activity *file_actlst)
 {
-	int i, j, p;
+	int i, j, k, p;
 	struct file_activity *fal = file_actlst;
 
 	for (i = 0; i < act_nr; i++, fal++) {
 
-		if ((p = get_activity_position(act, fal->id)) < 0) {
+		if (((p = get_activity_position(act, fal->id)) < 0) ||
+		    (act[p]->magic != fal->magic)) {
 			/*
 			 * Ignore current activity in file, which is unknown to
-			 * current sysstat version.
+			 * current sysstat version or has an unknown format.
 			 */
-			if (lseek(ifd, fal->size * fal->nr, SEEK_CUR) < (fal->size * fal->nr)) {
+			if (lseek(ifd, fal->size * fal->nr * fal->nr2, SEEK_CUR) < (fal->size * fal->nr * fal->nr2)) {
 				close(ifd);
 				perror("lseek");
 				exit(2);
 			}
 		}
-		else if ((act[p]->nr > 1) && (act[p]->msize > act[p]->fsize)) {
+		else if ((act[p]->nr > 0) &&
+			 ((act[p]->nr > 1) || (act[p]->nr2 > 1)) &&
+			 (act[p]->msize > act[p]->fsize)) {
 			for (j = 0; j < act[p]->nr; j++) {
-				sa_fread(ifd, (char *) act[p]->buf[curr] + j * act[p]->msize,
-					 act[p]->fsize, HARD_SIZE);
+				for (k = 0; k < act[p]->nr2; k++) {
+					sa_fread(ifd,
+						 (char *) act[p]->buf[curr] + (j * act[p]->nr2 + k) * act[p]->msize,
+						 act[p]->fsize, HARD_SIZE);
+				}
 			}
 		}
 		else if (act[p]->nr > 0) {
-			sa_fread(ifd, act[p]->buf[curr], act[p]->fsize * act[p]->nr, HARD_SIZE);
+			sa_fread(ifd, act[p]->buf[curr], act[p]->fsize * act[p]->nr * act[p]->nr2, HARD_SIZE);
 		}
 		else {
 			PANIC(act[p]->nr);
@@ -1083,30 +1092,54 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 
 		sa_fread(*ifd, fal, FILE_ACTIVITY_SIZE, HARD_SIZE);
 
-		if (fal->nr < 1) {
+		if ((fal->nr < 1) || (fal->nr2 < 1)) {
 			/*
 			 * Every activity, known or unknown,
-			 * should have at least one item.
+			 * should have at least one item and sub-item.
 			 */
 			handle_invalid_sa_file(ifd, file_magic, dfile, 0);
+		}
+
+		if ((p = get_activity_position(act, fal->id)) < 0)
+			/* Unknown activity */
+			continue;
+		
+		if (act[p]->magic != fal->magic) {
+			/* Bad magical number */
+			if (ignore) {
+				/*
+				 * This is how sadf -H knows that this
+				 * activity has an unknown format.
+				 */
+				act[p]->magic = ACTIVITY_MAGIC_UNKNOWN;
+			}
+			else
+				continue;
 		}
 
 		if (fal->id == A_CPU) {
 			a_cpu = TRUE;
 		}
 
-		if ((p = get_activity_position(act, fal->id)) >= 0) {
-			if (fal->size > act[p]->msize) {
-				act[p]->msize = fal->size;
-			}
-			act[p]->fsize = fal->size;
-			act[p]->nr    = fal->nr;
-			id_seq[j++]   = fal->id;
+		if (fal->size > act[p]->msize) {
+			act[p]->msize = fal->size;
 		}
+		act[p]->fsize = fal->size;
+		act[p]->nr    = fal->nr;
+		act[p]->nr2   = fal->nr2;
+		/*
+		 * This is a known activity with a known format
+		 * (magical number). Only such activities will be displayed.
+		 * (Well, this may also be an unknown format if we have entered sadf -H.)
+		 */
+		id_seq[j++] = fal->id;
 	}
 
 	if (!a_cpu) {
-		/* CPU activity should always be in file */
+		/*
+		 * CPU activity should always be in file
+		 * and have a known format (expected magical number).
+		 */
 		handle_invalid_sa_file(ifd, file_magic, dfile, 0);
 	}
 
@@ -1172,7 +1205,8 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			*flags |= S_F_PER_PROC;
 
 			p = get_activity_position(act, A_MEMORY);
-			act[p]->opt_flags |= AO_F_MEM_AMT + AO_F_MEM_DIA + AO_F_MEM_SWAP;
+			act[p]->opt_flags |= AO_F_MEM_AMT + AO_F_MEM_DIA +
+					     AO_F_MEM_SWAP;
 
 			p = get_activity_position(act, A_IRQ);
 			set_bitmap(act[p]->bitmap->b_array, ~0,
@@ -1200,6 +1234,11 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			SELECT_ACTIVITY(A_DISK);
 			break;
 
+		case 'H':
+			p = get_activity_position(act, A_HUGE);
+			act[p]->options   |= AO_SELECTED;
+			break;
+			
 		case 'p':
 			*flags |= S_F_DEV_PRETTY;
 			break;
@@ -1306,11 +1345,15 @@ int parse_sar_m_opt(char *argv[], int *opt, struct activity *act[])
 		else if (!strcmp(t, K_TEMP)) {
 			SELECT_ACTIVITY(A_PWR_TEMP);
 		}
+		else if (!strcmp(t, K_FREQ)) {
+			SELECT_ACTIVITY(A_PWR_WGHFREQ);
+		}
 		else if (!strcmp(t, K_ALL)) {
 			SELECT_ACTIVITY(A_PWR_CPUFREQ);
 			SELECT_ACTIVITY(A_PWR_FAN);
 			SELECT_ACTIVITY(A_PWR_IN);
 			SELECT_ACTIVITY(A_PWR_TEMP);
+			SELECT_ACTIVITY(A_PWR_WGHFREQ);
 		}
 		else
 			return 1;

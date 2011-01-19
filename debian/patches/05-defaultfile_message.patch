@@ -1,8 +1,10 @@
 If sar cannot open a data file, print a message indicating that sysstat
 might not be enabled (closes: #511418).
 
---- sysstat-9.0.6.1.orig/sa_common.c
-+++ sysstat-9.0.6.1/sa_common.c
+Index: sysstat/sa_common.c
+===================================================================
+--- sysstat.orig/sa_common.c	2011-01-19 21:24:59.000000000 +0100
++++ sysstat/sa_common.c	2011-01-19 21:25:05.000000000 +0100
 @@ -43,6 +43,7 @@
  #define _(string) (string)
  #endif
@@ -19,7 +21,7 @@ might not be enabled (closes: #511418).
  }
  
  /*
-@@ -1049,7 +1055,12 @@
+@@ -1058,7 +1060,12 @@
  
  	/* Open sa data file */
  	if ((*ifd = open(dfile, O_RDONLY)) < 0) {

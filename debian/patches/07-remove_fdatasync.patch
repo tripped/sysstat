@@ -2,9 +2,9 @@ Remove calls to fdatasync (closes: #559686).
 Upstream is going to do the same in next release.
 Index: sysstat/sadc.c
 ===================================================================
---- sysstat.orig/sadc.c	2010-09-11 22:56:56.000000000 +0200
-+++ sysstat/sadc.c	2010-09-11 23:01:25.000000000 +0200
-@@ -868,11 +868,13 @@
+--- sysstat.orig/sadc.c	2011-01-19 21:56:42.000000000 +0100
++++ sysstat/sadc.c	2011-01-19 21:56:57.000000000 +0100
+@@ -903,11 +903,13 @@
  			 */
  			do_sa_rotat = FALSE;
  

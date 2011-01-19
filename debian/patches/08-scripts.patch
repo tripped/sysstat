@@ -1,7 +1,9 @@
 Minor sa2 script fixes.
 
---- sysstat-9.0.6.1.orig/sa2.in
-+++ sysstat-9.0.6.1/sa2.in
+Index: sysstat/sa2.in
+===================================================================
+--- sysstat.orig/sa2.in	2011-01-19 21:24:01.000000000 +0100
++++ sysstat/sa2.in	2011-01-19 21:24:15.000000000 +0100
 @@ -49,7 +49,7 @@
  [ -f "$DFILE" ] || exit 0
  cd ${ENDIR}

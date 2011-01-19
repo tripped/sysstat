@@ -2,8 +2,8 @@ Makefile fixes.
 
 Index: sysstat/Makefile.in
 ===================================================================
---- sysstat.orig/Makefile.in	2010-09-11 22:55:06.000000000 +0200
-+++ sysstat/Makefile.in	2010-09-11 22:55:21.000000000 +0200
+--- sysstat.orig/Makefile.in	2011-01-19 21:14:31.000000000 +0100
++++ sysstat/Makefile.in	2011-01-19 21:22:40.000000000 +0100
 @@ -61,9 +61,9 @@
  SYSCONFIG_DIR = @SYSCONFIG_DIR@
  
@@ -16,7 +16,7 @@ Index: sysstat/Makefile.in
  DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
  
  # Commands
-@@ -217,8 +217,9 @@
+@@ -219,8 +219,9 @@
  locales:
  endif
  
@@ -28,7 +28,7 @@ Index: sysstat/Makefile.in
  
  # Phony targets
  .PHONY: clean distclean install install_base install_all uninstall \
-@@ -336,7 +337,7 @@
+@@ -342,7 +343,7 @@
  	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
  endif
  	mkdir -p $(DESTDIR)$(BIN_DIR)
@@ -37,7 +37,7 @@ Index: sysstat/Makefile.in
  	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
  	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
-@@ -354,12 +355,12 @@
+@@ -360,12 +361,12 @@
  	$(INSTALL_DATA) sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
  ifeq ($(INSTALL_DOC),y)
@@ -55,13 +55,13 @@ Index: sysstat/Makefile.in
 +#	$(INSTALL_DATA) *.lsm $(DESTDIR)$(DOC_DIR)
  endif
  
- install_all: install_base crontab sysstat \
-@@ -571,7 +572,7 @@
+ install_all: install_base cron/crontab sysstat \
+@@ -578,7 +579,7 @@
  	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat *.o *.a core TAGS
  	find nls -name "*.gmo" -exec rm -f {} \;
  
 -almost-distclean: clean nls/sysstat.pot
 +almost-distclean: clean
- 	rm -f sa1 sa2 sysstat crontab version.h sysconfig.h
- 	rm -f sysstat.sysconfig sysstat.crond sysstat.cron.daily
- 	rm -f sysstat.cron.hourly sysstat.crond.sample sysstat.crond.sample.in
+ 	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h
+ 	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily
+ 	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in

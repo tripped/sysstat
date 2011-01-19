@@ -1,8 +1,8 @@
 Minor fixes in config files
 Index: sysstat/sysstat.sysconfig.in
 ===================================================================
---- sysstat.orig/sysstat.sysconfig.in	2010-09-11 23:06:05.000000000 +0200
-+++ sysstat/sysstat.sysconfig.in	2010-09-11 23:06:35.000000000 +0200
+--- sysstat.orig/sysstat.sysconfig.in	2011-01-19 21:14:31.000000000 +0100
++++ sysstat/sysstat.sysconfig.in	2011-01-19 21:23:02.000000000 +0100
 @@ -1,6 +1,7 @@
 -# @PACKAGE_NAME@-@PACKAGE_VERSION@ configuration file.
 +# @PACKAGE_NAME@ configuration file.
@@ -12,10 +12,10 @@ Index: sysstat/sysstat.sysconfig.in
  # If value is greater than 28, then log files are kept in
  # multiple directories, one for each month.
  HISTORY=@HISTORY@
-Index: sysstat/crontab.sample
+Index: sysstat/cron/crontab.sample
 ===================================================================
---- sysstat.orig/crontab.sample	2010-09-11 23:06:05.000000000 +0200
-+++ sysstat/crontab.sample	2010-09-11 23:06:35.000000000 +0200
+--- sysstat.orig/cron/crontab.sample	2011-01-19 21:23:20.000000000 +0100
++++ sysstat/cron/crontab.sample	2011-01-19 21:23:35.000000000 +0100
 @@ -1,7 +1,4 @@
  # Crontab sample for root or adm
 -# Please update this crontab with the proper location

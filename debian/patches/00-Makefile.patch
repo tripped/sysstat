@@ -2,8 +2,8 @@ Makefile fixes.
 
 Index: sysstat/Makefile.in
 ===================================================================
---- sysstat.orig/Makefile.in	2011-02-06 14:57:34.000000000 +0100
-+++ sysstat/Makefile.in	2011-02-06 15:02:13.000000000 +0100
+--- sysstat.orig/Makefile.in	2011-02-06 15:40:07.000000000 +0100
++++ sysstat/Makefile.in	2011-02-07 00:13:26.000000000 +0100
 @@ -61,9 +61,9 @@
  SYSCONFIG_DIR = @SYSCONFIG_DIR@
  
@@ -22,7 +22,7 @@ Index: sysstat/Makefile.in
  
 -nls/sysstat.pot: $(wildcard *.c)
 -	$(XGETTEXT) -o $@ -k_ --msgid-bugs-address="sysstat <at> orange.fr" $^
-+.PHONY: nls/sysstat.pot
++#.PHONY: nls/sysstat.pot
 +nls/sysstat.pot: | $(wildcard *.c)
 +	$(XGETTEXT) -o $@ -k_ --msgid-bugs-address="sysstat <at> orange.fr" $|
  

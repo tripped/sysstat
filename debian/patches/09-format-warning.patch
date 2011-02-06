@@ -1,0 +1,15 @@
+Fix a warning given by gcc -Wformat.
+
+Index: sysstat/rndr_stats.c
+===================================================================
+--- sysstat.orig/rndr_stats.c	2011-02-06 15:24:25.000000000 +0100
++++ sysstat/rndr_stats.c	2011-02-06 15:24:42.000000000 +0100
+@@ -132,7 +132,7 @@
+ 			}
+ 		}
+ 		else {
+-			printf(txt[isdb]);	/* No args */
++			printf("%s", txt[isdb]);	/* No args */
+ 		}
+ 	}
+ 

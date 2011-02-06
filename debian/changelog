@@ -1,3 +1,16 @@
+sysstat (9.1.7-2~) unstable; urgency=low
+
+  * NOT RELEASED YET
+  * Upload to unstable.
+  * debian/rules:
+    + call dpkg-buildflags for initial values of CFLAGS & LDFLAGS;
+    + use dh_auto_{configure,install,clean} debhelper commands;
+    + provide build-arch and build-indep targets.
+  * Updated 00-Makefile.patch to make it possible to install isag only.
+  * 09-format-warning.patch: Fix a warning given by gcc -Wformat.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 06 Feb 2011 15:36:48 +0100
+
 sysstat (9.1.7-1) experimental; urgency=low
 
   * New upstream development release.
@@ -12,7 +25,7 @@ sysstat (9.1.5-1) experimental; urgency=low
   * New upstream development release.
   * Standards-Version: 3.9.1 (no changes).
   * Bump debhpelper's compat level to 8.
-  * Remove conflict with anicent version of atsar.
+  * Remove conflict with ancient version of atsar.
   * Add libsensors-dev4 to build-depends.
 
  -- Robert Luberda <robert@debian.org>  Sun, 12 Sep 2010 16:18:47 +0200

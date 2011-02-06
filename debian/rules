@@ -1,79 +1,96 @@
 #!/usr/bin/make -f
-# $Id: rules 1497 2010-09-12 14:21:46Z robert $
+# $Id: rules 1508 2011-02-06 14:44:52Z robert $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
 # This version is for a multibinary package. It also allows you to build any
 # of the binary packages independantly, via binary-<package> targets.
 
-# Uncomment this to turn on verbose mode. 
-#export DH_VERBOSE=1
+# Uncomment this to turn on verbose mode.
+# export DH_VERBOSE=1
 
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 
 export DH_ALWAYS_EXCLUDE=CVS:.svn
 
-
-DESTDIR=$(CURDIR)/debian/tmp
-
-ifeq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS 		:= -g -O2
-else
-	CFLAGS 		:= -g -O0
-endif
+DH_AUTO_OPTIONS := -v -Sautoconf --parallel
+DESTDIR         := $(CURDIR)/debian/tmp
+CFLAGS          := $(shell dpkg-buildflags --get CFLAGS)
+LDFLAGS         := $(shell dpkg-buildflags --get LDFLAGS)
 
 
-build: build-stamp
-build-stamp:
+configure: configure-stamp
+configure-stamp:
 	dh_testdir
 
+	dh_auto_configure $(DH_AUTO_OPTIONS) --         \
+	            --enable-yesterday                  \
+	            --disable-man-group                 \
+	            --disable-compress-manpg            \
+	            sa_lib_dir=/usr/lib/sysstat         \
+	            sa_dir=/var/log/sysstat             \
+	            conf_dir=/etc/sysstat               \
+	            CFLAGS="$(CFLAGS)"                  \
+	            LDFLAGS="$(LDFLAGS)"
+	touch "$@"
 
-	./configure --prefix=/usr 			\
-		    --mandir=/usr/share/man		\
-		    --enable-yesterday			\
-		    --disable-man-group			\
-		    --disable-compress-manpg		\
-		    sa_lib_dir=/usr/lib/sysstat		\
-		    sa_dir=/var/log/sysstat		\
-		    conf_dir=/etc/sysstat		\
-		    CFLAGS="$(CFLAGS)"			\
-		    LDFLAGS="$(LDFLAGS)"		
 
-	# Add here commands to compile the package.
-	$(MAKE)
+
+build-arch: build-arch-stamp
+build-arch-stamp: configure
+
+	dh_auto_build $(DH_AUTO_OPTIONS)
 
 	chmod a+x debian/debian-sa1
 
-	touch build-stamp
+	touch "$@"
+
+
+
+build-indep: build-indep-stamp
+build-indep-stamp: configure
+
+	dh_auto_build $(DH_AUTO_OPTIONS) -- contrib/isag/isag
+
+	touch "$@"
+
+
 
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp
+	rm -f configure-stamp build-arch-stamp build-indep-stamp config.log
 
-	# Add here commands to clean up after the build process.
-	[ ! -f Makefile ] || $(MAKE) clean
-	[ ! -f Makefile ] || $(MAKE) distclean
+	dh_auto_clean $(DH_AUTO_OPTIONS)
 
 	dh_clean
 
-install: DH_OPTIONS=
-install: build
+
+install-common install-arch install-indep: DH_OPTIONS=
+install-common:
 	dh_testdir
 	dh_testroot
 	dh_prep
 	dh_installdirs
 
-	# Add here commands to install the package into debian/tmp.
-	$(MAKE) install_base DESTDIR="$(DESTDIR)"
+install-arch: build-arch install-common
+
+	dh_auto_install $(DH_AUTO_OPTIONS) --destdir="$(DESTDIR)"
 
 	mkdir -p -m 755 $(DESTDIR)/usr/lib/sysstat
 	mv $(DESTDIR)/usr/bin/sar $(DESTDIR)/usr/bin/sar.sysstat
 	mv $(DESTDIR)/usr/share/man/man1/sar.1 $(DESTDIR)/usr/share/man/man1/sar.sysstat.1
 	rm -rf $(DESTDIR)/usr/doc
 
-	dh_install
+	dh_installchangelogs -a CHANGES
+
+install-indep: build-indep install-common
+
+	$(MAKE) DESTDIR="$(DESTDIR)" install_isag
+
+	dh_installchangelogs -i
+
 
 # This single target is used to build all the packages, all at once, or
 # one at a time. So keep in mind: any options passed to commands here will
@@ -82,7 +99,8 @@ install: build
 binary-common:
 	dh_testdir
 	dh_testroot
-#	dh_installchangelogs 
+	dh_install
+#	dh_installchangelogs
 	dh_installdocs
 	dh_installexamples
 	dh_installmenu
@@ -92,13 +110,13 @@ binary-common:
 #	dh_installcatalogs
 #	dh_installpam
 #	dh_installmime
-	dh_installinit --no-start -- start 20 2 3 4 5 . 
+	dh_installinit --no-start -- start 20 2 3 4 5 .
 #	dh_installman
 	dh_installcron
 #	dh_installinfo
 #	dh_undocumented
 
-	sh debian/fix.sh $(PACKAGE)
+	sh debian/fix.sh `dh_listpackages`
 
 	dh_lintian
 	dh_strip
@@ -114,19 +132,25 @@ binary-common:
 	dh_md5sums
 	dh_builddeb
 
+
 # Build architecture independant packages using the common target.
-binary-indep: build install
-	dh_installchangelogs -i
-	 $(MAKE) -f debian/rules DH_OPTIONS=-i PACKAGE=isag binary-common
+binary-indep: build-indep install-indep
+	$(MAKE) -f debian/rules DH_OPTIONS=-i binary-common
 
 # Build architecture dependant packages using the common target.
-binary-arch: build install
-	dh_installchangelogs -a CHANGES
-	$(MAKE) -f debian/rules DH_OPTIONS=-a PACKAGE=sysstat binary-common
+binary-arch: build-arch install-arch
+	$(MAKE) -f debian/rules DH_OPTIONS=-a binary-common
 
 # Any other binary targets build just one binary package at a time.
 binary-%: build install
 	make -f debian/rules binary-common DH_OPTIONS=-p$*
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary-common binary install
+build:  build-indep  build-arch
+
+.PHONY: configure clean                                         \
+	build-indep   build-arch   build                        \
+	binary-indep  binary-arch  binary-common  binary        \
+	indeall-indep install-arch install-common
+
+.DEFAULT_GOAL := binary

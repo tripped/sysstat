@@ -2,8 +2,8 @@ Makefile fixes.
 
 Index: sysstat/Makefile.in
 ===================================================================
---- sysstat.orig/Makefile.in	2011-01-19 21:14:31.000000000 +0100
-+++ sysstat/Makefile.in	2011-01-19 21:22:40.000000000 +0100
+--- sysstat.orig/Makefile.in	2011-02-06 14:57:34.000000000 +0100
++++ sysstat/Makefile.in	2011-02-06 15:02:13.000000000 +0100
 @@ -61,9 +61,9 @@
  SYSCONFIG_DIR = @SYSCONFIG_DIR@
  
@@ -28,7 +28,35 @@ Index: sysstat/Makefile.in
  
  # Phony targets
  .PHONY: clean distclean install install_base install_all uninstall \
-@@ -342,7 +343,7 @@
+@@ -253,9 +254,6 @@
+ 	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat.1 $(DESTDIR)$(MAN1_DIR)
+ 	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
+ 	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
+-ifeq ($(INSTALL_ISAG),y)
+-	$(INSTALL_DATA) $(MANGRPARG) contrib/isag/isag.1 $(DESTDIR)$(MAN1_DIR)
+-endif
+ ifeq ($(COMPRESS_MANPG),y)
+ 	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
+ 	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
+@@ -332,8 +330,15 @@
+ 	$(INSTALL_DATA) nls/zh_TW.gmo $(DESTDIR)$(NLS_DIR)/zh_TW/LC_MESSAGES/$(PACKAGE).mo
+ endif
+ 
+-install_base: all sa1 sa2 sysstat.sysconfig install_man install_nls \
+-	contrib/isag/isag
++install_isag: contrib/isag/isag
++ifeq ($(INSTALL_ISAG),y)
++	mkdir -p $(DESTDIR)$(BIN_DIR)
++	mkdir -p $(DESTDIR)$(MAN1_DIR)
++	$(INSTALL_BIN) contrib/isag/isag $(DESTDIR)$(BIN_DIR)
++	$(INSTALL_DATA) $(MANGRPARG) contrib/isag/isag.1 $(DESTDIR)$(MAN1_DIR)
++endif
++
++install_base: all sa1 sa2 sysstat.sysconfig install_man install_nls install_isag
+ 	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
+ 	mkdir -p $(DESTDIR)$(SA_DIR)
+ ifeq ($(CLEAN_SA_DIR),y)
+@@ -342,7 +347,7 @@
  	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
  endif
  	mkdir -p $(DESTDIR)$(BIN_DIR)
@@ -37,7 +65,13 @@ Index: sysstat/Makefile.in
  	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
  	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
-@@ -360,12 +361,12 @@
+@@ -354,18 +359,15 @@
+ 	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
+ 	$(INSTALL_BIN) nfsiostat $(DESTDIR)$(BIN_DIR)
+ 	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
+-ifeq ($(INSTALL_ISAG),y)
+-	$(INSTALL_BIN) contrib/isag/isag $(DESTDIR)$(BIN_DIR)
+-endif
  	$(INSTALL_DATA) sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
  ifeq ($(INSTALL_DOC),y)
@@ -56,7 +90,7 @@ Index: sysstat/Makefile.in
  endif
  
  install_all: install_base cron/crontab sysstat \
-@@ -578,7 +579,7 @@
+@@ -578,7 +580,7 @@
  	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat *.o *.a core TAGS
  	find nls -name "*.gmo" -exec rm -f {} \;
  

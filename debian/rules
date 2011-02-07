@@ -1,5 +1,5 @@
 #!/usr/bin/make -f
-# $Id: rules 1508 2011-02-06 14:44:52Z robert $
+# $Id: rules 1511 2011-02-07 19:58:27Z robert $
 # Sample debian/rules that uses debhelper.
 # This file is public domain software, originally written by Joey Hess.
 #
@@ -62,7 +62,7 @@ clean:
 	dh_testroot
 	rm -f configure-stamp build-arch-stamp build-indep-stamp config.log
 
-	dh_auto_clean $(DH_AUTO_OPTIONS)
+	[ ! -f Makefile ] || dh_auto_clean $(DH_AUTO_OPTIONS)
 
 	dh_clean
 

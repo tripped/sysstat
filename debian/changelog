@@ -1,6 +1,5 @@
-sysstat (9.1.7-2~) unstable; urgency=low
+sysstat (9.1.7-2) unstable; urgency=low
 
-  * NOT RELEASED YET
   * Upload to unstable.
   * debian/rules:
     + call dpkg-buildflags for initial values of CFLAGS & LDFLAGS;
@@ -9,7 +8,7 @@ sysstat (9.1.7-2~) unstable; urgency=low
   * Updated 00-Makefile.patch to make it possible to install isag only.
   * 09-format-warning.patch: Fix a warning given by gcc -Wformat.
 
- -- Robert Luberda <robert@debian.org>  Sun, 06 Feb 2011 15:36:48 +0100
+ -- Robert Luberda <robert@debian.org>  Mon, 07 Feb 2011 20:57:05 +0100
 
 sysstat (9.1.7-1) experimental; urgency=low
 

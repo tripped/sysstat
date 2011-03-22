@@ -1,5 +1,5 @@
 /*
- * nfsiostat: report NFS I/O statistics
+ * nfsiostat: Report NFS I/O statistics
  * Copyright (C) 2010 Red Hat, Inc. All Rights Reserved
  * Written by Ivana Varekova <varekova@redhat.com>
  *
@@ -68,8 +68,13 @@ void usage(char *progname)
 	fprintf(stderr, _("Usage: %s [ options ] [ <interval> [ <count> ] ]\n"),
 		progname);
 
+#ifdef DEBUG
+	fprintf(stderr, _("Options are:\n"
+			  "[ --debuginfo ] [ -h ] [ -k | -m ] [ -t ] [ -V ]\n"));
+#else
 	fprintf(stderr, _("Options are:\n"
 			  "[ -h ] [ -k | -m ] [ -t ] [ -V ]\n"));
+#endif
 	exit(1);
 }
 
@@ -133,7 +138,7 @@ int get_nfs_mount_nr(void)
 		if ((strstr(line, "mounted")) && (strstr(line, "on")) &&
 		    (strstr(line, "with")) && (strstr(line, "fstype"))) {
 
-			sscanf(strstr(line, "fstype") + 6, "%10s", type_name);
+			sscanf(strstr(line, "fstype") + 6, "%9s", type_name);
 			if ((!strncmp(type_name, "nfs", 3)) && (strncmp(type_name, "nfsd", 4))) {
 				nfs ++;
 			}
@@ -193,7 +198,10 @@ void io_sys_init(void)
 	if ((ionfs_nr = get_nfs_mount_nr()) > 0) {
 		ionfs_nr += NR_NFS_PREALLOC;
 	}
-	st_hdr_ionfs = (struct io_hdr_stats *) calloc(ionfs_nr, IO_HDR_STATS_SIZE);
+	if ((st_hdr_ionfs = (struct io_hdr_stats *) calloc(ionfs_nr, IO_HDR_STATS_SIZE)) == NULL) {
+		perror("malloc");
+		exit(4);
+	}
 	
 	/* Allocate structures for number of NFS directories found */
 	for (i = 0; i < 2; i++) {
@@ -242,21 +250,21 @@ void io_sys_free(void)
  * @st_hdr_ionfs	Pointer on structures describing an NFS filesystem.
  ***************************************************************************
  */
-void save_stats(char *name, int curr, void *st_io, int ionfs_nr,
-		struct io_hdr_stats *st_hdr_ionfs)
+void save_stats(char *name, int curr, void *st_io)
 {
-	int i;
+	int i, j;
 	struct io_hdr_stats *st_hdr_ionfs_i;
 	struct io_nfs_stats *st_ionfs_i;
 
 	/* Look for NFS directory in data table */
 	for (i = 0; i < ionfs_nr; i++) {
 		st_hdr_ionfs_i = st_hdr_ionfs + i;
-		if (!strcmp(st_hdr_ionfs_i->name, name)) {
+		if ((st_hdr_ionfs_i->used) &&
+		    (!strcmp(st_hdr_ionfs_i->name, name))) {
 			break;
 		}
 	}
-	
+
 	if (i == ionfs_nr) {
 		/*
 		 * This is a new filesystem: Look for an unused entry to store it.
@@ -266,15 +274,53 @@ void save_stats(char *name, int curr, void *st_io, int ionfs_nr,
 			if (!st_hdr_ionfs_i->used) {
 				/* Unused entry found... */
 				st_hdr_ionfs_i->used = TRUE; /* Indicate it is now used */
+				st_hdr_ionfs_i->active = TRUE;
+
 				strcpy(st_hdr_ionfs_i->name, name);
-				st_ionfs_i = st_ionfs[!curr] + i;
+				st_ionfs_i = st_ionfs[curr] + i;
 				memset(st_ionfs_i, 0, IO_NFS_STATS_SIZE);
+				*st_ionfs_i = *((struct io_nfs_stats *) st_io);
 				break;
 			}
 		}
-	}
-	if (i < ionfs_nr) {
+		if (i == ionfs_nr) {
+			/* All entries are used: The number has to be increased */
+			ionfs_nr = ionfs_nr + 5;
+
+			/* Increase the size of st_hdr_ionfs buffer */
+			if ((st_hdr_ionfs = (struct io_hdr_stats *)
+				realloc(st_hdr_ionfs, ionfs_nr * IO_HDR_STATS_SIZE)) == NULL) {
+				perror("malloc");
+				exit(4);
+			}
+
+			/* Set the new entries inactive */
+			for (j = 0; j < 5; j++) {
+				st_hdr_ionfs_i = st_hdr_ionfs + i + j;
+				st_hdr_ionfs_i->used = FALSE;
+				st_hdr_ionfs_i->active = FALSE;
+			}
+
+			/* Increase the size of st_hdr_ionfs buffer */
+			for (j = 0; j < 2; j++) {
+				if ((st_ionfs[j] = (struct io_nfs_stats *)
+					realloc(st_ionfs[j], ionfs_nr * IO_NFS_STATS_SIZE)) == NULL) {
+					perror("malloc");
+					exit(4);
+				}
+				memset(st_ionfs[j] + i, 0, 5 * IO_NFS_STATS_SIZE);
+			}
+
+			/* Now i shows the first unused entry of the new block */
+			st_hdr_ionfs_i = st_hdr_ionfs + i;
+			st_hdr_ionfs_i->used = TRUE; /* Indicate it is now used */
+			strcpy(st_hdr_ionfs_i->name, name);
+			st_ionfs_i = st_ionfs[curr] + i;
+			memset(st_ionfs_i, 0, IO_NFS_STATS_SIZE);
+		}
+	} else  {
 		st_hdr_ionfs_i = st_hdr_ionfs + i;
+		st_hdr_ionfs_i->used = TRUE;
 		st_hdr_ionfs_i->active = TRUE;
 		st_ionfs_i = st_ionfs[curr] + i;
 		*st_ionfs_i = *((struct io_nfs_stats *) st_io);
@@ -299,6 +345,7 @@ void read_nfs_stat(int curr)
 	int sw = 0;
 	char line[256];
 	char *xprt_line;
+	char *mount_part;
 	char nfs_name[MAX_NAME_LEN];
 	char mount[10], on[10], prefix[10], aux[32];
 	char operation[16];
@@ -311,21 +358,24 @@ void read_nfs_stat(int curr)
 	if ((fp = fopen(NFSMOUNTSTATS, "r")) == NULL)
 		return;
 
-	sprintf(aux, "%%%ds %%10s %%10s",
-		MAX_NAME_LEN < 200 ? MAX_NAME_LEN : 200);
+	sprintf(aux, "%%%ds",
+		MAX_NAME_LEN < 200 ? MAX_NAME_LEN-1 : 200);
 
 	while (fgets(line, 256, fp) != NULL) {
-
 		/* Read NFS directory name */
 		if (!strncmp(line, "device", 6)) {
 			sw = 0;
-			sscanf(line + 6, aux, nfs_name, mount, on);
-			if ((!strncmp(mount, "mounted", 7)) && (!strncmp(on, "on", 2))) {
-				sw = 1;
+			sscanf(line + 6, aux, nfs_name);
+			mount_part = strchr(line + 7, ' ');
+			if (mount_part != NULL) {
+				sscanf(mount_part, "%9s %9s", mount, on);
+				if ((!strncmp(mount, "mounted", 7)) && (!strncmp(on, "on", 2))) {
+					sw = 1;
+				}
 			}
 		}
 
-		sscanf(line, "%10s", prefix);
+		sscanf(line, "%9s", prefix);
 		if (sw && (!strncmp(prefix, "bytes:", 6))) {
 			/* Read the stats for the last NFS-mounted directory */
 			sscanf(strstr(line, "bytes:") + 6, "%llu %llu %llu %llu %llu %llu",
@@ -378,7 +428,8 @@ void read_nfs_stat(int curr)
 				}
 				else if (!strncmp(operation, "WRITE:", 6)) {
 					snfs.nfs_wops = v1;
-					save_stats(nfs_name, curr, &snfs, ionfs_nr, st_hdr_ionfs);
+
+					save_stats(nfs_name, curr, &snfs);
 					sw = 0;
 				}
 			}
@@ -483,6 +534,11 @@ void write_stats(int curr, struct tm *rectime)
 			strftime(timestamp, sizeof(timestamp), "%x %X", rectime);
 		}
 		printf("%s\n", timestamp);
+#ifdef DEBUG
+		if (DISPLAY_DEBUG(flags)) {
+			fprintf(stderr, "%s\n", timestamp);
+		}
+#endif
 	}
 
 	/* Interval is multiplied by the number of processors */
@@ -502,6 +558,20 @@ void write_stats(int curr, struct tm *rectime)
 		if (shi->used) {
 			ioni = st_ionfs[curr]  + i;
 			ionj = st_ionfs[!curr] + i;
+#ifdef DEBUG
+			if (DISPLAY_DEBUG(flags)) {
+				/* Debug output */
+				fprintf(stderr, "name=%s itv=%llu fctr=%d ioni{ rd_normal_bytes=%llu "
+						"wr_normal_bytes=%llu rd_direct_bytes=%llu wr_direct_bytes=%llu rd_server_bytes=%llu "
+						"wr_server_bytes=%llu rpc_sends=%lu nfs_rops=%lu nfs_wops=%lu }\n",
+					shi->name, itv, fctr,
+					ioni->rd_normal_bytes, ioni->wr_normal_bytes,
+					ioni->rd_direct_bytes, ioni->wr_direct_bytes,
+					ioni->rd_server_bytes, ioni->wr_server_bytes,
+					ioni->rpc_sends,
+					ioni->nfs_rops,        ioni->nfs_wops);
+			}
+#endif
 			write_nfs_stat(curr, itv, fctr, shi, ioni, ionj);
 		}
 	}
@@ -534,7 +604,6 @@ void rw_io_stat_loop(long int count, struct tm *rectime)
 			uptime0[curr] = 0;
 			read_uptime(&(uptime0[curr]));
 		}
-
 		/* Read NFS directories stats */
 		read_nfs_stat(curr);
 
@@ -580,6 +649,12 @@ int main(int argc, char **argv)
 	/* Process args... */
 	while (opt < argc) {
 
+#ifdef DEBUG
+		if (!strcmp(argv[opt], "--debuginfo")) {
+			flags |= I_D_DEBUG;
+			opt++;
+		} else
+#endif
 		if (!strncmp(argv[opt], "-", 1)) {
 			for (i = 1; *(argv[opt] + i); i++) {
 

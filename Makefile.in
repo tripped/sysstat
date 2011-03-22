@@ -1,5 +1,5 @@
 # Makefile to build sysstat commands
-# # (C) 1999-2010 Sebastien GODARD (sysstat <at> orange.fr)
+# # (C) 1999-2011 Sebastien GODARD (sysstat <at> orange.fr)
 
 # Version and package name
 VERSION = @PACKAGE_VERSION@
@@ -22,6 +22,14 @@ CHKCONFIG = @PATH_CHKCONFIG@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_BIN = @INSTALL_BIN@
+
+HAVE_SENSORS = @HAVE_SENSORS@
+LFSENSORS =
+DFSENSORS =
+ifeq ($(HAVE_SENSORS),y)
+LFSENSORS = @LFSENSORS@
+DFSENSORS = @DFSENSORS@
+endif
 
 # Directories
 ifndef PREFIX
@@ -65,6 +73,7 @@ CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe -O2
 DFLAGS = @DFLAGS@
 LFLAGS =  -s
 DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
+DFLAGS += $(DFSENSORS)
 
 # Commands
 ifndef MSGFMT
@@ -155,7 +164,7 @@ sa_common.o: sa_common.c sa.h common.h ioconf.h sysconfig.h rd_stats.h
 
 ioconf.o: ioconf.c ioconf.h common.h sysconfig.h
 
-act_sadc.o: activity.c sa.h rd_stats.h
+act_sadc.o: activity.c sa.h rd_stats.h rd_sensors.h
 	$(CC) -o $@ -c $(CFLAGS) -DSOURCE_SADC $(DFLAGS) $<
 
 act_sar.o: activity.c sa.h pr_stats.h
@@ -166,13 +175,15 @@ act_sadf.o: activity.c sa.h rndr_stats.h xml_stats.h
 
 rd_stats.o: rd_stats.c common.h rd_stats.h ioconf.h sysconfig.h
 
+rd_sensors.o: rd_sensors.c common.h rd_sensors.h sysconfig.h
+
 pr_stats.o: pr_stats.c sa.h ioconf.h sysconfig.h pr_stats.h
 
 rndr_stats.o: rndr_stats.c sa.h ioconf.h sysconfig.h rndr_stats.h
 
 xml_stats.o: xml_stats.c sa.h ioconf.h sysconfig.h xml_stats.h
 
-sa_wrap.o: sa_wrap.c sa.h rd_stats.h
+sa_wrap.o: sa_wrap.c sa.h rd_stats.h rd_sensors.h
 
 # Explicit rules needed to prevent possible file corruption
 # when using parallel execution.
@@ -181,9 +192,12 @@ libsyscom.a: common.o ioconf.o
 
 librdstats.a: librdstats.a(rd_stats.o)
 
-sadc.o: sadc.c sa.h version.h common.h ioconf.h sysconfig.h rd_stats.h
+librdsensors.a: librdsensors.a(rd_sensors.o)
 
-sadc: sadc.o act_sadc.o sa_wrap.o sa_common.o librdstats.a libsyscom.a
+sadc.o: sadc.c sa.h version.h common.h ioconf.h sysconfig.h rd_stats.h rd_sensors.h
+
+sadc: LFLAGS += $(LFSENSORS)
+sadc: sadc.o act_sadc.o sa_wrap.o sa_common.o librdstats.a librdsensors.a libsyscom.a
 
 sar.o: sar.c sa.h version.h common.h ioconf.h pr_stats.h sysconfig.h
 
@@ -300,6 +314,7 @@ ifdef REQUIRE_NLS
 	mkdir -p $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/sv/LC_MESSAGES
+	mkdir -p $(DESTDIR)$(NLS_DIR)/uk/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/vi/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/zh_CN/LC_MESSAGES
 	mkdir -p $(DESTDIR)$(NLS_DIR)/zh_TW/LC_MESSAGES
@@ -327,6 +342,7 @@ ifdef REQUIRE_NLS
 	$(INSTALL_DATA) nls/ru.gmo $(DESTDIR)$(NLS_DIR)/ru/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/sk.gmo $(DESTDIR)$(NLS_DIR)/sk/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/sv.gmo $(DESTDIR)$(NLS_DIR)/sv/LC_MESSAGES/$(PACKAGE).mo
+	$(INSTALL_DATA) nls/uk.gmo $(DESTDIR)$(NLS_DIR)/uk/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/vi.gmo $(DESTDIR)$(NLS_DIR)/vi/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/zh_CN.gmo $(DESTDIR)$(NLS_DIR)/zh_CN/LC_MESSAGES/$(PACKAGE).mo
 	$(INSTALL_DATA) nls/zh_TW.gmo $(DESTDIR)$(NLS_DIR)/zh_TW/LC_MESSAGES/$(PACKAGE).mo
@@ -449,6 +465,7 @@ ifdef REQUIRE_NLS
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/ru/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/sk/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/sv/LC_MESSAGES/$(PACKAGE).mo
+	rm -f $(DESTDIR)$(PREFIX)/share/locale/uk/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/vi/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/zh_CN/LC_MESSAGES/$(PACKAGE).mo
 	rm -f $(DESTDIR)$(PREFIX)/share/locale/zh_TW/LC_MESSAGES/$(PACKAGE).mo
@@ -476,6 +493,7 @@ ifdef REQUIRE_NLS
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ru/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sk/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sv/LC_MESSAGES
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/uk/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/vi/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/zh_CN/LC_MESSAGES
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/zh_TW/LC_MESSAGES
@@ -503,6 +521,7 @@ ifdef REQUIRE_NLS
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/ru
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sk
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/sv
+	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/uk
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/vi
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/zh_CN
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(PREFIX)/share/locale/zh_TW
@@ -584,6 +603,7 @@ almost-distclean: clean nls/sysstat.pot
 	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in
 	rm -f contrib/isag/isag
 	rm -f man/sa1.8 man/sa2.8 man/sadc.8 man/sadf.1 man/sar.1 man/iostat.1 man/sysstat.5
+	rm -f man/cifsiostat.1 man/nfsiostat.1
 	rm -f *.log config.status
 	rm -rf autom4te.cache
 	rm -f *.save *.old .*.swp data

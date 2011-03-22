@@ -1,5 +1,25 @@
 Changes:
 
+2011/03/15: Version 10.0.0 - Sebastien Godard (sysstat <at> orange.fr)
+	* [Ivana Varekova]: Fix a problem with long NFS and CIFS share
+	  names in cifsiostat and nfsiostat.
+	* [Ivana Varekova]: Added the possibility to extend the number
+	  of slots for NFS and CIFS mount points on the fly.
+	* [Ivana Varekova]: Check calloc() return value in cifsiostat
+	  and nfsiostat.
+	* [Jan Kaluza]: Added --debuginfo option to cifsiostat and
+	  nfsiostat.
+	* cifsiostat and nfsiostat manual pages updated.
+	* Don't link sysstat's commands with sensors library if not
+	  needed [DEBIAN Bug#612571].
+	* [Adam Heath]: iostat incorrectly mapped device-mapper IDs
+	  greater than 256. This is now fixed [DEBIAN Bug#614397].
+	* Sysstat's commands option -V now displays the version number
+	  on stdout and returns 0 for the exit code.
+	* sysstat_panic function is now defined only in DEBUG mode.
+	* NLS updated. Ukrainian translation added.
+	* CREDITS file updated.
+
 2010/12/26: Version 9.1.7 - Sebastien Godard (sysstat <at> orange.fr)
 	  INFO: stats_queue structure format has changed and is *not*
 	  compatible with the previous one [+1]

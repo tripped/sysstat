@@ -1,26 +1,27 @@
-# Chinese translations for sysstat package
-# sysstat 软件包的简体中文翻译.
-# Copyright (C) 2010 THE sysstat'S COPYRIGHT HOLDER
+# Ukrainian translation for sysstat.
+# Copyright © 2010
 # This file is distributed under the same license as the sysstat package.
-# Ji ZhengYu <zhengyuji@gmail.com>, 2008, 2009, 2010.
 #
+# Yuri Chornoivan <yurchor@ukr.net>, 2010.
 msgid ""
 msgstr ""
 "Project-Id-Version: sysstat 9.1.7\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
 "POT-Creation-Date: 2010-12-24 15:16+0100\n"
-"PO-Revision-Date: 2011-01-12 20:29+0800\n"
-"Last-Translator: Ji ZhengYu <zhengyuji@gmail.com>\n"
-"Language-Team: Chinese (simplified) <i18n-zh@googlegroups.com>\n"
+"PO-Revision-Date: 2010-12-31 17:12+0200\n"
+"Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
+"Language-Team: Ukrainian <translation-team-uk@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: ukX-Generator: Lokalize 1.2\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: cifsiostat.c:69 iostat.c:80 mpstat.c:86 nfsiostat.c:68 pidstat.c:78
 #: sar.c:90
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ]\n"
-msgstr "用法: %s [ 选项 ] [ <时间间隔> [ <次数> ] ]\n"
+msgstr "Використання: %s [ параметри ] [ <інтервал> [ <лічильник> ] ]\n"
 
 #: cifsiostat.c:72 nfsiostat.c:71
 #, c-format
@@ -28,19 +29,19 @@ msgid ""
 "Options are:\n"
 "[ -h ] [ -k | -m ] [ -t ] [ -V ]\n"
 msgstr ""
-"选项:\n"
+"Параметри:\n"
 "[ -h ] [ -k | -m ] [ -t ] [ -V ]\n"
 
 #: common.c:57
 #, c-format
 msgid "sysstat version %s\n"
-msgstr "sysstat 版本 %s\n"
+msgstr "sysstat, версія %s\n"
 
 #: ioconf.c:490 rd_stats.c:72 rd_stats.c:2179 sa_common.c:1061 sadc.c:623
 #: sadc.c:632 sadc.c:692
 #, c-format
 msgid "Cannot open %s: %s\n"
-msgstr "无法打开 %s: %s\n"
+msgstr "Не вдалося відкрити %s: %s\n"
 
 #: iostat.c:83
 #, c-format
@@ -49,9 +50,9 @@ msgid ""
 "[ -c ] [ -d ] [ -N ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
 "[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ] [ --debuginfo ]\n"
 msgstr ""
-"选项:\n"
+"Параметри:\n"
 "[ -c ] [ -d ] [ -N ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
-"[ <设备> [...] | ALL ] [ -p [ <设备> [,...] | ALL ] ] [ --debuginfo ]\n"
+"[ <пристрій> [...] | ALL ] [ -p [ <пристрій> [,...] | ALL ] ] [ --debuginfo ]\n"
 
 #: iostat.c:87
 #, c-format
@@ -60,14 +61,14 @@ msgid ""
 "[ -c ] [ -d ] [ -N ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
 "[ <device> [...] | ALL ] [ -p [ <device> [,...] | ALL ] ]\n"
 msgstr ""
-"选项:\n"
+"Параметри:\n"
 "[ -c ] [ -d ] [ -N ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
-"[ <设备> [...] | ALL ] [ -p [ <设备> [,...] | ALL ] ]\n"
+"[ <пристрій> [...] | ALL ] [ -p [ <пристрій> [,...] | ALL ] ]\n"
 
 #: iostat.c:313
 #, c-format
 msgid "Cannot find disk data\n"
-msgstr "无法找到磁盘数据\n"
+msgstr "Не вдалося виявити дані диска\n"
 
 #: mpstat.c:89
 #, c-format
@@ -75,17 +76,17 @@ msgid ""
 "Options are:\n"
 "[ -A ] [ -I { SUM | CPU | SCPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
 msgstr ""
-"选项:\n"
-"[ -A ] [ -I { SUM | CPU | SCPU | ALL } ] [ -u ] [ -P { <cpu> [,...] | ALL } ] [ -V ]\n"
+"Параметри:\n"
+"[ -A ] [ -I { SUM | CPU | SCPU | ALL } ] [ -u ] [ -P { <ЦП> [,...] | ALL } ] [ -V ]\n"
 
 #: mpstat.c:535 pidstat.c:1819 sar.c:382
 msgid "Average:"
-msgstr "平均时间:"
+msgstr "Середнє:"
 
 #: mpstat.c:878
 #, c-format
 msgid "Not that many processors!\n"
-msgstr "处理器实在太多！\n"
+msgstr "У системі немає такої кількості процесорів!\n"
 
 #: pidstat.c:81
 #, c-format
@@ -95,55 +96,55 @@ msgid ""
 "[ -t ] [ -u ] [ -V ] [ -w ]\n"
 "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
-"选项:\n"
-"[ -C <命令> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -s ]\n"
+"Параметри:\n"
+"[ -C <команда> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -s ]\n"
 "[ -t ] [ -u ] [ -V ] [ -w ]\n"
-"[ -p { <进程号> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
+"[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"
 
 #: pidstat.c:199 sar.c:1017
 #, c-format
 msgid "Requested activities not available\n"
-msgstr "所需的运行记录无法获得\n"
+msgstr "Потрібний вам показник недоступний\n"
 
 #: rd_stats.c:2225
 #, c-format
 msgid "Cannot handle so many processors!\n"
-msgstr "处理器太多，无法处理！\n"
+msgstr "Обробка такої кількості процесорів неможлива!\n"
 
 #: sa_common.c:870
 #, c-format
 msgid "Error while reading system activity file: %s\n"
-msgstr "查看系统运行记录时出错: %s\n"
+msgstr "Помилка під час читання файла показників системи: %s\n"
 
 #: sa_common.c:880
 #, c-format
 msgid "End of system activity file unexpected\n"
-msgstr "系统运行记录文件的结尾有未知错误\n"
+msgstr "Неочікуваний кінець файла показників системи\n"
 
 #: sa_common.c:898
 #, c-format
 msgid "File created using sar/sadc from sysstat version %d.%d.%d"
-msgstr "文件由 sysstat %d.%d.%d 中的 sar/sadc 创建。"
+msgstr "Файл створено за допомогою sar/sadc з sysstat версії %d.%d.%d"
 
 #: sa_common.c:929
 #, c-format
 msgid "Invalid system activity file: %s\n"
-msgstr "无效的系统运行记录文件: %s\n"
+msgstr "Некоректний файл показників системи: %s\n"
 
 #: sa_common.c:936
 #, c-format
 msgid "Current sysstat version can no longer read the format of this file (%#x)\n"
-msgstr "当前版本的 sysstat 已无法读取此文件格式 (%#x)\n"
+msgstr "Поточна версія sysstat вже не здатна прочитати файл у цьому форматі (%#x)\n"
 
 #: sa_common.c:1168
 #, c-format
 msgid "Requested activities not available in file %s\n"
-msgstr "所需的运行记录在此文件 %s 中无法获得\n"
+msgstr "У файлі %s немає потрібних вам показників\n"
 
 #: sadc.c:81
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ] [ <outfile> ]\n"
-msgstr "用法: %s [ 选项 ] [ <时间间隔> [ <次数> ] ] [ <输出文件> ]\n"
+msgstr "Використання: %s [ параметри ] [ <інтервал> [ <лічильник> ] ] [ <вих_файл> ]\n"
 
 #: sadc.c:84
 #, c-format
@@ -152,29 +153,29 @@ msgid ""
 "[ -C <comment> ] [ -F ] [ -L ] [ -V ]\n"
 "[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"
 msgstr ""
-"选项:\n"
-"[ -C <注释> ] [ -F ] [ -L ] [ -V ]\n"
+"Параметри:\n"
+"[ -C <коментар> ] [ -F ] [ -L ] [ -V ]\n"
 "[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"
 
 #: sadc.c:223
 #, c-format
 msgid "Cannot write data to system activity file: %s\n"
-msgstr "无法将数据写入系统运行记录文件: %s\n"
+msgstr "Не вдалося записати дані до файла показників системи: %s\n"
 
 #: sadc.c:510
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
-msgstr "无法写系统运行记录文件开始部分: %s\n"
+msgstr "Не вдалося записати заголовок файла показників системи: %s\n"
 
 #: sadc.c:791
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
-msgstr "无法向文件 (%s) 中追加记录\n"
+msgstr "Не вдалося додати дані до файла (%s)\n"
 
 #: sadf.c:87
 #, c-format
 msgid "Usage: %s [ options ] [ <interval> [ <count> ] ] [ <datafile> ]\n"
-msgstr "用法: %s [ 选项 ] [ <时间间隔> [ <次数> ] ] [ <数据文件> ]\n"
+msgstr "Використання: %s [ параметри ] [ <інтервал> [ <лічильник> ] ] [ <файл_даних> ]\n"
 
 #: sadf.c:90
 #, c-format
@@ -184,35 +185,35 @@ msgid ""
 "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 "[ -- <sar_options> ]\n"
 msgstr ""
-"选项:\n"
+"Параметри:\n"
 "[ -d | -D | -H | -p | -x ] [ -C ] [ -h ] [ -t ] [ -V ]\n"
-"[ -P { <cpu> [,...] | ALL } ] [ -s [ <时:分:秒> ] ] [ -e [ <时:分:秒> ] ]\n"
-"[ -- <sar 选项> ]\n"
+"[ -P { <ЦП> [,...] | ALL } ] [ -s [ <гг:хх:сс> ] ] [ -e [ <гг:хх:сс> ] ]\n"
+"[ -- <параметри_sar> ]\n"
 
 #: sadf.c:614
 #, c-format
 msgid "System activity data file: %s (%#x)\n"
-msgstr "系统运行记录数据文件: %s (%#x)\n"
+msgstr "Файл даних щодо показників системи: %s (%#x)\n"
 
 #: sadf.c:623
 #, c-format
 msgid "Host: "
-msgstr "主机:"
+msgstr "Вузол: "
 
 #: sadf.c:629
 #, c-format
 msgid "Size of a long int: %d\n"
-msgstr "长整型数的字节大小: %d\n"
+msgstr "Розмір long int: %d\n"
 
 #: sadf.c:631
 #, c-format
 msgid "List of activities:\n"
-msgstr "运行记录列表:\n"
+msgstr "Список показників:\n"
 
 #: sadf.c:643
 #, c-format
 msgid "\t[Unknown activity format]"
-msgstr "\\t[未知的记录格式]"
+msgstr "\t[Невідомий формат показника]"
 
 #: sar.c:106
 #, c-format
@@ -225,38 +226,38 @@ msgid ""
 "[ -o [ <filename> ] | -f [ <filename> ] ]\n"
 "[ -i <interval> ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 msgstr ""
-"选项:\n"
+"Параметри:\n"
 "[ -A ] [ -b ] [ -B ] [ -C ] [ -d ] [ -h ] [ -H ] [ -p ] [ -q ] [ -r ]\n"
 "[ -R ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -v ] [ -V ] [ -w ] [ -W ] [ -y ]\n"
-"[ -I { <中断> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
-"[ -m { <关键词> [,...] | ALL } ] [ -n { <关键词> [,...] | ALL } ]\n"
-"[ -o [ <文件名> ] | -f [ <文件名> ] ]\n"
-"[ -i <时间间隔> ] [ -s [ <时:分:秒> ] ] [ -e [ <时:分:秒> ] ]\n"
+"[ -I { <ціле> [,...] | SUM | ALL | XALL } ] [ -P { <ЦП> [,...] | ALL } ]\n"
+"[ -m { <ключове_слово> [,...] | ALL } ] [ -n { <ключове_слово> [,...] | ALL } ]\n"
+"[ -o [ <назва_файла> ] | -f [ <назва_файла> ] ]\n"
+"[ -i <інтервал> ] [ -s [ <гг:хх:сс> ] ] [ -e [ <гг:хх:сс> ] ]\n"
 
 #: sar.c:128
 #, c-format
 msgid "Main options and reports:\n"
-msgstr "主选项和报告：\n"
+msgstr "Основні параметри і звіти:\n"
 
 #: sar.c:129
 #, c-format
 msgid "\t-b\tI/O and transfer rate statistics\n"
-msgstr "\t-b\tI/O 和传输速率信息状况\n"
+msgstr "\t-b\tСтатистичні дані щодо вводу-виводу та швидкості передавання\n"
 
 #: sar.c:130
 #, c-format
 msgid "\t-B\tPaging statistics\n"
-msgstr "\t-B\t分页状况\n"
+msgstr "\t-B\tСтатистичні дані щодо обміну даних сторінок\n"
 
 #: sar.c:131
 #, c-format
 msgid "\t-d\tBlock device statistics\n"
-msgstr "\t-d\t块设备状况\n"
+msgstr "\t-d\tСтатистичні дані щодо блокових пристроїв\n"
 
 #: sar.c:132
 #, c-format
 msgid "\t-H\tHugepages utilization statistics\n"
-msgstr "\t-H\t交换空间利用率\n"
+msgstr "\t-H\tСтатистичні дані щодо використання великих сторінок\n"
 
 #: sar.c:133
 #, c-format
@@ -264,8 +265,8 @@ msgid ""
 "\t-I { <int> | SUM | ALL | XALL }\n"
 "\t\tInterrupts statistics\n"
 msgstr ""
-"\t-I { <中断> | SUM | ALL | XALL }\n"
-"\t\t中断信息状况\n"
+"\t-I { <ціле> | SUM | ALL | XALL }\n"
+"\t\tСтатистичні дані щодо переривань\n"
 
 #: sar.c:135
 #, c-format
@@ -279,14 +280,14 @@ msgid ""
 "\t\tIN\tVoltage inputs\n"
 "\t\tTEMP\tDevices temperature\n"
 msgstr ""
-"\t-m { <关键词> [,...] | ALL }\n"
-"\t\t电源管理统计信息\n"
-"\t\t关键字:\n"
-"\t\tCPU\tCPU 频率\n"
-"\t\tFAN\t风扇速度\n"
-"\\t\\tFREQ\\tCPU 平均时钟频率\n"
-"\t\tIN\t输入电压\n"
-"\t\tTEMP\t设备温度\n"
+"\t-m { <ключове_слово> [,...] | ALL }\n"
+"\t\tСтатистичні дані щодо керування живленням\n"
+"\t\tКлючові слова:\n"
+"\t\tCPU\tмиттєва частота роботи центрального процесора\n"
+"\t\tFAN\tчастота обертання вентиляторів\n"
+"\t\tFREQ\tсередня частота годинника центрального процесора\n"
+"\t\tIN\tзначення вхідних напруг\n"
+"\t\tTEMP\tтемпература пристроїв\n"
 
 #: sar.c:143
 #, c-format
@@ -313,47 +314,47 @@ msgid ""
 "\t\tEICMP6\tICMP traffic\t(v6) (errors)\n"
 "\t\tUDP6\tUDP traffic\t(v6)\n"
 msgstr ""
-"\t-n { <关键词> [,...] | ALL }\n"
-"\t\t网络统计信息\n"
-"\t\t关键词可以是：\n"
-"\t\tDEV\t网卡\n"
-"\t\tEDEV\t网卡 (错误)\n"
-"\t\tNFS\tNFS 客户端\n"
-"\t\tNFSD\tNFS 服务器\n"
-"\t\tSOCK\tSockets (套接字)\t(v4)\n"
-"\t\tIP\tIP 流\t(v4)\n"
-"\t\tEIP\tIP 流\t(v4) (错误)\n"
-"\t\tICMP\tICMP 流\t(v4)\n"
-"\t\tEICMP\tICMP 流\t(v4) (错误)\n"
-"\t\tTCP\tTCP 流\t(v4)\n"
-"\t\tETCP\tTCP 流\t(v4) (错误)\n"
-"\t\tUDP\tUDP 流\t(v4)\n"
-"\t\tSOCK6\tSockets (套接字)\t(v6)\n"
-"\t\tIP6\tIP 流\t(v6)\n"
-"\t\tEIP6\tIP 流\t(v6) (错误)\n"
-"\t\tICMP6\tICMP 流\t(v6)\n"
-"\t\tEICMP6\tICMP 流\t(v6) (错误)\n"
-"\t\tUDP6\tUDP 流\t(v6)\n"
+"\t-n { <ключове_слово> [,...] | ALL }\n"
+"\t\tСтатистичні дані щодо мережі\n"
+"\t\tКлючові слова:\n"
+"\t\tDEV\tінтерфейси мережі\n"
+"\t\tEDEV\tінтерфейси мережі (помилки)\n"
+"\t\tNFS\tклієнт NFS\n"
+"\t\tNFSD\tсервер NFS\n"
+"\t\tSOCK\tсокети\t(v4)\n"
+"\t\tIP\tIP-трафік\t(v4)\n"
+"\t\tEIP\tIP-трафік\t(v4) (помилки)\n"
+"\t\tICMP\tICMP-трафік\t(v4)\n"
+"\t\tEICMP\tICMP-трафік\t(v4) (помилки)\n"
+"\t\tTCP\tTCP-трафік\t(v4)\n"
+"\t\tETCP\tTCP-трафік\t(v4) (помилки)\n"
+"\t\tUDP\tUDP-трафік\t(v4)\n"
+"\t\tSOCK6\tсокети\t(v6)\n"
+"\t\tIP6\tIP-трафік\t(v6)\n"
+"\t\tEIP6\tIP-трафік\t(v6) (помилки)\n"
+"\t\tICMP6\tICMP-трафік\t(v6)\n"
+"\t\tEICMP6\tICMP-трафік\t(v6) (помилки)\n"
+"\t\tUDP6\tUDP-трафік\t(v6)\n"
 
 #: sar.c:164
 #, c-format
 msgid "\t-q\tQueue length and load average statistics\n"
-msgstr "\t-q\t队列长度和平均负载\n"
+msgstr "\t-q\tСтатистичні дані щодо довжини та середнього навантаження у черзі\n"
 
 #: sar.c:165
 #, c-format
 msgid "\t-r\tMemory utilization statistics\n"
-msgstr "\t-r\t内存利用率\n"
+msgstr "\t-r\tСтатистичні дані щодо використання пам’яті\n"
 
 #: sar.c:166
 #, c-format
 msgid "\t-R\tMemory statistics\n"
-msgstr "\t-R\t内存状况\n"
+msgstr "\t-R\tСтатистичні дані щодо пам’яті\n"
 
 #: sar.c:167
 #, c-format
 msgid "\t-S\tSwap space utilization statistics\n"
-msgstr "\t-S\t交换空间利用率\n"
+msgstr "\t-S\tСтатистичні дані щодо використання пам’яті свопінґу\n"
 
 #: sar.c:168
 #, c-format
@@ -362,140 +363,59 @@ msgid ""
 "\t\tCPU utilization statistics\n"
 msgstr ""
 "\t-u [ ALL ]\n"
-"\t\tCPU 利用率\n"
+"\t\tСтатистичні дані щодо використання центрального процесора\n"
 
 #: sar.c:170
 #, c-format
 msgid "\t-v\tKernel table statistics\n"
-msgstr "\t-v\tKernel table 状况\n"
+msgstr "\t-v\tСтатистичні дані щодо таблиці ядра\n"
 
 #: sar.c:171
 #, c-format
 msgid "\t-w\tTask creation and system switching statistics\n"
-msgstr "\t-w\t任务创建与系统转换统计信息\n"
+msgstr "\t-w\tСтатистичні дані щодо створення завдань і перемикання системи\n"
 
 #: sar.c:172
 #, c-format
 msgid "\t-W\tSwapping statistics\n"
-msgstr "\t-W\t交换信息\n"
+msgstr "\t-W\tСтатистичні дані щодо свопінґу\n"
 
 #: sar.c:173
 #, c-format
 msgid "\t-y\tTTY device statistics\n"
-msgstr "\t-y\tTTY 设备状况\n"
+msgstr "\t-y\tСтатистичні дані щодо пристроїв TTY\n"
 
 #: sar.c:216
 #, c-format
 msgid "End of data collecting unexpected\n"
-msgstr "数据流结尾有未知错误\n"
+msgstr "Неочікуване завершення даних, які збиралися\n"
 
 #: sar.c:806
 #, c-format
 msgid "Invalid data format\n"
-msgstr "无效的数据格式\n"
+msgstr "Некоректний форма даних\n"
 
 #: sar.c:810
 #, c-format
 msgid "Using a wrong data collector from a different sysstat version\n"
-msgstr "正在使用来自不同版本 sysstat 的错误的数据收集器\n"
+msgstr "Використано помилковий інструмент збирання даних з іншої версії sysstat\n"
 
 #: sar.c:834
 #, c-format
 msgid "Inconsistent input data\n"
-msgstr "所取数据前后不一致\n"
+msgstr "Неузгоджені вхідні дані\n"
 
 #: sar.c:1264
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
-msgstr "-f 和 -o 选项不能同时使用\n"
+msgstr "Не можна одночасно використовувати параметри -f і -o\n"
 
 #: sar.c:1270
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
-msgstr "无法查看系统活动记录文件 (用 -f 选项)\n"
+msgstr "Немає читання з файла показників системи (використайте параметр -f)\n"
 
 #: sar.c:1397
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
-msgstr "无法找到数据收集器 (%s)\n"
-
-#~ msgid "\t-m\tPower management statistics\n"
-#~ msgstr "\t-m\t电源管理信息状况\n"
-
-#~ msgid "-x and -p options are mutually exclusive\n"
-#~ msgstr "-x 和 -p 选项不能同时使用\n"
-
-#~ msgid ""
-#~ "\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
-#~ "\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
-#~ "\t\tNetwork statistics\n"
-#~ msgstr ""
-#~ "\t-n { DEV | EDEV | NFS | NFSD | SOCK |\n"
-#~ "\t     IP | EIP | ICMP | EICMP | TCP | ETCP | UDP | ALL }\n"
-#~ "\t\t网络信息状况\n"
-
-#~ msgid "Time: %s\n"
-#~ msgstr "时间: %s\n"
-
-#~ msgid "Usage:"
-#~ msgstr "用法:"
-
-#~ msgid "options..."
-#~ msgstr "选项..."
-
-#~ msgid "interval"
-#~ msgstr "间隔"
-
-#~ msgid "count"
-#~ msgstr "次数"
-
-#~ msgid "device"
-#~ msgstr "设备名"
-
-#~ msgid "cpu"
-#~ msgstr "cpu"
-
-#~ msgid "command"
-#~ msgstr "命令"
-
-#~ msgid "outfile"
-#~ msgstr "输出文件"
-
-#~ msgid "comment"
-#~ msgstr "注释"
-
-#~ msgid "datafile"
-#~ msgstr "数据文件"
-
-#~ msgid "hh:mm:ss"
-#~ msgstr "时:分:秒"
-
-#~ msgid "sar_options..."
-#~ msgstr "sar 选项..."
-
-#~ msgid "Activity flag: %#x\n"
-#~ msgstr "运行标记: %#x\n"
-
-#~ msgid "Number of CPU: %u\n"
-#~ msgstr "CPU 数量: %u\n"
-
-#~ msgid "Number of interrupts per CPU: %u\n"
-#~ msgstr "每个 CPU 的中断数目: %u\n"
-
-#~ msgid "Number of disks: %u\n"
-#~ msgstr "磁盘数量: %u\n"
-
-#~ msgid "Number of serial lines: %u\n"
-#~ msgstr "串行数量: %u\n"
-
-#~ msgid "Number of network interfaces: %u\n"
-#~ msgstr "网卡数量: %u\n"
-
-#~ msgid "int"
-#~ msgstr "整型数"
-
-#~ msgid "filename"
-#~ msgstr "文件名"
-
-#~ msgid "Not an SMP machine...\n"
-#~ msgstr "非对称多处理机器...\n"
+msgstr "Не вдалося виявити інструмента збирання даних (%s)\n"

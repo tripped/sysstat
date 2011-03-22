@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2010 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2011 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -54,9 +54,9 @@ unsigned int kb_shift;
  */
 void print_version(void)
 {
-	fprintf(stderr, _("sysstat version %s\n"), VERSION);
-	fprintf(stderr, "(C) Sebastien Godard (sysstat <at> orange.fr)\n");
-	exit(1);
+	printf(_("sysstat version %s\n"), VERSION);
+	printf("(C) Sebastien Godard (sysstat <at> orange.fr)\n");
+	exit(0);
 }
 
 /*
@@ -564,12 +564,14 @@ unsigned long long get_per_cpu_interval(struct stats_cpu *scc,
  * @error_code	Error code.
  ***************************************************************************
  */
+#ifdef DEBUG
 void sysstat_panic(const char *function, int error_code)
 {
 	fprintf(stderr, "sysstat: %s[%d]: Last chance handler...\n",
 		function, error_code);
 	exit(1);
 }
+#endif
 
 /*
  ***************************************************************************

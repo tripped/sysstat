@@ -1,6 +1,6 @@
 /*
  * sar/sadc: Report system activity
- * (C) 1999-2010 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2011 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SA_H
@@ -8,7 +8,7 @@
 
 #include "common.h"
 #include "rd_stats.h"
-
+#include "rd_sensors.h"
 
 /*
  ***************************************************************************

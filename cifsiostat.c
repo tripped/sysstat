@@ -69,8 +69,13 @@ void usage(char *progname)
 	fprintf(stderr, _("Usage: %s [ options ] [ <interval> [ <count> ] ]\n"),
 		progname);
 
+#ifdef DEBUG
+	fprintf(stderr, _("Options are:\n"
+			  "[ --debuginfo ] [ -h ] [ -k | -m ] [ -t ] [ -V ]\n"));
+#else
 	fprintf(stderr, _("Options are:\n"
 			  "[ -h ] [ -k | -m ] [ -t ] [ -V ]\n"));
+#endif
 	exit(1);
 }
 
@@ -169,7 +174,10 @@ void io_sys_init(void)
 	if ((cifs_nr = get_cifs_nr()) > 0) {
 		cifs_nr += NR_CIFS_PREALLOC;
 	}
-	st_hdr_cifs = (struct io_hdr_stats *) calloc(cifs_nr, IO_HDR_STATS_SIZE);
+	if ((st_hdr_cifs = (struct io_hdr_stats *) calloc(cifs_nr, IO_HDR_STATS_SIZE)) == NULL) {
+		perror("malloc");
+		exit(4);
+	}
 	
 	/* Allocate structures for number of CIFS directories found */
 	for (i = 0; i < 2; i++) {
@@ -215,18 +223,19 @@ void io_sys_free(void)
  */
 void save_stats(char *name, int curr, struct cifs_stats *st_io)
 {
-	int i;
+	int i, j;
 	struct io_hdr_stats *st_hdr_cifs_i;
 	struct cifs_stats *st_cifs_i;
 
 	/* Look for CIFS directory in data table */
 	for (i = 0; i < cifs_nr; i++) {
 		st_hdr_cifs_i = st_hdr_cifs + i;
-		if (!strcmp(st_hdr_cifs_i->name, name)) {
+		if ((st_hdr_cifs_i->used == TRUE) &&
+		    (!strcmp(st_hdr_cifs_i->name, name))) {
 			break;
 		}
 	}
-	
+
 	if (i == cifs_nr) {
 		/*
 		 * This is a new filesystem: Look for an unused entry to store it.
@@ -236,16 +245,57 @@ void save_stats(char *name, int curr, struct cifs_stats *st_io)
 			if (!st_hdr_cifs_i->used) {
 				/* Unused entry found... */
 				st_hdr_cifs_i->used = TRUE; /* Indicate it is now used */
+				st_hdr_cifs_i->active = TRUE;
 				strcpy(st_hdr_cifs_i->name, name);
-				st_cifs_i = st_cifs[!curr] + i;
-				memset(st_cifs_i, 0, CIFS_STATS_SIZE);
+				st_cifs_i = st_cifs[curr] + i;
+				*st_cifs_i = *((struct cifs_stats *) st_io);
 				break;
 			}
 		}
-	}
-	if (i < cifs_nr) {
+		if (i == cifs_nr) {
+			/*
+			 * It is a new CIFS directory
+			 * but there is no free structure to store it.
+			 */
+
+			/* All entries are used: The number has to be increased */
+			cifs_nr = cifs_nr + 5;
+
+			/* Increase the size of st_hdr_ionfs buffer */
+			if ((st_hdr_cifs = (struct io_hdr_stats *)
+				realloc(st_hdr_cifs, cifs_nr * IO_HDR_STATS_SIZE)) == NULL) {
+				perror("malloc");
+				exit(4);
+			}
+
+			/* Set the new entries inactive */
+			for (j = 0; j < 5; j++) {
+				st_hdr_cifs_i = st_hdr_cifs + i + j;
+				st_hdr_cifs_i->used = FALSE;
+				st_hdr_cifs_i->active = FALSE;
+			}
+
+			/* Increase the size of st_hdr_ionfs buffer */
+			for (j = 0; j < 2; j++) {
+				if ((st_cifs[j] = (struct cifs_stats *)
+					realloc(st_cifs[j], cifs_nr * CIFS_STATS_SIZE)) == NULL) {
+					perror("malloc");
+					exit(4);
+				}
+				memset(st_cifs[j] + i, 0, 5 * CIFS_STATS_SIZE);
+			}
+			/* Now i shows the first unused entry of the new block */
+			st_hdr_cifs_i = st_hdr_cifs + i;
+			st_hdr_cifs_i->used = TRUE; /* Indicate it is now used */
+			st_hdr_cifs_i->active = TRUE;
+			strcpy(st_hdr_cifs_i->name, name);
+			st_cifs_i = st_cifs[curr] + i;
+			*st_cifs_i = *st_io;
+		}
+	} else {
 		st_hdr_cifs_i = st_hdr_cifs + i;
 		st_hdr_cifs_i->active = TRUE;
+		st_hdr_cifs_i->used = TRUE;
 		st_cifs_i = st_cifs[curr] + i;
 		*st_cifs_i = *st_io;
 	}
@@ -279,13 +329,13 @@ void read_cifs_stat(int curr)
 	if ((fp = fopen(CIFSSTATS, "r")) == NULL)
 		return;
 
-	sprintf(aux, "%%%ds %%10s %%10s",
-		MAX_NAME_LEN < 200 ? MAX_NAME_LEN : 200);
+	sprintf(aux, "%%*d) %%%ds",
+		MAX_NAME_LEN < 200 ? MAX_NAME_LEN - 1 : 200);
 
 	while (fgets(line, 256, fp) != NULL) {
 
 		/* Read CIFS directory name */
-		if (isdigit((unsigned char) line[0]) && sscanf(line, "%*d) %s", name_tmp) == 1) {
+		if (isdigit((unsigned char) line[0]) && sscanf(line, aux , name_tmp) == 1) {
 			if (start) {
 				save_stats(cifs_name, curr, &scifs);
 			}
@@ -367,6 +417,7 @@ void write_cifs_stat(int curr, unsigned long long itv, int fctr,
 	else {
 		printf("%-22s ", shi->name);
 	}
+
 	/*       rB/s   wB/s   fo/s   fc/s   fd/s*/
 	printf("%12.2f %12.2f %9.2f %9.2f %12.2f %12.2f %12.2f \n",
 	       S_VALUE(ionj->rd_bytes, ioni->rd_bytes, itv) / fctr,
@@ -406,6 +457,11 @@ void write_stats(int curr, struct tm *rectime)
 			strftime(timestamp, sizeof(timestamp), "%x %X", rectime);
 		}
 		printf("%s\n", timestamp);
+#ifdef DEBUG
+		if (DISPLAY_DEBUG(flags)) {
+			fprintf(stderr, "%s\n", timestamp);
+		}
+#endif
 	}
 
 	/* Interval is multiplied by the number of processors */
@@ -425,6 +481,19 @@ void write_stats(int curr, struct tm *rectime)
 		if (shi->used) {
 			ioni = st_cifs[curr]  + i;
 			ionj = st_cifs[!curr] + i;
+#ifdef DEBUG
+			if (DISPLAY_DEBUG(flags)) {
+				/* Debug output */
+				fprintf(stderr, "name=%s itv=%llu fctr=%d ioni{ rd_bytes=%llu "
+						"wr_bytes=%llu rd_ops=%llu wr_ops=%llu fopens=%llu "
+						"fcloses=%llu fdeletes=%llu}\n",
+					shi->name, itv, fctr,
+					ioni->rd_bytes, ioni->wr_bytes,
+					ioni->rd_ops,   ioni->wr_ops,
+					ioni->fopens,   ioni->fcloses,
+					ioni->fdeletes);
+			}
+#endif
 			write_cifs_stat(curr, itv, fctr, shi, ioni, ionj);
 		}
 	}
@@ -470,6 +539,7 @@ void rw_io_stat_loop(long int count, struct tm *rectime)
 		if (count > 0) {
 			count--;
 		}
+
 		if (count) {
 			curr ^= 1;
 			pause();
@@ -503,6 +573,12 @@ int main(int argc, char **argv)
 	/* Process args... */
 	while (opt < argc) {
 
+#ifdef DEBUG
+		if (!strcmp(argv[opt], "--debuginfo")) {
+			flags |= I_D_DEBUG;
+			opt++;
+		} else
+#endif
 		if (!strncmp(argv[opt], "-", 1)) {
 			for (i = 1; *(argv[opt] + i); i++) {
 

@@ -5,6 +5,5 @@
 04_configs.patch
 05-defaultfile_message.patch
 06-exec.patch
-07-remove_fdatasync.patch
 08-scripts.patch
 09-format-warning.patch

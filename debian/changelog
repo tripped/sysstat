@@ -1,9 +1,14 @@
-sysstat (10.0.0-1~) UNRELEASED; urgency=low
+sysstat (10.0.0-1) unstable; urgency=low
 
-  * New upstream release
+  * New upstream (stable) release:
+    + Don't link sysstat's commands with sensors library if not
+      needed (closes: #612571).
+    + [Adam Heath]: iostat incorrectly mapped device-mapper IDs
+      greater than 256. This is now fixed (closes: #614397).
   * debian/rules: switch to using dh command.
+  * Remove 07-remove_fdatasync.patch, no longer needed. 
 
- -- Robert Luberda <robert@debian.org>  Wed, 23 Mar 2011 10:56:02 +0100
+ -- Robert Luberda <robert@debian.org>  Wed, 23 Mar 2011 13:26:07 +0100
 
 sysstat (9.1.7-2) unstable; urgency=low
 

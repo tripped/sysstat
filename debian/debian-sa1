@@ -1,6 +1,6 @@
 #!/bin/sh
 # vim:ts=2:et
-# $Id: debian-sa1 1413 2009-01-13 00:01:37Z robert $
+# $Id: debian-sa1 1517 2011-03-23 09:57:54Z robert $
 # Debian sa1 helper which is run from cron.d job, not to needlessly 
 # fill logs (see Bug#499461).
 

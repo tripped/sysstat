@@ -1,16 +1,4 @@
 #!/usr/bin/make -f
-# $Id: rules 1511 2011-02-07 19:58:27Z robert $
-# Sample debian/rules that uses debhelper.
-# This file is public domain software, originally written by Joey Hess.
-#
-# This version is for a multibinary package. It also allows you to build any
-# of the binary packages independantly, via binary-<package> targets.
-
-# Uncomment this to turn on verbose mode.
-# export DH_VERBOSE=1
-
-# This has to be exported to make some magic below work.
-export DH_OPTIONS
 
 export DH_ALWAYS_EXCLUDE=CVS:.svn
 
@@ -20,10 +8,44 @@ CFLAGS          := $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS         := $(shell dpkg-buildflags --get LDFLAGS)
 
 
-configure: configure-stamp
-configure-stamp:
-	dh_testdir
+build: export MISSING_BUILD_DEPS := $(shell dpkg-checkbuilddeps 2>&1)
+binary binary-arch binary-indep build build-arch build-indep clean:
+	dh ${@}
 
+ifneq ($(shell dh_listpackages),$(shell dh_listpackages -i))  # arch:any packages are built
+override_dh_auto_build:   debian/build-arch.stamp
+
+override_dh_auto_install: install-arch
+endif
+
+ifneq ($(shell dh_listpackages),$(shell dh_listpackages -a)) # arch:all packages are built
+  ifneq (,$(MISSING_BUILD_DEPS))
+    $(warning $(MISSING_BUILD_DEPS))
+    $(warning Postponing build of architecture independent files until binary or binary-indep target is called)
+  else
+override_dh_auto_build:   debian/build-indep.stamp
+  endif
+override_dh_auto_install: install-indep
+endif
+
+override_dh_auto_configure: debian/configure.stamp
+
+override_dh_auto_clean:
+	rm -f debian/*.stamp config.log
+	[ ! -f Makefile ] || dh_auto_clean $(DH_AUTO_OPTIONS)
+
+override_dh_installchangelogs:
+	dh_installchangelogs -a CHANGES
+	dh_installchangelogs -i
+
+override_dh_installinit:
+	dh_installinit --no-start -- start 20 2 3 4 5 .
+
+override_dh_compress:
+	set -ex; for p in $(shell dh_listpackages) ; do sh debian/fix.sh $$p; done
+	dh_compress
+
+debian/configure.stamp:
 	dh_auto_configure $(DH_AUTO_OPTIONS) --         \
 	            --enable-yesterday                  \
 	            --disable-man-group                 \
@@ -35,122 +57,29 @@ configure-stamp:
 	            LDFLAGS="$(LDFLAGS)"
 	touch "$@"
 
-
-
-build-arch: build-arch-stamp
-build-arch-stamp: configure
-
+debian/build-arch.stamp: debian/configure.stamp
 	dh_auto_build $(DH_AUTO_OPTIONS)
-
-	chmod a+x debian/debian-sa1
-
 	touch "$@"
 
 
-
-build-indep: build-indep-stamp
-build-indep-stamp: configure
-
+debian/build-indep.stamp: debian/configure.stamp
 	dh_auto_build $(DH_AUTO_OPTIONS) -- contrib/isag/isag
-
 	touch "$@"
 
-
-
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f configure-stamp build-arch-stamp build-indep-stamp config.log
-
-	[ ! -f Makefile ] || dh_auto_clean $(DH_AUTO_OPTIONS)
-
-	dh_clean
-
-
-install-common install-arch install-indep: DH_OPTIONS=
-install-common:
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-
-install-arch: build-arch install-common
-
+install-arch: debian/build-arch.stamp
 	dh_auto_install $(DH_AUTO_OPTIONS) --destdir="$(DESTDIR)"
-
+	
 	mkdir -p -m 755 $(DESTDIR)/usr/lib/sysstat
 	mv $(DESTDIR)/usr/bin/sar $(DESTDIR)/usr/bin/sar.sysstat
 	mv $(DESTDIR)/usr/share/man/man1/sar.1 $(DESTDIR)/usr/share/man/man1/sar.sysstat.1
 	rm -rf $(DESTDIR)/usr/doc
 
-	dh_installchangelogs -a CHANGES
 
-install-indep: build-indep install-common
-
+install-indep: debian/build-indep.stamp
 	$(MAKE) DESTDIR="$(DESTDIR)" install_isag
 
-	dh_installchangelogs -i
 
-
-# This single target is used to build all the packages, all at once, or
-# one at a time. So keep in mind: any options passed to commands here will
-# affect _all_ packages. Anything you want to only affect one package
-# should be put in another target, such as the install target.
-binary-common:
-	dh_testdir
-	dh_testroot
-	dh_install
-#	dh_installchangelogs
-	dh_installdocs
-	dh_installexamples
-	dh_installmenu
-	dh_installdebconf
-#	dh_installlogrotate
-#	dh_installemacsen
-#	dh_installcatalogs
-#	dh_installpam
-#	dh_installmime
-	dh_installinit --no-start -- start 20 2 3 4 5 .
-#	dh_installman
-	dh_installcron
-#	dh_installinfo
-#	dh_undocumented
-
-	sh debian/fix.sh `dh_listpackages`
-
-	dh_lintian
-	dh_strip
-	dh_link
-	dh_compress
-	dh_fixperms
-#	dh_perl
-#	dh_python
-#	dh_makeshlibs
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-
-# Build architecture independant packages using the common target.
-binary-indep: build-indep install-indep
-	$(MAKE) -f debian/rules DH_OPTIONS=-i binary-common
-
-# Build architecture dependant packages using the common target.
-binary-arch: build-arch install-arch
-	$(MAKE) -f debian/rules DH_OPTIONS=-a binary-common
-
-# Any other binary targets build just one binary package at a time.
-binary-%: build install
-	make -f debian/rules binary-common DH_OPTIONS=-p$*
-
-binary: binary-indep binary-arch
-build:  build-indep  build-arch
-
-.PHONY: configure clean                                         \
-	build-indep   build-arch   build                        \
-	binary-indep  binary-arch  binary-common  binary        \
-	indeall-indep install-arch install-common
-
-.DEFAULT_GOAL := binary
+.PHONY: binary binary-arch binary-indep build build-arch build-indep clean \
+	override_dh_auto_build override_dh_auto_install override_dh_auto_clean \
+	override_dh_auto_configure override_dh_installchangelogs override_dh_installinit \
+	override_dh_compress install-arch install-indep

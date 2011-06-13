@@ -1,7 +1,33 @@
 Changes:
 
+2011/06/03: Version 10.0.1 - Sebastien Godard (sysstat <at> orange.fr)
+	* Added USB devices statistics to sar and sadc. The option
+	  "-m USB" can now be used with sar to take a snapshot of all
+	  the USB devices currently plugged into the system.
+	* sadf -p now displays the sensor device name for temperature,
+	  voltage inputs and fans statistics.
+	* sar and pidstat: Check that _("Average") string doesn't exceed
+	  the size of the timestamp buffer.
+	* [Ivana Varekova]: Added option -h to iostat. This option makes
+	  the device utilization report easier to read with long device
+	  names.
+	* [Ivana Varekova]: cifsiostat didn't count open files from the
+	  "Posix Open" column in /proc/fs/cifs/Stats file. This is now
+	  fixed.
+	* [Ivana Varekova]: Close file descriptor in read_uptime()
+	  function (rd_stats.c file).
+	* Fixed XML output displayed by sadf (hugepages statistics were
+	  included in <power-management> section).
+	* sar: Decrease column width for sensor device name (temperature,
+	  voltage inputs and fans statistics).
+	* Remove unnecessary arguments from functions in pr_stats.c.
+	* sar manual page updated.
+	* DTD and XSD documents updated and cleaned.
+	* NLS updated. Esperanto translation added.
+	* CREDITS file updated.
+
 2011/03/15: Version 10.0.0 - Sebastien Godard (sysstat <at> orange.fr)
-	* [Ivana Varekova]: Fix a problem with long NFS and CIFS share
+	* [Ivana Varekova]: Fixed a problem with long NFS and CIFS share
 	  names in cifsiostat and nfsiostat.
 	* [Ivana Varekova]: Added the possibility to extend the number
 	  of slots for NFS and CIFS mount points on the fly.
@@ -376,7 +402,7 @@ Changes:
 	  done in one place (common function used by iostat, sar, sadf).
 	* All sysstat commands are made consistent with how parameters
 	  are interpreted: "COMMAND <interval>" now generates a report
-	  continusouly, "COMMAND <interval> 0" causes an error,
+	  continuously, "COMMAND <interval> 0" causes an error,
 	  "COMMAND 0" displays a report since system startup
 	  [DEBIAN bug#475707].
 	* Changed XML output for processes and context switches displayed

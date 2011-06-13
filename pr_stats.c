@@ -565,12 +565,11 @@ __print_funct_t print_avg_memory_stats(struct activity *a, int prev, int curr,
  *
  * IN:
  * @a		Activity structure with statistics.
- * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
  * @dispavg	True if displaying average statistics.
  ***************************************************************************
  */
-void stub_print_ktables_stats(struct activity *a, int prev, int curr, int dispavg)
+void stub_print_ktables_stats(struct activity *a, int curr, int dispavg)
 {
 	struct stats_ktables
 		*skc = (struct stats_ktables *) a->buf[curr];
@@ -631,7 +630,7 @@ void stub_print_ktables_stats(struct activity *a, int prev, int curr, int dispav
 __print_funct_t print_ktables_stats(struct activity *a, int prev, int curr,
 				    unsigned long long itv)
 {
-	stub_print_ktables_stats(a, prev, curr, FALSE);
+	stub_print_ktables_stats(a, curr, FALSE);
 }
 
 /*
@@ -648,7 +647,7 @@ __print_funct_t print_ktables_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_avg_ktables_stats(struct activity *a, int prev, int curr,
 					unsigned long long itv)
 {
-	stub_print_ktables_stats(a, prev, curr, TRUE);
+	stub_print_ktables_stats(a, curr, TRUE);
 }
 
 /*
@@ -658,12 +657,11 @@ __print_funct_t print_avg_ktables_stats(struct activity *a, int prev, int curr,
  *
  * IN:
  * @a		Activity structure with statistics.
- * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
  * @dispavg	TRUE if displaying average statistics.
  ***************************************************************************
  */
-void stub_print_queue_stats(struct activity *a, int prev, int curr, int dispavg)
+void stub_print_queue_stats(struct activity *a, int curr, int dispavg)
 {
 	struct stats_queue
 		*sqc = (struct stats_queue *) a->buf[curr];
@@ -729,7 +727,7 @@ void stub_print_queue_stats(struct activity *a, int prev, int curr, int dispavg)
 __print_funct_t print_queue_stats(struct activity *a, int prev, int curr,
 				  unsigned long long itv)
 {
-	stub_print_queue_stats(a, prev, curr, FALSE);
+	stub_print_queue_stats(a, curr, FALSE);
 }
 
 /*
@@ -746,7 +744,7 @@ __print_funct_t print_queue_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_avg_queue_stats(struct activity *a, int prev, int curr,
 				      unsigned long long itv)
 {
-	stub_print_queue_stats(a, prev, curr, TRUE);
+	stub_print_queue_stats(a, curr, TRUE);
 }
 
 /*
@@ -1033,14 +1031,11 @@ __print_funct_t print_net_nfsd_stats(struct activity *a, int prev, int curr,
  *
  * IN:
  * @a		Activity structure with statistics.
- * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
  * @dispavg	TRUE if displaying average statistics.
  ***************************************************************************
  */
-void stub_print_net_sock_stats(struct activity *a, int prev, int curr,
-			       unsigned long long itv, int dispavg)
+void stub_print_net_sock_stats(struct activity *a, int curr, int dispavg)
 {
 	struct stats_net_sock
 		*snsc = (struct stats_net_sock *) a->buf[curr];
@@ -1105,7 +1100,7 @@ void stub_print_net_sock_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_net_sock_stats(struct activity *a, int prev, int curr,
 				     unsigned long long itv)
 {
-	stub_print_net_sock_stats(a, prev, curr, itv, FALSE);
+	stub_print_net_sock_stats(a, curr, FALSE);
 }
 
 /*
@@ -1122,7 +1117,7 @@ __print_funct_t print_net_sock_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_avg_net_sock_stats(struct activity *a, int prev, int curr,
 					 unsigned long long itv)
 {
-	stub_print_net_sock_stats(a, prev, curr, itv, TRUE);
+	stub_print_net_sock_stats(a, curr, TRUE);
 }
 
 /*
@@ -1378,14 +1373,11 @@ __print_funct_t print_net_udp_stats(struct activity *a, int prev, int curr,
  *
  * IN:
  * @a		Activity structure with statistics.
- * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
  * @dispavg	TRUE if displaying average statistics.
  ***************************************************************************
  */
-void stub_print_net_sock6_stats(struct activity *a, int prev, int curr,
-				unsigned long long itv, int dispavg)
+void stub_print_net_sock6_stats(struct activity *a, int curr, int dispavg)
 {
 	struct stats_net_sock6
 		*snsc = (struct stats_net_sock6 *) a->buf[curr];
@@ -1441,7 +1433,7 @@ void stub_print_net_sock6_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_net_sock6_stats(struct activity *a, int prev, int curr,
 				      unsigned long long itv)
 {
-	stub_print_net_sock6_stats(a, prev, curr, itv, FALSE);
+	stub_print_net_sock6_stats(a, curr, FALSE);
 }
 
 /*
@@ -1458,7 +1450,7 @@ __print_funct_t print_net_sock6_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_avg_net_sock6_stats(struct activity *a, int prev, int curr,
 					  unsigned long long itv)
 {
-	stub_print_net_sock6_stats(a, prev, curr, itv, TRUE);
+	stub_print_net_sock6_stats(a, curr, TRUE);
 }
 
 /*
@@ -1661,12 +1653,11 @@ __print_funct_t print_net_udp6_stats(struct activity *a, int prev, int curr,
  *
  * IN:
  * @a		Activity structure with statistics.
- * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
  * @dispavg	True if displaying average statistics.
  ***************************************************************************
  */
-void stub_print_pwr_cpufreq_stats(struct activity *a, int prev, int curr, int dispavg)
+void stub_print_pwr_cpufreq_stats(struct activity *a, int curr, int dispavg)
 {
 	int i;
 	struct stats_pwr_cpufreq *spc;
@@ -1761,7 +1752,7 @@ void stub_print_pwr_cpufreq_stats(struct activity *a, int prev, int curr, int di
 __print_funct_t print_pwr_cpufreq_stats(struct activity *a, int prev, int curr,
 					unsigned long long itv)
 {
-	stub_print_pwr_cpufreq_stats(a, prev, curr, FALSE);
+	stub_print_pwr_cpufreq_stats(a, curr, FALSE);
 }
 
 /*
@@ -1778,7 +1769,7 @@ __print_funct_t print_pwr_cpufreq_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_avg_pwr_cpufreq_stats(struct activity *a, int prev, int curr,
 					    unsigned long long itv)
 {
-	stub_print_pwr_cpufreq_stats(a, prev, curr, TRUE);
+	stub_print_pwr_cpufreq_stats(a, curr, TRUE);
 }
 
 /*
@@ -1788,12 +1779,11 @@ __print_funct_t print_avg_pwr_cpufreq_stats(struct activity *a, int prev, int cu
  *
  * IN:
  * @a		Activity structure with statistics.
- * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
  * @dispavg	True if displaying average statistics.
  ***************************************************************************
  */
-void stub_print_pwr_fan_stats(struct activity *a, int prev, int curr, int dispavg)
+void stub_print_pwr_fan_stats(struct activity *a, int curr, int dispavg)
 {
 	int i;
 	struct stats_pwr_fan *spc;
@@ -1817,7 +1807,7 @@ void stub_print_pwr_fan_stats(struct activity *a, int prev, int curr, int dispav
 	}
 
 	if (dis) {
-		printf("\n%-11s     FAN       rpm      drpm     %*s\n",
+		printf("\n%-11s     FAN       rpm      drpm %*s\n",
 		       timestamp[!curr], MAX_SENSORS_DEV_LEN, "DEVICE");
 	}
 
@@ -1841,7 +1831,7 @@ void stub_print_pwr_fan_stats(struct activity *a, int prev, int curr, int dispav
 			avg_fan_min[i] += spc->rpm_min;
 		}
 
-		printf("     %*s\n", MAX_SENSORS_DEV_LEN, spc->device);
+		printf(" %*s\n", MAX_SENSORS_DEV_LEN, spc->device);
 	}
 
 	if (dispavg) {
@@ -1870,7 +1860,7 @@ void stub_print_pwr_fan_stats(struct activity *a, int prev, int curr, int dispav
 __print_funct_t print_pwr_fan_stats(struct activity *a, int prev, int curr,
 				    unsigned long long itv)
 {
-	stub_print_pwr_fan_stats(a, prev, curr, FALSE);
+	stub_print_pwr_fan_stats(a, curr, FALSE);
 }
 
 /*
@@ -1887,7 +1877,7 @@ __print_funct_t print_pwr_fan_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_avg_pwr_fan_stats(struct activity *a, int prev, int curr,
 					unsigned long long itv)
 {
-	stub_print_pwr_fan_stats(a, prev, curr, TRUE);
+	stub_print_pwr_fan_stats(a, curr, TRUE);
 }
 
 /*
@@ -1897,12 +1887,11 @@ __print_funct_t print_avg_pwr_fan_stats(struct activity *a, int prev, int curr,
  *
  * IN:
  * @a		Activity structure with statistics.
- * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
  * @dispavg	True if displaying average statistics.
  ***************************************************************************
  */
-void stub_print_pwr_temp_stats(struct activity *a, int prev, int curr, int dispavg)
+void stub_print_pwr_temp_stats(struct activity *a, int curr, int dispavg)
 {
 	int i;
 	struct stats_pwr_temp *spc;
@@ -1933,7 +1922,7 @@ void stub_print_pwr_temp_stats(struct activity *a, int prev, int curr, int dispa
 	}
 
 	if (dis) {
-		printf("\n%-11s    TEMP      degC     %%temp     %*s\n",
+		printf("\n%-11s    TEMP      degC     %%temp %*s\n",
 		       timestamp[!curr], MAX_SENSORS_DEV_LEN, "DEVICE");
 	}
 
@@ -1963,7 +1952,7 @@ void stub_print_pwr_temp_stats(struct activity *a, int prev, int curr, int dispa
 			avg_temp_max[i] = spc->temp_max;
 		}
 		
-		printf("     %*s\n", MAX_SENSORS_DEV_LEN, spc->device);
+		printf(" %*s\n", MAX_SENSORS_DEV_LEN, spc->device);
 	}
 
 	if (dispavg) {
@@ -1996,7 +1985,7 @@ void stub_print_pwr_temp_stats(struct activity *a, int prev, int curr, int dispa
 __print_funct_t print_pwr_temp_stats(struct activity *a, int prev, int curr,
 				     unsigned long long itv)
 {
-	stub_print_pwr_temp_stats(a, prev, curr, FALSE);
+	stub_print_pwr_temp_stats(a, curr, FALSE);
 }
 
 /*
@@ -2013,7 +2002,7 @@ __print_funct_t print_pwr_temp_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_avg_pwr_temp_stats(struct activity *a, int prev, int curr,
 					 unsigned long long itv)
 {
-	stub_print_pwr_temp_stats(a, prev, curr, TRUE);
+	stub_print_pwr_temp_stats(a, curr, TRUE);
 }
 
 /*
@@ -2023,12 +2012,11 @@ __print_funct_t print_avg_pwr_temp_stats(struct activity *a, int prev, int curr,
  *
  * IN:
  * @a		Activity structure with statistics.
- * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
  * @dispavg	True if displaying average statistics.
  ***************************************************************************
  */
-void stub_print_pwr_in_stats(struct activity *a, int prev, int curr, int dispavg)
+void stub_print_pwr_in_stats(struct activity *a, int curr, int dispavg)
 {
 	int i;
 	struct stats_pwr_in *spc;
@@ -2059,7 +2047,7 @@ void stub_print_pwr_in_stats(struct activity *a, int prev, int curr, int dispavg
 	}
 
 	if (dis) {
-		printf("\n%-11s      IN       inV       %%in     %*s\n",
+		printf("\n%-11s      IN       inV       %%in %*s\n",
 		       timestamp[!curr], MAX_SENSORS_DEV_LEN, "DEVICE");
 	}
 
@@ -2089,7 +2077,7 @@ void stub_print_pwr_in_stats(struct activity *a, int prev, int curr, int dispavg
 			avg_in_max[i] = spc->in_max;
 		}
 
-		printf("     %*s\n", MAX_SENSORS_DEV_LEN, spc->device);
+		printf(" %*s\n", MAX_SENSORS_DEV_LEN, spc->device);
 	}
 
 	if (dispavg) {
@@ -2122,7 +2110,7 @@ void stub_print_pwr_in_stats(struct activity *a, int prev, int curr, int dispavg
 __print_funct_t print_pwr_in_stats(struct activity *a, int prev, int curr,
 				   unsigned long long itv)
 {
-	stub_print_pwr_in_stats(a, prev, curr, FALSE);
+	stub_print_pwr_in_stats(a, curr, FALSE);
 }
 
 /*
@@ -2139,7 +2127,7 @@ __print_funct_t print_pwr_in_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_avg_pwr_in_stats(struct activity *a, int prev, int curr,
 				       unsigned long long itv)
 {
-	stub_print_pwr_in_stats(a, prev, curr, TRUE);
+	stub_print_pwr_in_stats(a, curr, TRUE);
 }
 
 /*
@@ -2149,14 +2137,11 @@ __print_funct_t print_avg_pwr_in_stats(struct activity *a, int prev, int curr,
  *
  * IN:
  * @a		Activity structure with statistics.
- * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
  * @dispavg	TRUE if displaying average statistics.
  ***************************************************************************
  */
-void stub_print_huge_stats(struct activity *a, int prev, int curr,
-			   unsigned long long itv, int dispavg)
+void stub_print_huge_stats(struct activity *a, int curr, int dispavg)
 {
 	struct stats_huge
 		*smc = (struct stats_huge *) a->buf[curr];
@@ -2214,7 +2199,7 @@ void stub_print_huge_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_huge_stats(struct activity *a, int prev, int curr,
 				 unsigned long long itv)
 {
-	stub_print_huge_stats(a, prev, curr, itv, FALSE);
+	stub_print_huge_stats(a, curr, FALSE);
 }
 
 /*
@@ -2231,7 +2216,7 @@ __print_funct_t print_huge_stats(struct activity *a, int prev, int curr,
 __print_funct_t print_avg_huge_stats(struct activity *a, int prev, int curr,
 				     unsigned long long itv)
 {
-	stub_print_huge_stats(a, prev, curr, itv, TRUE);
+	stub_print_huge_stats(a, curr, TRUE);
 }
 
 /*
@@ -2243,7 +2228,7 @@ __print_funct_t print_avg_huge_stats(struct activity *a, int prev, int curr,
  * @a		Activity structure with statistics.
  * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
- * @dispavg	True if displaying average statistics.
+ * @itv		Interval of time in jiffies.
  ***************************************************************************
  */
 void print_pwr_wghfreq_stats(struct activity *a, int prev, int curr,
@@ -2310,4 +2295,116 @@ void print_pwr_wghfreq_stats(struct activity *a, int prev, int curr,
 			printf(" %9.2f\n", tis ? ((double) tisfreq) / tis : 0.0);
 		}
 	}
+}
+
+/*
+ ***************************************************************************
+ * Display USB devices statistics. This function is used to
+ * display instantaneous and summary statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ * @dispavg	TRUE if displaying average statistics.
+ ***************************************************************************
+ */
+void stub_print_pwr_usb_stats(struct activity *a, int curr, int dispavg)
+{
+	int i, j;
+	struct stats_pwr_usb *suc, *sum;
+
+	if (dis) {
+		printf("\n%-11s     BUS  idvendor    idprod  maxpower",
+		       (dispavg ? _("Summary") : timestamp[!curr]));
+		printf(" %*s", MAX_MANUF_LEN - 1, "manufact");
+		printf(" %*s\n", MAX_PROD_LEN - 1, "product");
+	}
+	
+	for (i = 0; i < a->nr; i++) {
+		suc = (struct stats_pwr_usb *) ((char *) a->buf[curr] + i * a->msize);
+
+		if (!suc->bus_nr)
+			/* Bus#0 doesn't exist: We are at the end of the list */
+			break;
+		
+		printf("%-11s  %6d %9x %9x %9u",
+		       (dispavg ? _("Summary") : timestamp[curr]),
+		       suc->bus_nr,
+		       suc->vendor_id, suc->product_id,
+		       /* bMaxPower is expressed in 2 mA units */
+		       suc->bmaxpower << 1);
+
+		printf(" %*s", MAX_MANUF_LEN - 1, suc->manufacturer);
+		printf(" %*s\n", MAX_PROD_LEN - 1, suc->product);
+
+		if (!dispavg) {
+			/* Save current USB device in summary list */
+			for (j = 0; j < a->nr; j++) {
+				sum = (struct stats_pwr_usb *) ((char *) a->buf[2] + j * a->msize);
+
+				if ((sum->bus_nr     == suc->bus_nr) &&
+				    (sum->vendor_id  == suc->vendor_id) &&
+				    (sum->product_id == suc->product_id))
+					/* USB device found in summary list */
+					break;
+				if (!sum->bus_nr) {
+					/*
+					 * Current slot is free:
+					 * Save USB device in summary list.
+					 */
+					*sum = *suc;
+					break;
+				}
+				if (j == a->nr - 1) {
+					/*
+					 * This is the last slot and
+					 * we still havent't found the device.
+					 * So create a dummy device here.
+					 */
+					sum->bus_nr = ~0;
+					sum->vendor_id = sum->product_id = 0;
+					sum->bmaxpower = 0;
+					sum->manufacturer[0] = '\0';
+					snprintf(sum->product, MAX_PROD_LEN, "%s",
+						 _("Other devices not listed here"));
+					sum->product[MAX_PROD_LEN - 1] = '\0';
+				}
+			}
+		}
+	}
+}	
+
+/*
+ ***************************************************************************
+ * Display memory and swap statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_pwr_usb_stats(struct activity *a, int prev, int curr,
+				   unsigned long long itv)
+{
+	stub_print_pwr_usb_stats(a, curr, FALSE);
+}
+
+/*
+ ***************************************************************************
+ * Display average memory statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_avg_pwr_usb_stats(struct activity *a, int prev, int curr,
+					unsigned long long itv)
+{
+	stub_print_pwr_usb_stats(a, 2, TRUE);
 }

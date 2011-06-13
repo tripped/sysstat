@@ -137,7 +137,8 @@ void display_help(char *progname)
 		 "\t\tFAN\tFans speed\n"
 		 "\t\tFREQ\tCPU average clock frequency\n"
 		 "\t\tIN\tVoltage inputs\n"
-		 "\t\tTEMP\tDevices temperature\n"));
+		 "\t\tTEMP\tDevices temperature\n"
+		 "\t\tUSB\tUSB devices plugged into the system\n"));
 	printf(_("\t-n { <keyword> [,...] | ALL }\n"
 		 "\t\tNetwork statistics\n"
 		 "\t\tKeywords are:\n"
@@ -377,7 +378,8 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 	else
 		itv = g_itv;
 
-	strcpy(timestamp[curr], _("Average:"));
+	strncpy(timestamp[curr], _("Average:"), TIMESTAMP_LEN);
+	timestamp[curr][TIMESTAMP_LEN - 1] = '\0';
 	strcpy(timestamp[!curr], timestamp[curr]);
 	
 	/* Test stdout */

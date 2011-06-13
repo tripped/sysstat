@@ -39,6 +39,7 @@
  ***************************************************************************
  * Definitions of system activities.
  * See sa.h file for activity structure definition.
+ * Activity structure doesn't matter for daily data files.
  ***************************************************************************
  */
 
@@ -995,7 +996,7 @@ struct activity pwr_fan_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_pwr_fan_stats,
 	.f_xml_print	= xml_print_pwr_fan_stats,
-	.hdr_line	= "device;FAN;rpm;drpm",
+	.hdr_line	= "FAN;DEVICE;rpm;drpm",
 	.name		= "A_PWR_FAN",
 #endif
 	.nr		= -1,
@@ -1025,7 +1026,7 @@ struct activity pwr_temp_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_pwr_temp_stats,
 	.f_xml_print	= xml_print_pwr_temp_stats,
-	.hdr_line	= "device;TEMP;degC;%temp",
+	.hdr_line	= "TEMP;DEVICE;degC;%temp",
 	.name		= "A_PWR_TEMP",
 #endif
 	.nr		= -1,
@@ -1055,7 +1056,7 @@ struct activity pwr_in_act = {
 #ifdef SOURCE_SADF
 	.f_render	= render_pwr_in_stats,
 	.f_xml_print	= xml_print_pwr_in_stats,
-	.hdr_line	= "device;IN;inV;%in",
+	.hdr_line	= "IN;DEVICE;inV;%in",
 	.name		= "A_PWR_IN",
 #endif
 	.nr		= -1,
@@ -1100,7 +1101,7 @@ struct activity huge_act = {
 /* CPU weighted frequency */
 struct activity pwr_wghfreq_act = {
 	.id		= A_PWR_WGHFREQ,
-	.options	= AO_CLOSE_MARKUP,
+	.options	= AO_NULL,
 	.magic		= ACTIVITY_MAGIC_BASE,
 	.group		= G_POWER,
 #ifdef SOURCE_SADC
@@ -1127,9 +1128,40 @@ struct activity pwr_wghfreq_act = {
 	.bitmap		= &cpu_bitmap
 };
 
+/* USB devices plugged into the system */
+struct activity pwr_usb_act = {
+	.id		= A_PWR_USB,
+	.options	= AO_CLOSE_MARKUP,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_POWER,
+#ifdef SOURCE_SADC
+	.f_count	= wrap_get_usb_nr,
+	.f_count2	= NULL,
+	.f_read		= wrap_read_bus_usb_dev,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_pwr_usb_stats,
+	.f_print_avg	= print_avg_pwr_usb_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_pwr_usb_stats,
+	.f_xml_print	= xml_print_pwr_usb_stats,
+	.hdr_line	= "manufact;product;BUS;idvendor;idprod;maxpower",
+	.name		= "A_PWR_USB",
+#endif
+	.nr		= -1,
+	.nr2		= 1,
+	.fsize		= STATS_PWR_USB_SIZE,
+	.msize		= STATS_PWR_USB_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL
+};
+
 
 /*
  * Array of activities.
+ * (Order of activities doesn't matter for daily data files).
  */
 struct activity *act[NR_ACT] = {
 	&cpu_act,
@@ -1139,10 +1171,12 @@ struct activity *act[NR_ACT] = {
 	&paging_act,
 	&io_act,
 	&memory_act,
+	&huge_act,
 	&ktables_act,
 	&queue_act,
 	&serial_act,
 	&disk_act,
+	/* <network> */
 	&net_dev_act,
 	&net_edev_act,
 	&net_nfs_act,
@@ -1160,11 +1194,14 @@ struct activity *act[NR_ACT] = {
 	&net_eip6_act,
 	&net_icmp6_act,
 	&net_eicmp6_act,
-	&net_udp6_act,
+	&net_udp6_act,		/* AO_CLOSE_MARKUP */
+	/* </network> */
+	/* <power-management> */
 	&pwr_cpufreq_act,
 	&pwr_fan_act,
 	&pwr_temp_act,
 	&pwr_in_act,
-	&huge_act,
-	&pwr_wghfreq_act
+	&pwr_wghfreq_act,
+	&pwr_usb_act		/* AO_CLOSE_MARKUP */
+	/* </power-management> */
 };

@@ -1,3 +1,13 @@
+sysstat (10.0.1-1) unstable; urgency=low
+
+  * New upstream (stable) release.
+  * Add Danish translation of debconf templates (closes: #621367).
+  * Standards-Version: 3.9.2 (no changes).
+  * sysstat.{postinst,postrm}: register the ucf-managed file with ucfr.
+  * Sort dependency fields with wrap-and-sort command.
+
+ -- Robert Luberda <robert@debian.org>  Wed, 15 Jun 2011 07:27:46 +0200
+
 sysstat (10.0.0-1) unstable; urgency=low
 
   * New upstream (stable) release:

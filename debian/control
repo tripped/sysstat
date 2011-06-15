@@ -3,11 +3,15 @@ Section: admin
 Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
 Build-Depends: debhelper (>= 8), gettext, libsensors4-dev
-Standards-Version: 3.9.1
+Standards-Version: 3.9.2
 
 Package: sysstat
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ucf (>= 2.003), lsb-base (>= 3.0-6), bzip2
+Depends: bzip2,
+         lsb-base (>= 3.0-6),
+         ucf (>= 2.003),
+         ${misc:Depends},
+         ${shlibs:Depends}
 Recommends: cron
 Suggests: isag
 Description: system performance tools for Linux
@@ -27,7 +31,10 @@ Homepage: http://pagesperso-orange.fr/sebastien.godard/
 
 Package: isag
 Architecture: all
-Depends: sysstat (>= ${source:Version}), tk8.5|wish, gnuplot-x11, ${misc:Depends}
+Depends: gnuplot-x11,
+         sysstat (>= ${source:Version}),
+         tk8.5|wish,
+         ${misc:Depends}
 Suggests: rcs
 Description: Interactive System Activity Grapher for sysstat
  This package provides the command isag, which graphically displays the

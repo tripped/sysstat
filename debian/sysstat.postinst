@@ -1,22 +1,23 @@
 #! /bin/sh
 # vim:ts=4:et
-# $Id: sysstat.postinst 1502 2011-01-19 20:47:41Z robert $
+# $Id: sysstat.postinst 1525 2011-06-16 21:17:32Z robert $
 
 set -e
 
 S_VERSION="9.1.6-1"
-DEFAULT="/etc/default/sysstat"
+PACKAGE="sysstat"
+DEFAULT="/etc/default/$PACKAGE"
 ENABLED="false"
 
 ### manage_default_file: manages $DEFAULT file with ucf ###
 manage_default_file() {
     ENABLED="$1"
-    
+
     if [ "$ENABLED" != "true" ] && [ "$ENABLED" != "false" ] ; then
         echo "Internal error in the sysstat's postinst: \$ENABLED=$ENABLED" 1>&2;
         exit 1;
-    fi                
-    
+    fi
+
     # Generate temporary files
     def_file=`tempfile -p sstat -s .def`
     md5_file=`tempfile -p sstat -s .md5`
@@ -35,7 +36,7 @@ ENABLED="$ENABLED"
 
 # Additional options passed to sa1 by /etc/init.d/sysstat
 # and /etc/cron.d/sysstat
-# By default contains the \`-S DISK' option responsible for 
+# By default contains the \`-S DISK' option responsible for
 # generating disk statisitcs.
 SA1_OPTIONS="-S DISK"
 
@@ -59,6 +60,7 @@ EOF
         --debconf-ok \
         --sum-file "$md5_file" \
         "$def_file" "$DEFAULT"
+    ucfr "$PACKAGE" "$DEFAULT"
 
     [ -e "$DEFAULT" ] && chmod 644 "$DEFAULT"
     rm -f "$def_file" "$md5_file"
@@ -92,7 +94,7 @@ if [ "$1" = "configure" ] ; then
 
     db_get sysstat/enable || true
     ENABLED="$RET"
-    
+
     manage_default_file "$ENABLED"
 
     # must be called *before* manage_default_file, which uses ucf --debconf-ok
@@ -117,4 +119,3 @@ fi
 #DEBHELPER#
 
 exit 0
-

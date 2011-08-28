@@ -4,9 +4,9 @@ Merge the following change from Ubuntu:
 
 Index: sysstat/sar.c
 ===================================================================
---- sysstat.orig/sar.c	2011-03-22 17:41:20.000000000 +0100
-+++ sysstat/sar.c	2011-03-22 17:43:36.000000000 +0100
-@@ -1387,7 +1387,6 @@ int main(int argc, char **argv)
+--- sysstat.orig/sar.c	2011-08-28 19:37:00.000000000 +0200
++++ sysstat/sar.c	2011-08-28 19:45:03.000000000 +0200
+@@ -1385,7 +1385,6 @@ int main(int argc, char **argv)
  
  		/* Call now the data collector */
  		execv(SADC_PATH, args);

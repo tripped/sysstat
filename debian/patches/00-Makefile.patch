@@ -2,8 +2,8 @@ Makefile fixes.
 
 Index: sysstat/Makefile.in
 ===================================================================
---- sysstat.orig/Makefile.in	2011-03-22 17:41:19.000000000 +0100
-+++ sysstat/Makefile.in	2011-03-22 17:43:11.000000000 +0100
+--- sysstat.orig/Makefile.in	2011-08-28 19:45:44.000000000 +0200
++++ sysstat/Makefile.in	2011-08-28 19:45:47.000000000 +0200
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
  SYSCONFIG_DIR = @SYSCONFIG_DIR@
  
@@ -16,7 +16,7 @@ Index: sysstat/Makefile.in
  DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
  DFLAGS += $(DFSENSORS)
  
-@@ -233,8 +233,9 @@ else
+@@ -237,8 +237,9 @@ else
  locales:
  endif
  
@@ -28,7 +28,7 @@ Index: sysstat/Makefile.in
  
  # Phony targets
  .PHONY: clean distclean install install_base install_all uninstall \
-@@ -267,9 +268,6 @@ ifeq ($(INSTALL_DOC),y)
+@@ -271,9 +272,6 @@ ifeq ($(INSTALL_DOC),y)
  	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat.1 $(DESTDIR)$(MAN1_DIR)
  	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
  	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
@@ -38,8 +38,8 @@ Index: sysstat/Makefile.in
  ifeq ($(COMPRESS_MANPG),y)
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
-@@ -348,8 +346,15 @@ ifdef REQUIRE_NLS
- 	$(INSTALL_DATA) nls/zh_TW.gmo $(DESTDIR)$(NLS_DIR)/zh_TW/LC_MESSAGES/$(PACKAGE).mo
+@@ -304,8 +302,15 @@ ifdef REQUIRE_NLS
+ 	done
  endif
  
 -install_base: all sa1 sa2 sysstat.sysconfig install_man install_nls \
@@ -56,7 +56,7 @@ Index: sysstat/Makefile.in
  	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
  	mkdir -p $(DESTDIR)$(SA_DIR)
  ifeq ($(CLEAN_SA_DIR),y)
-@@ -358,7 +363,7 @@ ifeq ($(CLEAN_SA_DIR),y)
+@@ -314,7 +319,7 @@ ifeq ($(CLEAN_SA_DIR),y)
  	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
  endif
  	mkdir -p $(DESTDIR)$(BIN_DIR)
@@ -65,7 +65,7 @@ Index: sysstat/Makefile.in
  	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
  	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
-@@ -370,18 +375,15 @@ endif
+@@ -326,18 +331,15 @@ endif
  	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) nfsiostat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
@@ -90,7 +90,7 @@ Index: sysstat/Makefile.in
  endif
  
  install_all: install_base cron/crontab sysstat \
-@@ -597,7 +599,7 @@ clean:
+@@ -477,7 +479,7 @@ clean:
  	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat *.o *.a core TAGS
  	find nls -name "*.gmo" -exec rm -f {} \;
  

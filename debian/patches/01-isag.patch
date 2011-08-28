@@ -1,7 +1,9 @@
 Fix paths and typos in isag script and man page.
 
---- sysstat-9.0.6.1.orig/contrib/isag/isag.1
-+++ sysstat-9.0.6.1/contrib/isag/isag.1
+Index: sysstat/contrib/isag/isag.1
+===================================================================
+--- sysstat.orig/contrib/isag/isag.1	2011-03-23 13:54:09.000000000 +0100
++++ sysstat/contrib/isag/isag.1	2011-08-28 19:44:32.000000000 +0200
 @@ -37,7 +37,7 @@
  .\" real vertical bar.  \*(C+ will give a nicer C++.  Capital omega is used
  .\" to do unbreakable dashes and therefore won't be available.  \*(C` and
@@ -11,7 +13,7 @@ Fix paths and typos in isag script and man page.
  .ds C+ C\v'-.1v'\h'-1p'\s-2+\h'-1p'+\s0\v'.1v'\h'-1p'
  .ie n \{\
  .    ds -- \(*W-
-@@ -181,7 +181,7 @@
+@@ -181,7 +181,7 @@ As mentioned above there is a config fil
  .Ip "y limits for each kind of graph" 2
  .IX Item "y limits for each kind of graph"
  .PP
@@ -20,9 +22,11 @@ Fix paths and typos in isag script and man page.
  .SH "PREREQUSITIES"
  .IX Header "PREREQUSITIES"
  Here is list of prerequsities including versioning and built-in features.
---- sysstat-9.0.6.1.orig/contrib/isag/isag.in
-+++ sysstat-9.0.6.1/contrib/isag/isag.in
-@@ -211,7 +211,7 @@
+Index: sysstat/contrib/isag/isag.in
+===================================================================
+--- sysstat.orig/contrib/isag/isag.in	2011-03-23 13:54:09.000000000 +0100
++++ sysstat/contrib/isag/isag.in	2011-08-28 19:44:32.000000000 +0200
+@@ -211,7 +211,7 @@ if {$tcl_version < $needed_version} {
  set gnuplot	"/usr/bin/gnuplot"
  set grep	"/bin/grep"
  set sh		"/bin/sh"
@@ -31,7 +35,7 @@ Fix paths and typos in isag script and man page.
  set sed		"/bin/sed"
  
  # default placement of config file
-@@ -278,7 +278,7 @@
+@@ -278,7 +278,7 @@ set sar_data_path "@SA_DIR@"
  set sar_data_mask "sa\[0-9\]\[0-9\]"
  set prefix "@prefix@"
  set exec_prefix "@exec_prefix@"
@@ -40,9 +44,11 @@ Fix paths and typos in isag script and man page.
  
  # following check added: Thu Mar 18 21:44:52 GMT+1 2004
  if { 1 != [file executable $sar]} {
---- sysstat-9.0.6.1.orig/contrib/isag/README-isag
-+++ sysstat-9.0.6.1/contrib/isag/README-isag
-@@ -9,7 +9,7 @@
+Index: sysstat/contrib/isag/README-isag
+===================================================================
+--- sysstat.orig/contrib/isag/README-isag	2011-03-23 13:54:09.000000000 +0100
++++ sysstat/contrib/isag/README-isag	2011-08-28 19:44:32.000000000 +0200
+@@ -9,7 +9,7 @@ isag is (C) 2000,2001 by David Doubrava
  Send bug reports to <linux_monitor@volny.cz>.
  
  Note that the path to daily data files is hard coded in isag and

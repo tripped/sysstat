@@ -2,9 +2,9 @@ Fix a warning given by gcc -Wformat.
 
 Index: sysstat/rndr_stats.c
 ===================================================================
---- sysstat.orig/rndr_stats.c	2011-02-06 15:24:25.000000000 +0100
-+++ sysstat/rndr_stats.c	2011-02-06 15:24:42.000000000 +0100
-@@ -132,7 +132,7 @@
+--- sysstat.orig/rndr_stats.c	2011-08-28 19:45:11.000000000 +0200
++++ sysstat/rndr_stats.c	2011-08-28 19:45:25.000000000 +0200
+@@ -133,7 +133,7 @@ static void render(int isdb, char *pre,
  			}
  		}
  		else {

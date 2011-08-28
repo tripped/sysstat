@@ -1,5 +1,24 @@
 Changes:
 
+2011/08/28: Version 10.0.2 - Sebastien Godard (sysstat <at> orange.fr)
+	* sadf modified to make it easier to add new output formats.
+	  Its design is still not generic anyway.
+	* Option -T added to sadf: This option tells sadf to display
+	  timestamps in seconds since the epoch (when applicable).
+	* Option "-P ON" added to mpstat. This option tells mpstat
+	  to display stats only for online CPU.
+	* [Kei Ishida]: pidstat displayed stats for processes that
+	  had terminated while pidstat was running. This is now fixed.
+	* [Jeroen Roovers]: Automate translation files handling in
+	  Makefile.in.
+	* DTD and XSD documents updated.
+	* sadf and mpstat manual pages updated.
+	* pidstat manual page updated: Added description of field %MEM
+	  displayed by pidstat -r.
+	* Various cosmetic changes (sar.c, sadf.c).
+	* NLS updated.
+	* CREDITS file updated.
+
 2011/06/03: Version 10.0.1 - Sebastien Godard (sysstat <at> orange.fr)
 	* Added USB devices statistics to sar and sadc. The option
 	  "-m USB" can now be used with sar to take a snapshot of all

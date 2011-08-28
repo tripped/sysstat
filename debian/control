@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 8), gettext, libsensors4-dev
 Standards-Version: 3.9.2
 
 Package: sysstat
-Architecture: any
+Architecture: linux-any
 Depends: bzip2,
          lsb-base (>= 3.0-6),
          ucf (>= 2.003),

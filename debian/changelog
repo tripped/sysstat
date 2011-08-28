@@ -1,3 +1,11 @@
+sysstat (10.0.2-1) unstable; urgency=low
+
+  * New upstream (stable) release.
+  * debian/control: Set architecture to linux-any (closes: #619949).
+  * The debconf message has already been ixed in 8.1.8-2, (LP: #342655).
+
+ -- Robert Luberda <robert@debian.org>  Sun, 28 Aug 2011 19:50:36 +0200
+
 sysstat (10.0.1-1) unstable; urgency=low
 
   * New upstream (stable) release.
@@ -16,7 +24,7 @@ sysstat (10.0.0-1) unstable; urgency=low
     + [Adam Heath]: iostat incorrectly mapped device-mapper IDs
       greater than 256. This is now fixed (closes: #614397).
   * debian/rules: switch to using dh command.
-  * Remove 07-remove_fdatasync.patch, no longer needed. 
+  * Remove 07-remove_fdatasync.patch, no longer needed.
 
  -- Robert Luberda <robert@debian.org>  Wed, 23 Mar 2011 13:26:07 +0100
 

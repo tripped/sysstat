@@ -1,3 +1,5 @@
+# Debian:
+.pc
 # Lines starting with '#' are considered comments.
 # List of files to ignore:
 Makefile

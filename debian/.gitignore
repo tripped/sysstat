@@ -1,0 +1,6 @@
+*.debhelper
+*.stamp
+*.substvars
+files
+isag
+tmp

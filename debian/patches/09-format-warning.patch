@@ -1,10 +1,17 @@
-Fix a warning given by gcc -Wformat.
+From: Robert Luberda <robert@debian.org>
+Date: Sun, 6 Feb 2011 15:44:52 +0100
+Subject: 09-format-warning
 
-Index: sysstat/rndr_stats.c
-===================================================================
---- sysstat.orig/rndr_stats.c	2011-08-28 19:45:11.000000000 +0200
-+++ sysstat/rndr_stats.c	2011-08-28 19:45:25.000000000 +0200
-@@ -133,7 +133,7 @@ static void render(int isdb, char *pre,
+Fix a warning given by gcc -Wformat.
+---
+ rndr_stats.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/rndr_stats.c b/rndr_stats.c
+index 293bf62..e0a0428 100644
+--- a/rndr_stats.c
++++ b/rndr_stats.c
+@@ -133,7 +133,7 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
  			}
  		}
  		else {
@@ -13,3 +20,4 @@ Index: sysstat/rndr_stats.c
  		}
  	}
  
+-- 

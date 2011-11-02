@@ -1,9 +1,16 @@
-Makefile fixes.
+From: Robert Luberda <robert@debian.org>
+Date: Tue, 23 Mar 2010 22:04:47 +0100
+Subject: 00-Makefile
 
-Index: sysstat/Makefile.in
-===================================================================
---- sysstat.orig/Makefile.in	2011-08-28 19:45:44.000000000 +0200
-+++ sysstat/Makefile.in	2011-08-28 19:45:47.000000000 +0200
+Makefile fixes.
+---
+ Makefile.in |   42 ++++++++++++++++++++++--------------------
+ 1 files changed, 22 insertions(+), 20 deletions(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index b8e36d1..64f31ec 100644
+--- a/Makefile.in
++++ b/Makefile.in
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
  SYSCONFIG_DIR = @SYSCONFIG_DIR@
  
@@ -99,3 +106,4 @@ Index: sysstat/Makefile.in
  	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h
  	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily
  	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in
+-- 

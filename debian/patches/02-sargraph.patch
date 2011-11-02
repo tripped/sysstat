@@ -1,7 +1,16 @@
-Fix paths in sargraph script
+From: Robert Luberda <robert@debian.org>
+Date: Tue, 23 Mar 2010 22:04:47 +0100
+Subject: 02-sargraph
 
---- sysstat-9.0.6.1.orig/contrib/sargraph/sargraph
-+++ sysstat-9.0.6.1/contrib/sargraph/sargraph
+Fix paths in sargraph script
+---
+ contrib/sargraph/sargraph |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/contrib/sargraph/sargraph b/contrib/sargraph/sargraph
+index 2f3e717..9829a64 100755
+--- a/contrib/sargraph/sargraph
++++ b/contrib/sargraph/sargraph
 @@ -5,12 +5,12 @@
  # Our dependencies
  ZENITY="/usr/bin/zenity"
@@ -18,7 +27,7 @@ Fix paths in sargraph script
  
  # sar / sysstat DTD is published here:
  # http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd
-@@ -367,7 +367,7 @@
+@@ -367,7 +367,7 @@ while /bin/true; do
  
  # Prompt for sar file
  
@@ -27,3 +36,4 @@ Fix paths in sargraph script
  SARFILE=`$ZENITY --list --text "Select data source" --column "sar file" $SARLIST`
  if [ "$SARFILE" == "" ]; then
      exit
+-- 

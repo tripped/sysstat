@@ -2,7 +2,7 @@ Source: sysstat
 Section: admin
 Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
-Build-Depends: debhelper (>= 8), gettext, libsensors4-dev
+Build-Depends: debhelper (>= 8.9.8), gettext, libsensors4-dev
 Standards-Version: 3.9.2
 Vcs-Git: git://anonscm.debian.org/users/robert/sysstat.git
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=users/robert/sysstat.git

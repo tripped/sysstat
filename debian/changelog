@@ -1,9 +1,13 @@
-sysstat (10.0.3-1~) UNRELEASED; urgency=low
+sysstat (10.0.3-1) unstable; urgency=low
 
   * New upstream (stable) release.
-  * Add VCS fields, update source/options.
+  * Switch to devhelper v9.
+  * debian/control: Add VCS fields, update source/options.
+  * debian/rules: remove .pc/.dpkg-source-unapply file in configure target
+    to fix broken behaviour of dpkg-buildpackage (see Bug#649521).
 
- -- Robert Luberda <robert@debian.org>  Sat, 03 Dec 2011 17:08:06 +0100
+
+ -- Robert Luberda <robert@debian.org>  Sat, 03 Dec 2011 17:38:42 +0100
 
 sysstat (10.0.2-2) unstable; urgency=low
 

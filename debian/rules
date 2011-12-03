@@ -15,7 +15,7 @@ binary binary-arch binary-indep build build-arch build-indep clean:
 ifneq ($(shell dh_listpackages),$(shell dh_listpackages -i))  # arch:any packages are built
 override_dh_auto_build:   debian/build-arch.stamp
 
-override_dh_auto_install: install-arch
+override_dh_auto_install: install-arch-files
 endif
 
 ifneq ($(shell dh_listpackages),$(shell dh_listpackages -a)) # arch:all packages are built
@@ -25,7 +25,7 @@ ifneq ($(shell dh_listpackages),$(shell dh_listpackages -a)) # arch:all packages
   else
 override_dh_auto_build:   debian/build-indep.stamp
   endif
-override_dh_auto_install: install-indep
+override_dh_auto_install: install-indep-files
 endif
 
 override_dh_auto_configure: debian/configure.stamp
@@ -46,6 +46,7 @@ override_dh_compress:
 	dh_compress
 
 debian/configure.stamp:
+	rm -f .pc/.*unapply # see bug#649521
 	dh_auto_configure $(DH_AUTO_OPTIONS) --         \
 	            --enable-yesterday                  \
 	            --disable-man-group                 \
@@ -66,7 +67,7 @@ debian/build-indep.stamp: debian/configure.stamp
 	dh_auto_build $(DH_AUTO_OPTIONS) -- contrib/isag/isag
 	touch "$@"
 
-install-arch: debian/build-arch.stamp
+install-arch-files: debian/build-arch.stamp
 	dh_auto_install $(DH_AUTO_OPTIONS) --destdir="$(DESTDIR)"
 	
 	mkdir -p -m 755 $(DESTDIR)/usr/lib/sysstat
@@ -75,11 +76,11 @@ install-arch: debian/build-arch.stamp
 	rm -rf $(DESTDIR)/usr/doc
 
 
-install-indep: debian/build-indep.stamp
+install-indep-files: debian/build-indep.stamp
 	$(MAKE) DESTDIR="$(DESTDIR)" install_isag
 
 
 .PHONY: binary binary-arch binary-indep build build-arch build-indep clean \
 	override_dh_auto_build override_dh_auto_install override_dh_auto_clean \
 	override_dh_auto_configure override_dh_installchangelogs override_dh_installinit \
-	override_dh_compress install-arch install-indep
+	override_dh_compress install-arch-files install-indep-files

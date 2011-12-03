@@ -1,8 +1,9 @@
-sysstat (10.0.2-3~) UNRELEASED; urgency=low
+sysstat (10.0.3-1~) UNRELEASED; urgency=low
 
+  * New upstream (stable) release.
   * Add VCS fields, update source/options.
 
- -- Robert Luberda <robert@debian.org>  Tue, 01 Nov 2011 20:59:53 +0100
+ -- Robert Luberda <robert@debian.org>  Sat, 03 Dec 2011 17:08:06 +0100
 
 sysstat (10.0.2-2) unstable; urgency=low
 

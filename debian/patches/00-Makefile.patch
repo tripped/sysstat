@@ -8,7 +8,7 @@ Makefile fixes.
  1 files changed, 22 insertions(+), 20 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index d1ea853..60c10f9 100644
+index b09a832..eff1b1a 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
@@ -18,7 +18,7 @@ index d1ea853..60c10f9 100644
 -CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe -O2
 +CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe
  DFLAGS = @DFLAGS@
--LFLAGS =  -s
+-LFLAGS = @STRIP@
 +LFLAGS = @LDFLAGS@
  DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
  DFLAGS += $(DFSENSORS)

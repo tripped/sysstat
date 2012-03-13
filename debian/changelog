@@ -1,3 +1,9 @@
+sysstat (10.0.4-1) UNRELEASED; urgency=low
+
+  * New upstream version
+
+ -- Robert Luberda <robert@debian.org>  Tue, 13 Mar 2012 21:47:08 +0100
+
 sysstat (10.0.3-1) unstable; urgency=low
 
   * New upstream (stable) release.

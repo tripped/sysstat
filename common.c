@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2011 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -379,10 +379,10 @@ int get_win_height(void)
 
 /*
  ***************************************************************************
- * Remove /dev from path name.
+ * Canonicalize and remove /dev from path name.
  *
  * IN:
- * @name	Device name (may begins with "/dev/")
+ * @name	Device name (may begin with "/dev/" or can be a symlink).
  *
  * RETURNS:
  * Device basename.
@@ -390,10 +390,27 @@ int get_win_height(void)
  */
 char *device_name(char *name)
 {
-	if (!strncmp(name, "/dev/", 5))
-		return name + 5;
+	static char out[MAX_FILE_LEN];
+	char *resolved_name;
+	int i = 0;
 
-	return name;
+	/* realpath() creates new string, so we need to free it later */
+	resolved_name = realpath(name, NULL);
+
+	/* If path doesn't exist, just return input */
+	if (!resolved_name) {
+		return name;
+	}
+
+	if (!strncmp(resolved_name, "/dev/", 5)) {
+		i = 5;
+	}
+	strncpy(out, resolved_name + i, MAX_FILE_LEN);
+	out[MAX_FILE_LEN - 1] = '\0';
+
+	free(resolved_name);
+		
+	return out;
 }
 
 /*
@@ -403,13 +420,16 @@ char *device_name(char *name)
  * ioconf.c which should be used only with kernels that don't have sysfs.
  *
  * IN:
- * @name	Device or partition name.
+ * @name		Device or partition name.
+ * @allow_virtual	TRUE if virtual devices are also accepted.
+ *			The device is assumed to be virtual if no
+ *			/sys/block/<device>/device link exists.
  *
  * RETURNS:
- * TRUE if @name is a (whole) device.
+ * TRUE if @name is not a partition.
  ***************************************************************************
  */
-int is_device(char *name)
+int is_device(char *name, int allow_virtual)
 {
 	char syspath[PATH_MAX];
 	char *slash;
@@ -418,7 +438,8 @@ int is_device(char *name)
 	while ((slash = strchr(name, '/'))) {
 		*slash = '!';
 	}
-	snprintf(syspath, sizeof(syspath), "%s/%s", SYSFS_BLOCK, name);
+	snprintf(syspath, sizeof(syspath), "%s/%s%s", SYSFS_BLOCK, name,
+		 allow_virtual ? "" : "/device");
 	
 	return !(access(syspath, F_OK));
 }
@@ -544,6 +565,18 @@ unsigned long long get_interval(unsigned long long prev_uptime,
 unsigned long long get_per_cpu_interval(struct stats_cpu *scc,
 					struct stats_cpu *scp)
 {
+	unsigned long long ishift = 0LL;
+	
+	if ((scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest)) {
+		/*
+		* Sometimes the nr of jiffies spent in guest mode given by the guest
+		* counter in /proc/stat is slightly higher than that included in
+		* the user counter. Update the interval value accordingly.
+		*/
+		ishift = (scp->cpu_user - scp->cpu_guest) -
+		         (scc->cpu_user - scc->cpu_guest);
+	}
+	
 	/* Don't take cpu_guest into account because cpu_user already includes it */
 	return ((scc->cpu_user    + scc->cpu_nice   +
 		 scc->cpu_sys     + scc->cpu_iowait +
@@ -552,7 +585,8 @@ unsigned long long get_per_cpu_interval(struct stats_cpu *scc,
 		(scp->cpu_user    + scp->cpu_nice   +
 		 scp->cpu_sys     + scp->cpu_iowait +
 		 scp->cpu_idle    + scp->cpu_steal  +
-		 scp->cpu_hardirq + scp->cpu_softirq));
+		 scp->cpu_hardirq + scp->cpu_softirq) +
+		 ishift);
 }
 
 /*

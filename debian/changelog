@@ -1,8 +1,10 @@
-sysstat (10.0.4-1) UNRELEASED; urgency=low
+sysstat (10.0.4-1) unstable; urgency=low
 
-  * New upstream version
+  * New upstream (stable) version.
+  * Update build-dependencies on debhelper.
+  * Standards-Version: 3.9.3 (no changes).
 
- -- Robert Luberda <robert@debian.org>  Tue, 13 Mar 2012 21:47:08 +0100
+ -- Robert Luberda <robert@debian.org>  Tue, 13 Mar 2012 22:59:04 +0100
 
 sysstat (10.0.3-1) unstable; urgency=low
 
@@ -11,7 +13,6 @@ sysstat (10.0.3-1) unstable; urgency=low
   * debian/control: Add VCS fields, update source/options.
   * debian/rules: remove .pc/.dpkg-source-unapply file in configure target
     to fix broken behaviour of dpkg-buildpackage (see Bug#649521).
-
 
  -- Robert Luberda <robert@debian.org>  Sat, 03 Dec 2011 17:38:42 +0100
 
@@ -25,7 +26,7 @@ sysstat (10.0.2-1) unstable; urgency=low
 
   * New upstream (stable) release.
   * debian/control: Set architecture to linux-any (closes: #619949).
-  * The debconf message has already been ixed in 8.1.8-2, (LP: #342655).
+  * The debconf message has already been fixed in 8.1.8-2, (LP: #342655).
 
  -- Robert Luberda <robert@debian.org>  Sun, 28 Aug 2011 19:50:36 +0200
 

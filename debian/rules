@@ -4,7 +4,7 @@ export DH_ALWAYS_EXCLUDE=CVS:.svn
 
 DH_AUTO_OPTIONS := -v -Sautoconf --parallel
 DESTDIR         := $(CURDIR)/debian/tmp
-CFLAGS          := $(shell dpkg-buildflags --get CFLAGS)
+CFLAGS          := $(shell dpkg-buildflags --get CPPFLAGS) $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS         := $(shell dpkg-buildflags --get LDFLAGS)
 
 

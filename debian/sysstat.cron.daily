@@ -6,7 +6,6 @@
 DEFAULT=/etc/default/sysstat
 #  default settings, overriden in the above file
 ENABLED=false
-SA2_OPTIONS=""
 
 [ ! -x /usr/lib/sysstat/sa2 ] && exit 0
 
@@ -15,5 +14,5 @@ SA2_OPTIONS=""
 
 [ "$ENABLED" = "true" ]  || exit 0
 
-exec /usr/lib/sysstat/sa2 -A $SA2_OPTIONS
+exec /usr/lib/sysstat/sa2 -A
 

@@ -13,7 +13,7 @@
 ### END INIT INFO
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/lib/sysstat/sa1
+DAEMON=/usr/lib/sysstat/debian-sa1
 NAME=sadc
 DESC="the system activity data collector"
 
@@ -39,7 +39,7 @@ case "$1" in
   start|restart|reload|force-reload)
         if [ "$ENABLED" = "true" ] ; then
                 log_daemon_msg "Starting $DESC" "$NAME"
-                start-stop-daemon --start --quiet --exec $DAEMON -- --boot $SA1_OPTIONS || status=$?
+                start-stop-daemon --start --quiet --exec $DAEMON -- --boot || status=$?
                 log_end_msg $status
         fi
         ;;

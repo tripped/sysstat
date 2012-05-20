@@ -3,8 +3,12 @@ sysstat (10.0.5-1) unstable; urgency=low
   * New upstream (stable) version.
   * debian/control: Document the cifsiostat and nfsiostat tools in sysstat
     package description (closes: #667618).
+  * debian-sa1, sysstat.cron.daily, sysstat.postinst, 04-configs.patch,
+    sysstat.init.d: Remove Debian-specific SA1_OPTIONS and SA2_OPTIONS
+    variables, use upstream-provided SADC_OPTIONS instead. Provide a
+    sysstat.NEWS entry for the change.
 
- -- Robert Luberda <robert@debian.org>  Sun, 20 May 2012 10:19:27 +0200
+ -- Robert Luberda <robert@debian.org>  Sun, 20 May 2012 11:14:47 +0200
 
 sysstat (10.0.4-1) unstable; urgency=low
 

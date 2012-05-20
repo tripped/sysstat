@@ -34,14 +34,6 @@ manage_default_file() {
 # will be overwritten by debconf!
 ENABLED="$ENABLED"
 
-# Additional options passed to sa1 by /etc/init.d/sysstat
-# and /etc/cron.d/sysstat
-# By default contains the \`-S DISK' option responsible for
-# generating disk statisitcs.
-SA1_OPTIONS="-S DISK"
-
-# Additional options passed to sa2 by /etc/cron.daily/sysstat.
-SA2_OPTIONS=""
 EOF
 
     # Fill historical md5sums file
@@ -97,7 +89,7 @@ if [ "$1" = "configure" ] ; then
 
     manage_default_file "$ENABLED"
 
-    # must be called *before* manage_default_file, which uses ucf --debconf-ok
+    # must be called *after* manage_default_file, which uses ucf --debconf-ok
     db_stop || true
 
 
@@ -110,8 +102,8 @@ if [ "$1" = "configure" ] ; then
 
     # execute sa1 in a subshell not to clobber the postinst script with potentially
     # unsafe values from "$DEFAULT"
-    if [ "$ENABLED" = "true" ] && [ -x /usr/lib/sysstat/sa1 ] && [ -r "$DEFAULT" ];  then
-        ( set +e ; . "$DEFAULT" ; /usr/lib/sysstat/sa1 "$SA_OPTIONS" 1 1 )&
+    if [ "$ENABLED" = "true" ] && [ -x /usr/lib/sysstat/sa1 ] ; then
+        ( set +e ; /usr/lib/sysstat/sa1 1 1 )&
     fi
 
 fi

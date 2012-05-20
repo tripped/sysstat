@@ -1,8 +1,10 @@
-sysstat (10.0.5-1) UNRELEASED; urgency=low
+sysstat (10.0.5-1) unstable; urgency=low
 
-  * New upstream version
+  * New upstream (stable) version.
+  * debian/control: Document the cifsiostat and nfsiostat tools in sysstat
+    package description (closes: #667618).
 
- -- Robert Luberda <robert@debian.org>  Sun, 20 May 2012 07:57:10 +0200
+ -- Robert Luberda <robert@debian.org>  Sun, 20 May 2012 10:19:27 +0200
 
 sysstat (10.0.4-1) unstable; urgency=low
 
@@ -209,7 +211,7 @@ sysstat (8.1.8-2) unstable; urgency=low
 sysstat (8.1.8-1) unstable; urgency=low
 
   * New upstream release.
-  * Add debian-sa1 script and ran it from cron.d job (closes: #499461).
+  * Add debian-sa1 script and run it from cron.d job (closes: #499461).
   * If sar cannot open a data file, print a message indicating that sysstat
     might not be enabled (closes: #511418).
   * Remove stop links from rc0 and rc6 run levels (cf. #495545).

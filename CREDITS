@@ -129,6 +129,9 @@ The following people have contributed to 'sysstat' in one way or another:
 	to sysstat. Among them, he added some more power management
 	statistics to sar.
 
+	Alain Chéreau <cheralain [at] googlemail.com> added support for
+	disk groups statistics to iostat.
+
 I would also thank the following people for their hints or bug reports
 (in alphabetical order):
 
@@ -143,6 +146,7 @@ I would also thank the following people for their hints or bug reports
 	Xavier Bru <xavier.bru@bul[...].net>
 	Jason Burnett <jason@jnj[...].org>
 	Fabricio Ceolin <ceolin@ule[...].com
+	Vitezslav Cizek <vcizek@sus[...].cz>
 	Mark J. Cox <mjc@red[...].com>
 	Jean Dagenais <jean.dagenais@int[...].com>
 	Nicolas Denis <denisn@wan[...].fr>
@@ -153,6 +157,7 @@ I would also thank the following people for their hints or bug reports
 	Damien Faure <damien-jn.faure@bul[...].net>
 	Dr. David Alan Gilbert <dave@tre[...].org>
 	David Gesswein <djg@drs[...].com>
+	Frank Glinka <glinkaf@uni[...].de>
 	Ladislav Hagara <ladislav.hagara@uno[...].cz>
 	Don Harrop <don@swb[...].com>
 	Jürgen Heinemann <heinemann.juergen@hjc[...].de>

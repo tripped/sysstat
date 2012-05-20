@@ -6,7 +6,7 @@ If sar cannot open a data file, print a message indicating that sysstat
 might not be enabled (closes: #511418).
 ---
  sa_common.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ 1 file changed, 7 insertions(+)
 
 diff --git a/sa_common.c b/sa_common.c
 index 4297087..de51499 100644
@@ -41,4 +41,3 @@ index 4297087..de51499 100644
  		exit(2);
  	}
  
--- 

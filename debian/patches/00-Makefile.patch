@@ -5,7 +5,7 @@ Subject: 00-Makefile
 Makefile fixes.
 ---
  Makefile.in |   42 ++++++++++++++++++++++--------------------
- 1 files changed, 22 insertions(+), 20 deletions(-)
+ 1 file changed, 22 insertions(+), 20 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
 index b09a832..eff1b1a 100644
@@ -106,4 +106,3 @@ index b09a832..eff1b1a 100644
  	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h
  	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily
  	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in
--- 

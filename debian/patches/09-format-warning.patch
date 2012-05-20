@@ -5,7 +5,7 @@ Subject: 09-format-warning
 Fix a warning given by gcc -Wformat.
 ---
  rndr_stats.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/rndr_stats.c b/rndr_stats.c
 index 037ed30..c70370c 100644
@@ -20,4 +20,3 @@ index 037ed30..c70370c 100644
  		}
  	}
  
--- 

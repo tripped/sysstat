@@ -21,7 +21,7 @@ index ddb26fc..597ece9 100644
  # 8am-7pm activity reports every 20 minutes during weekdays.
  # 0 8-18 * * 1-5 @SA_LIB_DIR@/sa1 1200 3 &
 diff --git a/sysstat.sysconfig.in b/sysstat.sysconfig.in
-index 54dcef9..34cfa04 100644
+index 25cc673..1e45cc2 100644
 --- a/sysstat.sysconfig.in
 +++ b/sysstat.sysconfig.in
 @@ -1,6 +1,7 @@
@@ -33,4 +33,3 @@ index 54dcef9..34cfa04 100644
  # If value is greater than 28, then log files are kept in
  # multiple directories, one for each month.
  HISTORY=@HISTORY@
--- 

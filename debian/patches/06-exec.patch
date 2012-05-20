@@ -7,7 +7,7 @@ Merge the following change from Ubuntu:
       security problems.
 ---
  sar.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ 1 file changed, 1 deletion(-)
 
 diff --git a/sar.c b/sar.c
 index d09f959..28cb082 100644
@@ -21,4 +21,3 @@ index d09f959..28cb082 100644
  		/*
  		 * Note: Don't use execl/execlp since we don't have a fixed number of
  		 * args to give to sadc.
--- 

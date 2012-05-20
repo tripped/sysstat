@@ -66,4 +66,3 @@ index 5627fee..f7300ff 100644
  
  # following check added: Thu Mar 18 21:44:52 GMT+1 2004
  if { 1 != [file executable $sar]} {
--- 

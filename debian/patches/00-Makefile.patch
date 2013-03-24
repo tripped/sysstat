@@ -8,7 +8,7 @@ Makefile fixes.
  1 file changed, 22 insertions(+), 20 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index b09a832..eff1b1a 100644
+index e7f78a5..ecaed14 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
@@ -23,7 +23,7 @@ index b09a832..eff1b1a 100644
  DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
  DFLAGS += $(DFSENSORS)
  
-@@ -239,8 +239,9 @@ else
+@@ -243,8 +243,9 @@ else
  locales:
  endif
  
@@ -35,7 +35,7 @@ index b09a832..eff1b1a 100644
  
  # Phony targets
  .PHONY: clean distclean install install_base install_all uninstall \
-@@ -273,9 +274,6 @@ ifeq ($(INSTALL_DOC),y)
+@@ -277,9 +278,6 @@ ifeq ($(INSTALL_DOC),y)
  	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat.1 $(DESTDIR)$(MAN1_DIR)
  	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
  	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
@@ -45,7 +45,7 @@ index b09a832..eff1b1a 100644
  ifeq ($(COMPRESS_MANPG),y)
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
-@@ -306,8 +304,15 @@ ifdef REQUIRE_NLS
+@@ -310,8 +308,15 @@ ifdef REQUIRE_NLS
  	done
  endif
  
@@ -63,7 +63,7 @@ index b09a832..eff1b1a 100644
  	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
  	mkdir -p $(DESTDIR)$(SA_DIR)
  ifeq ($(CLEAN_SA_DIR),y)
-@@ -316,7 +321,7 @@ ifeq ($(CLEAN_SA_DIR),y)
+@@ -320,7 +325,7 @@ ifeq ($(CLEAN_SA_DIR),y)
  	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
  endif
  	mkdir -p $(DESTDIR)$(BIN_DIR)
@@ -72,7 +72,7 @@ index b09a832..eff1b1a 100644
  	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
  	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
-@@ -328,18 +333,15 @@ endif
+@@ -332,18 +337,15 @@ endif
  	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) nfsiostat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
@@ -97,12 +97,12 @@ index b09a832..eff1b1a 100644
  endif
  
  install_all: install_base cron/crontab sysstat \
-@@ -479,7 +481,7 @@ clean:
+@@ -490,7 +492,7 @@ clean:
  	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat *.o *.a core TAGS
  	find nls -name "*.gmo" -exec rm -f {} \;
  
 -almost-distclean: clean nls/sysstat.pot
 +almost-distclean: clean
  	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h
- 	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily
+ 	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily sysstat.service
  	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in

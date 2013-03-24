@@ -4,18 +4,22 @@ Subject: 09-format-warning
 
 Fix a warning given by gcc -Wformat.
 ---
- rndr_stats.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ rndr_stats.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/rndr_stats.c b/rndr_stats.c
-index 037ed30..c70370c 100644
+index 4195103..0fb139d 100644
 --- a/rndr_stats.c
 +++ b/rndr_stats.c
-@@ -133,7 +133,7 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
+@@ -133,11 +133,7 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
  			}
  		}
  		else {
--			printf(txt[isdb]);	/* No args */
+-			/*
+-			 * Additional NULL parameter below works around
+-			 * fatal error when compiled with -Werror=format-security.
+-			 */
+-			printf(txt[isdb], NULL);	/* No args */
 +			printf("%s", txt[isdb]);	/* No args */
  		}
  	}

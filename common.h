@@ -1,6 +1,6 @@
 /*
  * sysstat: System performance tools for Linux
- * (C) 1999-2011 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2012 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _COMMON_H
@@ -13,7 +13,6 @@
 #include <sched.h>	/* For __CPU_SETSIZE */
 #include "rd_stats.h"
 
-
 /*
  ***************************************************************************
  * Various keywords and constants
@@ -25,15 +24,18 @@
 
 #define DISP_HDR	1
 
+/* Number of seconds per day */
+#define SEC_PER_DAY	3600 * 24
+
 /* Maximum number of CPUs */
-#ifdef __CPU_SETSIZE
+#if defined(__CPU_SETSIZE) && __CPU_SETSIZE > 2048
 #define NR_CPUS		__CPU_SETSIZE
 #else
-#define NR_CPUS		1024
+#define NR_CPUS		2048
 #endif
 
 /* Maximum number of interrupts */
-#define NR_IRQS			256
+#define NR_IRQS			1024
 
 /* Size of /proc/interrupts line, CPU data excluded */
 #define INTERRUPTS_LINE	128
@@ -46,17 +48,18 @@
 /* Files */
 #define STAT			"/proc/stat"
 #define UPTIME			"/proc/uptime"
-#define PPARTITIONS		"/proc/partitions"
 #define DISKSTATS		"/proc/diskstats"
 #define INTERRUPTS		"/proc/interrupts"
 #define MEMINFO			"/proc/meminfo"
 #define SYSFS_BLOCK		"/sys/block"
+#define SYSFS_DEV_BLOCK		"/sys/dev/block"
 #define SYSFS_DEVCPU		"/sys/devices/system/cpu"
 #define SYSFS_TIME_IN_STATE	"cpufreq/stats/time_in_state"
 #define S_STAT			"stat"
 #define DEVMAP_DIR		"/dev/mapper"
 #define DEVICES			"/proc/devices"
 #define SYSFS_USBDEV		"/sys/bus/usb/devices"
+#define DEV_DISK_BY		"/dev/disk/by"
 #define SYSFS_IDVENDOR		"idVendor"
 #define SYSFS_IDPRODUCT		"idProduct"
 #define SYSFS_BMAXPOWER		"bMaxPower"
@@ -68,8 +71,6 @@
 #define DEFAULT_DEVMAP_MAJOR	253
 #define MAX_NAME_LEN		72
 
-#define NR_DISKS		4
-
 #define IGNORE_VIRTUAL_DEVICES	FALSE
 #define ACCEPT_VIRTUAL_DEVICES	TRUE
 
@@ -78,7 +79,6 @@
 #define ENV_TIME_DEFTM		"S_TIME_DEF_TIME"
 
 #define DIGITS			"0123456789"
-
 
 /*
  ***************************************************************************
@@ -112,7 +112,7 @@
 
 /*
  * Under very special circumstances, STDOUT may become unavailable.
- * This is what we try to guess here
+ * This is what we try to guess here.
  */
 #define TEST_STDOUT(_fd_)	do {					\
 					if (write(_fd_, "", 0) == -1) {	\
@@ -120,7 +120,6 @@
 				       		exit(6);		\
 				 	}				\
 				} while (0)
-
 
 #define MINIMUM(a,b)	((a) < (b) ? (a) : (b))
 
@@ -144,6 +143,9 @@ extern unsigned int kb_shift;
 #define KB_TO_PG(k)	((k) >> kb_shift)
 #define PG_TO_KB(k)	((k) << kb_shift)
 
+/* Type of persistent device names used in sar and iostat */
+extern char persistent_name_type[MAX_FILE_LEN];
+
 /*
  ***************************************************************************
  * Structures definitions
@@ -157,7 +159,6 @@ struct ext_disk_stats {
 	double svctm;
 	double arqsz;
 };
-
 
 /*
  ***************************************************************************
@@ -183,11 +184,17 @@ extern unsigned long long
 extern void
 	get_kb_shift(void);
 extern time_t
-	get_localtime(struct tm *);
+	get_localtime(struct tm *, int);
 extern time_t
-	get_time(struct tm *);
+	get_time(struct tm *, int);
 unsigned long long
 	get_per_cpu_interval(struct stats_cpu *, struct stats_cpu *);
+extern char *
+	get_persistent_name_from_pretty(char *);
+extern char *
+	get_persistent_type_dir(char *);
+extern char *
+	get_pretty_name_from_persistent(char *);
 extern int
 	get_sysfs_dev_nr(int);
 extern int
@@ -204,6 +211,8 @@ extern int
 	print_gal_header(struct tm *, char *, char *, char *, char *, int);
 extern void
 	print_version(void);
+extern char *
+	strtolower(char *);
 #ifdef DEBUG
 extern void
 	sysstat_panic(const char *, int);

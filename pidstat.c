@@ -1,6 +1,6 @@
 /*
  * pidstat: Report statistics for Linux tasks
- * (C) 2007-2011 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 2007-2013 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -27,6 +27,7 @@
 #include <dirent.h>
 #include <ctype.h>
 #include <sys/types.h>
+#include <pwd.h>
 #include <sys/utsname.h>
 #include <regex.h>
 
@@ -53,6 +54,7 @@ unsigned int *pid_array = NULL;
 struct pid_stats st_pid_null;
 struct tm ps_tstamp[3];
 char commstr[MAX_COMM_LEN];
+char userstr[MAX_USER_LEN];
 
 unsigned int pid_nr = 0;	/* Nb of PID to display */
 unsigned int pid_array_nr = 0;
@@ -64,6 +66,8 @@ unsigned int pidflag = 0;	/* General flags */
 unsigned int tskflag = 0;	/* TASK/CHILD stats */
 unsigned int actflag = 0;	/* Activity flag */
 
+struct sigaction alrm_act, int_act;
+int sigint_caught = 0;
 
 /*
  ***************************************************************************
@@ -79,24 +83,36 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C <command> ] [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -s ]\n"
-			  "[ -t ] [ -u ] [ -V ] [ -w ]\n"
-			  "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"));
+			  "[ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -s ] [ -t ] [ -U [ username ] ] [ -u ]\n"
+			  "[ -V ] [ -w ] [ -C <command> ] [ -p { <pid> [,...] | SELF | ALL } ]\n"
+			  "[ -T { TASK | CHILD | ALL } ]\n"));
 	exit(1);
 }
 
 /*
  ***************************************************************************
- * SIGALRM signal handler.
+ * SIGALRM signal handler. No need to resert the handler here.
  *
  * IN:
- * @sig	Signal number. Set to 0 for the first time, then to SIGALRM.
+ * @sig	Signal number.
  ***************************************************************************
  */
 void alarm_handler(int sig)
 {
-	signal(SIGALRM, alarm_handler);
 	alarm(interval);
+}
+
+/*
+ ***************************************************************************
+ * SIGINT signal handler.
+ * 
+ * IN:
+ * @sig	Signal number.
+ ***************************************************************************
+ */
+void int_handler(int sig)
+{
+	sigint_caught = 1;
 }
 
 /*
@@ -372,7 +388,10 @@ int read_proc_pid_status(unsigned int pid, struct pid_stats *pst,
 
 	while (fgets(line, 256, fp) != NULL) {
 
-		if (!strncmp(line, "voluntary_ctxt_switches:", 24)) {
+		if (!strncmp(line, "Uid:", 4)) {
+			sscanf(line + 5, "%d", &pst->uid);
+		}
+		else if (!strncmp(line, "voluntary_ctxt_switches:", 24)) {
 			sscanf(line + 25, "%lu", &pst->nvcsw);
 		}
 		else if (!strncmp(line, "nonvoluntary_ctxt_switches:", 27)) {
@@ -909,6 +928,7 @@ int get_pid_to_display(int prev, int curr, int p, unsigned int activity,
 {
 	int q, rc;
 	regex_t regex;
+	struct passwd *pwdent;
 
 	*pstc = st_pid_list[curr] + p;
 
@@ -1010,7 +1030,6 @@ int get_pid_to_display(int prev, int curr, int p, unsigned int activity,
 	}
 	
 	else if (DISPLAY_PID(pidflag)) {
-
 		*pstp = st_pid_list[prev] + p;
 
 		if (!(*pstp)->pid)
@@ -1019,7 +1038,6 @@ int get_pid_to_display(int prev, int curr, int p, unsigned int activity,
 	}
 
 	if (COMMAND_STRING(pidflag)) {
-
 		if (regcomp(&regex, commstr, REG_EXTENDED | REG_NOSUB) != 0)
 			/* Error in preparing regex structure */
 			return -1;
@@ -1031,13 +1049,21 @@ int get_pid_to_display(int prev, int curr, int p, unsigned int activity,
 			/* regex pattern not found in command name */
 			return -1;
 	}
+	
+	if (USER_STRING(pidflag)) {
+		if ((pwdent = getpwuid((*pstc)->uid)) != NULL) {
+			if (strcmp(pwdent->pw_name, userstr))
+				/* This PID doesn't belong to user */
+				return -1;
+		}
+	}
 
 	return 1;
 }
 
 /*
  ***************************************************************************
- * Display PID and TID.
+ * Display UID/username, PID and TID.
  *
  * IN:
  * @pst		Current process statistics.
@@ -1047,7 +1073,15 @@ int get_pid_to_display(int prev, int curr, int p, unsigned int activity,
 void __print_line_id(struct pid_stats *pst, char c)
 {
 	char format[32];
+	struct passwd *pwdent;
 
+	if (DISPLAY_USERNAME(pidflag) && ((pwdent = getpwuid(pst->uid)) != NULL)) {
+		printf(" %8s", pwdent->pw_name);
+	}
+	else {
+		printf(" %5d", pst->uid);
+	}
+	
 	if (DISPLAY_TID(pidflag)) {
 		
 		if (pst->tgid) {
@@ -1894,7 +1928,10 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 	}
 
 	/* Set a handler for SIGALRM */
-	alarm_handler(0);
+	memset(&alrm_act, 0, sizeof(alrm_act));
+	alrm_act.sa_handler = (void *) alarm_handler;
+	sigaction(SIGALRM, &alrm_act, NULL);
+	alarm(interval);
 
 	/* Save the first stats collected. Will be used to compute the average */
 	ps_tstamp[2] = ps_tstamp[0];
@@ -1902,11 +1939,17 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 	uptime0[2] = uptime0[0];
 	memcpy(st_pid_list[2], st_pid_list[0], PID_STATS_SIZE * pid_nr);
 
+	/* Set a handler for SIGINT */
+	memset(&int_act, 0, sizeof(int_act));
+	int_act.sa_handler = (void *) int_handler;
+	sigaction(SIGINT, &int_act, NULL);
+
+	/* Wait for SIGALRM (or possibly SIGINT) signal */
 	pause();
 
 	do {
 		/* Get time */
-		get_localtime(&ps_tstamp[curr]);
+		get_localtime(&ps_tstamp[curr], 0);
 
 		if (cpu_nr > 1) {
 			/*
@@ -1940,8 +1983,17 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 		}
 
 		if (count) {
-			curr ^= 1;
+			
 			pause();
+	
+			if (sigint_caught) {
+				/* SIGINT signal caught => Display average stats */
+				count = 0;
+				printf("\n");	/* Skip "^C" displayed on screen */
+			}
+			else {
+				curr ^= 1;
+			}
 		}
 	}
 	while (count);
@@ -1975,7 +2027,7 @@ int main(int argc, char **argv)
 	/* Init National Language Support */
 	init_nls();
 #endif
-
+	
 	/* Get HZ */
 	get_HZ();
 
@@ -2055,6 +2107,20 @@ int main(int argc, char **argv)
 			}
 			else {
 				usage(argv[0]);
+			}
+		}
+		
+		else if (!strcmp(argv[opt], "-U")) {
+			/* Display username instead of UID */
+			pidflag |= P_D_USERNAME;
+			if (argv[++opt] && (argv[opt][0] != '-') &&
+			    (strspn(argv[opt], DIGITS) != strlen(argv[opt]))) {
+				strncpy(userstr, argv[opt++], MAX_USER_LEN);
+				userstr[MAX_USER_LEN - 1] = '\0';
+				pidflag |= P_F_USERSTR;
+				if (!strlen(userstr)) {
+					usage(argv[0]);
+				}
 			}
 		}
 
@@ -2175,7 +2241,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Get time */
-	get_localtime(&(ps_tstamp[0]));
+	get_localtime(&(ps_tstamp[0]), 0);
 
 	/* Get system name, release number and hostname */
 	uname(&header);

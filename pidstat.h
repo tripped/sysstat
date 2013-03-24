@@ -1,6 +1,6 @@
 /*
  * pidstat: Display per-process statistics.
- * (C) 2007-2011 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 2007-2013 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _PIDSTAT_H
@@ -17,6 +17,7 @@
 
 #define MAX_COMM_LEN	128
 #define MAX_CMDLINE_LEN	128
+#define MAX_USER_LEN	32
 
 /* Activities */
 #define P_A_CPU		0x01
@@ -47,6 +48,8 @@
 #define P_D_TID		0x020
 #define P_D_ONELINE	0x040
 #define P_D_CMDLINE	0x080
+#define P_D_USERNAME	0x100
+#define P_F_USERSTR	0x200
 
 #define DISPLAY_PID(m)		(((m) & P_D_PID) == P_D_PID)
 #define DISPLAY_ALL_PID(m)	(((m) & P_D_ALL_PID) == P_D_ALL_PID)
@@ -56,6 +59,8 @@
 #define DISPLAY_TID(m)		(((m) & P_D_TID) == P_D_TID)
 #define DISPLAY_ONELINE(m)	(((m) & P_D_ONELINE) == P_D_ONELINE)
 #define DISPLAY_CMDLINE(m)	(((m) & P_D_CMDLINE) == P_D_CMDLINE)
+#define DISPLAY_USERNAME(m)	(((m) & P_D_USERNAME) == P_D_USERNAME)
+#define USER_STRING(m)		(((m) & P_F_USERSTR) == P_F_USERSTR)
 
 #define F_NO_PID_IO	0x01
 
@@ -78,7 +83,13 @@
 #define TASK_SMAP	"/proc/%u/task/%u/smaps"
 
 #define PRINT_ID_HDR(_timestamp_, _flag_)	do {						\
-							printf("\n%-11s", _timestamp_);		\
+							printf("\n%-11s", _timestamp_);	\
+							if (DISPLAY_USERNAME(_flag_)) {		\
+								printf("     USER");		\
+							}					\
+							else {					\
+								printf("   UID");		\
+							}					\
    							if (DISPLAY_TID(_flag_)) {		\
 								printf("      TGID       TID");	\
 							}					\
@@ -120,6 +131,7 @@ struct pid_stats {
 	unsigned int       uc_asum_count		__attribute__ ((packed));
 	unsigned int       processor			__attribute__ ((packed));
 	unsigned int       flags			__attribute__ ((packed));
+	unsigned int       uid				__attribute__ ((packed));
 	char               comm[MAX_COMM_LEN];
 	char               cmdline[MAX_CMDLINE_LEN];
 };

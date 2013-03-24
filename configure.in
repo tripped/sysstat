@@ -4,7 +4,7 @@
 # Modified by Sebastien Godard (sysstat <at> orange.fr)
 
 # Initialization of $PACKAGE_VERSION and $PACKAGE_NAME variables
-AC_INIT(sysstat, 10.0.5)
+AC_INIT(sysstat, 10.1.4)
 
 # Ensure that a recent enough version of Autoconf is being used
 AC_PREREQ(2.53)
@@ -38,6 +38,16 @@ AC_SUBST(INSTALL_BIN)
 
 AC_PATH_PROGS(PATH_CP, cp, cp, /bin /etc /sbin /usr/bin /usr/etc /usr/sbin /usr/ucb /usr/local/bin /usr/local/etc /usr/local/sbin)
 AC_PATH_PROGS(PATH_CHKCONFIG, chkconfig, chkconfig, /bin /etc /sbin /usr/bin /usr/etc /usr/sbin /usr/ucb /usr/local/bin /usr/local/etc /usr/local/sbin)
+
+# Check for systemd
+PKG_PROG_PKG_CONFIG
+AC_PATH_PROGS(SYSTEMCTL, systemctl, systemctl, /bin /etc /sbin /usr/bin /usr/etc /usr/sbin /usr/ucb /usr/local/bin /usr/local/etc /usr/local/sbin)
+AC_ARG_WITH([systemdsystemunitdir],
+    AS_HELP_STRING([--with-systemdsystemunitdir=DIR],[Directory for systemd service files]),
+    [], [with_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
+if test -n "$with_systemdsystemunitdir" -a "x$with_systemdsystemunitdir" != xno ; then
+    AC_SUBST([SYSTEMD_UNIT_DIR], [$with_systemdsystemunitdir])
+fi
 
 # Check libraries
 
@@ -196,12 +206,13 @@ else
    AuxPrefix=/usr/local
 fi
 
-if test -d $AuxPrefix/lib; then
-   SADC_DIR=$AuxPrefix/lib
-elif test -d $AuxPrefix/lib64; then
-   SADC_DIR=$AuxPrefix/lib64
-else
-   SADC_DIR=$AuxPrefix/lib
+SADC_DIR=$AuxPrefix/lib
+if test -d $AuxPrefix/lib64; then
+   # Look for lm (long mode) flag to know if CPU is 64 bit
+   grep " lm " /proc/cpuinfo >/dev/null 2>&1
+   if test $? = 0; then
+      SADC_DIR=$AuxPrefix/lib64
+   fi
 fi
 
 AC_MSG_CHECKING(sadc directory)
@@ -308,7 +319,8 @@ AC_MSG_RESULT($COMPRESSAFTER)
 AC_SUBST(COMPRESSAFTER)
 
 # Manual page group
-if `grep ^man: /etc/group >/dev/null 2>&1`; then
+grep ^man: /etc/group >/dev/null 2>&1
+if test $? = 0; then
    GRP=man
 else
    GRP=root
@@ -320,7 +332,8 @@ if test x$man_group = x""; then
    MAN_GROUP=$GRP
    AC_MSG_RESULT($MAN_GROUP)
 else
-   if !(`grep ^$man_group: /etc/group >/dev/null 2>&1`); then 
+   grep ^$man_group: /etc/group >/dev/null 2>&1
+   if test $? = 1; then 
       MAN_GROUP=$GRP
       AC_MSG_RESULT($MAN_GROUP) 
       echo "WARNING: Group ${man_group} not found: Using ${GRP} instead"
@@ -417,7 +430,8 @@ if test $INSTALL_CRON = "y"; then
       CRON_OWNER=$CUSR
       AC_MSG_RESULT($CRON_OWNER)
    else
-      if !(`grep ^$cron_owner: /etc/passwd >/dev/null 2>&1`); then
+      grep ^$cron_owner: /etc/passwd >/dev/null 2>&1
+      if test $? = 1; then
          CRON_OWNER=$CUSR;
          AC_MSG_RESULT($CRON_OWNER)
          echo "WARNING: User ${cron_owner} not found: Using ${CUSR} instead."
@@ -557,6 +571,7 @@ AC_CONFIG_FILES([cron/sysstat.cron.hourly])
 AC_CONFIG_FILES([cron/sysstat.crond])
 AC_CONFIG_FILES([cron/sysstat.crond.sample.in:cron/sysstat.crond.in], [sed s/^/#/ cron/sysstat.crond.sample.in > cron/sysstat.crond.sample])
 AC_CONFIG_FILES([sysstat], [chmod +x sysstat])	# Permissions must be changed
+AC_CONFIG_FILES([sysstat.service])
 AC_CONFIG_FILES([man/sa1.8:man/sa1.in])		# File must be renamed
 AC_CONFIG_FILES([man/sa2.8:man/sa2.in])		# File must be renamed
 AC_CONFIG_FILES([man/sadc.8:man/sadc.in])	# File must be renamed
@@ -575,6 +590,7 @@ echo "
    Installation prefix:		$prefix
    rc directory:		${RC_DIR}
    Init directory:		${INIT_DIR}
+   Systemd unit dir:		${with_systemdsystemunitdir}
    Configuration directory:	${SYSCONFIG_DIR}
    Man pages directory:		$mandir
    Compiler:			$CC

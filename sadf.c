@@ -1,6 +1,6 @@
 /*
  * sadf: system activity data formatter
- * (C) 1999-2011 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -87,7 +87,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -d | -j | -p | -x ] [ -C ] [ -H ] [ -h ] [ -T ] [ -t ] [ -V ]\n"
+			  "[ -C ] [ -d | -j | -p | -x ] [ -H ] [ -h ] [ -T | -t | -U ] [ -V ]\n"
 			  "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 			  "[ -- <sar_options> ]\n"));
 	exit(1);
@@ -166,12 +166,12 @@ void check_format_options(void)
 		/* Remove option -h */
 		flags &= ~S_F_HORIZONTALLY;
 	}
-	if (!ACCEPT_TRUE_TIME(fmt[f_position]->options)) {
-		/* Remove option -t */
-		flags &= ~S_F_TRUE_TIME;
+	if (!ACCEPT_LOCAL_TIME(fmt[f_position]->options)) {
+		/* Remove options -T and -t */
+		flags &= ~(S_F_LOCAL_TIME + S_F_TRUE_TIME);
 	}
 	if (!ACCEPT_SEC_EPOCH(fmt[f_position]->options)) {
-		/* Remove option -T */
+		/* Remove option -U */
 		flags &= ~S_F_SEC_EPOCH;
 	}
 }
@@ -182,19 +182,22 @@ void check_format_options(void)
  * time, based on current record's "number of seconds since the epoch" saved
  * in file.
  * The resulting timestamp is expressed in UTC or in local time, depending
- * on whether option -t has been used or not.
+ * on whether options -T or -t have been used or not.
  *
  * IN:
  * @curr	Index in array for current sample statistics.
  * @rectime	Structure where timestamp (expressed in local time or in UTC
- *		depending on whether option -t has been used or not) can be
- *		saved for current record.
+ *		depending on whether options -T or -t have been used or not)
+ *		can be saved for current record.
  * @loctime	Structure where timestamp (expressed in local time) can be
  *		saved for current record.
  *
  * OUT:
- * @rectime	Structure where timestamp for current record has been saved.
- * @loctime	Structure where timestamp for current record has been saved.
+ * @rectime	Structure where timestamp for current record has been saved
+ * 		(in local time or in UTC depending on options used).
+ * @loctime	Structure where timestamp for current record has been saved
+ * 		(expressed in local time). This field will be used for time
+ * 		comparison if options -s and/or -e have been used.
  ***************************************************************************
 */
 void sadf_get_record_timestamp_struct(int curr, struct tm *rectime, struct tm *loctime)
@@ -205,21 +208,28 @@ void sadf_get_record_timestamp_struct(int curr, struct tm *rectime, struct tm *l
 		*loctime = *ltm;
 	}
 
-	if (!PRINT_TRUE_TIME(flags)) {
-		/* Option -t not used: Display timestamp in UTC */
+	if (!PRINT_LOCAL_TIME(flags) && !PRINT_TRUE_TIME(flags)) {
+		/* Options -T and -t not used: Display timestamp in UTC */
 		ltm = gmtime((const time_t *) &record_hdr[curr].ust_time);
 	}
 
 	if (ltm) {
 		*rectime = *ltm;
 	}
+	
+	if (PRINT_TRUE_TIME(flags)) {
+		/* Option -t */
+		rectime->tm_hour = record_hdr[curr].hour;
+		rectime->tm_min  = record_hdr[curr].minute;
+		rectime->tm_sec  = record_hdr[curr].second;
+	}
 }
 
 /*
  ***************************************************************************
  * Set current record's timestamp strings (date and time). This timestamp is
- * expressed in UTC or in local time, depending on whether option -t has
- * been used or not.
+ * expressed in UTC or in local time, depending on whether options -T or -t
+ * have been used or not.
  *
  * IN:
  * @curr	Index in array for current sample statistics.
@@ -227,13 +237,13 @@ void sadf_get_record_timestamp_struct(int curr, struct tm *rectime, struct tm *l
  * @cur_time	String where timestamp's time will be saved.
  * @len		Maximum length of timestamp strings.
  * @rectime	Structure with current timestamp (expressed in local time or
- *		in UTC depending on whether option -t has been used or not)
- *		that should be broken down in date and time strings.
+ *		in UTC depending on whether options -T or -t have been used
+ * 		or not) that should be broken down in date and time strings.
  *
  * OUT:
  * @cur_date	Timestamp's date string.
  * @cur_time	Timestamp's time string. May contain the number of seconds
- *		since the epoch (01-01-1970) if option -T has been used.
+ *		since the epoch (01-01-1970) if option -U has been used.
  ***************************************************************************
 */
 void set_record_timestamp_string(int curr, char *cur_date, char *cur_time, int len,
@@ -246,8 +256,8 @@ void set_record_timestamp_string(int curr, char *cur_date, char *cur_time, int l
 	}
 	else {
 		/*
-		 * If PRINT_TRUE_TIME(flags) is true (ie. option -t has been used) then
-		 * cur_time is expressed in local time. Else it is expressed in UTC.
+		 * If options -T or -t have been used then cur_time is
+		 * expressed in local time. Else it is expressed in UTC.
 		 */
 		strftime(cur_date, len, "%Y-%m-%d", rectime);
 		strftime(cur_time, len, "%H:%M:%S", rectime);
@@ -327,8 +337,8 @@ void xprintf(int nr_tab, const char *fmtf, ...)
  * @use_tm_end		Set to TRUE if option -e has been used.
  * @tab			Number of tabulations to print.
  * @rectime		Structure where timestamp (expressed in local time
- *			or in UTC depending on whether option -t has been
- *			used or not) can be saved for current record.
+ *			or in UTC depending on whether options -T/-t have
+ * 			been used or not) can be saved for current record.
  * @loctime		Structure where timestamp (expressed in local time)
  *			can be saved for current record.
  *
@@ -356,6 +366,7 @@ void write_textual_restarts(int curr, int use_tm_start, int use_tm_end, int tab,
 
 	if (*fmt[f_position]->f_restart) {
 		(*fmt[f_position]->f_restart)(&tab, F_MAIN, cur_date, cur_time,
+					      !PRINT_LOCAL_TIME(flags) &&
 					      !PRINT_TRUE_TIME(flags), &file_hdr);
 	}
 }
@@ -371,8 +382,8 @@ void write_textual_restarts(int curr, int use_tm_start, int use_tm_end, int tab,
  * @tab			Number of tabulations to print.
  * @ifd			Input file descriptor.
  * @rectime		Structure where timestamp (expressed in local time
- *			or in UTC depending on whether option -t has been
- *			used or not) can be saved for current record.
+ *			or in UTC depending on whether options -T/-t have
+ * 			been used or not) can be saved for current record.
  * @loctime		Structure where timestamp (expressed in local time)
  *			can be saved for current record.
  *
@@ -404,6 +415,7 @@ void write_textual_comments(int curr, int use_tm_start, int use_tm_end, int tab,
 
 	if (*fmt[f_position]->f_comment) {
 		(*fmt[f_position]->f_comment)(&tab, F_MAIN, cur_date, cur_time,
+					      !PRINT_LOCAL_TIME(flags) &&
 					      !PRINT_TRUE_TIME(flags), file_comment,
 					      &file_hdr);
 	}
@@ -490,7 +502,8 @@ void write_mech_stats(int curr, unsigned long dt, unsigned long long itv,
 		strcpy(temp, pre);
 	}
 	snprintf(pre, 80, "%s%s%s", temp, cur_time,
-		 strlen(cur_date) && !PRINT_TRUE_TIME(flags) ? " UTC" : "");
+		 strlen(cur_date) && !PRINT_LOCAL_TIME(flags) &&
+		 !PRINT_TRUE_TIME(flags) ? " UTC" : "");
 	pre[79] = '\0';
 
 	if (DISPLAY_HORIZONTALLY(flags)) {
@@ -526,8 +539,8 @@ void write_mech_stats(int curr, unsigned long dt, unsigned long long itv,
  * @act_id		Activities to display.
  * @cpu_nr		Number of processors for current activity data file.
  * @rectime		Structure where timestamp (expressed in local time
- *			or in UTC depending on whether option -t has been
- *			used or not) can be saved for current record.
+ *			or in UTC depending on whether options -T/-t have
+ * 			been used or not) can be saved for current record.
  * @loctime		Structure where timestamp (expressed in local time)
  *			can be saved for current record.
  *
@@ -621,8 +634,8 @@ int write_parsable_stats(int curr, int reset, long *cnt, int use_tm_start,
  * @tab			Number of tabulations to print.
  * @cpu_nr		Number of processors.
  * @rectime		Structure where timestamp (expressed in local time
- *			or in UTC depending on whether option -t has been
- *			used or not) can be saved for current record.
+ *			or in UTC depending on whether options -T/-t have
+ * 			been used or not) can be saved for current record.
  * @loctime		Structure where timestamp (expressed in local time)
  *			can be saved for current record.
  *
@@ -701,6 +714,7 @@ int write_textual_stats(int curr, int use_tm_start, int use_tm_end, int reset,
 
 	if (*fmt[f_position]->f_timestamp) {
 		(*fmt[f_position]->f_timestamp)(&tab, F_BEGIN, cur_date, cur_time,
+						!PRINT_LOCAL_TIME(flags) &&
 						!PRINT_TRUE_TIME(flags), dt);
 	}
 	if (format == F_XML_OUTPUT) {
@@ -721,6 +735,7 @@ int write_textual_stats(int curr, int use_tm_start, int use_tm_end, int reset,
 
 					if (*fmt[f_position]->f_timestamp) {
 						(*fmt[f_position]->f_timestamp)(&tab, F_MAIN, cur_date, cur_time,
+										!PRINT_LOCAL_TIME(flags) &&
 										!PRINT_TRUE_TIME(flags), dt);
 					}
 				}
@@ -740,6 +755,7 @@ int write_textual_stats(int curr, int use_tm_start, int use_tm_end, int reset,
 
 	if (*fmt[f_position]->f_timestamp) {
 		(*fmt[f_position]->f_timestamp)(&tab, F_END, cur_date, cur_time,
+						!PRINT_LOCAL_TIME(flags) &&
 						!PRINT_TRUE_TIME(flags), dt);
 	}
 
@@ -757,8 +773,8 @@ int write_textual_stats(int curr, int use_tm_start, int use_tm_end, int reset,
  * @rtype		Record type (RESTART or COMMENT).
  * @ifd			Input file descriptor.
  * @rectime		Structure where timestamp (expressed in local time
- *			or in UTC depending on whether option -t has been
- *			used or not) can be saved for current record.
+ *			or in UTC depending on whether options -T/-t have
+ * 			been used or not) can be saved for current record.
  * @loctime		Structure where timestamp (expressed in local time)
  *			can be saved for current record.
  ***************************************************************************
@@ -787,6 +803,7 @@ void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, i
 
 		if (*fmt[f_position]->f_restart) {
 			(*fmt[f_position]->f_restart)(NULL, F_MAIN, cur_date, cur_time,
+						      !PRINT_LOCAL_TIME(flags) &&
 						      !PRINT_TRUE_TIME(flags), &file_hdr);
 		}
 	}
@@ -801,6 +818,7 @@ void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, i
 
 		if (*fmt[f_position]->f_comment) {
 			(*fmt[f_position]->f_comment)(NULL, F_MAIN, cur_date, cur_time,
+						      !PRINT_LOCAL_TIME(flags) &&
 						      !PRINT_TRUE_TIME(flags), file_comment,
 						      &file_hdr);
 		}
@@ -819,8 +837,8 @@ void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, i
  * @file_actlst	List of (known or unknown) activities in file.
  * @cpu_nr	Number of processors for current activity data file.
  * @rectime	Structure where timestamp (expressed in local time or in UTC
- *		depending on whether option -t has been used or not) can be
- *		saved for current record.
+ *		depending on whether options -T/-t have been used or not) can
+ *		be saved for current record.
  * @loctime	Structure where timestamp (expressed in local time) can be
  *		saved for current record.
  *
@@ -911,8 +929,8 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
  * @file_magic	System activity file magic header.
  * @cpu_nr	Number of processors for current activity data file.
  * @rectime	Structure where timestamp (expressed in local time or in UTC
- *		depending on whether option -t has been used or not) can be
- *		saved for current record.
+ *		depending on whether options -T/-t have been used or not) can
+ *		be saved for current record.
  * @loctime	Structure where timestamp (expressed in local time) can be
  *		saved for current record.
  ***************************************************************************
@@ -1139,8 +1157,8 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
  * @file_actlst	List of (known or unknown) activities in file.
  * @cpu_nr	Number of processors for current activity data file.
  * @rectime	Structure where timestamp (expressed in local time or in UTC
- *		depending on whether option -t has been used or not) can be
- *		saved for current record.
+ *		depending on whether options -T/-t have been used or not) can
+ *		be saved for current record.
  * @loctime	Structure where timestamp (expressed in local time) can be
  *		saved for current record.
  ***************************************************************************
@@ -1334,7 +1352,7 @@ void read_stats_from_file(char dfile[])
 int main(int argc, char **argv)
 {
 	int opt = 1, sar_options = 0;
-	int i;
+	int i, rc;
 	char dfile[MAX_FILE_LEN];
 	struct tm rectime;
 
@@ -1425,8 +1443,11 @@ int main(int argc, char **argv)
 		else if (!strncmp(argv[opt], "-", 1)) {
 			/* Other options not previously tested */
 			if (sar_options) {
-				if (parse_sar_opt(argv, &opt, act, &flags, C_SADF)) {
-					usage(argv[0]);
+				if ((rc = parse_sar_opt(argv, &opt, act, &flags, C_SADF)) != 0) {
+					if (rc == 1) {
+						usage(argv[0]);
+					}
+					exit(1);
 				}
 			}
 			else {
@@ -1468,11 +1489,15 @@ int main(int argc, char **argv)
 						format = F_PPC_OUTPUT;
 						break;
 
+					case 'T':
+						flags |= S_F_LOCAL_TIME;
+						break;
+
 					case 't':
 						flags |= S_F_TRUE_TIME;
 						break;
 					
-					case 'T':
+					case 'U':
 						flags |= S_F_SEC_EPOCH;
 						break;
 
@@ -1500,7 +1525,7 @@ int main(int argc, char **argv)
 			if (!dfile[0]) {
 				if (!strcmp(argv[opt], "-")) {
 					/* File name set to '-' */
-					set_default_file(&rectime, dfile);
+					set_default_file(&rectime, dfile, 0);
 					opt++;
 				}
 				else if (!strncmp(argv[opt], "-", 1)) {
@@ -1551,7 +1576,7 @@ int main(int argc, char **argv)
 
 	/* sadf reads current daily data file by default */
 	if (!dfile[0]) {
-		set_default_file(&rectime, dfile);
+		set_default_file(&rectime, dfile, 0);
 	}
 
 	if (tm_start.use && tm_end.use && (tm_end.tm_hour < tm_start.tm_hour)) {
@@ -1562,6 +1587,12 @@ int main(int argc, char **argv)
 		dm_major = get_devmap_major();
 	}
 
+	/* Options -T, -t and -U are mutually exclusive */
+	if ((PRINT_LOCAL_TIME(flags) + PRINT_TRUE_TIME(flags) +
+	    PRINT_SEC_EPOCH(flags)) > 1) {
+		usage(argv[0]);
+	}
+	
 	/*
 	 * Display all the contents of the daily data file if the count parameter
 	 * was not set on the command line.

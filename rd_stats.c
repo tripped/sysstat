@@ -1,6 +1,6 @@
 /*
  * rd_stats.c: Read system statistics
- * (C) 1999-2011 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -84,7 +84,7 @@ void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
 			 * (user, nice, etc.) among all proc. CPU usage is not reduced
 			 * to one processor to avoid rounding problems.
 			 */
-			sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu %llu",
+			sscanf(line + 5, "%llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
 			       &st_cpu->cpu_user,
 			       &st_cpu->cpu_nice,
 			       &st_cpu->cpu_sys,
@@ -93,14 +93,16 @@ void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
 			       &st_cpu->cpu_hardirq,
 			       &st_cpu->cpu_softirq,
 			       &st_cpu->cpu_steal,
-			       &st_cpu->cpu_guest);
+			       &st_cpu->cpu_guest,
+			       &st_cpu->cpu_guest_nice);
 
 			/*
 			 * Compute the uptime of the system in jiffies (1/100ths of a second
 			 * if HZ=100).
 			 * Machine uptime is multiplied by the number of processors here.
 			 *
-			 * NB: Don't add cpu_guest because cpu_user already includes it.
+			 * NB: Don't add cpu_guest/cpu_guest_nice because cpu_user/cpu_nice
+			 * already include them.
 			 */
 			*uptime = st_cpu->cpu_user + st_cpu->cpu_nice    +
 				st_cpu->cpu_sys    + st_cpu->cpu_idle    +
@@ -117,7 +119,7 @@ void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
 				 * (user, nice, etc) for current proc.
 				 * This is done only on SMP machines.
 				 */
-				sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu %llu %llu",
+				sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
 				       &proc_nb,
 				       &sc.cpu_user,
 				       &sc.cpu_nice,
@@ -127,7 +129,8 @@ void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
 				       &sc.cpu_hardirq,
 				       &sc.cpu_softirq,
 				       &sc.cpu_steal,
-				       &sc.cpu_guest);
+				       &sc.cpu_guest,
+				       &sc.cpu_guest_nice);
 
 				if (proc_nb < (nbr - 1)) {
 					st_cpu_i = st_cpu + proc_nb + 1;
@@ -143,8 +146,8 @@ void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
 					 * Compute uptime reduced to one proc using proc#0.
 					 * Done if /proc/uptime was unavailable.
 					 *
-					 * NB: Don't add cpu_guest because cpu_user already
-					 * includes it.
+					 * NB: Don't add cpu_guest/cpu_guest_nice because cpu_user/cpu_nice
+					 * already include them.
 					 */
 					*uptime0 = sc.cpu_user + sc.cpu_nice  +
 						sc.cpu_sys     + sc.cpu_idle  +
@@ -347,6 +350,10 @@ void read_meminfo(struct stats_memory *st_memory)
 			/* Read the amount of free swap memory in kB */
 			sscanf(line + 9, "%lu", &st_memory->frskb);
 		}
+		else if (!strncmp(line, "Dirty:", 6)) {
+			/* Read the amount of dirty memory in kB */
+			sscanf(line + 6, "%lu", &st_memory->dirtykb);
+		}
 		else if (!strncmp(line, "Committed_AS:", 13)) {
 			/* Read the amount of commited memory in kB */
 			sscanf(line + 13, "%lu", &st_memory->comkb);
@@ -472,15 +479,14 @@ void read_diskstats_io(struct stats_io *st_io)
 	char line[256];
 	char dev_name[MAX_NAME_LEN];
 	unsigned int major, minor;
-	unsigned long rd_ios, wr_ios;
-	unsigned long long rd_sec, wr_sec;
+	unsigned long rd_ios, wr_ios, rd_sec, wr_sec;
 
 	if ((fp = fopen(DISKSTATS, "r")) == NULL)
 		return;
 
 	while (fgets(line, 256, fp) != NULL) {
 
-		if (sscanf(line, "%u %u %s %lu %*u %llu %*u %lu %*u %llu",
+		if (sscanf(line, "%u %u %s %lu %*u %lu %*u %lu %*u %lu",
 			   &major, &minor, dev_name,
 			   &rd_ios, &rd_sec, &wr_ios, &wr_sec) == 7) {
 			
@@ -491,9 +497,9 @@ void read_diskstats_io(struct stats_io *st_io)
 				 */
 				st_io->dk_drive      += rd_ios + wr_ios;
 				st_io->dk_drive_rio  += rd_ios;
-				st_io->dk_drive_rblk += (unsigned int) rd_sec;
+				st_io->dk_drive_rblk += rd_sec;
 				st_io->dk_drive_wio  += wr_ios;
-				st_io->dk_drive_wblk += (unsigned int) wr_sec;
+				st_io->dk_drive_wblk += wr_sec;
 			}
 		}
 	}
@@ -522,18 +528,16 @@ void read_diskstats_disk(struct stats_disk *st_disk, int nbr, int read_part)
 	char dev_name[MAX_NAME_LEN];
 	int dsk = 0;
 	struct stats_disk *st_disk_i;
-	unsigned int major, minor;
-	unsigned long rd_ios, wr_ios, rd_ticks, wr_ticks;
-	unsigned long tot_ticks, rq_ticks;
-	unsigned long long rd_sec, wr_sec;
+	unsigned int major, minor, rd_ticks, wr_ticks, tot_ticks, rq_ticks;
+	unsigned long rd_ios, wr_ios, rd_sec, wr_sec;
 
 	if ((fp = fopen(DISKSTATS, "r")) == NULL)
 		return;
 
 	while ((fgets(line, 256, fp) != NULL) && (dsk < nbr)) {
 
-		if (sscanf(line, "%u %u %s %lu %*u %llu %lu %lu %*u %llu"
-			   " %lu %*u %lu %lu",
+		if (sscanf(line, "%u %u %s %lu %*u %lu %u %lu %*u %lu"
+			   " %u %*u %u %u",
 			   &major, &minor, dev_name,
 			   &rd_ios, &rd_sec, &rd_ticks, &wr_ios, &wr_sec, &wr_ticks,
 			   &tot_ticks, &rq_ticks) == 11) {
@@ -707,8 +711,8 @@ void read_net_dev(struct stats_net_dev *st_net_dev, int nbr)
 			strncpy(iface, line, MINIMUM(pos, MAX_IFACE_LEN - 1));
 			iface[MINIMUM(pos, MAX_IFACE_LEN - 1)] = '\0';
 			sscanf(iface, "%s", st_net_dev_i->interface); /* Skip heading spaces */
-			sscanf(line + pos + 1, "%lu %lu %*u %*u %*u %*u %lu %lu %lu %lu "
-			       "%*u %*u %*u %*u %*u %lu",
+			sscanf(line + pos + 1, "%llu %llu %*u %*u %*u %*u %llu %llu %llu %llu "
+			       "%*u %*u %*u %*u %*u %llu",
 			       &st_net_dev_i->rx_bytes,
 			       &st_net_dev_i->rx_packets,
 			       &st_net_dev_i->rx_compressed,
@@ -755,8 +759,8 @@ void read_net_edev(struct stats_net_edev *st_net_edev, int nbr)
 			strncpy(iface, line, MINIMUM(pos, MAX_IFACE_LEN - 1));
 			iface[MINIMUM(pos, MAX_IFACE_LEN - 1)] = '\0';
 			sscanf(iface, "%s", st_net_edev_i->interface); /* Skip heading spaces */
-			sscanf(line + pos + 1, "%*u %*u %lu %lu %lu %lu %*u %*u %*u %*u "
-			       "%lu %lu %lu %lu %lu",
+			sscanf(line + pos + 1, "%*u %*u %llu %llu %llu %llu %*u %*u %*u %*u "
+			       "%llu %llu %llu %llu %llu",
 			       &st_net_edev_i->rx_errors,
 			       &st_net_edev_i->rx_dropped,
 			       &st_net_edev_i->rx_fifo_errors,
@@ -963,8 +967,8 @@ void read_net_ip(struct stats_net_ip *st_net_ip)
 
 		if (!strncmp(line, "Ip:", 3)) {
 			if (sw) {
-				sscanf(line + 3, "%*u %*u %lu %*u %*u %lu %*u %*u "
-				       "%lu %lu %*u %*u %*u %lu %lu %*u %lu %*u %lu",
+				sscanf(line + 3, "%*u %*u %llu %*u %*u %llu %*u %*u "
+				       "%llu %llu %*u %*u %*u %llu %llu %*u %llu %*u %llu",
 				       &st_net_ip->InReceives,
 				       &st_net_ip->ForwDatagrams,
 				       &st_net_ip->InDelivers,
@@ -1009,8 +1013,8 @@ void read_net_eip(struct stats_net_eip *st_net_eip)
 
 		if (!strncmp(line, "Ip:", 3)) {
 			if (sw) {
-				sscanf(line + 3, "%*u %*u %*u %lu %lu %*u %lu %lu "
-				       "%*u %*u %lu %lu %*u %*u %*u %lu %*u %lu",
+				sscanf(line + 3, "%*u %*u %*u %llu %llu %*u %llu %llu "
+				       "%*u %*u %llu %llu %*u %*u %*u %llu %*u %llu",
 				       &st_net_eip->InHdrErrors,
 				       &st_net_eip->InAddrErrors,
 				       &st_net_eip->InUnknownProtos,
@@ -1324,34 +1328,34 @@ void read_net_ip6(struct stats_net_ip6 *st_net_ip6)
 	while (fgets(line, 128, fp) != NULL) {
 
 		if (!strncmp(line, "Ip6InReceives ", 14)) {
-			sscanf(line + 14, "%lu", &st_net_ip6->InReceives6);
+			sscanf(line + 14, "%llu", &st_net_ip6->InReceives6);
 		}
 		else if (!strncmp(line, "Ip6OutForwDatagrams ", 20)) {
-			sscanf(line + 20, "%lu", &st_net_ip6->OutForwDatagrams6);
+			sscanf(line + 20, "%llu", &st_net_ip6->OutForwDatagrams6);
 		}
 		else if (!strncmp(line, "Ip6InDelivers ", 14)) {
-			sscanf(line + 14, "%lu", &st_net_ip6->InDelivers6);
+			sscanf(line + 14, "%llu", &st_net_ip6->InDelivers6);
 		}
 		else if (!strncmp(line, "Ip6OutRequests ", 15)) {
-			sscanf(line + 15, "%lu", &st_net_ip6->OutRequests6);
+			sscanf(line + 15, "%llu", &st_net_ip6->OutRequests6);
 		}
 		else if (!strncmp(line, "Ip6ReasmReqds ", 14)) {
-			sscanf(line + 14, "%lu", &st_net_ip6->ReasmReqds6);
+			sscanf(line + 14, "%llu", &st_net_ip6->ReasmReqds6);
 		}
 		else if (!strncmp(line, "Ip6ReasmOKs ", 12)) {
-			sscanf(line + 12, "%lu", &st_net_ip6->ReasmOKs6);
+			sscanf(line + 12, "%llu", &st_net_ip6->ReasmOKs6);
 		}
 		else if (!strncmp(line, "Ip6InMcastPkts ", 15)) {
-			sscanf(line + 15, "%lu", &st_net_ip6->InMcastPkts6);
+			sscanf(line + 15, "%llu", &st_net_ip6->InMcastPkts6);
 		}
 		else if (!strncmp(line, "Ip6OutMcastPkts ", 16)) {
-			sscanf(line + 16, "%lu", &st_net_ip6->OutMcastPkts6);
+			sscanf(line + 16, "%llu", &st_net_ip6->OutMcastPkts6);
 		}
 		else if (!strncmp(line, "Ip6FragOKs ", 11)) {
-			sscanf(line + 11, "%lu", &st_net_ip6->FragOKs6);
+			sscanf(line + 11, "%llu", &st_net_ip6->FragOKs6);
 		}
 		else if (!strncmp(line, "Ip6FragCreates ", 15)) {
-			sscanf(line + 15, "%lu", &st_net_ip6->FragCreates6);
+			sscanf(line + 15, "%llu", &st_net_ip6->FragCreates6);
 		}
 	}
 	
@@ -1380,37 +1384,37 @@ void read_net_eip6(struct stats_net_eip6 *st_net_eip6)
 	while (fgets(line, 128, fp) != NULL) {
 
 		if (!strncmp(line, "Ip6InHdrErrors ", 15)) {
-			sscanf(line + 15, "%lu", &st_net_eip6->InHdrErrors6);
+			sscanf(line + 15, "%llu", &st_net_eip6->InHdrErrors6);
 		}
 		else if (!strncmp(line, "Ip6InAddrErrors ", 16)) {
-			sscanf(line + 16, "%lu", &st_net_eip6->InAddrErrors6);
+			sscanf(line + 16, "%llu", &st_net_eip6->InAddrErrors6);
 		}
 		else if (!strncmp(line, "Ip6InUnknownProtos ", 19)) {
-			sscanf(line + 19, "%lu", &st_net_eip6->InUnknownProtos6);
+			sscanf(line + 19, "%llu", &st_net_eip6->InUnknownProtos6);
 		}
 		else if (!strncmp(line, "Ip6InTooBigErrors ", 18)) {
-			sscanf(line + 18, "%lu", &st_net_eip6->InTooBigErrors6);
+			sscanf(line + 18, "%llu", &st_net_eip6->InTooBigErrors6);
 		}
 		else if (!strncmp(line, "Ip6InDiscards ", 14)) {
-			sscanf(line + 14, "%lu", &st_net_eip6->InDiscards6);
+			sscanf(line + 14, "%llu", &st_net_eip6->InDiscards6);
 		}
 		else if (!strncmp(line, "Ip6OutDiscards ", 15)) {
-			sscanf(line + 15, "%lu", &st_net_eip6->OutDiscards6);
+			sscanf(line + 15, "%llu", &st_net_eip6->OutDiscards6);
 		}
 		else if (!strncmp(line, "Ip6InNoRoutes ", 14)) {
-			sscanf(line + 14, "%lu", &st_net_eip6->InNoRoutes6);
+			sscanf(line + 14, "%llu", &st_net_eip6->InNoRoutes6);
 		}
 		else if (!strncmp(line, "Ip6OutNoRoutes ", 15)) {
-			sscanf(line + 15, "%lu", &st_net_eip6->OutNoRoutes6);
+			sscanf(line + 15, "%llu", &st_net_eip6->OutNoRoutes6);
 		}
 		else if (!strncmp(line, "Ip6ReasmFails ", 14)) {
-			sscanf(line + 14, "%lu", &st_net_eip6->ReasmFails6);
+			sscanf(line + 14, "%llu", &st_net_eip6->ReasmFails6);
 		}
 		else if (!strncmp(line, "Ip6FragFails ", 13)) {
-			sscanf(line + 13, "%lu", &st_net_eip6->FragFails6);
+			sscanf(line + 13, "%llu", &st_net_eip6->FragFails6);
 		}
 		else if (!strncmp(line, "Ip6InTruncatedPkts ", 19)) {
-			sscanf(line + 19, "%lu", &st_net_eip6->InTruncatedPkts6);
+			sscanf(line + 19, "%llu", &st_net_eip6->InTruncatedPkts6);
 		}
 	}
 	

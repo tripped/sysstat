@@ -1,6 +1,6 @@
 /*
  * sadc: system activity data collector
- * (C) 1999-2011 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -59,6 +59,7 @@ long interval = 0;
 unsigned int flags = 0;
 
 int dis;
+int optz = 0;
 char timestamp[2][TIMESTAMP_LEN];
 
 struct file_header file_hdr;
@@ -67,6 +68,8 @@ char comment[MAX_COMMENT_LEN];
 unsigned int id_seq[NR_ACT];
 
 extern struct activity *act[];
+
+struct sigaction alrm_act, int_act;
 
 /*
  ***************************************************************************
@@ -201,16 +204,40 @@ void parse_sadc_S_option(char *argv[], int opt)
 
 /*
  ***************************************************************************
- * SIGALRM signal handler.
+ * SIGALRM signal handler. No need to reset handler here.
  *
  * IN:
- * @sig	Signal number. Set to 0 for the first time, then to SIGALRM.
+ * @sig	Signal number.
  ***************************************************************************
  */
 void alarm_handler(int sig)
 {
-	signal(SIGALRM, alarm_handler);
 	alarm(interval);
+}
+
+/*
+ ***************************************************************************
+ * SIGINT signal handler.
+ * 
+ * IN:
+ * @sig	Signal number.
+ ***************************************************************************
+ */
+void int_handler(int sig)
+{
+	if (!optz) {
+		/* sadc hasn't been called by sar */
+		exit(1);
+	}
+	
+	/*
+	 * When starting sar then pressing ctrl/c, SIGINT is received
+	 * by sadc, not sar. So send SIGINT to sar so that average stats
+	 * can be displayed.
+	 */
+	if (kill(getppid(), SIGINT) < 0) {
+		exit(1);
+	}
 }
 
 /*
@@ -454,7 +481,7 @@ void setup_file_hdr(int fd)
 	memset(&file_hdr, 0, FILE_HEADER_SIZE);
 
 	/* Then get current date */
-	file_hdr.sa_ust_time = get_time(&rectime);
+	file_hdr.sa_ust_time = get_time(&rectime, 0);
 
 	/* OK, now fill the header */
 	file_hdr.sa_nr_act      = get_activity_nr(act, AO_COLLECTED, COUNT_ACTIVITIES);
@@ -542,7 +569,7 @@ void write_special_record(int ofd, int rtype)
 	record_hdr.record_type = rtype;
 
 	/* Save time */
-	record_hdr.ust_time = get_time(&rectime);
+	record_hdr.ust_time = get_time(&rectime, 0);
 
 	record_hdr.hour   = rectime.tm_hour;
 	record_hdr.minute = rectime.tm_min;
@@ -676,7 +703,7 @@ void open_stdout(int *stdfd)
 void open_ofile(int *ofd, char ofile[])
 {
 	struct file_magic file_magic;
-	struct file_activity file_act;
+	struct file_activity file_act[NR_ACT];
 	struct tm rectime;
 	ssize_t sz;
 	int i, p;
@@ -726,7 +753,7 @@ void open_ofile(int *ofd, char ofile[])
 			 * as "-" on the command line) and it is from a past month,
 			 * then overwrite (truncate) it.
 			 */
-			get_time(&rectime);
+			get_time(&rectime, 0);
 			
 			if (((file_hdr.sa_month != rectime.tm_mon) ||
 			    (file_hdr.sa_year != rectime.tm_year)) &&
@@ -736,16 +763,7 @@ void open_ofile(int *ofd, char ofile[])
 				return;
 			}
 
-			/*
-			 * OK: It's a true system activity file.
-			 * List of activities from the file prevails over that of the user.
-			 * So unselect all of them. And reset activity sequence.
-			 */
-			for (i = 0; i < NR_ACT; i++) {
-				act[i]->options &= ~AO_COLLECTED;
-				id_seq[i] = 0;
-			}
-
+			/* OK: It's a true system activity file */
 			if (!file_hdr.sa_nr_act || (file_hdr.sa_nr_act > NR_ACT))
 				/*
 				 * No activities at all or at least one unknown activity:
@@ -756,39 +774,56 @@ void open_ofile(int *ofd, char ofile[])
 			for (i = 0; i < file_hdr.sa_nr_act; i++) {
 
 				/* Read current activity in list */
-				if (read(*ofd, &file_act, FILE_ACTIVITY_SIZE) != FILE_ACTIVITY_SIZE) {
+				if (read(*ofd, &file_act[i], FILE_ACTIVITY_SIZE) != FILE_ACTIVITY_SIZE) {
 					handle_invalid_sa_file(ofd, &file_magic, ofile, 0);
 				}
 
-				p = get_activity_position(act, file_act.id);
+				p = get_activity_position(act, file_act[i].id);
 
-				if ((p < 0) || (act[p]->fsize != file_act.size) ||
-				    (act[p]->magic != file_act.magic))
+				if ((p < 0) || (act[p]->fsize != file_act[i].size) ||
+				    (act[p]->magic != file_act[i].magic))
 					/*
 					 * Unknown activity in list or item size has changed or
 					 * unknown activity format.
 					 */
 					goto append_error;
 
-				if ((act[p]->nr != file_act.nr) || (act[p]->nr2 != file_act.nr2)) {
-					if (IS_REMANENT(act[p]->options) || !file_act.nr || !file_act.nr2)
+				if ((act[p]->nr != file_act[i].nr) || (act[p]->nr2 != file_act[i].nr2)) {
+					if (IS_REMANENT(act[p]->options) || !file_act[i].nr || !file_act[i].nr2)
 						/*
 						 * Remanent structures cannot have a different number of items.
 						 * Also number of items and subitems should never be null.
 						 */
 						goto append_error;
-					else {
-						/*
-						 * Force number of items (serial lines, network interfaces...)
-						 * and sub-items to that of the file, and reallocate structures.
-						 */
-						act[p]->nr  = file_act.nr;
-						act[p]->nr2 = file_act.nr2;
-						SREALLOC(act[p]->_buf0, void, act[p]->msize * act[p]->nr * act[p]->nr2);
-					}
 				}
+			}
+			
+			/*
+			 * OK: All tests successfully passed.
+			 * List of activities from the file prevails over that of the user.
+			 * So unselect all of them. And reset activity sequence.
+			 */
+			for (i = 0; i < NR_ACT; i++) {
+				act[i]->options &= ~AO_COLLECTED;
+				id_seq[i] = 0;
+			}
+			
+			for (i = 0; i < file_hdr.sa_nr_act; i++) {
+				
+				p = get_activity_position(act, file_act[i].id);
+				
+				if ((act[p]->nr != file_act[i].nr) || (act[p]->nr2 != file_act[i].nr2)) {
+					/*
+					 * Force number of items (serial lines, network interfaces...)
+					 * and sub-items to that of the file, and reallocate structures.
+					 */
+					act[p]->nr  = file_act[i].nr;
+					act[p]->nr2 = file_act[i].nr2;
+					SREALLOC(act[p]->_buf0, void, act[p]->msize * act[p]->nr * act[p]->nr2);
+				}
+				
 				/* Save activity sequence */
-				id_seq[i] = file_act.id;
+				id_seq[i] = file_act[i].id;
 				act[p]->options |= AO_COLLECTED;
 			}
 		}
@@ -870,6 +905,11 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
 	char new_ofile[MAX_FILE_LEN];
 
 	new_ofile[0] = '\0';
+	
+	/* Set a handler for SIGINT */
+	memset(&int_act, 0, sizeof(int_act));
+	int_act.sa_handler = (void *) int_handler;
+	sigaction(SIGINT, &int_act, NULL);
 
 	/* Main loop */
 	do {
@@ -882,7 +922,7 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
 		reset_stats();
 
 		/* Save time */
-		record_hdr.ust_time = get_time(rectime);
+		record_hdr.ust_time = get_time(rectime, 0);
 		record_hdr.hour     = rectime->tm_hour;
 		record_hdr.minute   = rectime->tm_min;
 		record_hdr.second   = rectime->tm_sec;
@@ -963,7 +1003,7 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
 		/* Rotate activity file if necessary */
 		if (WANT_SA_ROTAT(flags)) {
 			/* The user specified '-' as the filename to use */
-			set_default_file(rectime, new_ofile);
+			set_default_file(rectime, new_ofile, 0);
 
 			if (strcmp(ofile, new_ofile)) {
 				do_sa_rotat = TRUE;
@@ -984,7 +1024,7 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
  */
 int main(int argc, char **argv)
 {
-	int opt = 0, optz = 0;
+	int opt = 0;
 	char ofile[MAX_FILE_LEN];
 	struct tm rectime;
 	int stdfd = 0, ofd = -1;
@@ -1057,7 +1097,7 @@ int main(int argc, char **argv)
 				stdfd = -1;	/* Don't write to STDOUT */
 				if (!strcmp(argv[opt], "-")) {
 					/* File name set to '-' */
-					set_default_file(&rectime, ofile);
+					set_default_file(&rectime, ofile, 0);
 					flags |= S_F_SA_ROTAT;
 				}
 				else if (!strncmp(argv[opt], "-", 1)) {
@@ -1149,7 +1189,10 @@ int main(int argc, char **argv)
 	}
 
 	/* Set a handler for SIGALRM */
-	alarm_handler(0);
+	memset(&alrm_act, 0, sizeof(alrm_act));
+	alrm_act.sa_handler = (void *) alarm_handler;
+	sigaction(SIGALRM, &alrm_act, NULL);
+	alarm(interval);
 
 	/* Main loop */
 	rw_sa_stat_loop(count, &rectime, stdfd, ofd, ofile);

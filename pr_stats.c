@@ -1,6 +1,6 @@
 /*
  * pr_stats.c: Functions used by sar to display statistics
- * (C) 1999-2011 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -69,7 +69,7 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 		else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 			printf("\n%-11s     CPU      %%usr     %%nice      %%sys"
 			       "   %%iowait    %%steal      %%irq     %%soft"
-			       "    %%guest     %%idle\n",
+			       "    %%guest    %%gnice     %%idle\n",
 			       timestamp[!curr]);
 		}
 	}
@@ -109,7 +109,8 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 				/*
 				 * If the CPU is offline then it is omited from /proc/stat:
 				 * All the fields couldn't have been read and the sum of them is zero.
-				 * (Remember that guest time is already included in user mode.)
+				 * (Remember that guest/guest_nice times are already included in
+				 * user/nice modes.)
 				 */
 				if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
 				     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
@@ -121,13 +122,18 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 					 */
 					*scc = *scp;
 					
+					/* %user, %nice, %system, %iowait, %steal, ..., %idle */
 					printf("    %6.2f    %6.2f    %6.2f"
 					       "    %6.2f    %6.2f    %6.2f",
 					       0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 					
 					if (DISPLAY_CPU_ALL(a->opt_flags)) {
-						printf("    %6.2f    %6.2f    %6.2f",
-						       0.0, 0.0, 0.0);
+						/*
+						 * Four additional fields to display:
+						 * %irq, %soft, %guest, %gnice.
+						 */
+						printf("    %6.2f    %6.2f    %6.2f    %6.2f",
+						       0.0, 0.0, 0.0, 0.0);
 					}
 					printf("\n");
 					continue;
@@ -140,6 +146,7 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 					/*
 					 * If the CPU is tickless then there is no change in CPU values
 					 * but the sum of values is not zero.
+					 * %user, %nice, %system, %iowait, %steal, ..., %idle
 					 */
 					printf("    %6.2f    %6.2f    %6.2f"
 					       "    %6.2f    %6.2f",
@@ -148,6 +155,10 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 					if (DISPLAY_CPU_DEF(a->opt_flags)) {
 						printf("    %6.2f\n", 100.0);
 					}
+					/*
+					 * Four additional fields to display:
+					 * %irq, %soft, %guest, %gnice.
+					 */
 					else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 						printf("    %6.2f    %6.2f    %6.2f    %6.2f\n",
 						       0.0, 0.0, 0.0, 100.0);
@@ -158,34 +169,38 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 			
 			if (DISPLAY_CPU_DEF(a->opt_flags)) {
 				printf("    %6.2f    %6.2f    %6.2f    %6.2f    %6.2f    %6.2f\n",
-				       ll_sp_value(scp->cpu_user,   scc->cpu_user,   g_itv),
-				       ll_sp_value(scp->cpu_nice,   scc->cpu_nice,   g_itv),
+				       ll_sp_value(scp->cpu_user, scc->cpu_user, g_itv),
+				       ll_sp_value(scp->cpu_nice, scc->cpu_nice, g_itv),
 				       ll_sp_value(scp->cpu_sys + scp->cpu_hardirq + scp->cpu_softirq,
 						   scc->cpu_sys + scc->cpu_hardirq + scc->cpu_softirq,
 						   g_itv),
 				       ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, g_itv),
-				       ll_sp_value(scp->cpu_steal,  scc->cpu_steal,  g_itv),
+				       ll_sp_value(scp->cpu_steal, scc->cpu_steal, g_itv),
 				       scc->cpu_idle < scp->cpu_idle ?
 				       0.0 :
-				       ll_sp_value(scp->cpu_idle,   scc->cpu_idle,   g_itv));
+				       ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv));
 			}
 			else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 				printf("    %6.2f    %6.2f    %6.2f    %6.2f    %6.2f    %6.2f"
-				       "    %6.2f    %6.2f    %6.2f\n",
+				       "    %6.2f    %6.2f    %6.2f    %6.2f\n",
 				       (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
 				       0.0 :
 				       ll_sp_value(scp->cpu_user - scp->cpu_guest,
-						   scc->cpu_user - scc->cpu_guest,     g_itv),
-				       ll_sp_value(scp->cpu_nice,    scc->cpu_nice,    g_itv),
-				       ll_sp_value(scp->cpu_sys,     scc->cpu_sys,     g_itv),
-				       ll_sp_value(scp->cpu_iowait,  scc->cpu_iowait,  g_itv),
-				       ll_sp_value(scp->cpu_steal,   scc->cpu_steal,   g_itv),
+						   scc->cpu_user - scc->cpu_guest, g_itv),
+				       (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
+				       0.0 :
+				       ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
+						   scc->cpu_nice - scc->cpu_guest_nice, g_itv),
+				       ll_sp_value(scp->cpu_sys, scc->cpu_sys, g_itv),
+				       ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, g_itv),
+				       ll_sp_value(scp->cpu_steal, scc->cpu_steal, g_itv),
 				       ll_sp_value(scp->cpu_hardirq, scc->cpu_hardirq, g_itv),
 				       ll_sp_value(scp->cpu_softirq, scc->cpu_softirq, g_itv),
-				       ll_sp_value(scp->cpu_guest,   scc->cpu_guest,   g_itv),
+				       ll_sp_value(scp->cpu_guest, scc->cpu_guest, g_itv),
+				       ll_sp_value(scp->cpu_guest_nice, scc->cpu_guest_nice, g_itv),
 				       scc->cpu_idle < scp->cpu_idle ?
 				       0.0 :
-				       ll_sp_value(scp->cpu_idle,    scc->cpu_idle,    g_itv));
+				       ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv));
 			}
 		}
 	}
@@ -395,7 +410,8 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 		avg_camkb    = 0,
 		avg_comkb    = 0,
 		avg_activekb = 0,
-		avg_inactkb  = 0;
+		avg_inactkb  = 0,
+		avg_dirtykb  = 0;
 	static unsigned long long
 		avg_frskb = 0,
 		avg_tlskb = 0,
@@ -416,12 +432,12 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 	if (DISPLAY_MEM_AMT(a->opt_flags)) {
 		if (dis) {
 			printf("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached"
-			       "  kbcommit   %%commit  kbactive   kbinact\n", timestamp[!curr]);
+			       "  kbcommit   %%commit  kbactive   kbinact   kbdirty\n", timestamp[!curr]);
 		}
 
 		if (!dispavg) {
 			/* Display instantaneous values */
-			printf("%-11s %9lu %9lu    %6.2f %9lu %9lu %9lu   %7.2f %9lu %9lu\n",
+			printf("%-11s %9lu %9lu    %6.2f %9lu %9lu %9lu   %7.2f %9lu %9lu %9lu\n",
 			       timestamp[curr],
 			       smc->frmkb,
 			       smc->tlmkb - smc->frmkb,
@@ -433,7 +449,8 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 			       (smc->tlmkb + smc->tlskb) ?
 			       SP_VALUE(0, smc->comkb, smc->tlmkb + smc->tlskb) : 0.0,
 			       smc->activekb,
-			       smc->inactkb);
+			       smc->inactkb,
+			       smc->dirtykb);
 
 			/*
 			 * Will be used to compute the average.
@@ -446,10 +463,11 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 			avg_comkb    += smc->comkb;
 			avg_activekb += smc->activekb;
 			avg_inactkb  += smc->inactkb;
+			avg_dirtykb  += smc->dirtykb;
 		}
 		else {
 			/* Display average values */
-			printf("%-11s %9.0f %9.0f    %6.2f %9.0f %9.0f %9.0f   %7.2f %9.0f %9.0f\n",
+			printf("%-11s %9.0f %9.0f    %6.2f %9.0f %9.0f %9.0f   %7.2f %9.0f %9.0f %9.0f\n",
 			       timestamp[curr],
 			       (double) avg_frmkb / avg_count,
 			       (double) smc->tlmkb - ((double) avg_frmkb / avg_count),
@@ -464,11 +482,12 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 			       SP_VALUE(0.0, (double) (avg_comkb / avg_count),
 					smc->tlmkb + smc->tlskb) : 0.0,
 			       (double) avg_activekb / avg_count,
-			       (double) avg_inactkb / avg_count);
+			       (double) avg_inactkb / avg_count,
+			       (double) avg_dirtykb / avg_count);
 			
 			/* Reset average counters */
 			avg_frmkb = avg_bufkb = avg_camkb = avg_comkb = 0;
-			avg_activekb = avg_inactkb = 0;
+			avg_activekb = avg_inactkb = avg_dirtykb = 0;
 		}
 	}
 	
@@ -812,7 +831,7 @@ __print_funct_t print_disk_stats(struct activity *a, int prev, int curr,
 	int i, j;
 	struct stats_disk *sdc,	*sdp;
 	struct ext_disk_stats xds;
-	char *dev_name;
+	char *dev_name, *persist_dev_name;
 
 	if (dis) {
 		printf("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz"
@@ -834,14 +853,24 @@ __print_funct_t print_disk_stats(struct activity *a, int prev, int curr,
 		compute_ext_disk_stats(sdc, sdp, itv, &xds);
 		
 		dev_name = NULL;
+		persist_dev_name = NULL;
 
-		if ((USE_PRETTY_OPTION(flags)) && (sdc->major == dm_major)) {
-			dev_name = transform_devmapname(sdc->major, sdc->minor);
+		if (DISPLAY_PERSIST_NAME_S(flags)) {
+			persist_dev_name = get_persistent_name_from_pretty(get_devname(sdc->major, sdc->minor, TRUE));
 		}
+		
+		if (persist_dev_name) {
+			dev_name = persist_dev_name;
+		}
+		else {
+			if ((USE_PRETTY_OPTION(flags)) && (sdc->major == dm_major)) {
+				dev_name = transform_devmapname(sdc->major, sdc->minor);
+			}
 
-		if (!dev_name) {
-			dev_name = get_devname(sdc->major, sdc->minor,
-					       USE_PRETTY_OPTION(flags));
+			if (!dev_name) {
+				dev_name = get_devname(sdc->major, sdc->minor,
+						       USE_PRETTY_OPTION(flags));
+			}
 		}
 		
 		printf("%-11s %9s %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f %9.2f\n",

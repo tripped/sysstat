@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2011 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 2000-2013 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -73,6 +73,9 @@ int irqcpu_nr = 0;
 /* Nb of soft interrupts per processor */
 int softirqcpu_nr = 0;
 
+struct sigaction alrm_act, int_act;
+int sigint_caught = 0;
+
 /*
  ***************************************************************************
  * Print usage and exit
@@ -87,23 +90,35 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -A ] [ -I { SUM | CPU | SCPU | ALL } ] [ -u ]\n"
-			  "[ -P { <cpu> [,...] | ON | ALL } ] [ -V ]\n"));
+			  "[ -A ] [ -u ] [ -V ] [ -I { SUM | CPU | SCPU | ALL } ]\n"
+			  "[ -P { <cpu> [,...] | ON | ALL } ]\n"));
 	exit(1);
 }
 
 /*
  ***************************************************************************
- * SIGALRM signal handler
+ * SIGALRM signal handler. No need to reset the handler here.
  *
  * IN:
- * @sig	Signal number. Set to 0 for the first time, then to SIGALRM.
+ * @sig	Signal number.
  ***************************************************************************
  */
 void alarm_handler(int sig)
 {
-	signal(SIGALRM, alarm_handler);
 	alarm(interval);
+}
+
+/*
+ ***************************************************************************
+ * SIGINT signal handler.
+ * 
+ * IN:
+ * @sig	Signal number.
+ ***************************************************************************
+ */
+void int_handler(int sig)
+{
+	sigint_caught = 1;
 }
 
 /*
@@ -212,7 +227,7 @@ void write_irqcpu_stats(struct stats_irqcpu *st_ic[], int ic_nr, int dis,
 			unsigned long long itv, int prev, int curr,
 			char *prev_string, char *curr_string)
 {
-	struct stats_cpu *scc, *scp;
+	struct stats_cpu *scc;
 	int j = 0, offset, cpu;
 	struct stats_irqcpu *p, *q, *p0, *q0;
 
@@ -251,7 +266,6 @@ void write_irqcpu_stats(struct stats_irqcpu *st_ic[], int ic_nr, int dis,
 	for (cpu = 1; cpu <= cpu_nr; cpu++) {
 
 		scc = st_cpu[curr] + cpu;
-		scp = st_cpu[prev] + cpu;
 
 		/*
 		 * Check if we want stats about this CPU.
@@ -355,7 +369,7 @@ void write_stats_core(int prev, int curr, int dis,
 	if (DISPLAY_CPU(actflags)) {
 		if (dis) {
 			printf("\n%-11s  CPU    %%usr   %%nice    %%sys %%iowait    %%irq   "
-			       "%%soft  %%steal  %%guest   %%idle\n",
+			       "%%soft  %%steal  %%guest  %%gnice   %%idle\n",
 			       prev_string);
 		}
 
@@ -364,15 +378,18 @@ void write_stats_core(int prev, int curr, int dis,
 
 			printf("%-11s  all", curr_string);
 
-			printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f\n",
+			printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f\n",
 			       (st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest) <
 			       (st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest) ?
 			       0.0 :
 			       ll_sp_value(st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest,
 					   st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest,
 					   g_itv),
-			       ll_sp_value(st_cpu[prev]->cpu_nice,
-					   st_cpu[curr]->cpu_nice,
+			       (st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice) <
+			       (st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice) ?
+			       0.0 :
+			       ll_sp_value(st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice,
+					   st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice,
 					   g_itv),
 			       ll_sp_value(st_cpu[prev]->cpu_sys,
 					   st_cpu[curr]->cpu_sys,
@@ -391,6 +408,9 @@ void write_stats_core(int prev, int curr, int dis,
 					   g_itv),
 			       ll_sp_value(st_cpu[prev]->cpu_guest,
 					   st_cpu[curr]->cpu_guest,
+					   g_itv),
+			       ll_sp_value(st_cpu[prev]->cpu_guest_nice,
+					   st_cpu[curr]->cpu_guest_nice,
 					   g_itv),
 			       (st_cpu[curr]->cpu_idle < st_cpu[prev]->cpu_idle) ?
 			       0.0 :
@@ -411,7 +431,8 @@ void write_stats_core(int prev, int curr, int dis,
 			/*
 			 * If the CPU is offline then it is omited from /proc/stat
 			 * and the sum of all values is zero.
-			 * (Remember that guest time is already included in user mode.)
+			 * (Remember that guest/guest_nice times are already included in
+			 * user/nice modes.)
 			 */
 			if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
 			     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
@@ -420,9 +441,9 @@ void write_stats_core(int prev, int curr, int dis,
 				if (!DISPLAY_ONLINE_CPU(flags)) {
 					printf("%-11s %4d"
 					       "  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"
-					       "  %6.2f  %6.2f  %6.2f\n",
+					       "  %6.2f  %6.2f  %6.2f  %6.2f\n",
 					       curr_string, cpu - 1,
-					       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+					       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 				}
 				continue;
 			}
@@ -438,20 +459,22 @@ void write_stats_core(int prev, int curr, int dis,
 				 * but the sum of values is not zero.
 				 */
 				printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"
-				       "  %6.2f  %6.2f  %6.2f\n",
-				       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0);
+				       "  %6.2f  %6.2f  %6.2f  %6.2f\n",
+				       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0);
 			}
 
 			else {
 				printf("  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"
-				       "  %6.2f  %6.2f  %6.2f\n",
+				       "  %6.2f  %6.2f  %6.2f  %6.2f\n",
 				       (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
 				       0.0 :
 				       ll_sp_value(scp->cpu_user - scp->cpu_guest,
 						   scc->cpu_user - scc->cpu_guest,
 						   pc_itv),
-				       ll_sp_value(scp->cpu_nice,
-						   scc->cpu_nice,
+				       (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
+				       0.0 :
+				       ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
+						   scc->cpu_nice - scc->cpu_guest_nice,
 						   pc_itv),
 				       ll_sp_value(scp->cpu_sys,
 						   scc->cpu_sys,
@@ -470,6 +493,9 @@ void write_stats_core(int prev, int curr, int dis,
 						   pc_itv),
 				       ll_sp_value(scp->cpu_guest,
 						   scc->cpu_guest,
+						   pc_itv),
+				       ll_sp_value(scp->cpu_guest_nice,
+						   scc->cpu_guest_nice,
 						   pc_itv),
 				       (scc->cpu_idle < scp->cpu_idle) ?
 				       0.0 :
@@ -624,7 +650,7 @@ void read_interrupts_stat(char *file, struct stats_irqcpu *st_ic[], int ic_nr, i
 	FILE *fp;
 	struct stats_irq *st_irq_i;
 	struct stats_irqcpu *p;
-	char *line = NULL;
+	char *line = NULL, *li;
 	unsigned long irq = 0;
 	unsigned int cpu;
 	int cpu_index[cpu_nr], index = 0, dgt, len;
@@ -658,17 +684,28 @@ void read_interrupts_stat(char *file, struct stats_irqcpu *st_ic[], int ic_nr, i
 
 			/* Skip over "<irq>:" */
 			if ((cp = strchr(line, ':')) == NULL)
+				/* Chr ':' not found */
 				continue;
 			cp++;
 
 			p = st_ic[curr] + irq;
-			len = strcspn(line, ":");
+			
+			li = line;
+			while (*li == ' ')
+				li++;
+			
+			len = strcspn(li, ":");
 			if (len >= MAX_IRQ_LEN) {
 				len = MAX_IRQ_LEN - 1;
 			}
-			strncpy(p->irq_name, line, len);
+			strncpy(p->irq_name, li, len);
 			p->irq_name[len] = '\0';
-			dgt = isdigit(line[len - 1]);
+			if (len > 0) {
+				dgt = isdigit(li[len - 1]);
+			}
+			else {
+				dgt = FALSE;
+			}
 
 			for (cpu = 0; cpu < index; cpu++) {
 				p = st_ic[curr] + cpu_index[cpu] * ic_nr + irq;
@@ -759,7 +796,10 @@ void rw_mpstat_loop(int dis_hdr, int rows)
 	}
 
 	/* Set a handler for SIGALRM */
-	alarm_handler(0);
+	memset(&alrm_act, 0, sizeof(alrm_act));
+	alrm_act.sa_handler = (void *) alarm_handler;
+	sigaction(SIGALRM, &alrm_act, NULL);
+	alarm(interval);
 
 	/* Save the first stats collected. Will be used to compute the average */
 	mp_tstamp[2] = mp_tstamp[0];
@@ -772,6 +812,11 @@ void rw_mpstat_loop(int dis_hdr, int rows)
 		memcpy(st_softirqcpu[2], st_softirqcpu[0],
 		       STATS_IRQCPU_SIZE * (cpu_nr + 1) * softirqcpu_nr);
 	}
+
+	/* Set a handler for SIGINT */
+	memset(&int_act, 0, sizeof(int_act));
+	int_act.sa_handler = (void *) int_handler;
+	sigaction(SIGINT, &int_act, NULL);
 
 	pause();
 
@@ -788,7 +833,7 @@ void rw_mpstat_loop(int dis_hdr, int rows)
 		}
 
 		/* Get time */
-		get_localtime(&(mp_tstamp[curr]));
+		get_localtime(&(mp_tstamp[curr]), 0);
 
 		/* Read stats */
 		if (cpu_nr > 1) {
@@ -822,9 +867,19 @@ void rw_mpstat_loop(int dis_hdr, int rows)
 		if (count > 0) {
 			count--;
 		}
+		
 		if (count) {
-			curr ^= 1;
+			
 			pause();
+			
+			if (sigint_caught) {
+				/* SIGINT signal caught => Display average stats */
+				count = 0;
+				printf("\n");	/* Skip "^C" displayed on screen */
+			}
+			else {
+				curr ^= 1;
+			}
 		}
 	}
 	while (count);
@@ -1023,7 +1078,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Get time */
-	get_localtime(&(mp_tstamp[0]));
+	get_localtime(&(mp_tstamp[0]), 0);
 
 	/* Get system name, release number and hostname */
 	uname(&header);

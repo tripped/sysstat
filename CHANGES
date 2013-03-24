@@ -1,5 +1,93 @@
 Changes:
 
+2013/03/08: Version 10.1.4 - Sebastien Godard (sysstat <at> orange.fr)
+	* [Christophe Cerin]: pidstat now stops and displays its average
+	  stats when it receives SIGINT (crtl/c).
+	* mpstat now stops and displays its average stats when it
+	  receives SIGINT (crtl/c).
+	* sar now stops and displays its average stats when it receives
+	  SIGINT (crtl/c).
+	* pidstat now displays task's UID for all tasks.
+	* pidstat: -U option added. This option tells pidstat to display
+	  the username of the task instead of its UID. When this option is
+	  followed by a user name, then only tasks belonging to the
+	  specified user are displayed by pidstat.
+	* pidstat manual page updated.
+	* Now use sigaction() instead of signal() for signals handling
+	  to avoid portability problems.
+	* FAQ updated.
+	* NLS updated.
+
+2012/12/23: Version 10.1.3 - Sebastien Godard (sysstat <at> orange.fr)
+	* Changed network counters (used by sar -n {DEV | EDEV }) to
+	  unsigned long long to keep in sync with current kernels.
+	  WARNING: This breaks compatibility with older sar data
+	  files format for network statistics.
+	* Changed IPv4 counters (used by sar -n { IP | EIP}) to
+	  unsigned long long to keep in sync with current kernels.
+	  WARNING: This breaks compatibility with older sar data
+	  files format for IPv4 statistics.
+	* Changed IPv6 counters (used by sar -n { IP6 | EIP6}) to
+          unsigned long long to keep in sync with current kernels.
+          WARNING: This breaks compatibility with older sar data
+          files format for IPv6 statistics.
+	* [Peter Schiffer]: Added option -y to iostat. This option
+	  prevents iostat from displaying its first report with
+	  statistics since system boot.
+	* [Peter Schiffer]: Increase NR_CPUS and NR_IRQS values.
+	* [John Lau]: sadc didn't collect all its activities when
+	  it had to overwrite an old sysstat data file with some
+	  unknown activity formats. This is now fixed.
+	* Now install sadc in $prefix/lib64 directory on 64 bit machines
+	  even if $prefix/lib directory also exists.
+	* Fixed DTD document: If computer has run all day without
+	  restart, XML output file from sadf -x has no boot elements.
+	* Remove heading spaces in softirq names displayed by mpstat
+	  for easier reading.
+	* Fixed wrong command execution syntax in configure script.
+	* Removed several unused definitions in some header files.
+	* iostat manual page updated.
+	* NLS updated.
+	* CREDITS file updated.
+
+2012/10/06: Version 10.1.2 - Sebastien Godard (sysstat <at> orange.fr)
+	* New field added to sar -u and mpstat: %gnice (time spent
+	  running a niced guest).
+	* New field added to sar -r: kbdirty (amount of memory waiting
+	  to get written back to disk).
+	* [Peter Schiffer]: systemd support added.
+	* [Peter Schiffer]: Sysstat init script updated to make it
+	  more conforming to LSB.
+	* XML DTD document name is now tagged with a version number.
+	* Fixed a fatal error when compiled with -Werror=format-security.
+	* sar, sadf and mpstat manual pages updated.
+	* DTD and XSD documents updated.
+	* Cosmetic change in sadf -H output.
+	* NLS updated.
+
+2012/07/29: Version 10.1.1 - Sebastien Godard (sysstat <at> orange.fr)
+	* Added option -[0-9]+ to sar to show data of that days ago.
+	* [Peter Schiffer]: Persistent device names support added to
+	  sar and iostat (option -j).
+	* [Peter Schiffer]: Make sysstat disk counters consistent
+	  with those from latest kernel (3.5).
+	  WARNING: This breaks compatibility with older sar data
+	  files format for disk activity.
+	* [Peter Schiffer]: sar: Use /sys/dev/block/major:minor links
+	  to determine devices real name.
+	* Part of 'sadf -H' output was written to stderr instead of
+	  stdout. This is now fixed.
+	* WARNING: sadf: Option '-T' has been renamed into '-U', and
+	  option '-t' has been renamed into '-T'.
+	* sadf: New option -t added. This option tells sadf to display
+	  the timestamps in the local time of the data file creator
+	  instead of UTC. The same option exists for sar.
+	* [Peter Schiffer]: Various cosmetic changes in manual pages
+	  and usage messages displayed by sysstat commands.
+	* FAQ updated.
+	* NLS updated.
+	* sar, sadf and iostat manual pages updated.
+
 2012/05/16: Version 10.0.5 - Sebastien Godard (sysstat <at> orange.fr)
 	* [Alain Chereau]: Options -g and -T added to iostat. These
 	  options enable the user to display statistics for groups of
@@ -38,8 +126,8 @@ Changes:
 2011/11/27: Version 10.0.3 - Sebastien Godard (sysstat <at> orange.fr)
 	* sadf: New output format added: JSON (JavaScript Object
 	  Notation). This format can be displayed with sadf's option -j.
-	* [Jürgen Heinemann]: Fixed a bug in sadf XML output.
-	* [Jürgen Heinemann]: Fixed several bugs in DTD and XSD
+	* [Jurgen Heinemann]: Fixed a bug in sadf XML output.
+	* [Jurgen Heinemann]: Fixed several bugs in DTD and XSD
 	  documents.
 	* [Petr Uzel]: Fixed random crash with iostat when called with
 	  option -N [NOVELL Bug#729130].

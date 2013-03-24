@@ -1,6 +1,6 @@
 /*
  * activity.c: Define system activities available for sar/sadc.
- * (C) 1999-2011 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -86,7 +86,7 @@ struct activity cpu_act = {
 	.f_xml_print	= xml_print_cpu_stats,
 	.f_json_print	= json_print_cpu_stats,
 	.hdr_line	= "CPU;%user;%nice;%system;%iowait;%steal;%idle|"
-		          "CPU;%usr;%nice;%sys;%iowait;%steal;%irq;%soft;%guest;%idle",
+		          "CPU;%usr;%nice;%sys;%iowait;%steal;%irq;%soft;%guest;%gnice;%idle",
 	.name		= "A_CPU",
 #endif
 	.nr		= -1,
@@ -227,7 +227,7 @@ struct activity paging_act = {
 struct activity io_act = {
 	.id		= A_IO,
 	.options	= AO_COLLECTED,
-	.magic		= ACTIVITY_MAGIC_BASE,
+	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
@@ -274,7 +274,7 @@ struct activity memory_act = {
 	.f_xml_print	= xml_print_memory_stats,
 	.f_json_print	= json_print_memory_stats,
 	.hdr_line	= "frmpg/s;bufpg/s;campg/s|"
-		          "kbmemfree;kbmemused;%memused;kbbuffers;kbcached;kbcommit;%commit;kbactive;kbinact|"
+		          "kbmemfree;kbmemused;%memused;kbbuffers;kbcached;kbcommit;%commit;kbactive;kbinact;kbdirty|"
 		          "kbswpfree;kbswpused;%swpused;kbswpcad;%swpcad",
 	.name		= "A_MEMORY",
 #endif
@@ -384,7 +384,7 @@ struct activity serial_act = {
 struct activity disk_act = {
 	.id		= A_DISK,
 	.options	= AO_NULL,
-	.magic		= ACTIVITY_MAGIC_BASE,
+	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_DISK,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_disk_nr,
@@ -415,7 +415,7 @@ struct activity disk_act = {
 struct activity net_dev_act = {
 	.id		= A_NET_DEV,
 	.options	= AO_COLLECTED,
-	.magic		= ACTIVITY_MAGIC_BASE,
+	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_iface_nr,
@@ -446,7 +446,7 @@ struct activity net_dev_act = {
 struct activity net_edev_act = {
 	.id		= A_NET_EDEV,
 	.options	= AO_COLLECTED,
-	.magic		= ACTIVITY_MAGIC_BASE,
+	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_iface_nr,
@@ -572,7 +572,7 @@ struct activity net_sock_act = {
 struct activity net_ip_act = {
 	.id		= A_NET_IP,
 	.options	= AO_NULL,
-	.magic		= ACTIVITY_MAGIC_BASE,
+	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_SNMP,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
@@ -603,7 +603,7 @@ struct activity net_ip_act = {
 struct activity net_eip_act = {
 	.id		= A_NET_EIP,
 	.options	= AO_NULL,
-	.magic		= ACTIVITY_MAGIC_BASE,
+	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_SNMP,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
@@ -822,7 +822,7 @@ struct activity net_sock6_act = {
 struct activity net_ip6_act = {
 	.id		= A_NET_IP6,
 	.options	= AO_NULL,
-	.magic		= ACTIVITY_MAGIC_BASE,
+	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_IPV6,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,
@@ -854,7 +854,7 @@ struct activity net_ip6_act = {
 struct activity net_eip6_act = {
 	.id		= A_NET_EIP6,
 	.options	= AO_NULL,
-	.magic		= ACTIVITY_MAGIC_BASE,
+	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_IPV6,
 #ifdef SOURCE_SADC
 	.f_count	= NULL,

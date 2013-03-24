@@ -487,7 +487,8 @@ __printf_funct_t print_xml_header(int *tab, int action, char *dfile,
 		printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 		printf("<!DOCTYPE sysstat PUBLIC \"DTD v%s sysstat //EN\"\n",
 		       XML_DTD_VERSION);
-		printf("\"http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd\">\n");
+		printf("\"http://pagesperso-orange.fr/sebastien.godard/sysstat-%s.dtd\">\n",
+		       XML_DTD_VERSION);
 		
 		xprintf(*tab, "<sysstat>");
 
@@ -595,7 +596,7 @@ __printf_funct_t print_hdr_header(int *tab, int action, char *dfile,
 		printf(_("System activity data file: %s (%#x)\n"),
 		       dfile, file_magic->format_magic);
 
-		display_sa_file_version(file_magic);
+		display_sa_file_version(stdout, file_magic);
 
 		if (file_magic->format_magic != FORMAT_MAGIC) {
 			return;

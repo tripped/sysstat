@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2011 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -27,6 +27,7 @@
 #include <unistd.h>	/* For STDOUT_FILENO, among others */
 #include <dirent.h>
 #include <fcntl.h>
+#include <libgen.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
@@ -112,6 +113,44 @@ void free_structures(struct activity *act[])
 }
 
 /*
+  ***************************************************************************
+  * Try to get device real name from sysfs tree.
+  *
+  * IN:
+  * @major	Major number of the device.
+  * @minor	Minor number of the device.
+  *
+  * RETURNS:
+  * The name of the device, which may be the real name (as it appears in /dev)
+  * or NULL.
+  ***************************************************************************
+  */
+char *get_devname_from_sysfs(unsigned int major, unsigned int minor)
+{
+	static char link[32], target[PATH_MAX];
+	char *devname;
+	ssize_t r;
+
+	snprintf(link, 32, "%s/%d:%d", SYSFS_DEV_BLOCK, major, minor);
+
+	/* Get full path to device knowing its major and minor numbers */
+	r = readlink(link, target, PATH_MAX);
+	if (r <= 0 || r >= PATH_MAX) {
+		return (NULL);
+	}
+
+	target[r] = '\0';
+
+	/* Get device name */
+	devname = basename(target);
+	if (!devname || strnlen(devname, FILENAME_MAX) == 0) {
+		return (NULL);
+	}
+
+	return (devname);
+}
+
+/*
  ***************************************************************************
  * Get device real name if possible.
  * Warning: This routine may return a bad name on 2.4 kernels where
@@ -138,11 +177,15 @@ char *get_devname(unsigned int major, unsigned int minor, int pretty)
 	if (!pretty)
 		return (buf);
 
+	name = get_devname_from_sysfs(major, minor);
+	if (name != NULL)
+		return (name);
+	
 	name = ioc_name(major, minor);
-	if ((name == NULL) || !strcmp(name, K_NODEV))
-		return (buf);
+	if ((name != NULL) && strcmp(name, K_NODEV))
+		return (name);
 
-	return (name);
+	return (buf);
 }
 
 /*
@@ -301,14 +344,17 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
  ***************************************************************************
  * Set current daily data file name.
  *
+ * IN:
+ * @d_off	Day offset (number of days to go back in the past).
+ *
  * OUT:
  * @rectime	Current date and time.
  * @datafile	Name of daily data file.
  ***************************************************************************
  */
-void set_default_file(struct tm *rectime, char *datafile)
+void set_default_file(struct tm *rectime, char *datafile, int d_off)
 {
-	get_time(rectime);
+	get_time(rectime, d_off);
 	snprintf(datafile, MAX_FILE_LEN,
 		 "%s/sa%02d", SA_DIR, rectime->tm_mday);
 	datafile[MAX_FILE_LEN - 1] = '\0';
@@ -359,7 +405,8 @@ void get_itv_value(struct record_header *record_hdr_curr,
  * @file_hdr	System activity file standard header.
  *
  * OUT:
- * @rectime	Date and time from file header.
+ * @rectime	Date (and possibly time) from file header. Only the date,
+ * 		not the time, should be used by the caller.
  ***************************************************************************
  */
 void get_file_timestamp_struct(unsigned int flags, struct tm *rectime,
@@ -368,8 +415,8 @@ void get_file_timestamp_struct(unsigned int flags, struct tm *rectime,
 	struct tm *loc_t;
 
 	if (PRINT_TRUE_TIME(flags)) {
-		/* Get local time. This is just to fill HH:MM:SS fields */
-		get_time(rectime);
+		/* Get local time. This is just to fill fields with a default value. */
+		get_time(rectime, 0);
 
 		rectime->tm_mday = file_hdr->sa_day;
 		rectime->tm_mon  = file_hdr->sa_month;
@@ -890,20 +937,21 @@ int sa_fread(int ifd, void *buffer, int size, int mode)
  * Display sysstat version used to create system activity data file.
  *
  * IN:
- * @file_magic	File magic header
+ * @st		Output stream (stderr or stdout).
+ * @file_magic	File magic header.
  ***************************************************************************
  */
-void display_sa_file_version(struct file_magic *file_magic)
+void display_sa_file_version(FILE *st, struct file_magic *file_magic)
 {
-	fprintf(stderr, _("File created using sar/sadc from sysstat version %d.%d.%d"),
+	fprintf(st, _("File created by sar/sadc from sysstat version %d.%d.%d"),
 		file_magic->sysstat_version,
 		file_magic->sysstat_patchlevel,
 		file_magic->sysstat_sublevel);
 
 	if (file_magic->sysstat_extraversion) {
-		fprintf(stderr, ".%d", file_magic->sysstat_extraversion);
+		fprintf(st, ".%d", file_magic->sysstat_extraversion);
 	}
-	fprintf(stderr, "\n");
+	fprintf(st, "\n");
 }
 
 /*
@@ -930,7 +978,7 @@ void handle_invalid_sa_file(int *fd, struct file_magic *file_magic, char *file,
 
 	if ((n == FILE_MAGIC_SIZE) && (file_magic->sysstat_magic == SYSSTAT_MAGIC)) {
 		/* This is a sysstat file, but this file has an old format */
-		display_sa_file_version(file_magic);
+		display_sa_file_version(stderr, file_magic);
 
 		fprintf(stderr,
 			_("Current sysstat version can no longer read the format of this file (%#x)\n"),
@@ -1186,7 +1234,7 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
  * @flags	Common flags and system state.
  *
  * RETURNS:
- * 0 on success, 1 otherwise.
+ * 0 on success.
  ***************************************************************************
  */
 int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
@@ -1239,6 +1287,31 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			act[p]->options   |= AO_SELECTED;
 			break;
 			
+		case 'j':
+			if (argv[*opt + 1]) {
+				(*opt)++;
+				if (strnlen(argv[*opt], MAX_FILE_LEN) >= MAX_FILE_LEN - 1)
+					return 1;
+
+				strncpy(persistent_name_type, argv[*opt], MAX_FILE_LEN - 1);
+				persistent_name_type[MAX_FILE_LEN - 1] = '\0';
+				strtolower(persistent_name_type);
+				if (!get_persistent_type_dir(persistent_name_type)) {
+					fprintf(stderr, _("Invalid type of persistent device name\n"));
+					return 2;
+				}
+				/*
+				 * If persistent device name doesn't exist for device, use
+				 * its pretty name.
+				 */
+				*flags |= S_F_PERSIST_NAME + S_F_DEV_PRETTY;
+				return 0;
+			}
+			else {
+				return 1;
+			}
+			break;
+			
 		case 'p':
 			*flags |= S_F_DEV_PRETTY;
 			break;
@@ -1266,6 +1339,12 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			break;
 
 		case 't':
+			/*
+			 * Check sar option -t here (as it can be combined
+			 * with other ones, eg. "sar -rtu ..."
+			 * But sadf option -t is check in sadf.c as it won't
+			 * be entered as a sar option after "--".
+			 */
 			if (caller == C_SAR) {
 				*flags |= S_F_TRUE_TIME;
 			}

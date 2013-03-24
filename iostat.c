@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1998-2012 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1998-2013 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -70,6 +70,7 @@ unsigned int dm_major;	/* Device-mapper major number */
 long interval = 0;
 char timestamp[64];
 
+struct sigaction alrm_act;
 
 /*
  ***************************************************************************
@@ -85,14 +86,16 @@ void usage(char *progname)
 		progname);
 #ifdef DEBUG
 	fprintf(stderr, _("Options are:\n"
-			  "[ -c ] [ -d ] [ -h ] [ -N ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
-			  "[ [ [ -T ] -g <group_name> ] { <device> [...] | ALL } ]\n"
-			  "[ -p [ <device> [,...] | ALL ] ] [ --debuginfo ]\n"));
+			  "[ -c ] [ -d ] [ -h ] [ -k | -m ] [ -N ] [ -t ] [ -V ] [ -x ] [ -y ] [ -z ]\n"
+			  "[ -j { ID | LABEL | PATH | UUID | ... } ]\n"
+			  "[ [ -T ] -g <group_name> ] [ -p [ <device> [,...] | ALL ] ]\n"
+			  "[ <device> [...] | ALL ] [ --debuginfo ]\n"));
 #else
 	fprintf(stderr, _("Options are:\n"
-			  "[ -c ] [ -d ] [ -h ] [ -N ] [ -k | -m ] [ -t ] [ -V ] [ -x ] [ -z ]\n"
-			  "[ [ [ -T ] -g <group_name> ] { <device> [...] | ALL } ]\n"
-			  "[ -p [ <device> [,...] | ALL ] ]\n"));
+			  "[ -c ] [ -d ] [ -h ] [ -k | -m ] [ -N ] [ -t ] [ -V ] [ -x ] [ -y ] [ -z ]\n"
+			  "[ -j { ID | LABEL | PATH | UUID | ... } ]\n"
+			  "[ [ -T ] -g <group_name> ] [ -p [ <device> [,...] | ALL ] ]\n"
+			  "[ <device> [...] | ALL ]\n"));
 #endif
 	exit(1);
 }
@@ -120,15 +123,14 @@ void set_disk_output_unit(void)
 
 /*
  ***************************************************************************
- * SIGALRM signal handler.
+ * SIGALRM signal handler. No need to reset the handler here.
  *
  * IN:
- * @sig	Signal number. Set to 0 for the first time, then to SIGALRM.
+ * @sig	Signal number.
  ***************************************************************************
  */
 void alarm_handler(int sig)
 {
-	signal(SIGALRM, alarm_handler);
 	alarm(interval);
 }
 
@@ -495,15 +497,15 @@ int read_sysfs_file_stat(int curr, char *filename, char *dev_name)
 	FILE *fp;
 	struct io_stats sdev;
 	int i;
-	unsigned long rd_ios, rd_merges_or_rd_sec, rd_ticks_or_wr_sec, wr_ios;
-	unsigned long ios_pgr, tot_ticks, rq_ticks, wr_merges, wr_ticks;
-	unsigned long long rd_sec_or_wr_ios, wr_sec;
+	unsigned int ios_pgr, tot_ticks, rq_ticks, wr_ticks;
+	unsigned long rd_ios, rd_merges_or_rd_sec, wr_ios, wr_merges;
+	unsigned long rd_sec_or_wr_ios, wr_sec, rd_ticks_or_wr_sec;
 
 	/* Try to read given stat file */
 	if ((fp = fopen(filename, "r")) == NULL)
 		return 0;
 	
-	i = fscanf(fp, "%lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
+	i = fscanf(fp, "%lu %lu %lu %lu %lu %lu %lu %u %u %u %u",
 		   &rd_ios, &rd_merges_or_rd_sec, &rd_sec_or_wr_ios, &rd_ticks_or_wr_sec,
 		   &wr_ios, &wr_merges, &wr_sec, &wr_ticks, &ios_pgr, &tot_ticks, &rq_ticks);
 
@@ -512,7 +514,7 @@ int read_sysfs_file_stat(int curr, char *filename, char *dev_name)
 		sdev.rd_ios     = rd_ios;
 		sdev.rd_merges  = rd_merges_or_rd_sec;
 		sdev.rd_sectors = rd_sec_or_wr_ios;
-		sdev.rd_ticks   = rd_ticks_or_wr_sec;
+		sdev.rd_ticks   = (unsigned int) rd_ticks_or_wr_sec;
 		sdev.wr_ios     = wr_ios;
 		sdev.wr_merges  = wr_merges;
 		sdev.wr_sectors = wr_sec;
@@ -687,9 +689,9 @@ void read_diskstats_stat(int curr)
 	char *dm_name;
 	struct io_stats sdev;
 	int i;
+	unsigned int ios_pgr, tot_ticks, rq_ticks, wr_ticks;
 	unsigned long rd_ios, rd_merges_or_rd_sec, rd_ticks_or_wr_sec, wr_ios;
-	unsigned long ios_pgr, tot_ticks, rq_ticks, wr_merges, wr_ticks;
-	unsigned long long rd_sec_or_wr_ios, wr_sec;
+	unsigned long wr_merges, rd_sec_or_wr_ios, wr_sec;
 	char *ioc_dname;
 	unsigned int major, minor;
 
@@ -702,7 +704,7 @@ void read_diskstats_stat(int curr)
 	while (fgets(line, 256, fp) != NULL) {
 
 		/* major minor name rio rmerge rsect ruse wio wmerge wsect wuse running use aveq */
-		i = sscanf(line, "%u %u %s %lu %lu %llu %lu %lu %lu %llu %lu %lu %lu %lu",
+		i = sscanf(line, "%u %u %s %lu %lu %lu %lu %lu %lu %lu %u %u %u %u",
 			   &major, &minor, dev_name,
 			   &rd_ios, &rd_merges_or_rd_sec, &rd_sec_or_wr_ios, &rd_ticks_or_wr_sec,
 			   &wr_ios, &wr_merges, &wr_sec, &wr_ticks, &ios_pgr, &tot_ticks, &rq_ticks);
@@ -715,7 +717,7 @@ void read_diskstats_stat(int curr)
 			sdev.rd_ios     = rd_ios;
 			sdev.rd_merges  = rd_merges_or_rd_sec;
 			sdev.rd_sectors = rd_sec_or_wr_ios;
-			sdev.rd_ticks   = rd_ticks_or_wr_sec;
+			sdev.rd_ticks   = (unsigned int) rd_ticks_or_wr_sec;
 			sdev.wr_ios     = wr_ios;
 			sdev.wr_merges  = wr_merges;
 			sdev.wr_sectors = wr_sec;
@@ -909,13 +911,14 @@ void write_ext_stat(int curr, unsigned long long itv, int fctr,
 		    struct io_hdr_stats *shi, struct io_stats *ioi,
 		    struct io_stats *ioj)
 {
+	char *devname = NULL;
 	struct stats_disk sdc, sdp;
 	struct ext_disk_stats xds;
 	double r_await, w_await;
 	
 	/*
 	 * Counters overflows are possible, but don't need to be handled in
-	 * a special way: the difference is still properly calculated if the
+	 * a special way: The difference is still properly calculated if the
 	 * result is of the same type as the two values.
 	 * Exception is field rq_ticks which is incremented by the number of
 	 * I/O in progress times the number of milliseconds spent doing I/O.
@@ -948,11 +951,17 @@ void write_ext_stat(int curr, unsigned long long itv, int fctr,
 		  ((double) (ioi->wr_ios - ioj->wr_ios)) : 0.0;
 
 	/* Print device name */
+	if (DISPLAY_PERSIST_NAME_I(flags)) {
+		devname = get_persistent_name_from_pretty(shi->name);
+	}
+	if (!devname) {
+		devname = shi->name;
+	}
 	if (DISPLAY_HUMAN_READ(flags)) {
-		printf("%s\n%13s", shi->name, "");
+		printf("%s\n%13s", devname, "");
 	}
 	else {
-		printf("%-13s", shi->name);
+		printf("%-13s", devname);
 	}
 
 	/*       rrq/s wrq/s   r/s   w/s  rsec  wsec  rqsz  qusz await r_await w_await svctm %util */
@@ -972,8 +981,8 @@ void write_ext_stat(int curr, unsigned long long itv, int fctr,
 	       xds.svctm,
 	       /*
 	        * Again: Ticks in milliseconds.
-		* In the case of a device group, shi->used is the nr of devices in the group.
-		* Else shi->used equals 1.
+		* In the case of a device group (option -g), shi->used is the number of
+		* devices in the group. Else shi->used equals 1.
 		*/
 	       shi->used ? xds.util / 10.0 / (double) shi->used
 	                 : xds.util / 10.0);	/* shi->used should never be null here */
@@ -996,14 +1005,21 @@ void write_basic_stat(int curr, unsigned long long itv, int fctr,
 		      struct io_hdr_stats *shi, struct io_stats *ioi,
 		      struct io_stats *ioj)
 {
+	char *devname = NULL;
 	unsigned long long rd_sec, wr_sec;
 
 	/* Print device name */
+	if (DISPLAY_PERSIST_NAME_I(flags)) {
+		devname = get_persistent_name_from_pretty(shi->name);
+	}
+	if (!devname) {
+		devname = shi->name;
+	}
 	if (DISPLAY_HUMAN_READ(flags)) {
-		printf("%s\n%13s", shi->name, "");
+		printf("%s\n%13s", devname, "");
 	}
 	else {
-		printf("%-13s", shi->name);
+		printf("%-13s", devname);
 	}
 
 	/* Print stats coming from /sys or /proc/diskstats */
@@ -1068,7 +1084,8 @@ void write_stats(int curr, struct tm *rectime)
 			/* Debug output */
 			fprintf(stderr, "itv=%llu st_cpu[curr]{ cpu_user=%llu cpu_nice=%llu "
 					"cpu_sys=%llu cpu_idle=%llu cpu_iowait=%llu cpu_steal=%llu "
-					"cpu_hardirq=%llu cpu_softirq=%llu cpu_guest=%llu }\n",
+					"cpu_hardirq=%llu cpu_softirq=%llu cpu_guest=%llu "
+					"cpu_guest_nice=%llu }\n",
 				itv,
 				st_cpu[curr]->cpu_user,
 				st_cpu[curr]->cpu_nice,
@@ -1078,8 +1095,8 @@ void write_stats(int curr, struct tm *rectime)
 				st_cpu[curr]->cpu_steal,
 				st_cpu[curr]->cpu_hardirq,
 				st_cpu[curr]->cpu_softirq,
-				st_cpu[curr]->cpu_guest
-				);
+				st_cpu[curr]->cpu_guest,
+				st_cpu[curr]->cpu_guest_nice);
 		}
 #endif
 
@@ -1142,10 +1159,10 @@ void write_stats(int curr, struct tm *rectime)
 #ifdef DEBUG
 				if (DISPLAY_DEBUG(flags)) {
 					/* Debug output */
-					fprintf(stderr, "name=%s itv=%llu fctr=%d ioi{ rd_sectors=%llu "
-							"wr_sectors=%llu rd_ios=%lu rd_merges=%lu rd_ticks=%lu "
-							"wr_ios=%lu wr_merges=%lu wr_ticks=%lu ios_pgr=%lu tot_ticks=%lu "
-							"rq_ticks=%lu dk_drive=%lu dk_drive_rblk=%lu dk_drive_wblk=%lu }\n",
+					fprintf(stderr, "name=%s itv=%llu fctr=%d ioi{ rd_sectors=%lu "
+							"wr_sectors=%lu rd_ios=%lu rd_merges=%lu rd_ticks=%u "
+							"wr_ios=%lu wr_merges=%lu wr_ticks=%u ios_pgr=%u tot_ticks=%u "
+							"rq_ticks=%u }\n",
 						shi->name,
 						itv,
 						fctr,
@@ -1159,10 +1176,7 @@ void write_stats(int curr, struct tm *rectime)
 						ioi->wr_ticks,
 						ioi->ios_pgr,
 						ioi->tot_ticks,
-						ioi->rq_ticks,
-						ioi->dk_drive,
-						ioi->dk_drive_rblk,
-						ioi->dk_drive_wblk
+						ioi->rq_ticks
 						);
 				}
 #endif
@@ -1191,6 +1205,12 @@ void write_stats(int curr, struct tm *rectime)
 void rw_io_stat_loop(long int count, struct tm *rectime)
 {
 	int curr = 1;
+	int skip = 0;
+	
+	/* Should we skip first report? */
+	if (DISPLAY_OMIT_SINCE_BOOT(flags) && interval > 0) {
+		skip = 1;
+	}
 
 	/* Don't buffer data if redirected to a pipe */
 	setbuf(stdout, NULL);
@@ -1245,14 +1265,21 @@ void rw_io_stat_loop(long int count, struct tm *rectime)
 		}
 
 		/* Get time */
-		get_localtime(rectime);
+		get_localtime(rectime, 0);
 
-		/* Print results */
-		write_stats(curr, rectime);
-
-		if (count > 0) {
-			count--;
+		/* Check whether we should skip first report */
+		if (!skip) {
+			/* Print results */
+			write_stats(curr, rectime);
+			
+			if (count > 0) {
+				count--;
+			}
 		}
+		else {
+			skip = 0;
+		}
+
 		if (count) {
 			curr ^= 1;
 			pause();
@@ -1275,7 +1302,7 @@ int main(int argc, char **argv)
 	struct utsname header;
 	struct io_dlist *st_dev_list_i;
 	struct tm rectime;
-	char *t;
+	char *t, *persist_devname, *devname;
 
 #ifdef USE_NLS
 	/* Init National Language Support */
@@ -1305,8 +1332,16 @@ int main(int argc, char **argv)
 						flags |= I_D_PART_ALL;
 					}
 					else {
+						devname = device_name(t);
+						if (DISPLAY_PERSIST_NAME_I(flags)) {
+							/* Get device persistent name */
+							persist_devname = get_pretty_name_from_persistent(devname);
+							if (persist_devname != NULL) {
+								devname = persist_devname;
+							}
+						}
 						/* Store device name */
-						i = update_dev_list(&dlist_idx, device_name(t));
+						i = update_dev_list(&dlist_idx, devname);
 						st_dev_list_i = st_dev_list + i;
 						st_dev_list_i->disp_part = TRUE;
 					}
@@ -1342,6 +1377,31 @@ int main(int argc, char **argv)
 				usage(argv[0]);
 			}
 			group_nr++;
+		}
+		
+		else if (!strcmp(argv[opt], "-j")) {
+			if (argv[++opt]) {
+				if (strnlen(argv[opt], MAX_FILE_LEN) >= MAX_FILE_LEN - 1) {
+					usage(argv[0]);
+				}
+				strncpy(persistent_name_type, argv[opt], MAX_FILE_LEN - 1);
+				persistent_name_type[MAX_FILE_LEN - 1] = '\0';
+				strtolower(persistent_name_type);
+				/* Check that this is a valid type of persistent device name */
+				if (!get_persistent_type_dir(persistent_name_type)) {
+					fprintf(stderr, _("Invalid type of persistent device name\n"));
+					exit(1);
+				}
+				/*
+				 * Persistent names are usually long: Display
+				 * them as human readable by default.
+				 */
+				flags |= I_D_PERSIST_NAME + I_D_HUMAN_READ;
+				opt++;
+			}
+			else {
+				usage(argv[0]);
+			}
 		}
 
 #ifdef DEBUG
@@ -1411,6 +1471,11 @@ int main(int argc, char **argv)
 					/* Display extended stats */
 					flags |= I_D_EXTENDED;
 					break;
+
+				case 'y':
+					/* Don't display stats since system restart */
+					flags |= I_D_OMIT_SINCE_BOOT;
+					break;
 					
 				case 'z':
 					/* Omit output for devices with no activity */
@@ -1438,8 +1503,15 @@ int main(int argc, char **argv)
 			flags |= I_D_UNFILTERED;
 			
 			if (strcmp(argv[opt], K_ALL)) {
-				/* Store device name */
-				update_dev_list(&dlist_idx, device_name(argv[opt++]));
+				/* Store device name entered on the command line */
+				devname = device_name(argv[opt++]);
+				if (DISPLAY_PERSIST_NAME_I(flags)) {
+					persist_devname = get_pretty_name_from_persistent(devname);
+					if (persist_devname != NULL) {
+						devname = persist_devname;
+					}
+				}
+				update_dev_list(&dlist_idx, devname);
 			}
 			else {
 				opt++;
@@ -1511,7 +1583,7 @@ int main(int argc, char **argv)
 		presave_device_list();
 	}
 
-	get_localtime(&rectime);
+	get_localtime(&rectime, 0);
 
 	/* Get system name, release number and hostname */
 	uname(&header);
@@ -1522,7 +1594,10 @@ int main(int argc, char **argv)
 	printf("\n");
 
 	/* Set a handler for SIGALRM */
-	alarm_handler(0);
+	memset(&alrm_act, 0, sizeof(alrm_act));
+	alrm_act.sa_handler = (void *) alarm_handler;
+	sigaction(SIGALRM, &alrm_act, NULL);
+	alarm(interval);
 
 	/* Main loop */
 	rw_io_stat_loop(count, &rectime);

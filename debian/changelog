@@ -1,3 +1,14 @@
+sysstat (10.1.5-2) UNRELEASED; urgency=low
+
+  * New 10-isag-menu-refresh.patch: Add Refresh button to file menu to make
+    it possible to re-read contents of /var/log/sysstat directory in case
+    isag is running over midnight, and new file is created (LP: #924197).
+    Please note that (depending on /etc/sysstat/sysstat settings) the new file
+    created just after midnight can be replaced with a symbolic link, so it
+    might be necessary to use the Refresh button again in such cases.
+
+ -- Robert Luberda <robert@debian.org>  Fri, 10 May 2013 10:27:20 +0200
+
 sysstat (10.1.5-1) experimental; urgency=low
 
   * New upstream version.

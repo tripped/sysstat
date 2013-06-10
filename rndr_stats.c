@@ -1,6 +1,6 @@
 /*
  * rndr_stats.c: Funtions used by sadf to display statistics in selected format.
- * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -146,6 +146,9 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
 	}
 	else if (rflags & PT_USESTR) {
 		printf("%s%s", seps[isdb], sval);
+	}
+	else if (rflags & PT_USERND) {
+		printf("%s%.0f", seps[isdb], dval);
 	}
 	else {
 		printf("%s%.2f", seps[isdb], dval);
@@ -2790,5 +2793,92 @@ __print_funct_t render_pwr_usb_stats(struct activity *a, int isdb, char *pre,
 		       NOVAL,
 		       NOVAL,
 		       suc->product);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display filesystems statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
+					int curr, unsigned long long itv)
+{
+	int i;
+	struct stats_filesystem *sfc;
+
+	for (i = 0; i < a->nr; i++) {
+		sfc = (struct stats_filesystem *) ((char *) a->buf[curr] + i * a->msize);
+
+		if (!sfc->f_blocks)
+			/* Size of filesystem is null: We are at the end of the list */
+			break;
+
+		render(isdb, pre, PT_USERND,
+		       "%s\tMBfsfree",
+		       "%s",
+		       cons(sv, sfc->fs_name, NOVAL),
+		       NOVAL,
+		       (double) sfc->f_bfree / 1024 / 1024,
+		       NULL);
+
+		render(isdb, pre, PT_USERND,
+		       "%s\tMBfsused",
+		       NULL,
+		       cons(sv, sfc->fs_name, NOVAL),
+		       NOVAL,
+		       (double) (sfc->f_blocks - sfc->f_bfree) / 1024 / 1024,
+		       NULL);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\t%%fsused",
+		       NULL,
+		       cons(sv, sfc->fs_name, NOVAL),
+		       NOVAL,
+		       sfc->f_blocks ? SP_VALUE(sfc->f_bfree, sfc->f_blocks, sfc->f_blocks)
+				     : 0.0,
+		       NULL);
+
+		render(isdb, pre, PT_NOFLAG,
+		       "%s\t%%ufsused",
+		       NULL,
+		       cons(sv, sfc->fs_name, NOVAL),
+		       NOVAL,
+		       sfc->f_blocks ? SP_VALUE(sfc->f_bavail, sfc->f_blocks, sfc->f_blocks)
+				     : 0.0,
+		       NULL);
+
+		render(isdb, pre, PT_USEINT,
+		       "%s\tIfree",
+		       NULL,
+		       cons(sv, sfc->fs_name, NOVAL),
+		       sfc->f_ffree,
+		       NOVAL,
+		       NULL);
+
+		render(isdb, pre, PT_USEINT,
+		       "%s\tIused",
+		       NULL,
+		       cons(sv, sfc->fs_name, NOVAL),
+		       sfc->f_files - sfc->f_ffree,
+		       NOVAL,
+		       NULL);
+
+		render(isdb, pre,
+		       (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN),
+		       "%s\t%%Iused",
+		       NULL,
+		       cons(sv, sfc->fs_name, NOVAL),
+		       NOVAL,
+		       sfc->f_files ? SP_VALUE(sfc->f_ffree, sfc->f_files, sfc->f_files)
+				    : 0.0,
+		       NULL);
 	}
 }

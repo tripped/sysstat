@@ -1,6 +1,6 @@
 /*
  * activity.c: Define system activities available for sar/sadc.
- * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -1195,6 +1195,37 @@ struct activity pwr_usb_act = {
 	.bitmap		= NULL
 };
 
+/* Filesystem usage activity */
+struct activity filesystem_act = {
+	.id		= A_FILESYSTEM,
+	.options	= AO_NULL,
+	.magic		= ACTIVITY_MAGIC_BASE,
+	.group		= G_DISK,
+#ifdef SOURCE_SADC
+	.f_count	= wrap_get_filesystem_nr,
+	.f_count2	= NULL,
+	.f_read		= wrap_read_filesystem,
+#endif
+#ifdef SOURCE_SAR
+	.f_print	= print_filesystem_stats,
+	.f_print_avg	= print_avg_filesystem_stats,
+#endif
+#ifdef SOURCE_SADF
+	.f_render	= render_filesystem_stats,
+	.f_xml_print	= xml_print_filesystem_stats,
+	.f_json_print	= json_print_filesystem_stats,
+	.hdr_line	= "FILESYSTEM,MBfsfree;MBfsused;%fsused;%ufsused;Ifree;Iused;%Iused",
+	.name		= "A_FILESYSTEM",
+#endif
+	.nr		= -1,
+	.nr2		= 1,
+	.fsize		= STATS_FILESYSTEM_SIZE,
+	.msize		= STATS_FILESYSTEM_SIZE,
+	.opt_flags	= 0,
+	.buf		= {NULL, NULL, NULL},
+	.bitmap		= NULL
+};
+
 
 /*
  * Array of activities.
@@ -1239,6 +1270,7 @@ struct activity *act[NR_ACT] = {
 	&pwr_temp_act,
 	&pwr_in_act,
 	&pwr_wghfreq_act,
-	&pwr_usb_act		/* AO_CLOSE_MARKUP */
+	&pwr_usb_act,		/* AO_CLOSE_MARKUP */
 	/* </power-management> */
+	&filesystem_act
 };

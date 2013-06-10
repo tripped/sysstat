@@ -1,6 +1,6 @@
 /*
  * sar/sadc: Report system activity
- * (C) 1999-2012 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SA_H
@@ -19,7 +19,7 @@
  */
 
 /* Number of activities */
-#define NR_ACT	36
+#define NR_ACT	37
 
 /* Activities */
 #define A_CPU		1
@@ -58,6 +58,7 @@
 #define A_HUGE		34
 #define A_PWR_WGHFREQ	35
 #define A_PWR_USB	36
+#define A_FILESYSTEM	37
 
 
 /* Macro used to flag an activity that should be collected */
@@ -83,7 +84,7 @@
 #define S_F_SEC_EPOCH		0x00000080
 #define S_F_HDR_ONLY		0x00000100
 #define S_F_FILE_LOCKED		0x00000200
-#define S_F_PER_PROC		0x00000400
+/* Unused			0x00000400*/
 #define S_F_HORIZONTALLY	0x00000800
 #define S_F_COMMENT		0x00001000
 #define S_F_PERSIST_NAME	0x00002000
@@ -99,7 +100,6 @@
 #define PRINT_SEC_EPOCH(m)		(((m) & S_F_SEC_EPOCH)    == S_F_SEC_EPOCH)
 #define DISPLAY_HDR_ONLY(m)		(((m) & S_F_HDR_ONLY)     == S_F_HDR_ONLY)
 #define FILE_LOCKED(m)			(((m) & S_F_FILE_LOCKED)  == S_F_FILE_LOCKED)
-#define WANT_PER_PROC(m)		(((m) & S_F_PER_PROC)     == S_F_PER_PROC)
 #define DISPLAY_HORIZONTALLY(m)		(((m) & S_F_HORIZONTALLY) == S_F_HORIZONTALLY)
 #define DISPLAY_COMMENT(m)		(((m) & S_F_COMMENT)      == S_F_COMMENT)
 #define DISPLAY_PERSIST_NAME_S(m)	(((m) & S_F_PERSIST_NAME) == S_F_PERSIST_NAME)
@@ -197,6 +197,7 @@
 #define NR_DISK_PREALLOC	3
 #define NR_FREQ_PREALLOC	0
 #define NR_USB_PREALLOC		5
+#define NR_FILESYSTEM_PREALLOC	3
 
 #define UTSNAME_LEN		65
 #define TIMESTAMP_LEN		16
@@ -428,9 +429,10 @@ struct activity {
 	unsigned int opt_flags;
 	/*
 	 * Buffers that will contain the statistics read. Its size is @nr * @size each.
-	 * [0]: used by sadc. Used by sar to save first collected stats (used later to
+	 * [0]: used by sadc.
+	 * [0] and [1]: current/previous statistics values (used by sar).
+	 * [2]: Used by sar to save first collected stats (used later to
 	 * compute average).
-	 * [1] and [2]: current/previous statistics values (used by sar).
 	 */
 	void *buf[3];
 	/*
@@ -650,7 +652,7 @@ struct record_header {
  * Macro functions definitions.
  *
  * Note: Using 'do ... while' makes the macros safer to use
- * (remember that macro use are followed by a semicolon).
+ * (remember that macro use is followed by a semicolon).
  ***************************************************************************
  */
 
@@ -706,6 +708,8 @@ extern __nr_t
 	wrap_get_freq_nr(struct activity *);
 extern __nr_t
 	wrap_get_usb_nr(struct activity *);
+extern __nr_t
+	wrap_get_filesystem_nr(struct activity *);
 	
 /* Functions used to read activities statistics */
 extern __read_funct_t
@@ -780,6 +784,8 @@ extern __read_funct_t
 	wrap_read_time_in_state(struct activity *);
 extern __read_funct_t
 	wrap_read_bus_usb_dev(struct activity *);
+extern __read_funct_t
+	wrap_read_filesystem(struct activity *);
 
 /* Other functions */
 extern void

@@ -1,6 +1,6 @@
 /*
  * rd_stats.h: Include file used to read system statistics
- * (C) 1999-2012 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _RD_STATS_H
@@ -27,8 +27,9 @@
 #define MAX_MANUF_LEN	24
 /* Maximum length of USB product string */
 #define MAX_PROD_LEN	48
+/* Maximum length of filesystem name */
+#define MAX_FS_LEN	72
 
-#define CNT_DEV		0
 #define CNT_PART	1
 #define CNT_ALL_DEV	0
 #define CNT_USED_DEV	1
@@ -56,6 +57,7 @@
 #define NET_SNMP	"/proc/net/snmp"
 #define NET_SNMP6	"/proc/net/snmp6"
 #define CPUINFO		"/proc/cpuinfo"
+#define MTAB		"/etc/mtab"
 
 
 /*
@@ -520,12 +522,26 @@ struct stats_pwr_usb {
 
 #define STATS_PWR_USB_SIZE	(sizeof(struct stats_pwr_usb))
 
+/* Structure for filesystems statistics */
+struct stats_filesystem {
+	unsigned long long f_blocks		__attribute__ ((aligned (16)));
+	unsigned long long f_bfree		__attribute__ ((aligned (16)));
+	unsigned long long f_bavail		__attribute__ ((aligned (16)));
+	unsigned long long f_files		__attribute__ ((aligned (16)));
+	unsigned long long f_ffree		__attribute__ ((aligned (16)));
+	char 		   fs_name[MAX_FS_LEN]	__attribute__ ((aligned (16)));
+};
+
+#define STATS_FILESYSTEM_SIZE	(sizeof(struct stats_filesystem))
+
 /*
  ***************************************************************************
  * Prototypes for functions used to read system statistics
  ***************************************************************************
  */
 
+extern void
+	oct2chr(char *);
 extern void
 	read_stat_cpu(struct stats_cpu *, int,
 		      unsigned long long *, unsigned long long *);
@@ -595,30 +611,7 @@ extern void
 	read_time_in_state(struct stats_pwr_wghfreq *, int, int);
 extern void
 	read_bus_usb_dev(struct stats_pwr_usb *, int);
-
-/*
- ***************************************************************************
- * Prototypes for functions used to count number of items
- ***************************************************************************
- */
-
-extern int
-	get_irq_nr(void);
-extern int
-	get_serial_nr(void);
-extern int
-	get_iface_nr(void);
-extern int
-	get_diskstats_dev_nr(int, int);
-extern int
-	get_disk_nr(unsigned int);
-extern int
-	get_cpu_nr(unsigned int);
-extern int
-	get_irqcpu_nr(char *, int, int);
-extern int
-	get_freq_nr(void);
-extern int
-	get_usb_nr(void);
+extern void
+	read_filesystem(struct stats_filesystem *, int);
 
 #endif /* _RD_STATS_H */

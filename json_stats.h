@@ -1,6 +1,6 @@
 /*
  * json_stats.h: Include file used to display system statistics in JSON format.
- * (C) 1999-2011 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _JSON_STATS_H
@@ -86,6 +86,8 @@ extern __print_funct_t json_print_huge_stats
 extern __print_funct_t json_print_pwr_wghfreq_stats
 	(struct activity *, int, int, unsigned long long);
 extern __print_funct_t json_print_pwr_usb_stats
+	(struct activity *, int, int, unsigned long long);
+extern __print_funct_t json_print_filesystem_stats
 	(struct activity *, int, int, unsigned long long);
 
 #endif /* _XML_STATS_H */

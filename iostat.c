@@ -38,6 +38,7 @@
 #include "common.h"
 #include "ioconf.h"
 #include "rd_stats.h"
+#include "count.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -1320,6 +1321,7 @@ int main(int argc, char **argv)
 	/* Process args... */
 	while (opt < argc) {
 
+		/* -p option used individually. See below for grouped use */
 		if (!strcmp(argv[opt], "-p")) {
 			flags |= I_D_PARTITIONS;
 			if (argv[++opt] &&
@@ -1455,6 +1457,11 @@ int main(int argc, char **argv)
 				case 'N':
 					/* Display device mapper logical name */
 					flags |= I_D_DEVMAP_NAME;
+					break;
+
+				case 'p':
+					/* If option -p is grouped then it cannot take an arg */
+					flags |= I_D_PARTITIONS + I_D_PART_ALL;
 					break;
 
 				case 'T':

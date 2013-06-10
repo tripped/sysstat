@@ -1,6 +1,6 @@
 /*
  * rndr_stats.h: Include file used to display system statistics in selected format.
- * (C) 1999-2011 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _RNDR_STATS_H
@@ -18,6 +18,7 @@
 #define PT_USEINT  0x0001	/* Use the integer arg, not double nor string */
 #define PT_NEWLIN  0x0002	/* Terminate the current output line */
 #define PT_USESTR  0x0004	/* Use the string arg */
+#define PT_USERND  0x0008	/* Double value, format %.0f */
 
 #define NOVAL      0		/* For placeholder zeros */
 #define DNOVAL     0.0		/* Wilma!  */
@@ -116,6 +117,8 @@ extern __print_funct_t render_huge_stats
 extern __print_funct_t render_pwr_wghfreq_stats
 	(struct activity *, int, char *, int, unsigned long long);
 extern __print_funct_t render_pwr_usb_stats
+	(struct activity *, int, char *, int, unsigned long long);
+extern __print_funct_t render_filesystem_stats
 	(struct activity *, int, char *, int, unsigned long long);
 
 #endif /* _RNDR_STATS_H */

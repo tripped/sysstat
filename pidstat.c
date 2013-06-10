@@ -35,6 +35,7 @@
 #include "pidstat.h"
 #include "common.h"
 #include "rd_stats.h"
+#include "count.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -2110,6 +2111,7 @@ int main(int argc, char **argv)
 			}
 		}
 		
+		/* Option used individually. See below for grouped option */
 		else if (!strcmp(argv[opt], "-U")) {
 			/* Display username instead of UID */
 			pidflag |= P_D_USERNAME;
@@ -2167,6 +2169,11 @@ int main(int argc, char **argv)
 					pidflag |= P_D_TID;
 					break;
 
+				case 'U':
+					/* When option is grouped, it cannot take an arg */
+					pidflag |= P_D_USERNAME;
+					break;
+					
 				case 'u':
 					/* Display CPU usage */
 					actflag |= P_A_CPU;

@@ -1,6 +1,6 @@
 /*
  * pr_stats.c: Functions used by sar to display statistics
- * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -2406,7 +2406,7 @@ void stub_print_pwr_usb_stats(struct activity *a, int curr, int dispavg)
 
 /*
  ***************************************************************************
- * Display memory and swap statistics.
+ * Display USB devices statistics.
  *
  * IN:
  * @a		Activity structure with statistics.
@@ -2423,7 +2423,7 @@ __print_funct_t print_pwr_usb_stats(struct activity *a, int prev, int curr,
 
 /*
  ***************************************************************************
- * Display average memory statistics.
+ * Display average USB devices statistics.
  *
  * IN:
  * @a		Activity structure with statistics.
@@ -2436,4 +2436,103 @@ __print_funct_t print_avg_pwr_usb_stats(struct activity *a, int prev, int curr,
 					unsigned long long itv)
 {
 	stub_print_pwr_usb_stats(a, 2, TRUE);
+}
+
+/*
+ ***************************************************************************
+ * Display filesystems statistics. This function is used to
+ * display instantaneous and average statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @dispavg	TRUE if displaying average statistics.
+ ***************************************************************************
+ */
+__print_funct_t stub_print_filesystem_stats(struct activity *a, int curr, int dispavg)
+{
+	int i, j;
+	struct stats_filesystem *sfc, *sfm;
+
+	
+	if (dis) {
+		printf("\n%-11s  MBfsfree  MBfsused   %%fsused  %%ufsused"
+		       "     Ifree     Iused    %%Iused FILESYSTEM\n",
+		       (dispavg ? _("Summary") : timestamp[!curr]));
+	}
+
+	for (i = 0; i < a->nr; i++) {
+		sfc = (struct stats_filesystem *) ((char *) a->buf[curr] + i * a->msize);
+			
+		if (!sfc->f_blocks)
+			/* Size of filesystem is null: We are at the end of the list */
+			break;
+			
+		printf("%-11s %9.0f %9.0f    %6.2f    %6.2f"
+		       " %9llu %9llu    %6.2f %s\n",
+		       (dispavg ? _("Summary") : timestamp[curr]),
+		       (double) sfc->f_bfree / 1024 / 1024,
+		       (double) (sfc->f_blocks - sfc->f_bfree) / 1024 / 1024,
+		       /* f_blocks is not null. But test it anyway ;-) */
+		       sfc->f_blocks ? SP_VALUE(sfc->f_bfree, sfc->f_blocks, sfc->f_blocks)
+				     : 0.0,
+		       sfc->f_blocks ? SP_VALUE(sfc->f_bavail, sfc->f_blocks, sfc->f_blocks)
+				     : 0.0,
+		       sfc->f_ffree,
+		       sfc->f_files - sfc->f_ffree,
+		       sfc->f_files ? SP_VALUE(sfc->f_ffree, sfc->f_files, sfc->f_files)
+				    : 0.0,
+		       sfc->fs_name);
+		
+		if (!dispavg) {
+			/* Save current filesystem in summary list */
+			for (j = 0; j < a->nr; j++) {
+				sfm = (struct stats_filesystem *) ((char *) a->buf[2] + j * a->msize);
+				
+				if (!strcmp(sfm->fs_name, sfc->fs_name) ||
+				    !sfm->f_blocks) {
+					/*
+					 * Filesystem found in list (then save again its stats)
+					 * or free slot (end of list).
+					 */
+					*sfm = *sfc;
+					break;
+				}
+			}
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display filesystems statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_filesystem_stats(struct activity *a, int prev, int curr,
+				       unsigned long long itv)
+{
+	stub_print_filesystem_stats(a, curr, FALSE);
+}
+
+/*
+ ***************************************************************************
+ * Display average filesystems statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_avg_filesystem_stats(struct activity *a, int prev, int curr,
+					   unsigned long long itv)
+{
+	stub_print_filesystem_stats(a, 2, TRUE);
 }

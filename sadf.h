@@ -1,6 +1,6 @@
 /*
  * sadf: System activity data formatter
- * (C) 1999-2012 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SADF_H
@@ -9,7 +9,7 @@
 #include "sa.h"
 
 /* DTD version for XML output */
-#define XML_DTD_VERSION	"2.15"
+#define XML_DTD_VERSION	"2.16"
 
 /* Possible actions for functions used to display reports */
 #define F_BEGIN	0x01
@@ -39,7 +39,6 @@
  */
 
 /* Format options */
-#define FO_NULL			0x00
 
 /*
  * Indicate that all statistics data for one activity should be displayed before

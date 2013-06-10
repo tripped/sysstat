@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2012 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2013 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -1250,7 +1250,6 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			select_all_activities(act);
 
 			/* Force '-P ALL -I XALL' */
-			*flags |= S_F_PER_PROC;
 
 			p = get_activity_position(act, A_MEMORY);
 			act[p]->opt_flags |= AO_F_MEM_AMT + AO_F_MEM_DIA +
@@ -1282,6 +1281,10 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			SELECT_ACTIVITY(A_DISK);
 			break;
 
+		case 'F':
+			SELECT_ACTIVITY(A_FILESYSTEM);
+			break;
+			
 		case 'H':
 			p = get_activity_position(act, A_HUGE);
 			act[p]->options   |= AO_SELECTED;
@@ -1342,7 +1345,7 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			/*
 			 * Check sar option -t here (as it can be combined
 			 * with other ones, eg. "sar -rtu ..."
-			 * But sadf option -t is check in sadf.c as it won't
+			 * But sadf option -t is checked in sadf.c as it won't
 			 * be entered as a sar option after "--".
 			 */
 			if (caller == C_SAR) {
@@ -1632,7 +1635,6 @@ int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags, struct activity 
 	p = get_activity_position(act, A_CPU);
 
 	if (argv[++(*opt)]) {
-		*flags |= S_F_PER_PROC;
 
 		for (t = strtok(argv[*opt], ","); t; t = strtok(NULL, ",")) {
 			if (!strcmp(t, K_ALL)) {

@@ -4,7 +4,7 @@ Subject: 02-sargraph
 
 Fix paths in sargraph script
 ---
- contrib/sargraph/sargraph |    8 ++++----
+ contrib/sargraph/sargraph | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/contrib/sargraph/sargraph b/contrib/sargraph/sargraph

@@ -4,11 +4,11 @@ Subject: 08-scripts
 
 Minor sa2 script fixes.
 ---
- sa2.in |    2 +-
+ sa2.in | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/sa2.in b/sa2.in
-index 9f5fa5a..a41ed5f 100644
+index f376fe3..847f39a 100644
 --- a/sa2.in
 +++ b/sa2.in
 @@ -49,7 +49,7 @@ DFILE=${CURRENTDIR}/${CURRENTFILE}

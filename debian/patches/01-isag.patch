@@ -4,9 +4,9 @@ Subject: 01-isag
 
 Fix paths and typos in isag script and man page.
 ---
- contrib/isag/README-isag |    2 +-
- contrib/isag/isag.1      |    4 ++--
- contrib/isag/isag.in     |    4 ++--
+ contrib/isag/README-isag | 2 +-
+ contrib/isag/isag.1      | 4 ++--
+ contrib/isag/isag.in     | 4 ++--
  3 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/contrib/isag/README-isag b/contrib/isag/README-isag

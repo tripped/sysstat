@@ -4,8 +4,8 @@ Subject: 04-configs
 
 Minor fixes in config files.
 ---
- cron/crontab.sample  |    3 ---
- sysstat.sysconfig.in |    9 ++++++---
+ cron/crontab.sample  | 3 ---
+ sysstat.sysconfig.in | 9 ++++++---
  2 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/cron/crontab.sample b/cron/crontab.sample

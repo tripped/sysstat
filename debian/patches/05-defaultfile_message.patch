@@ -5,11 +5,11 @@ Subject: 05-defaultfile_message
 If sar cannot open a data file, print a message indicating that sysstat
 might not be enabled (closes: #511418).
 ---
- sa_common.c |    7 +++++++
+ sa_common.c | 7 +++++++
  1 file changed, 7 insertions(+)
 
 diff --git a/sa_common.c b/sa_common.c
-index 67c55db..b546c04 100644
+index fd0e19e..eda7d0e 100644
 --- a/sa_common.c
 +++ b/sa_common.c
 @@ -44,6 +44,7 @@

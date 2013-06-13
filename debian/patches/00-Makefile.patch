@@ -4,11 +4,11 @@ Subject: 00-Makefile
 
 Makefile fixes.
 ---
- Makefile.in |   42 ++++++++++++++++++++++--------------------
+ Makefile.in | 42 ++++++++++++++++++++++--------------------
  1 file changed, 22 insertions(+), 20 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index e7f78a5..ecaed14 100644
+index b3ef58a..62dff87 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
@@ -23,7 +23,7 @@ index e7f78a5..ecaed14 100644
  DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
  DFLAGS += $(DFSENSORS)
  
-@@ -243,8 +243,9 @@ else
+@@ -245,8 +245,9 @@ else
  locales:
  endif
  
@@ -35,7 +35,7 @@ index e7f78a5..ecaed14 100644
  
  # Phony targets
  .PHONY: clean distclean install install_base install_all uninstall \
-@@ -277,9 +278,6 @@ ifeq ($(INSTALL_DOC),y)
+@@ -279,9 +280,6 @@ ifeq ($(INSTALL_DOC),y)
  	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat.1 $(DESTDIR)$(MAN1_DIR)
  	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
  	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
@@ -45,7 +45,7 @@ index e7f78a5..ecaed14 100644
  ifeq ($(COMPRESS_MANPG),y)
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
-@@ -310,8 +308,15 @@ ifdef REQUIRE_NLS
+@@ -312,8 +310,15 @@ ifdef REQUIRE_NLS
  	done
  endif
  
@@ -63,7 +63,7 @@ index e7f78a5..ecaed14 100644
  	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
  	mkdir -p $(DESTDIR)$(SA_DIR)
  ifeq ($(CLEAN_SA_DIR),y)
-@@ -320,7 +325,7 @@ ifeq ($(CLEAN_SA_DIR),y)
+@@ -322,7 +327,7 @@ ifeq ($(CLEAN_SA_DIR),y)
  	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
  endif
  	mkdir -p $(DESTDIR)$(BIN_DIR)
@@ -72,7 +72,7 @@ index e7f78a5..ecaed14 100644
  	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
  	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
-@@ -332,18 +337,15 @@ endif
+@@ -334,18 +339,15 @@ endif
  	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) nfsiostat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
@@ -97,7 +97,7 @@ index e7f78a5..ecaed14 100644
  endif
  
  install_all: install_base cron/crontab sysstat \
-@@ -490,7 +492,7 @@ clean:
+@@ -492,7 +494,7 @@ clean:
  	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat *.o *.a core TAGS
  	find nls -name "*.gmo" -exec rm -f {} \;
  

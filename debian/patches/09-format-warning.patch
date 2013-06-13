@@ -4,11 +4,11 @@ Subject: 09-format-warning
 
 Fix a warning given by gcc -Wformat.
 ---
- rndr_stats.c |    6 +-----
+ rndr_stats.c | 6 +-----
  1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/rndr_stats.c b/rndr_stats.c
-index 4195103..0fb139d 100644
+index 280a0c2..a269e2a 100644
 --- a/rndr_stats.c
 +++ b/rndr_stats.c
 @@ -133,11 +133,7 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,

@@ -6,14 +6,14 @@ Merge the following change from Ubuntu:
     - remove call to execvp() as it's not needed and has potential
       security problems.
 ---
- sar.c |    1 -
+ sar.c | 1 -
  1 file changed, 1 deletion(-)
 
 diff --git a/sar.c b/sar.c
-index e8ad83e..b3b890c 100644
+index 06b4591..5cb256b 100644
 --- a/sar.c
 +++ b/sar.c
-@@ -1433,7 +1433,6 @@ int main(int argc, char **argv)
+@@ -1434,7 +1434,6 @@ int main(int argc, char **argv)
  
  		/* Call now the data collector */
  		execv(SADC_PATH, args);

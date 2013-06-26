@@ -1,0 +1,23 @@
+From: Louis Bouchard <louis.bouchard@ubuntu.com>
+Date: Tue, 25 June 2013 16:23:14 +0200
+Subject: 11-fix-concurrency-build-issue.patch
+
+Extend explicit rules to avoid build issues occurring
+during parallel build
+---
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -202,9 +202,11 @@
+ libsyscom.a: common.o ioconf.o
+ 	$(AR) rvs $@ $?
+ 
+-librdstats.a: librdstats.a(rd_stats.o count.o)
++librdstats.a: rd_stats.o count.o
++	$(AR) rvs $@ $?
+ 
+-librdsensors.a: librdsensors.a(rd_sensors.o)
++librdsensors.a: rd_sensors.o
++	$(AR) rvs $@ $?
+ 
+ sadc.o: sadc.c sa.h version.h common.h ioconf.h sysconfig.h rd_stats.h rd_sensors.h
+ 

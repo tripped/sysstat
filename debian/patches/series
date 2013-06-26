@@ -8,3 +8,4 @@
 08-scripts.patch
 09-format-warning.patch
 10-isag-menu-refresh.patch
+11-fix-concurrency-build-issue.patch

@@ -1,3 +1,10 @@
+sysstat (10.1.6-1ubuntu1) saucy; urgency=low
+
+  * New 11-fix-concurrency-build-issue.patch: Extend explicit rules 
+    to avoid build issues occurring during parallel build (closes: #714153).
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Wed, 26 Jun 2013 09:50:37 +0100
+
 sysstat (10.1.6-1) unstable; urgency=low
 
   * New upstream version.

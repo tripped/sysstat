@@ -236,7 +236,7 @@ int ioc_init(void)
 			   desc);
 
 		if (i != 9) {
-			fprintf(stderr, "%s: Malformed %d field record: %s\n",
+			fprintf(stderr, "%s: Malformed %u field record: %s\n",
 				ioconf_name, i, buf);
 			continue;
 		}
@@ -340,10 +340,8 @@ int ioc_init(void)
 	 * after IOC_ALLOC( blkp->desc ... ).
 	 * Right now, we don't.
 	 */
-	if (blkp != NULL)
-		free(blkp);
-	if (iocp != NULL)
-		free(iocp);
+	free(blkp);
+	free(iocp);
 
 	/* Indicate that ioconf file has been parsed */
 	ioc_parsed = 1;

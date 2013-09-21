@@ -415,7 +415,7 @@ struct activity disk_act = {
 struct activity net_dev_act = {
 	.id		= A_NET_DEV,
 	.options	= AO_COLLECTED,
-	.magic		= ACTIVITY_MAGIC_BASE + 1,
+	.magic		= ACTIVITY_MAGIC_BASE + 2,
 	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_iface_nr,
@@ -430,7 +430,7 @@ struct activity net_dev_act = {
 	.f_render	= render_net_dev_stats,
 	.f_xml_print	= xml_print_net_dev_stats,
 	.f_json_print	= json_print_net_dev_stats,
-	.hdr_line	= "IFACE;rxpck/s;txpck/s;rxkB/s;txkB/s;rxcmp/s;txcmp/s;rxmcst/s",
+	.hdr_line	= "IFACE;rxpck/s;txpck/s;rxkB/s;txkB/s;rxcmp/s;txcmp/s;rxmcst/s;%ifutil",
 	.name		= "A_NET_DEV",
 #endif
 	.nr		= -1,
@@ -1200,7 +1200,7 @@ struct activity filesystem_act = {
 	.id		= A_FILESYSTEM,
 	.options	= AO_NULL,
 	.magic		= ACTIVITY_MAGIC_BASE,
-	.group		= G_DISK,
+	.group		= G_XDISK,
 #ifdef SOURCE_SADC
 	.f_count	= wrap_get_filesystem_nr,
 	.f_count2	= NULL,
@@ -1214,7 +1214,7 @@ struct activity filesystem_act = {
 	.f_render	= render_filesystem_stats,
 	.f_xml_print	= xml_print_filesystem_stats,
 	.f_json_print	= json_print_filesystem_stats,
-	.hdr_line	= "FILESYSTEM,MBfsfree;MBfsused;%fsused;%ufsused;Ifree;Iused;%Iused",
+	.hdr_line	= "FILESYSTEM;MBfsfree;MBfsused;%fsused;%ufsused;Ifree;Iused;%Iused",
 	.name		= "A_FILESYSTEM",
 #endif
 	.nr		= -1,

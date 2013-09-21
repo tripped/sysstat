@@ -176,6 +176,7 @@
 #define G_SNMP		0x04
 #define G_IPV6		0x08
 #define G_POWER		0x10
+#define G_XDISK		0x20
 
 /* sadc program */
 #define SADC		"sadc"
@@ -802,6 +803,8 @@ extern unsigned int
 	check_net_dev_reg(struct activity *, int, int, unsigned int);
 extern unsigned int
 	check_net_edev_reg(struct activity *, int, int, unsigned int);
+extern double
+	compute_ifutil(struct stats_net_dev *, double, double);
 extern void
 	copy_structures(struct activity * [], unsigned int [],
 			struct record_header [], int, int);

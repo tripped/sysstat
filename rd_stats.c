@@ -44,42 +44,6 @@
 
 /*
  ***************************************************************************
- * Replace octal codes in string with their corresponding characters.
- *
- * IN:
- * @str		String to parse.
- *
- * OUT:
- * @str		String with octal codes replaced with characters.
- ***************************************************************************
- */
-void oct2chr(char *str)
-{
-	int i = 0;
-	int j, len;
-	
-	len = strlen(str);
-	
-	while (i < len - 3) {
-		if ((str[i] == '\\') &&
-		    (str[i + 1] >= '0') && (str[i + 1] <= '3') &&
-		    (str[i + 2] >= '0') && (str[i + 2] <= '7') &&
-		    (str[i + 3] >= '0') && (str[i + 3] <= '7')) {
-			/* Octal code found */
-			str[i] = (str[i + 1] - 48) * 64 +
-			         (str[i + 2] - 48) * 8  +
-			         (str[i + 3] - 48);
-			for (j = i + 4; j <= len; j++) {
-				str[j - 3] = str[j];
-			}
-			len -= 3;
-		}
-		i++;
-	}
-}
-
-/*
- ***************************************************************************
  * Read CPU statistics and machine uptime.
  *
  * IN:
@@ -200,42 +164,6 @@ void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
 
 /*
  ***************************************************************************
- * Read processes (tasks) creation and context switches statistics
- * from /proc/stat.
- *
- * IN:
- * @st_pcsw	Structure where stats will be saved.
- *
- * OUT:
- * @st_pcsw	Structure with statistics.
- ***************************************************************************
- */
-void read_stat_pcsw(struct stats_pcsw *st_pcsw)
-{
-	FILE *fp;
-	char line[8192];
-
-	if ((fp = fopen(STAT, "r")) == NULL)
-		return;
-
-	while (fgets(line, 8192, fp) != NULL) {
-
-		if (!strncmp(line, "ctxt ", 5)) {
-			/* Read number of context switches */
-			sscanf(line + 5, "%llu", &st_pcsw->context_switch);
-		}
-
-		else if (!strncmp(line, "processes ", 10)) {
-			/* Read number of processes created since system boot */
-			sscanf(line + 10, "%lu", &st_pcsw->processes);
-		}
-	}
-
-	fclose(fp);
-}
-
-/*
- ***************************************************************************
  * Read interrupts statistics from /proc/stat.
  *
  * IN:
@@ -269,61 +197,6 @@ void read_stat_irq(struct stats_irq *st_irq, int nbr)
 				sscanf(line + pos, " %llu", &st_irq_i->irq_nr);
 				pos += strcspn(line + pos + 1, " ") + 1;
 			}
-		}
-	}
-
-	fclose(fp);
-}
-
-/*
- ***************************************************************************
- * Read queue and load statistics from /proc/loadavg and /proc/stat.
- *
- * IN:
- * @st_queue	Structure where stats will be saved.
- *
- * OUT:
- * @st_queue	Structure with statistics.
- ***************************************************************************
- */
-void read_loadavg(struct stats_queue *st_queue)
-{
-	FILE *fp;
-	char line[8192];
-	int load_tmp[3];
-
-	if ((fp = fopen(LOADAVG, "r")) == NULL)
-		return;
-	
-	/* Read load averages and queue length */
-	fscanf(fp, "%d.%d %d.%d %d.%d %ld/%d %*d\n",
-	       &load_tmp[0], &st_queue->load_avg_1,
-	       &load_tmp[1], &st_queue->load_avg_5,
-	       &load_tmp[2], &st_queue->load_avg_15,
-	       &st_queue->nr_running,
-	       &st_queue->nr_threads);
-
-	fclose(fp);
-
-	st_queue->load_avg_1  += load_tmp[0] * 100;
-	st_queue->load_avg_5  += load_tmp[1] * 100;
-	st_queue->load_avg_15 += load_tmp[2] * 100;
-
-	if (st_queue->nr_running) {
-		/* Do not take current process into account */
-		st_queue->nr_running--;
-	}
-
-	/* Read nr of tasks blocked from /proc/stat */
-	if ((fp = fopen(STAT, "r")) == NULL)
-		return;
-
-	while (fgets(line, 8192, fp) != NULL) {
-
-		if (!strncmp(line, "procs_blocked ", 14)) {
-			/* Read number of processes blocked */
-			sscanf(line + 14, "%lu", &st_queue->procs_blocked);
-			break;
 		}
 	}
 
@@ -394,6 +267,166 @@ void read_meminfo(struct stats_memory *st_memory)
 		else if (!strncmp(line, "Committed_AS:", 13)) {
 			/* Read the amount of commited memory in kB */
 			sscanf(line + 13, "%lu", &st_memory->comkb);
+		}
+	}
+
+	fclose(fp);
+}
+
+/*
+ ***************************************************************************
+ * Read machine uptime, independently of the number of processors.
+ *
+ * OUT:
+ * @uptime	Uptime value in jiffies.
+ ***************************************************************************
+ */
+void read_uptime(unsigned long long *uptime)
+{
+	FILE *fp;
+	char line[128];
+	unsigned long up_sec, up_cent;
+
+	if ((fp = fopen(UPTIME, "r")) == NULL)
+		return;
+
+	if (fgets(line, 128, fp) == NULL) {
+		fclose(fp);
+		return;
+	}
+
+	sscanf(line, "%lu.%lu", &up_sec, &up_cent);
+	*uptime = (unsigned long long) up_sec * HZ +
+	          (unsigned long long) up_cent * HZ / 100;
+
+	fclose(fp);
+
+}
+
+#ifdef SOURCE_SADC
+/*---------------- BEGIN: FUNCTIONS USED BY SADC ONLY ---------------------*/
+
+/*
+ ***************************************************************************
+ * Replace octal codes in string with their corresponding characters.
+ *
+ * IN:
+ * @str		String to parse.
+ *
+ * OUT:
+ * @str		String with octal codes replaced with characters.
+ ***************************************************************************
+ */
+void oct2chr(char *str)
+{
+	int i = 0;
+	int j, len;
+	
+	len = strlen(str);
+	
+	while (i < len - 3) {
+		if ((str[i] == '\\') &&
+		    (str[i + 1] >= '0') && (str[i + 1] <= '3') &&
+		    (str[i + 2] >= '0') && (str[i + 2] <= '7') &&
+		    (str[i + 3] >= '0') && (str[i + 3] <= '7')) {
+			/* Octal code found */
+			str[i] = (str[i + 1] - 48) * 64 +
+			         (str[i + 2] - 48) * 8  +
+			         (str[i + 3] - 48);
+			for (j = i + 4; j <= len; j++) {
+				str[j - 3] = str[j];
+			}
+			len -= 3;
+		}
+		i++;
+	}
+}
+
+/*
+ ***************************************************************************
+ * Read processes (tasks) creation and context switches statistics
+ * from /proc/stat.
+ *
+ * IN:
+ * @st_pcsw	Structure where stats will be saved.
+ *
+ * OUT:
+ * @st_pcsw	Structure with statistics.
+ ***************************************************************************
+ */
+void read_stat_pcsw(struct stats_pcsw *st_pcsw)
+{
+	FILE *fp;
+	char line[8192];
+
+	if ((fp = fopen(STAT, "r")) == NULL)
+		return;
+
+	while (fgets(line, 8192, fp) != NULL) {
+
+		if (!strncmp(line, "ctxt ", 5)) {
+			/* Read number of context switches */
+			sscanf(line + 5, "%llu", &st_pcsw->context_switch);
+		}
+
+		else if (!strncmp(line, "processes ", 10)) {
+			/* Read number of processes created since system boot */
+			sscanf(line + 10, "%lu", &st_pcsw->processes);
+		}
+	}
+
+	fclose(fp);
+}
+
+/*
+ ***************************************************************************
+ * Read queue and load statistics from /proc/loadavg and /proc/stat.
+ *
+ * IN:
+ * @st_queue	Structure where stats will be saved.
+ *
+ * OUT:
+ * @st_queue	Structure with statistics.
+ ***************************************************************************
+ */
+void read_loadavg(struct stats_queue *st_queue)
+{
+	FILE *fp;
+	char line[8192];
+	int load_tmp[3];
+
+	if ((fp = fopen(LOADAVG, "r")) == NULL)
+		return;
+	
+	/* Read load averages and queue length */
+	fscanf(fp, "%d.%d %d.%d %d.%d %ld/%d %*d\n",
+	       &load_tmp[0], &st_queue->load_avg_1,
+	       &load_tmp[1], &st_queue->load_avg_5,
+	       &load_tmp[2], &st_queue->load_avg_15,
+	       &st_queue->nr_running,
+	       &st_queue->nr_threads);
+
+	fclose(fp);
+
+	st_queue->load_avg_1  += load_tmp[0] * 100;
+	st_queue->load_avg_5  += load_tmp[1] * 100;
+	st_queue->load_avg_15 += load_tmp[2] * 100;
+
+	if (st_queue->nr_running) {
+		/* Do not take current process into account */
+		st_queue->nr_running--;
+	}
+
+	/* Read nr of tasks blocked from /proc/stat */
+	if ((fp = fopen(STAT, "r")) == NULL)
+		return;
+
+	while (fgets(line, 8192, fp) != NULL) {
+
+		if (!strncmp(line, "procs_blocked ", 14)) {
+			/* Read number of processes blocked */
+			sscanf(line + 14, "%lu", &st_queue->procs_blocked);
+			break;
 		}
 	}
 
@@ -726,9 +759,12 @@ void read_kernel_tables(struct stats_ktables *st_ktables)
  *
  * OUT:
  * @st_net_dev	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of interfaces for which stats have been read.
  ***************************************************************************
  */
-void read_net_dev(struct stats_net_dev *st_net_dev, int nbr)
+int read_net_dev(struct stats_net_dev *st_net_dev, int nbr)
 {
 	FILE *fp;
 	struct stats_net_dev *st_net_dev_i;
@@ -738,7 +774,7 @@ void read_net_dev(struct stats_net_dev *st_net_dev, int nbr)
 	int pos;
 
 	if ((fp = fopen(NET_DEV, "r")) == NULL)
-		return;
+		return 0;
 	
 	while ((fgets(line, 256, fp) != NULL) && (dev < nbr)) {
 
@@ -762,7 +798,70 @@ void read_net_dev(struct stats_net_dev *st_net_dev, int nbr)
 	}
 
 	fclose(fp);
+	
+	return dev;
 }
+
+/*
+ ***************************************************************************
+ * Read duplex and speed data for network interface cards.
+ *
+ * IN:
+ * @st_net_dev	Structure where stats will be saved.
+ * @nbr		Real number of network interfaces available.
+ *
+ * OUT:
+ * @st_net_dev	Structure with statistics.
+ ***************************************************************************
+ */
+void read_if_info(struct stats_net_dev *st_net_dev, int nbr)
+{
+	FILE *fp;
+	struct stats_net_dev *st_net_dev_i;
+	char filename[128], duplex[32];
+	int dev, n;
+	
+	for (dev = 0; dev < nbr; dev++) {
+		
+		st_net_dev_i = st_net_dev + dev;
+		
+		/* Read speed info */
+		sprintf(filename, IF_DUPLEX, st_net_dev_i->interface);
+		
+		if ((fp = fopen(filename, "r")) == NULL)
+			/* Cannot read NIC duplex */
+			continue;
+		
+		n = fscanf(fp, "%s", duplex);
+		
+		fclose(fp);
+		
+		if (n != 1)
+			/* Cannot read NIC duplex */
+			continue;
+		
+		if (!strcmp(duplex, K_DUPLEX_FULL)) {
+			st_net_dev_i->duplex = C_DUPLEX_FULL;
+		}
+		else if (!strcmp(duplex, K_DUPLEX_HALF)) {
+			st_net_dev_i->duplex = C_DUPLEX_HALF;
+		}
+		else
+			continue;
+		
+		/* Read speed info */
+		sprintf(filename, IF_SPEED, st_net_dev_i->interface);
+		
+		if ((fp = fopen(filename, "r")) == NULL)
+			/* Cannot read NIC speed */
+			continue;
+		
+		fscanf(fp, "%u", &st_net_dev_i->speed);
+		
+		fclose(fp);
+	}
+}
+
 
 /*
  ***************************************************************************
@@ -1946,32 +2045,5 @@ void read_filesystem(struct stats_filesystem *st_filesystem, int nbr)
 	fclose(fp);
 }
 
-/*
- ***************************************************************************
- * Read machine uptime, independently of the number of processors.
- *
- * OUT:
- * @uptime	Uptime value in jiffies.
- ***************************************************************************
- */
-void read_uptime(unsigned long long *uptime)
-{
-	FILE *fp;
-	char line[128];
-	unsigned long up_sec, up_cent;
-
-	if ((fp = fopen(UPTIME, "r")) == NULL)
-		return;
-
-	if (fgets(line, 128, fp) == NULL) {
-		fclose(fp);
-		return;
-	}
-
-	sscanf(line, "%lu.%lu", &up_sec, &up_cent);
-	*uptime = (unsigned long long) up_sec * HZ +
-	          (unsigned long long) up_cent * HZ / 100;
-
-	fclose(fp);
-
-}
+/*------------------ END: FUNCTIONS USED BY SADC ONLY ---------------------*/
+#endif /* SOURCE_SADC */

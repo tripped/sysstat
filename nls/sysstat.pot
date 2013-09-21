@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: sysstat <at> orange.fr\n"
-"POT-Creation-Date: 2013-06-08 09:01+0200\n"
+"POT-Creation-Date: 2013-09-13 09:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -43,12 +43,12 @@ msgid ""
 "[ <device> [...] | ALL ]\n"
 msgstr ""
 
-#: iostat.c:330
+#: iostat.c:328
 #, c-format
 msgid "Cannot find disk data\n"
 msgstr ""
 
-#: iostat.c:1394 sa_common.c:1303
+#: iostat.c:1385 sa_common.c:1303
 #, c-format
 msgid "Invalid type of persistent device name\n"
 msgstr ""
@@ -91,23 +91,23 @@ msgid ""
 "[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"
 msgstr ""
 
-#: sadc.c:250
+#: sadc.c:258
 #, c-format
 msgid "Cannot write data to system activity file: %s\n"
 msgstr ""
 
-#: sadc.c:537
+#: sadc.c:545
 #, c-format
 msgid "Cannot write system activity file header: %s\n"
 msgstr ""
 
-#: sadc.c:650 sadc.c:659 sadc.c:720 ioconf.c:491 rd_stats.c:105
-#: sa_common.c:1109 count.c:275
+#: sadc.c:658 sadc.c:667 sadc.c:728 ioconf.c:489 rd_stats.c:69
+#: sa_common.c:1109 count.c:105
 #, c-format
 msgid "Cannot open %s: %s\n"
 msgstr ""
 
-#: sadc.c:842
+#: sadc.c:850
 #, c-format
 msgid "Cannot append data to that file (%s)\n"
 msgstr ""
@@ -139,11 +139,11 @@ msgid ""
 "[ -P { <cpu> [,...] | ON | ALL } ]\n"
 msgstr ""
 
-#: mpstat.c:609 sar.c:402 pidstat.c:1857
+#: mpstat.c:598 sar.c:402 pidstat.c:1857
 msgid "Average:"
 msgstr ""
 
-#: mpstat.c:976
+#: mpstat.c:963
 #, c-format
 msgid "Not that many processors!\n"
 msgstr ""
@@ -320,22 +320,22 @@ msgstr ""
 msgid "Inconsistent input data\n"
 msgstr ""
 
-#: sar.c:1034 pidstat.c:216
+#: sar.c:1032 pidstat.c:214
 #, c-format
 msgid "Requested activities not available\n"
 msgstr ""
 
-#: sar.c:1304
+#: sar.c:1302
 #, c-format
 msgid "-f and -o options are mutually exclusive\n"
 msgstr ""
 
-#: sar.c:1310
+#: sar.c:1308
 #, c-format
 msgid "Not reading from a system activity file (use -f option)\n"
 msgstr ""
 
-#: sar.c:1442
+#: sar.c:1440
 #, c-format
 msgid "Cannot find the data collector (%s)\n"
 msgstr ""
@@ -381,15 +381,15 @@ msgid ""
 "[ -T { TASK | CHILD | ALL } ]\n"
 msgstr ""
 
-#: count.c:321
+#: count.c:151
 #, c-format
 msgid "Cannot handle so many processors!\n"
 msgstr ""
 
-#: pr_stats.c:2348 pr_stats.c:2361 pr_stats.c:2461 pr_stats.c:2473
+#: pr_stats.c:2355 pr_stats.c:2368 pr_stats.c:2468 pr_stats.c:2480
 msgid "Summary"
 msgstr ""
 
-#: pr_stats.c:2399
+#: pr_stats.c:2406
 msgid "Other devices not listed here"
 msgstr ""

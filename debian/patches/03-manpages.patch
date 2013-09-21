@@ -10,7 +10,7 @@ to explain source of common problems (closes: #279049, #269712).
  2 files changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/man/sa1.in b/man/sa1.in
-index 7bd2b58..2be07b9 100644
+index 8e37020..2f77d41 100644
 --- a/man/sa1.in
 +++ b/man/sa1.in
 @@ -49,7 +49,11 @@ To collect data (including those from disks) every 10 minutes,
@@ -27,13 +27,13 @@ index 7bd2b58..2be07b9 100644
  .IR @SA_DIR@/sa dd
  .RS
 diff --git a/man/sa2.in b/man/sa2.in
-index 2f688e3..7260cfe 100644
+index 4146656..0e14621 100644
 --- a/man/sa2.in
 +++ b/man/sa2.in
-@@ -30,6 +30,11 @@ command daily, place the following entry in your root or adm crontab file:
+@@ -36,6 +36,11 @@ command daily, place the following entry in your root crontab file:
+ 
  This will generate a daily report called
- .IR @SA_DIR@/sar dd
- It will also remove reports more than one week old.
+ .IR @SA_DIR@/sar dd.
 +.SS Debian note
 +The Debian sysstat package has already placed such an entry in your system crontab.
 +Please refer to the

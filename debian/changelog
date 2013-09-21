@@ -1,3 +1,10 @@
+sysstat (10.1.7-1) unstable; urgency=low
+
+  * New upstream version.
+  * Remove no longer needed 11-fix-concurrency-build-issue.patch.
+
+ -- Robert Luberda <robert@debian.org>  Sat, 21 Sep 2013 22:27:45 +0200
+
 sysstat (10.1.6-2) unstable; urgency=low
 
   [ Louis Bouchard ]

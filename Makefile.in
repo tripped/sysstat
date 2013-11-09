@@ -199,7 +199,7 @@ xml_stats.o: xml_stats.c sa.h sadf.h ioconf.h sysconfig.h xml_stats.h
 
 json_stats.o: json_stats.c sa.h sadf.h ioconf.h sysconfig.h json_stats.h
 
-sa_wrap.o: sa_wrap.c sa.h rd_stats.h count.h rd_sensors.h
+sa_wrap.o: sa_wrap.c sa.h rd_stats.h count.h rd_sensors.h prealloc.h
 
 format.o: format.c sadf.h
 
@@ -263,7 +263,7 @@ nls/sysstat.pot: $(wildcard *.c)
 
 # Phony targets
 .PHONY: clean distclean install install_base install_all uninstall \
-	uninstall_base uninstall_all dist bdist gitdist
+	uninstall_base uninstall_all dist bdist xdist gitdist
 
 install_man: man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/sysstat.5
 ifeq ($(INSTALL_DOC),y)
@@ -506,7 +506,7 @@ clean:
 	find nls -name "*.gmo" -exec rm -f {} \;
 
 almost-distclean: clean nls/sysstat.pot
-	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h
+	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h prealloc.h
 	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily sysstat.service
 	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in
 	rm -f contrib/isag/isag
@@ -528,6 +528,9 @@ dist: almost-distclean
 
 bdist: almost-distclean
 	cd .. && (tar --exclude=Makefile --exclude=.git -cvf - sysstat-$(VERSION) | bzip2 > sysstat-$(VERSION).tar.bz2)
+
+xdist: almost-distclean
+	cd .. && (tar --exclude=Makefile --exclude=.git -cvf - sysstat-$(VERSION) | xz > sysstat-$(VERSION).tar.xz)
 
 gitdist: almost-distclean
 	cd .. && (tar --exclude=Makefile -cvf - sysstat-$(VERSION) | bzip2 > sysstat-$(VERSION)-git.tar.bz2)

@@ -798,6 +798,10 @@ void rw_mpstat_loop(int dis_hdr, int rows)
 	sigaction(SIGINT, &int_act, NULL);
 
 	pause();
+	
+	if (sigint_caught)
+		/* SIGINT signal caught during first interval: Exit immediately */
+		return;
 
 	do {
 		/*
@@ -888,8 +892,8 @@ int main(int argc, char **argv)
 	/* Get HZ */
 	get_HZ();
 
-	/* How many processors on this machine ? */
-	cpu_nr = get_cpu_nr(~0);
+	/* What is the highest processor number on this machine? */
+	cpu_nr = get_cpu_nr(~0, TRUE);
 	
 	/* Calculate number of interrupts per processor */
 	irqcpu_nr = get_irqcpu_nr(INTERRUPTS, NR_IRQS, cpu_nr) +
@@ -1062,7 +1066,7 @@ int main(int argc, char **argv)
 	/* Get system name, release number and hostname */
 	uname(&header);
 	print_gal_header(&(mp_tstamp[0]), header.sysname, header.release,
-			 header.nodename, header.machine, cpu_nr);
+			 header.nodename, header.machine, get_cpu_nr(~0, FALSE));
 
 	/* Main loop */
 	rw_mpstat_loop(dis_hdr, rows);

@@ -46,19 +46,24 @@
  ***************************************************************************
  * Count number of processors in /sys.
  *
+ * IN:
+ * @highest	If set to TRUE, then look for the highest processor number.
+ * 		This is used when eg. the machine has 4 CPU numbered 0, 1, 4
+ *		and 5. In this case, this procedure will return 6.
+ * 
  * RETURNS:
  * Number of processors (online and offline).
  * A value of 0 means that /sys was not mounted.
  * A value of N (!=0) means N processor(s) (cpu0 .. cpu(N-1)).
  ***************************************************************************
  */
-int get_sys_cpu_nr(void)
+int get_sys_cpu_nr(int highest)
 {
 	DIR *dir;
 	struct dirent *drd;
 	struct stat buf;
 	char line[MAX_PF_NAME];
-	int proc_nr = 0;
+	int num_proc, proc_nr = -1;
 
 	/* Open relevant /sys directory */
 	if ((dir = opendir(SYSFS_DEVCPU)) == NULL)
@@ -73,7 +78,15 @@ int get_sys_cpu_nr(void)
 			if (stat(line, &buf) < 0)
 				continue;
 			if (S_ISDIR(buf.st_mode)) {
-				proc_nr++;
+				if (highest) {
+					sscanf(drd->d_name + 3, "%d", &num_proc);
+					if (num_proc > proc_nr) {
+						proc_nr = num_proc;
+					}
+				}
+				else {
+					proc_nr++;
+				}
 			}
 		}
 	}
@@ -81,7 +94,7 @@ int get_sys_cpu_nr(void)
 	/* Close directory */
 	closedir(dir);
 
-	return proc_nr;
+	return (proc_nr + 1);
 }
 
 /*
@@ -123,11 +136,15 @@ int get_proc_cpu_nr(void)
 
 /*
  ***************************************************************************
- * Count the number of processors on the machine.
+ * Count the number of processors on the machine, or look for the
+ * highest processor number.
  * Try to use /sys for that, or /proc/stat if /sys doesn't exist.
  *
  * IN:
  * @max_nr_cpus	Maximum number of proc that sysstat can handle.
+ * @highest	If set to TRUE, then look for the highest processor number.
+ * 		This is used when eg. the machine has 4 CPU numbered 0, 1, 4
+ *		and 5. In this case, this procedure will return 6.
  *
  * RETURNS:
  * Number of processors.
@@ -138,11 +155,11 @@ int get_proc_cpu_nr(void)
  * 2: two proc...
  ***************************************************************************
  */
-int get_cpu_nr(unsigned int max_nr_cpus)
+int get_cpu_nr(unsigned int max_nr_cpus, int highest)
 {
 	int cpu_nr;
 
-	if ((cpu_nr = get_sys_cpu_nr()) == 0) {
+	if ((cpu_nr = get_sys_cpu_nr(highest)) == 0) {
 		/* /sys may be not mounted. Use /proc/stat instead */
 		cpu_nr = get_proc_cpu_nr();
 	}

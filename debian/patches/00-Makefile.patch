@@ -8,7 +8,7 @@ Makefile fixes.
  1 file changed, 22 insertions(+), 20 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index ca208cf..1343b2d 100644
+index 9ce9ee6..b8566b8 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
@@ -103,6 +103,6 @@ index ca208cf..1343b2d 100644
  
 -almost-distclean: clean nls/sysstat.pot
 +almost-distclean: clean
- 	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h
+ 	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h prealloc.h
  	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily sysstat.service
  	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in

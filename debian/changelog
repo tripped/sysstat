@@ -1,3 +1,13 @@
+sysstat (10.2.0-1) unstable; urgency=low
+
+  * New upstream stable version.
+  * debian/control:
+    + replace `tk8.5' with `tk' in isag depends line (closes: #725696);
+    + move `Homepage' to source package fields (lintian);
+    + bump Standards-Version to 3.9.5.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 10 Nov 2013 10:25:19 +0100
+
 sysstat (10.1.7-1) unstable; urgency=low
 
   * New upstream version.

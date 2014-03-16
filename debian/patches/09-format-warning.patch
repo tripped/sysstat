@@ -8,7 +8,7 @@ Fix a warning given by gcc -Wformat.
  1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/rndr_stats.c b/rndr_stats.c
-index 15d32c2..6ce1f8b 100644
+index 21ab00a..3764319 100644
 --- a/rndr_stats.c
 +++ b/rndr_stats.c
 @@ -133,11 +133,7 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,

@@ -9,7 +9,7 @@ might not be enabled (closes: #511418).
  1 file changed, 7 insertions(+)
 
 diff --git a/sa_common.c b/sa_common.c
-index 3aec7c3..d2807ef 100644
+index cf066a3..8485be9 100644
 --- a/sa_common.c
 +++ b/sa_common.c
 @@ -44,6 +44,7 @@

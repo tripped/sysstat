@@ -8,7 +8,7 @@ Makefile fixes.
  1 file changed, 22 insertions(+), 20 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index 9ce9ee6..b8566b8 100644
+index 7c46a1e..e9c5475 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
@@ -23,7 +23,7 @@ index 9ce9ee6..b8566b8 100644
  DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
  DFLAGS += $(DFSENSORS)
  
-@@ -258,8 +258,9 @@ else
+@@ -261,8 +261,9 @@ else
  locales:
  endif
  
@@ -35,7 +35,7 @@ index 9ce9ee6..b8566b8 100644
  
  # Phony targets
  .PHONY: clean distclean install install_base install_all uninstall \
-@@ -292,9 +293,6 @@ ifeq ($(INSTALL_DOC),y)
+@@ -295,9 +296,6 @@ ifeq ($(INSTALL_DOC),y)
  	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat.1 $(DESTDIR)$(MAN1_DIR)
  	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
  	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
@@ -45,7 +45,7 @@ index 9ce9ee6..b8566b8 100644
  ifeq ($(COMPRESS_MANPG),y)
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
-@@ -325,8 +323,15 @@ ifdef REQUIRE_NLS
+@@ -328,8 +326,15 @@ ifdef REQUIRE_NLS
  	done
  endif
  
@@ -63,7 +63,7 @@ index 9ce9ee6..b8566b8 100644
  	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
  	mkdir -p $(DESTDIR)$(SA_DIR)
  ifeq ($(CLEAN_SA_DIR),y)
-@@ -335,7 +340,7 @@ ifeq ($(CLEAN_SA_DIR),y)
+@@ -338,7 +343,7 @@ ifeq ($(CLEAN_SA_DIR),y)
  	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
  endif
  	mkdir -p $(DESTDIR)$(BIN_DIR)
@@ -72,7 +72,7 @@ index 9ce9ee6..b8566b8 100644
  	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
  	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
-@@ -347,18 +352,15 @@ endif
+@@ -350,18 +355,15 @@ endif
  	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) nfsiostat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
@@ -97,7 +97,7 @@ index 9ce9ee6..b8566b8 100644
  endif
  
  install_all: install_base cron/crontab sysstat \
-@@ -505,7 +507,7 @@ clean:
+@@ -516,7 +518,7 @@ clean:
  	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat *.o *.a core TAGS
  	find nls -name "*.gmo" -exec rm -f {} \;
  

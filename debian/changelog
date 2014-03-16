@@ -1,4 +1,4 @@
-sysstat (10.2.1-1~) unstable; urgency=medium
+sysstat (10.2.1-1) unstable; urgency=medium
 
   * New upstream version.
   * Add Keywords for isag.desktop (lintian).
@@ -6,8 +6,9 @@ sysstat (10.2.1-1~) unstable; urgency=medium
     + pass new --enable-copy-only config option;
     + built binaries with LFS support (lintian);
     + minor cleanup.
+  * Add build-dependency on pkg-config used by the configure script.
 
- -- Robert Luberda <robert@debian.org>  Sun, 16 Mar 2014 22:09:35 +0100
+ -- Robert Luberda <robert@debian.org>  Sun, 16 Mar 2014 23:29:52 +0100
 
 sysstat (10.2.0-1) unstable; urgency=low
 

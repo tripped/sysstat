@@ -5,3 +5,4 @@ Comment=Interactive System Activity Grapher for sysstat
 Exec=isag
 Type=Application
 Categories=System;Monitor;
+Keywords=Monitor;System;Process;CPU;Memory;History;Usage;Statistics

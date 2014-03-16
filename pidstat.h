@@ -1,6 +1,6 @@
 /*
  * pidstat: Display per-process statistics.
- * (C) 2007-2013 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 2007-2014 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _PIDSTAT_H
@@ -115,6 +115,7 @@ struct pid_stats {
 	unsigned long long total_stack_ref		__attribute__ ((packed));
 	unsigned long long total_threads		__attribute__ ((packed));
 	unsigned long long total_fd_nr			__attribute__ ((packed));
+	unsigned long long blkio_swapin_delays		__attribute__ ((packed));
 	unsigned long      minflt			__attribute__ ((packed));
 	unsigned long      cminflt			__attribute__ ((packed));
 	unsigned long      majflt			__attribute__ ((packed));
@@ -140,6 +141,7 @@ struct pid_stats {
 	unsigned int       uc_asum_count		__attribute__ ((packed));
 	unsigned int       tf_asum_count		__attribute__ ((packed));
 	unsigned int       sk_asum_count		__attribute__ ((packed));
+	unsigned int       delay_asum_count		__attribute__ ((packed));
 	unsigned int       processor			__attribute__ ((packed));
 	unsigned int       flags			__attribute__ ((packed));
 	unsigned int       uid				__attribute__ ((packed));

@@ -1,5 +1,5 @@
 # Makefile to build sysstat commands
-# (C) 1999-2013 Sebastien GODARD (sysstat <at> orange.fr)
+# (C) 1999-2014 Sebastien GODARD (sysstat <at> orange.fr)
 
 # Version and package name
 VERSION = @PACKAGE_VERSION@
@@ -120,6 +120,9 @@ INSTALL_ISAG = @INSTALL_ISAG@
 endif
 ifndef INSTALL_DOC
 INSTALL_DOC = @INSTALL_DOC@
+endif
+ifndef COPY_ONLY
+COPY_ONLY = @COPY_ONLY@
 endif
 
 # Systemd
@@ -375,9 +378,8 @@ install_all: install_base cron/crontab sysstat \
 	   echo "USER'S PREVIOUS CRONTAB SAVED IN CURRENT DIRECTORY (USING .save SUFFIX)."; \
 	   su $(CRON_OWNER) -c "crontab cron/crontab"; \
 	fi
-	if [ -x $(SYSTEMCTL) -a -d "$(SYSTEMD_UNIT_DIR)" ]; then \
-	    $(INSTALL_DATA) sysstat.service $(SYSTEMD_UNIT_DIR); \
-	    $(SYSTEMCTL) enable sysstat.service; \
+	if [ -d "$(DESTDIR)$(SYSTEMD_UNIT_DIR)" ]; then \
+	    $(INSTALL_DATA) sysstat.service $(DESTDIR)$(SYSTEMD_UNIT_DIR); \
 	elif [ -d $(DESTDIR)$(INIT_DIR) ]; then \
 	   $(INSTALL_BIN) sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
 	   if [ -x $(CHKCONFIG) ]; then \
@@ -400,6 +402,11 @@ install_all: install_base cron/crontab sysstat \
 	      cd $(DESTDIR)$(RC5_DIR) && $(LN_S) -f ../rc.sysstat S01sysstat; \
 	   fi \
 	fi
+ifeq ($(COPY_ONLY),n)
+	if [ -x $(SYSTEMCTL) ]; then \
+	    $(SYSTEMCTL) enable sysstat.service; \
+	fi
+endif
 
 uninstall_man:
 ifeq ($(INSTALL_DOC),y)
@@ -478,9 +485,13 @@ uninstall_all: uninstall_base
 	-$(CP) -a /tmp/crontab-$(CRON_OWNER).old ./crontab-$(CRON_OWNER).`date '+%Y%m%d.%H%M%S'`.old
 	@echo "USER CRONTAB SAVED IN CURRENT DIRECTORY (WITH .old SUFFIX)."
 	-su $(CRON_OWNER) -c "crontab -r"
-	if [ -x $(SYSTEMCTL) -a -d "$(SYSTEMD_UNIT_DIR)" ]; then \
+ifeq ($(COPY_ONLY),n)
+	if [ -x $(SYSTEMCTL) ]; then \
 	    $(SYSTEMCTL) disable sysstat.service; \
-	    rm -f $(SYSTEMD_UNIT_DIR)/sysstat.service; \
+	fi
+endif
+	if [ -d "$(DESTDIR)$(SYSTEMD_UNIT_DIR)" ]; then \
+	    rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/sysstat.service; \
 	fi
 
 ifeq ($(INSTALL_CRON),y)

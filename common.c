@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2013 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2014 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -297,7 +297,7 @@ unsigned int get_devmap_major(void)
 	if ((fp = fopen(DEVICES, "r")) == NULL)
 		return dm_major;
 
-	while (fgets(line, 128, fp) != NULL) {
+	while (fgets(line, sizeof(line), fp) != NULL) {
 
 		if (strstr(line, "device-mapper")) {
 			/* Read device-mapper major number */

@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2013 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 2000-2014 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -614,10 +614,10 @@ void write_stats(int curr, int dis)
 	char cur_time[2][16];
 
 	/* Get previous timestamp */
-	strftime(cur_time[!curr], 16, "%X", &(mp_tstamp[!curr]));
+	strftime(cur_time[!curr], sizeof(cur_time[!curr]), "%X", &(mp_tstamp[!curr]));
 
 	/* Get current timestamp */
-	strftime(cur_time[curr], 16, "%X", &(mp_tstamp[curr]));
+	strftime(cur_time[curr], sizeof(cur_time[curr]), "%X", &(mp_tstamp[curr]));
 
 	write_stats_core(!curr, curr, dis, cur_time[!curr], cur_time[curr]);
 }

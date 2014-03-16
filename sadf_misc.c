@@ -1,6 +1,6 @@
 /*
  * sadf_misc.c: Funtions used by sadf to display special records
- * (C) 2011-2013 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 2011-2014 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -480,7 +480,7 @@ __printf_funct_t print_xml_header(int *tab, int action, char *dfile,
 				  struct file_header *file_hdr, __nr_t cpu_nr,
 				  struct activity *act[], unsigned int id_seq[])
 {
-	struct tm rectime;
+	struct tm rectime, *loc_t;
 	char cur_time[32];
 
 	if (action & F_BEGIN) {
@@ -505,8 +505,14 @@ __printf_funct_t print_xml_header(int *tab, int action, char *dfile,
 
 		/* Fill file timestmap structure (rectime) */
 		get_file_timestamp_struct(flags, &rectime, file_hdr);
-		strftime(cur_time, 32, "%Y-%m-%d", &rectime);
+		strftime(cur_time, sizeof(cur_time), "%Y-%m-%d", &rectime);
 		xprintf(*tab, "<file-date>%s</file-date>", cur_time);
+
+		if ((loc_t = gmtime((const time_t *) &file_hdr->sa_ust_time)) != NULL) {
+			strftime(cur_time, sizeof(cur_time), "%T", loc_t);
+			xprintf(*tab, "<file-utc-time>%s</file-utc-time>", cur_time);
+		}
+
 	}
 	if (action & F_END) {
 		xprintf(--(*tab), "</host>");
@@ -537,7 +543,7 @@ __printf_funct_t print_json_header(int *tab, int action, char *dfile,
 				   struct file_header *file_hdr, __nr_t cpu_nr,
 				   struct activity *act[], unsigned int id_seq[])
 {
-	struct tm rectime;
+	struct tm rectime, *loc_t;
 	char cur_time[32];
 
 	if (action & F_BEGIN) {
@@ -558,8 +564,15 @@ __printf_funct_t print_json_header(int *tab, int action, char *dfile,
 
 		/* Fill file timestmap structure (rectime) */
 		get_file_timestamp_struct(flags, &rectime, file_hdr);
-		strftime(cur_time, 32, "%Y-%m-%d", &rectime);
+		strftime(cur_time, sizeof(cur_time), "%Y-%m-%d", &rectime);
 		xprintf0(*tab, "\"file-date\": \"%s\"", cur_time);
+		
+		if ((loc_t = gmtime((const time_t *) &file_hdr->sa_ust_time)) != NULL) {
+			strftime(cur_time, sizeof(cur_time), "%T", loc_t);
+			printf("\n");
+			xprintf0(*tab, "\"file-utc-time\": \"%s\"", cur_time);
+		}
+
 	}
 	if (action & F_END) {
 		printf("\n");
@@ -590,8 +603,10 @@ __printf_funct_t print_hdr_header(int *tab, int action, char *dfile,
 				  struct activity *act[], unsigned int id_seq[])
 {
 	int i, p;
+	struct tm *loc_t;
+	char cur_time[32];
 
-	/* Actions F_BEGIN and F_END ignored */
+	/* Actions F_MAIN and F_END ignored */
 	if (action & F_BEGIN) {
 		printf(_("System activity data file: %s (%#x)\n"),
 		       dfile, file_magic->format_magic);
@@ -607,6 +622,12 @@ __printf_funct_t print_hdr_header(int *tab, int action, char *dfile,
 				 file_hdr->sa_sysname, file_hdr->sa_release,
 				 file_hdr->sa_nodename, file_hdr->sa_machine,
 				 cpu_nr > 1 ? cpu_nr - 1 : 1);
+		
+		if ((loc_t = gmtime((const time_t *) &file_hdr->sa_ust_time)) != NULL) {
+			printf(_("File time: "));
+			strftime(cur_time, sizeof(cur_time), "%T", loc_t);
+			printf("%s UTC\n", cur_time);
+		}
 
 		printf(_("Size of a long int: %d\n"), file_hdr->sa_sizeof_long);
 

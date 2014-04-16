@@ -4,7 +4,7 @@
 # Modified by Sebastien Godard (sysstat <at> orange.fr)
 
 # Initialization of $PACKAGE_VERSION and $PACKAGE_NAME variables
-AC_INIT(sysstat, 10.2.1)
+AC_INIT(sysstat, 10.3.1)
 
 # Ensure that a recent enough version of Autoconf is being used
 AC_PREREQ(2.53)
@@ -600,6 +600,10 @@ AC_CONFIG_FILES([cron/sysstat.crond])
 AC_CONFIG_FILES([cron/sysstat.crond.sample.in:cron/sysstat.crond.in], [sed s/^/#/ cron/sysstat.crond.sample.in > cron/sysstat.crond.sample])
 AC_CONFIG_FILES([sysstat], [chmod +x sysstat])	# Permissions must be changed
 AC_CONFIG_FILES([sysstat.service])
+AC_CONFIG_FILES([cron/sysstat-collect.service])
+AC_CONFIG_FILES([cron/sysstat-collect.timer])
+AC_CONFIG_FILES([cron/sysstat-summary.service])
+AC_CONFIG_FILES([cron/sysstat-summary.timer])
 AC_CONFIG_FILES([man/sa1.8:man/sa1.in])		# File must be renamed
 AC_CONFIG_FILES([man/sa2.8:man/sa2.in])		# File must be renamed
 AC_CONFIG_FILES([man/sadc.8:man/sadc.in])	# File must be renamed
@@ -608,7 +612,7 @@ AC_CONFIG_FILES([man/sar.1:man/sar.in])		# File must be renamed
 AC_CONFIG_FILES([man/sysstat.5:man/sysstat.in])	# File must be renamed
 AC_CONFIG_FILES([man/iostat.1:man/iostat.in])	# File must be renamed
 AC_CONFIG_FILES([man/cifsiostat.1:man/cifsiostat.in])	# File must be renamed
-AC_CONFIG_FILES([man/nfsiostat.1:man/nfsiostat.in])	# File must be renamed
+AC_CONFIG_FILES([man/nfsiostat-sysstat.1:man/nfsiostat-sysstat.in])	# File must be renamed
 AC_CONFIG_FILES([contrib/isag/isag], [chmod +x contrib/isag/isag]) # Permissions must be changed
 
 AC_OUTPUT(Makefile)

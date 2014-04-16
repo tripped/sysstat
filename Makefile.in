@@ -163,7 +163,7 @@ NLSPOT= $(NLSPO:.po=.pot)
 % : %.o
 	$(CC) -o $@ $(CFLAGS) $^ $(LFLAGS)
 
-all: sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat locales
+all: sadc sar sadf iostat mpstat pidstat nfsiostat-sysstat cifsiostat locales
 
 common.o: common.c version.h common.h ioconf.h sysconfig.h
 
@@ -247,9 +247,9 @@ mpstat.o: mpstat.c mpstat.h version.h common.h rd_stats.h count.h
 
 mpstat: mpstat.o librdstats_light.a libsyscom.a
 
-nfsiostat.o: nfsiostat.c nfsiostat.h count.h version.h common.h
+nfsiostat-sysstat.o: nfsiostat-sysstat.c nfsiostat-sysstat.h count.h version.h common.h
 
-nfsiostat: nfsiostat.o librdstats_light.a libsyscom.a
+nfsiostat-sysstat: nfsiostat-sysstat.o librdstats_light.a libsyscom.a
 
 cifsiostat.o: cifsiostat.c cifsiostat.h count.h version.h common.h
 
@@ -291,8 +291,8 @@ ifeq ($(INSTALL_DOC),y)
 	$(INSTALL_DATA) $(MANGRPARG) man/mpstat.1 $(DESTDIR)$(MAN1_DIR)
 	rm -f $(DESTDIR)$(MAN1_DIR)/pidstat.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/pidstat.1 $(DESTDIR)$(MAN1_DIR)
-	rm -f $(DESTDIR)$(MAN1_DIR)/nfsiostat.1*
-	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat.1 $(DESTDIR)$(MAN1_DIR)
+	rm -f $(DESTDIR)$(MAN1_DIR)/nfsiostat-sysstat.1*
+	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat-sysstat.1 $(DESTDIR)$(MAN1_DIR)
 	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
 ifeq ($(INSTALL_ISAG),y)
@@ -308,7 +308,7 @@ ifeq ($(COMPRESS_MANPG),y)
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/iostat.1
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/mpstat.1
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/pidstat.1
-	$(ZIP) $(DESTDIR)$(MAN1_DIR)/nfsiostat.1
+	$(ZIP) $(DESTDIR)$(MAN1_DIR)/nfsiostat-sysstat.1
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/cifsiostat.1
 ifeq ($(INSTALL_ISAG),y)
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/isag.1
@@ -348,7 +348,7 @@ endif
 	$(INSTALL_BIN) iostat $(DESTDIR)$(BIN_DIR)
 	$(INSTALL_BIN) mpstat $(DESTDIR)$(BIN_DIR)
 	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
-	$(INSTALL_BIN) nfsiostat $(DESTDIR)$(BIN_DIR)
+	$(INSTALL_BIN) nfsiostat-sysstat $(DESTDIR)$(BIN_DIR)
 	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
 ifeq ($(INSTALL_ISAG),y)
 	$(INSTALL_BIN) contrib/isag/isag $(DESTDIR)$(BIN_DIR)
@@ -380,6 +380,10 @@ install_all: install_base cron/crontab sysstat \
 	fi
 	if [ -d "$(DESTDIR)$(SYSTEMD_UNIT_DIR)" ]; then \
 	    $(INSTALL_DATA) sysstat.service $(DESTDIR)$(SYSTEMD_UNIT_DIR); \
+	    $(INSTALL_DATA) cron/sysstat-collect.service $(DESTDIR)$(SYSTEMD_UNIT_DIR); \
+	    $(INSTALL_DATA) cron/sysstat-collect.timer $(DESTDIR)$(SYSTEMD_UNIT_DIR); \
+	    $(INSTALL_DATA) cron/sysstat-summary.service $(DESTDIR)$(SYSTEMD_UNIT_DIR); \
+	    $(INSTALL_DATA) cron/sysstat-summary.timer $(DESTDIR)$(SYSTEMD_UNIT_DIR); \
 	elif [ -d $(DESTDIR)$(INIT_DIR) ]; then \
 	   $(INSTALL_BIN) sysstat $(DESTDIR)$(INIT_DIR)/sysstat; \
 	   if [ -x $(CHKCONFIG) ]; then \
@@ -419,7 +423,7 @@ ifeq ($(INSTALL_DOC),y)
 	rm -f $(DESTDIR)$(MAN1_DIR)/iostat.1*
 	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1*
 	rm -f $(DESTDIR)$(MAN1_DIR)/pidstat.1*
-	rm -f $(DESTDIR)$(MAN1_DIR)/nfsiostat.1*
+	rm -f $(DESTDIR)$(MAN1_DIR)/nfsiostat-sysstat.1*
 	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
 ifeq ($(INSTALL_ISAG),y)
 	rm -f $(DESTDIR)$(MAN1_DIR)/isag.1
@@ -447,7 +451,7 @@ uninstall_base: uninstall_man uninstall_nls
 	rm -f $(DESTDIR)$(BIN_DIR)/iostat
 	rm -f $(DESTDIR)$(BIN_DIR)/mpstat
 	rm -f $(DESTDIR)$(BIN_DIR)/pidstat
-	rm -f $(DESTDIR)$(BIN_DIR)/nfsiostat
+	rm -f $(DESTDIR)$(BIN_DIR)/nfsiostat-sysstat
 	rm -f $(DESTDIR)$(BIN_DIR)/cifsiostat
 ifeq ($(INSTALL_ISAG),y)
 	rm -f $(DESTDIR)$(BIN_DIR)/isag
@@ -492,6 +496,10 @@ ifeq ($(COPY_ONLY),n)
 endif
 	if [ -d "$(DESTDIR)$(SYSTEMD_UNIT_DIR)" ]; then \
 	    rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/sysstat.service; \
+	    rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/sysstat-collect.service; \
+	    rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/sysstat-collect.timer; \
+	    rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/sysstat-summary.service; \
+	    rm -f $(DESTDIR)$(SYSTEMD_UNIT_DIR)/sysstat-summary.timer; \
 	fi
 
 ifeq ($(INSTALL_CRON),y)
@@ -513,16 +521,17 @@ po-files:
 endif
 
 clean:
-	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat *.o *.a core TAGS
+	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat-sysstat cifsiostat *.o *.a core TAGS
 	find nls -name "*.gmo" -exec rm -f {} \;
 
 almost-distclean: clean nls/sysstat.pot
 	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h prealloc.h
 	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily sysstat.service
+	rm -f cron/sysstat-collect.service cron/sysstat-collect.timer cron/sysstat-summary.service cron/sysstat-summary.timer
 	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in
 	rm -f contrib/isag/isag
 	rm -f man/sa1.8 man/sa2.8 man/sadc.8 man/sadf.1 man/sar.1 man/iostat.1 man/sysstat.5
-	rm -f man/cifsiostat.1 man/nfsiostat.1
+	rm -f man/cifsiostat.1 man/nfsiostat-sysstat.1
 	rm -f *.log config.status
 	rm -rf autom4te.cache
 	rm -f *.save *.old .*.swp data

@@ -9,12 +9,16 @@
 #include "sa.h"
 
 /* DTD version for XML output */
-#define XML_DTD_VERSION	"2.18"
+#define XML_DTD_VERSION	"2.19"
 
 /* Possible actions for functions used to display reports */
 #define F_BEGIN	0x01
 #define F_MAIN	0x02
 #define F_END	0x04
+
+/* Various constants */
+#define DO_SAVE		0
+#define DO_RESTORE	1
 
 /*
  ***************************************************************************
@@ -163,7 +167,8 @@ struct report_format {
 	/*
 	 * This function displays the restart messages.
 	 */
-	__printf_funct_t (*f_restart) (int *, int, char *, char *, int, struct file_header *);
+	__printf_funct_t (*f_restart) (int *, int, char *, char *, int, struct file_header *,
+				       unsigned int);
 	/*
 	 * This function displays the comments.
 	 */
@@ -185,13 +190,13 @@ extern void
  * Prototypes used to display restart messages
  */
 __printf_funct_t
-	print_db_restart(int *, int, char *, char *, int, struct file_header *);
+	print_db_restart(int *, int, char *, char *, int, struct file_header *, unsigned int);
 __printf_funct_t
-	print_ppc_restart(int *, int, char *, char *, int, struct file_header *);
+	print_ppc_restart(int *, int, char *, char *, int, struct file_header *, unsigned int);
 __printf_funct_t
-	print_xml_restart(int *, int, char *, char *, int, struct file_header *);
+	print_xml_restart(int *, int, char *, char *, int, struct file_header *, unsigned int);
 __printf_funct_t
-	print_json_restart(int *, int, char *, char *, int, struct file_header *);
+	print_json_restart(int *, int, char *, char *, int, struct file_header *, unsigned int);
 
 /*
  * Prototypes used to display comments

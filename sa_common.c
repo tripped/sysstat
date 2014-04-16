@@ -44,6 +44,7 @@
 #define _(string) (string)
 #endif
 
+int default_file_used = FALSE;
 extern struct act_bitmap cpu_bitmap;
 
 /*
@@ -358,6 +359,7 @@ void set_default_file(struct tm *rectime, char *datafile, int d_off)
 	snprintf(datafile, MAX_FILE_LEN,
 		 "%s/sa%02d", SA_DIR, rectime->tm_mday);
 	datafile[MAX_FILE_LEN - 1] = '\0';
+	default_file_used = TRUE;
 }
 
 /*
@@ -1103,10 +1105,17 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 	int i, j, n, p;
 	unsigned int a_cpu = FALSE;
 	struct file_activity *fal;
+	void *buffer = NULL;
 
 	/* Open sa data file */
 	if ((*ifd = open(dfile, O_RDONLY)) < 0) {
+		int saved_errno = errno;
+		
 		fprintf(stderr, _("Cannot open %s: %s\n"), dfile, strerror(errno));
+		
+		if ((saved_errno == ENOENT) && default_file_used) {
+			fprintf(stderr, _("Please check if data collecting is enabled\n"));
+		}
 		exit(2);
 	}
 
@@ -1128,15 +1137,19 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 		}
 	}
 
+	SREALLOC(buffer, char, file_magic->header_size);
+	
 	/* Read sa data file standard header and allocate activity list */
-	sa_fread(*ifd, file_hdr, FILE_HEADER_SIZE, HARD_SIZE);
-
-	SREALLOC(*file_actlst, struct file_activity, FILE_ACTIVITY_SIZE * file_hdr->sa_nr_act);
+	sa_fread(*ifd, buffer, file_magic->header_size, HARD_SIZE);
+	memcpy(file_hdr, buffer, MINIMUM(file_magic->header_size, FILE_HEADER_SIZE));
+	free(buffer);
+	
+	SREALLOC(*file_actlst, struct file_activity, FILE_ACTIVITY_SIZE * file_hdr->sa_act_nr);
 	fal = *file_actlst;
 
 	/* Read activity list */
 	j = 0;
-	for (i = 0; i < file_hdr->sa_nr_act; i++, fal++) {
+	for (i = 0; i < file_hdr->sa_act_nr; i++, fal++) {
 
 		sa_fread(*ifd, fal, FILE_ACTIVITY_SIZE, HARD_SIZE);
 
@@ -1172,9 +1185,19 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 		if (fal->size > act[p]->msize) {
 			act[p]->msize = fal->size;
 		}
-		act[p]->fsize = fal->size;
+		/*
+		 * NOTA BENE:
+		 * If current activity is a volatile one then fal->nr is the
+		 * number of items (CPU at the present time as only CPU related
+		 * activities are volatile today) for the statistics located
+		 * between the start of the data file and the first restart mark.
+		 * Volatile activities have a number of items which can vary
+		 * in file. In this case, a RESTART record is followed by the
+		 * volatile activity structures.
+		 */
 		act[p]->nr    = fal->nr;
 		act[p]->nr2   = fal->nr2;
+		act[p]->fsize = fal->size;
 		/*
 		 * This is a known activity with a known format
 		 * (magical number). Only such activities will be displayed.
@@ -1203,11 +1226,11 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 
 		/* Here is a selected activity: Does it exist in file? */
 		fal = *file_actlst;
-		for (j = 0; j < file_hdr->sa_nr_act; j++, fal++) {
+		for (j = 0; j < file_hdr->sa_act_nr; j++, fal++) {
 			if (act[i]->id == fal->id)
 				break;
 		}
-		if (j == file_hdr->sa_nr_act) {
+		if (j == file_hdr->sa_act_nr) {
 			/* No: Unselect it */
 			act[i]->options &= ~AO_SELECTED;
 		}
@@ -1218,6 +1241,89 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 		close(*ifd);
 		exit(1);
 	}
+}
+
+/*
+ ***************************************************************************
+ * Set number of items for current volatile activity and reallocate its
+ * structures accordingly.
+ * NB: As only activities related to CPU can be volatile, the number of
+ * items corresponds in fact to the number of CPU.
+ *
+ * IN:
+ * @act		Array of activities.
+ * @act_nr	Number of items for current volatile activity.
+ * @act_id	Activity identification for current volatile activity.
+ *
+ * RETURN:
+ * -1 if unknown activity and 0 otherwise.
+ ***************************************************************************
+ */
+int reallocate_vol_act_structures(struct activity *act[], unsigned int act_nr,
+	                           unsigned int act_id)
+{
+	int j, p;
+	
+	if ((p = get_activity_position(act, act_id)) < 0)
+		/* Ignore unknown activity */
+		return -1;
+	
+	act[p]->nr = act_nr;
+
+	for (j = 0; j < 3; j++) {
+		SREALLOC(act[p]->buf[j], void, act[p]->msize * act[p]->nr * act[p]->nr2);
+	}
+	
+	return 0;
+}
+
+/*
+ ***************************************************************************
+ * Read the volatile activities structures following a RESTART record.
+ * Then set number of items for each corresponding activity and reallocate
+ * structures.
+ *
+ * IN:
+ * @ifd		Input file descriptor.
+ * @act		Array of activities.
+ * @file	Name of file being read.
+ * @file_magic	file_magic structure filled with file magic header data.
+ * @vol_act_nr	Number of volatile activities structures to read.
+ *
+ * RETURNS:
+ * New number of items.
+ *
+ * NB: As only activities related to CPU can be volatile, the new number of
+ * items corresponds in fact to the new number of CPU.
+ ***************************************************************************
+ */
+__nr_t read_vol_act_structures(int ifd, struct activity *act[], char *file,
+			       struct file_magic *file_magic,
+			       unsigned int vol_act_nr)
+{
+	struct file_activity file_act;
+	int item_nr = 0;
+	int i, rc;
+	
+	for (i = 0; i < vol_act_nr; i++) {
+		
+		sa_fread(ifd, &file_act, FILE_ACTIVITY_SIZE, HARD_SIZE);
+		
+		if (file_act.id) {
+			rc = reallocate_vol_act_structures(act, file_act.nr, file_act.id);
+			if ((rc == 0) && !item_nr) {
+				item_nr = file_act.nr;
+			}
+		}
+		/* else ignore empty structures that may exist */
+	}
+	
+	if (!item_nr) {
+		/* All volatile activities structures cannot be empty */
+		handle_invalid_sa_file(&ifd, file_magic, file, 0);
+	}
+
+	return item_nr;
 }
 
 /*

@@ -341,6 +341,7 @@ void xprintf(int nr_tab, const char *fmtf, ...)
  * 			been used or not) can be saved for current record.
  * @loctime		Structure where timestamp (expressed in local time)
  *			can be saved for current record.
+ * @new_cpu_nr		CPU count associated with restart mark.
  *
  * OUT:
  * @rectime		Structure where timestamp for current record has
@@ -350,7 +351,8 @@ void xprintf(int nr_tab, const char *fmtf, ...)
  ***************************************************************************
  */
 void write_textual_restarts(int curr, int use_tm_start, int use_tm_end, int tab,
-			    struct tm *rectime, struct tm *loctime)
+			    struct tm *rectime, struct tm *loctime,
+			    unsigned int new_cpu_nr)
 {
 	char cur_date[32], cur_time[32];
 
@@ -367,7 +369,8 @@ void write_textual_restarts(int curr, int use_tm_start, int use_tm_end, int tab,
 	if (*fmt[f_position]->f_restart) {
 		(*fmt[f_position]->f_restart)(&tab, F_MAIN, cur_date, cur_time,
 					      !PRINT_LOCAL_TIME(flags) &&
-					      !PRINT_TRUE_TIME(flags), &file_hdr);
+					      !PRINT_TRUE_TIME(flags), &file_hdr,
+					      new_cpu_nr);
 	}
 }
 
@@ -777,13 +780,18 @@ int write_textual_stats(int curr, int use_tm_start, int use_tm_end, int reset,
  * 			been used or not) can be saved for current record.
  * @loctime		Structure where timestamp (expressed in local time)
  *			can be saved for current record.
+ * @file		Name of file being read.
+ * @file_magic		file_magic structure filled with file magic header
+ * 			data.
  ***************************************************************************
  */
 void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, int ifd,
-			struct tm *rectime, struct tm *loctime)
+			struct tm *rectime, struct tm *loctime, char *file,
+			struct file_magic *file_magic)
 {
 	char cur_date[32], cur_time[32];
 	int dp = 1;
+	unsigned int new_cpu_nr;
 
 	/* Fill timestamp structure (rectime) for current record */
 	sadf_get_record_timestamp_struct(curr, rectime, loctime);
@@ -798,13 +806,18 @@ void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, i
 	}
 
 	if (rtype == R_RESTART) {
+		/* Don't forget to read the volatile activities structures */
+		new_cpu_nr = read_vol_act_structures(ifd, act, file, file_magic,
+						     file_hdr.sa_vol_act_nr);
+		
 		if (!dp)
 			return;
 
 		if (*fmt[f_position]->f_restart) {
 			(*fmt[f_position]->f_restart)(NULL, F_MAIN, cur_date, cur_time,
 						      !PRINT_LOCAL_TIME(flags) &&
-						      !PRINT_TRUE_TIME(flags), &file_hdr);
+						      !PRINT_TRUE_TIME(flags), &file_hdr,
+						      new_cpu_nr);
 		}
 	}
 	else if (rtype == R_COMMENT) {
@@ -841,6 +854,8 @@ void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, i
  *		be saved for current record.
  * @loctime	Structure where timestamp (expressed in local time) can be
  *		saved for current record.
+ * @file	Name of file being read.
+ * @file_magic	file_magic structure filled with file magic header data.
  *
  * OUT:
  * @curr	Index in array for next sample statistics.
@@ -852,7 +867,8 @@ void sadf_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, i
  */
 void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 		       unsigned int act_id, int *reset, struct file_activity *file_actlst,
-		        __nr_t cpu_nr, struct tm *rectime, struct tm *loctime)
+		        __nr_t cpu_nr, struct tm *rectime, struct tm *loctime,
+			char *file, struct file_magic *file_magic)
 {
 	unsigned char rtype;
 	int next;
@@ -883,7 +899,7 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 
 		if (!*eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
 			/* Read the extra fields since it's not a RESTART record */
-			read_file_stat_bunch(act, *curr, ifd, file_hdr.sa_nr_act,
+			read_file_stat_bunch(act, *curr, ifd, file_hdr.sa_act_nr,
 					     file_actlst);
 		}
 
@@ -891,7 +907,8 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 
 			if (rtype == R_COMMENT) {
 				sadf_print_special(*curr, tm_start.use, tm_end.use,
-						   R_COMMENT, ifd, rectime, loctime);
+						   R_COMMENT, ifd, rectime, loctime,
+						   file, file_magic);
 				continue;
 			}
 
@@ -920,6 +937,43 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 
 /*
  ***************************************************************************
+ * Save or restore number of items for all known activities.
+ *
+ * IN:
+ * @save_act_nr	Array containing number of items to restore for each
+ * 		activity.
+ * @action	DO_SAVE to save number of items, or DO_RESTORE to restore.
+ *
+ * OUT:
+ * @save_act_nr	Array containing number of items saved for each activity.
+ ***************************************************************************
+ */
+void sr_act_nr(__nr_t save_act_nr[], int action)
+{
+	int i;
+	
+	if (action == DO_SAVE) {
+		/* Save number of items for all activities */
+		for (i = 0; i < NR_ACT; i++) {
+			save_act_nr[i] = act[i]->nr;
+		}
+	}
+	else if (action == DO_RESTORE) {
+		/*
+		 * Restore number of items for all activities
+		 * and reallocate structures accordingly.
+		 */
+		for (i = 0; i < NR_ACT; i++) {
+			if (save_act_nr[i] > 0) {
+				reallocate_vol_act_structures(act, save_act_nr[i],
+							      act[i]->id);
+			}
+		}
+	}
+}
+
+/*
+ ***************************************************************************
  * Display activities for textual (XML-like) formats.
  *
  * IN:
@@ -933,14 +987,17 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
  *		be saved for current record.
  * @loctime	Structure where timestamp (expressed in local time) can be
  *		saved for current record.
+ * @file	Name of file being read.
  ***************************************************************************
  */
 void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfile,
 			  struct file_magic *file_magic, __nr_t cpu_nr,
-			  struct tm *rectime, struct tm *loctime)
+			  struct tm *rectime, struct tm *loctime, char *file)
 {
 	int curr, tab = 0, rtype;
 	int eosaf = TRUE, next, reset = FALSE;
+	__nr_t save_act_nr[NR_ACT];
+	unsigned int new_cpu_nr;
 	long cnt = 1;
 	off_t fpos;
 
@@ -949,6 +1006,8 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
 		perror("lseek");
 		exit(2);
 	}
+	/* Save number of activities items for current file position */
+	sr_act_nr(save_act_nr, DO_SAVE);
 
 	/* Print header (eg. XML file header) */
 	if (*fmt[f_position]->f_header) {
@@ -970,24 +1029,30 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
 			eosaf = sa_fread(ifd, &record_hdr[0], RECORD_HEADER_SIZE, SOFT_SIZE);
 			rtype = record_hdr[0].record_type;
 
-			if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
-				/*
-				 * OK: Previous record was not a special one.
-				 * So read now the extra fields.
-				 */
-				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
-						     file_actlst);
-				sadf_get_record_timestamp_struct(0, rectime, loctime);
-			}
-
-			if (!eosaf && (rtype == R_COMMENT)) {
-				/*
-				 * Ignore COMMENT record.
-				 * (Unlike RESTART records, COMMENT records have an additional
-				 * comment field).
-				 */
-				if (lseek(ifd, MAX_COMMENT_LEN, SEEK_CUR) < MAX_COMMENT_LEN) {
-					perror("lseek");
+			if (!eosaf) {
+				if (rtype == R_COMMENT) {
+					/* Ignore COMMENT record */
+					if (lseek(ifd, MAX_COMMENT_LEN, SEEK_CUR) < MAX_COMMENT_LEN) {
+						perror("lseek");
+					}
+				}
+				else if (rtype == R_RESTART) {
+					/*
+					 * Ignore RESTART record (don't display it)
+					 * but anyway we have to reallocate volatile
+					 * activities structures.
+					 */
+					read_vol_act_structures(ifd, act, file, file_magic,
+							        file_hdr.sa_vol_act_nr);
+				}
+				else {
+					/*
+					 * OK: Previous record was not a special one.
+					 * So read now the extra fields.
+					 */
+					read_file_stat_bunch(act, 0, ifd, file_hdr.sa_act_nr,
+							     file_actlst);
+					sadf_get_record_timestamp_struct(0, rectime, loctime);
 				}
 			}
 		}
@@ -1008,32 +1073,42 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
 						 SOFT_SIZE);
 				rtype = record_hdr[curr].record_type;
 
-				if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
-					/* Read the extra fields since it's not a special record */
-					read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
-							     file_actlst);
-
-					if (*fmt[f_position]->f_statistics) {
-						(*fmt[f_position]->f_statistics)(&tab, F_MAIN);
-					}
-
-					/* next is set to 1 when we were close enough to desired interval */
-					next = write_textual_stats(curr, tm_start.use, tm_end.use, reset,
-								   &cnt, tab, cpu_nr, rectime, loctime);
-
-					if (next) {
-						curr ^= 1;
-						if (cnt > 0) {
-							cnt--;
+				if (!eosaf) {
+					if (rtype == R_COMMENT) {
+						/* Ignore COMMENT record */
+						if (lseek(ifd, MAX_COMMENT_LEN, SEEK_CUR) < MAX_COMMENT_LEN) {
+							perror("lseek");
 						}
 					}
-					reset = FALSE;
-				}
+					else if (rtype == R_RESTART) {
+						/*
+						 * Ignore RESTART record (don't display it)
+						 * but anyway we have to reallocate volatile
+						 * activities structures.
+						 */
+						read_vol_act_structures(ifd, act, file, file_magic,
+								        file_hdr.sa_vol_act_nr);
+					}
+					else {
+						/* This is not a special record, so read the extra fields */
+						read_file_stat_bunch(act, curr, ifd, file_hdr.sa_act_nr,
+								     file_actlst);
 
-				if (!eosaf && (rtype == R_COMMENT)) {
-					/* Ignore COMMENT record */
-					if (lseek(ifd, MAX_COMMENT_LEN, SEEK_CUR) < MAX_COMMENT_LEN) {
-						perror("lseek");
+						if (*fmt[f_position]->f_statistics) {
+							(*fmt[f_position]->f_statistics)(&tab, F_MAIN);
+						}
+
+						/* next is set to 1 when we were close enough to desired interval */
+						next = write_textual_stats(curr, tm_start.use, tm_end.use, reset,
+									   &cnt, tab, cpu_nr, rectime, loctime);
+
+						if (next) {
+							curr ^= 1;
+							if (cnt > 0) {
+								cnt--;
+							}
+						}
+						reset = FALSE;
 					}
 				}
 			}
@@ -1045,14 +1120,26 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
 					eosaf = sa_fread(ifd, &record_hdr[curr], RECORD_HEADER_SIZE,
 							 SOFT_SIZE);
 					rtype = record_hdr[curr].record_type;
-					if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
-						read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
-								     file_actlst);
-					}
-					else if (!eosaf && (rtype == R_COMMENT)) {
-						/* Ignore COMMENT record */
-						if (lseek(ifd, MAX_COMMENT_LEN, SEEK_CUR) < MAX_COMMENT_LEN) {
-							perror("lseek");
+					if (!eosaf) {
+						if (rtype == R_COMMENT) {
+							/* Ignore COMMENT record */
+							if (lseek(ifd, MAX_COMMENT_LEN, SEEK_CUR) < MAX_COMMENT_LEN) {
+								perror("lseek");
+							}
+						}
+						else if (rtype == R_RESTART) {
+							/*
+							 * Ignore RESTART record (don't display it)
+							 * but anyway we have to reallocate volatile
+							 * activities structures.
+							 */
+							read_vol_act_structures(ifd, act, file, file_magic,
+										file_hdr.sa_vol_act_nr);
+						}
+						else {
+							/* This is not a special record: Read the extra fields */
+							read_file_stat_bunch(act, curr, ifd, file_hdr.sa_act_nr,
+									     file_actlst);
 						}
 					}
 				}
@@ -1067,16 +1154,21 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
 		(*fmt[f_position]->f_statistics)(&tab, F_END);
 	}
 
-	/* Rewind file */
+	/* Rewind file... */
 	if (lseek(ifd, fpos, SEEK_SET) < fpos) {
 		perror("lseek");
 		exit(2);
 	}
+	/*
+	 * ... and restore number of items for volatile activities
+	 * for this position in file.
+	 */
+	sr_act_nr(save_act_nr, DO_RESTORE);
 
 	/* Process now RESTART entries to display restart messages */
 	if (*fmt[f_position]->f_restart) {
 		(*fmt[f_position]->f_restart)(&tab, F_BEGIN, NULL, NULL, FALSE,
-					      &file_hdr);
+					      &file_hdr, 0);
 	}
 
 	do {
@@ -1084,13 +1176,14 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
 				      SOFT_SIZE)) == 0) {
 
 			rtype = record_hdr[0].record_type;
-			if ((rtype != R_RESTART) && (rtype != R_COMMENT)) {
-				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
-						     file_actlst);
-			}
 			if (rtype == R_RESTART) {
+				/* Read new CPU count */
+				new_cpu_nr = read_vol_act_structures(ifd, act, file, file_magic,
+								     file_hdr.sa_vol_act_nr);
+				
+				/* Display RESTART records */
 				write_textual_restarts(0, tm_start.use, tm_end.use, tab,
-						       rectime, loctime);
+						       rectime, loctime, new_cpu_nr);
 			}
 			else if (rtype == R_COMMENT) {
 				/* Ignore COMMENT record */
@@ -1098,19 +1191,29 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
 					perror("lseek");
 				}
 			}
+			else {
+				/* Not a special record: Read the extra fields */
+				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_act_nr,
+						     file_actlst);
+			}
 		}
 	}
 	while (!eosaf);
 
 	if (*fmt[f_position]->f_restart) {
-		(*fmt[f_position]->f_restart)(&tab, F_END, NULL, NULL, FALSE, &file_hdr);
+		(*fmt[f_position]->f_restart)(&tab, F_END, NULL, NULL, FALSE, &file_hdr, 0);
 	}
 
-	/* Rewind file */
+	/* Rewind file... */
 	if (lseek(ifd, fpos, SEEK_SET) < fpos) {
 		perror("lseek");
 		exit(2);
 	}
+	/*
+	 * ... and restore number of items for volatile activities
+	 * for this position in file.
+	 */
+	sr_act_nr(save_act_nr, DO_RESTORE);
 
 	/* Last, process COMMENT entries to display comments */
 	if (DISPLAY_COMMENT(flags)) {
@@ -1123,13 +1226,24 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
 				              SOFT_SIZE)) == 0) {
 
 				rtype = record_hdr[0].record_type;
-				if ((rtype != R_RESTART) && (rtype != R_COMMENT)) {
-					read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
-							     file_actlst);
-				}
 				if (rtype == R_COMMENT) {
+					/* Display R_COMMENT records */
 					write_textual_comments(0, tm_start.use, tm_end.use,
 							       tab, ifd, rectime, loctime);
+				}
+				else if (rtype == R_RESTART) {
+					/*
+					 * Ignore RESTART record (don't display it)
+					 * but anyway we have to reallocate volatile
+					 * activities structures.
+					 */
+					read_vol_act_structures(ifd, act, file, file_magic,
+								file_hdr.sa_vol_act_nr);
+				}
+				else {
+					/* Not a special record: Read the extra fields */
+					read_file_stat_bunch(act, 0, ifd, file_hdr.sa_act_nr,
+							     file_actlst);
 				}
 			}
 		}
@@ -1161,10 +1275,13 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
  *		be saved for current record.
  * @loctime	Structure where timestamp (expressed in local time) can be
  *		saved for current record.
+ * @file	Name of file being read.
+ * @file_magic	file_magic structure filled with file magic header data.
  ***************************************************************************
  */
 void main_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_nr,
-		       struct tm *rectime, struct tm *loctime)
+		       struct tm *rectime, struct tm *loctime, char *file,
+		       struct file_magic *file_magic)
 {
 	int i, p;
 	int curr = 1, rtype;
@@ -1186,14 +1303,14 @@ void main_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_nr
 			rtype = record_hdr[0].record_type;
 			if ((rtype == R_RESTART) || (rtype == R_COMMENT)) {
 				sadf_print_special(0, tm_start.use, tm_end.use, rtype, ifd,
-						   rectime, loctime);
+						   rectime, loctime, file, file_magic);
 			}
 			else {
 				/*
 				 * OK: Previous record was not a special one.
 				 * So read now the extra fields.
 				 */
-				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
+				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_act_nr,
 						     file_actlst);
 				sadf_get_record_timestamp_struct(0, rectime, loctime);
 			}
@@ -1223,7 +1340,7 @@ void main_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_nr
 			 */
 			rw_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
 					  ALL_ACTIVITIES, &reset, file_actlst,
-					  cpu_nr, rectime, loctime);
+					  cpu_nr, rectime, loctime, file, file_magic);
 		}
 		else {
 			/* For each requested activity... */
@@ -1242,7 +1359,8 @@ void main_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_nr
 				if (!HAS_MULTIPLE_OUTPUTS(act[p]->options)) {
 					rw_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
 							  act[p]->id, &reset, file_actlst,
-							  cpu_nr, rectime, loctime);
+							  cpu_nr, rectime, loctime, file,
+							  file_magic);
 				}
 				else {
 					unsigned int optf, msk;
@@ -1255,7 +1373,8 @@ void main_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_nr
 							
 							rw_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
 									  act[p]->id, &reset, file_actlst,
-									  cpu_nr, rectime, loctime);
+									  cpu_nr, rectime, loctime, file,
+									  file_magic);
 							act[p]->opt_flags = optf;
 						}
 					}
@@ -1269,14 +1388,18 @@ void main_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_nr
 				eosaf = sa_fread(ifd, &record_hdr[curr], RECORD_HEADER_SIZE,
 						 SOFT_SIZE);
 				rtype = record_hdr[curr].record_type;
-				if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
-					read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
-							     file_actlst);
-				}
-				else if (!eosaf && (rtype == R_COMMENT)) {
-					/* This was a COMMENT record: print it */
-					sadf_print_special(curr, tm_start.use, tm_end.use,
-							   R_COMMENT, ifd, rectime, loctime);
+				if (!eosaf) {
+					if (rtype == R_COMMENT) {
+						/* This was a COMMENT record: print it */
+						sadf_print_special(curr, tm_start.use, tm_end.use,
+								   R_COMMENT, ifd, rectime, loctime,
+								   file, file_magic);
+					}
+					else if (rtype != R_RESTART) {
+						/* This is not a RESTART or a COMMENT record */
+						read_file_stat_bunch(act, curr, ifd, file_hdr.sa_act_nr,
+								     file_actlst);
+					}
 				}
 			}
 			while (!eosaf && (rtype != R_RESTART));
@@ -1285,7 +1408,8 @@ void main_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_nr
 		/* The last record we read was a RESTART one: Print it */
 		if (!eosaf && (record_hdr[curr].record_type == R_RESTART)) {
 			sadf_print_special(curr, tm_start.use, tm_end.use,
-					   R_RESTART, ifd, rectime, loctime);
+					   R_RESTART, ifd, rectime, loctime,
+					   file, file_magic);
 		}
 	}
 	while (!eosaf);
@@ -1329,11 +1453,11 @@ void read_stats_from_file(char dfile[])
 
 	if (DISPLAY_GROUPED_STATS(fmt[f_position]->options)) {
 		main_display_loop(ifd, file_actlst, cpu_nr,
-				  &rectime, &loctime);
+				  &rectime, &loctime, dfile, &file_magic);
 	}
 	else {
 		textual_display_loop(ifd, file_actlst, dfile,
-				     &file_magic, cpu_nr, &rectime, &loctime);
+				     &file_magic, cpu_nr, &rectime, &loctime, dfile);
 	}
 
 	close(ifd);

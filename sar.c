@@ -608,15 +608,20 @@ int sa_read(void *buffer, int size)
  * @use_tm_end		Set to TRUE if option -e has been used.
  * @rtype		Record type to display.
  * @ifd			Input file descriptor.
+ * @file		Name of file being read.
+ * @file_magic		file_magic structure filled with file magic header
+ * 			data.
  *
  * RETURNS:
  * 1 if the record has been successfully displayed, and 0 otherwise.
  ***************************************************************************
  */
-int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, int ifd)
+int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype,
+		      int ifd, char *file, struct file_magic *file_magic)
 {
 	char cur_time[26];
 	int dp = 1;
+	unsigned int new_cpu_nr;
 
 	if (set_record_timestamp_string(curr, cur_time, 26))
 		return 0;
@@ -628,8 +633,13 @@ int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype, int
 	}
 
 	if (rtype == R_RESTART) {
+		/* Don't forget to read the volatile activities structures */
+		new_cpu_nr = read_vol_act_structures(ifd, act, file, file_magic,
+						     file_hdr.sa_vol_act_nr);
+		
 		if (dp) {
-			printf("\n%-11s       LINUX RESTART\n", cur_time);
+			printf("\n%-11s       LINUX RESTART\t(%d CPU)\n",
+			       cur_time, new_cpu_nr > 1 ? new_cpu_nr - 1 : 1);
 			return 1;
 		}
 	}
@@ -691,6 +701,8 @@ void read_sadc_stat_bunch(int curr)
  * @rows	Number of rows of screen.
  * @act_id	Activity to display.
  * @file_actlst	List of activities in file.
+ * @file	Name of file being read.
+ * @file_magic	file_magic structure filled with file magic header data.
  *
  * OUT:
  * @curr	Index in array for next sample statistics.
@@ -702,7 +714,8 @@ void read_sadc_stat_bunch(int curr)
  */
 void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 			   int rows, unsigned int act_id, int *reset,
-			   struct file_activity *file_actlst)
+			   struct file_activity *file_actlst, char *file,
+			   struct file_magic *file_magic)
 {
 	int p;
 	unsigned long lines = 0;
@@ -745,7 +758,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 
 		if (!*eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
 			/* Read the extra fields since it's not a special record */
-			read_file_stat_bunch(act, *curr, ifd, file_hdr.sa_nr_act, file_actlst);
+			read_file_stat_bunch(act, *curr, ifd, file_hdr.sa_act_nr, file_actlst);
 		}
 
 		if ((lines >= rows) || !lines) {
@@ -760,7 +773,7 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 			if (rtype == R_COMMENT) {
 				/* Display comment */
 				next = sar_print_special(*curr, tm_start.use, tm_end.use,
-						     R_COMMENT, ifd);
+						     R_COMMENT, ifd, file, file_magic);
 				if (next) {
 					/* A line of comment was actually displayed */
 					lines++;
@@ -829,13 +842,18 @@ void read_header_data(void)
 		exit(3);
 	}
 
-	/* Read header data */
+	/*
+	 * Read header data.
+	 * No need to take into account file_magic.header_size. We are sure that
+	 * sadc and sar are from the same version (we have checked FORMAT_MAGIC
+	 * but also VERSION above) and thus the size of file_header is FILE_HEADER_SIZE.
+	 */
 	if (sa_read(&file_hdr, FILE_HEADER_SIZE)) {
 		print_read_error();
 	}
 	
 	/* Read activity list */
-	for (i = 0; i < file_hdr.sa_nr_act; i++) {
+	for (i = 0; i < file_hdr.sa_act_nr; i++) {
 		
 		if (sa_read(&file_act, FILE_ACTIVITY_SIZE)) {
 			print_read_error();
@@ -862,7 +880,7 @@ void read_header_data(void)
 	}
 	
 	/* Check that all selected activties are actually sent by sadc */
-	reverse_check_act(file_hdr.sa_nr_act);
+	reverse_check_act(file_hdr.sa_act_nr);
 }
 
 /*
@@ -910,14 +928,15 @@ void read_stats_from_file(char from_file[])
 
 			rtype = record_hdr[0].record_type;
 			if ((rtype == R_RESTART) || (rtype == R_COMMENT)) {
-				sar_print_special(0, tm_start.use, tm_end.use, rtype, ifd);
+				sar_print_special(0, tm_start.use, tm_end.use, rtype,
+						  ifd, from_file, &file_magic);
 			}
 			else {
 				/*
 				 * OK: Previous record was not a special one.
 				 * So read now the extra fields.
 				 */
-				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_nr_act,
+				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_act_nr,
 						     file_actlst);
 				if (sar_get_record_timestamp_struct(0))
 					/*
@@ -960,7 +979,8 @@ void read_stats_from_file(char from_file[])
 			
 			if (!HAS_MULTIPLE_OUTPUTS(act[p]->options)) {
 				handle_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows,
-						      act[p]->id, &reset, file_actlst);
+						      act[p]->id, &reset, file_actlst,
+						      from_file, &file_magic);
 			}
 			else {
 				unsigned int optf, msk;
@@ -973,7 +993,8 @@ void read_stats_from_file(char from_file[])
 						
 						handle_curr_act_stats(ifd, fpos, &curr, &cnt,
 								      &eosaf, rows, act[p]->id,
-								      &reset, file_actlst);
+								      &reset, file_actlst,
+								      from_file, &file_magic);
 						act[p]->opt_flags = optf;
 					}
 				}
@@ -987,12 +1008,13 @@ void read_stats_from_file(char from_file[])
 						 SOFT_SIZE);
 				rtype = record_hdr[curr].record_type;
 				if (!eosaf && (rtype != R_RESTART) && (rtype != R_COMMENT)) {
-					read_file_stat_bunch(act, curr, ifd, file_hdr.sa_nr_act,
+					read_file_stat_bunch(act, curr, ifd, file_hdr.sa_act_nr,
 							     file_actlst);
 				}
 				else if (!eosaf && (rtype == R_COMMENT)) {
 					/* This was a COMMENT record: print it */
-					sar_print_special(curr, tm_start.use, tm_end.use, R_COMMENT, ifd);
+					sar_print_special(curr, tm_start.use, tm_end.use, R_COMMENT,
+							  ifd, from_file, &file_magic);
 				}
 			}
 			while (!eosaf && (rtype != R_RESTART));
@@ -1000,7 +1022,8 @@ void read_stats_from_file(char from_file[])
 
 		/* The last record we read was a RESTART one: Print it */
 		if (!eosaf && (record_hdr[curr].record_type == R_RESTART)) {
-			sar_print_special(curr, tm_start.use, tm_end.use, R_RESTART, ifd);
+			sar_print_special(curr, tm_start.use, tm_end.use, R_RESTART,
+					  ifd, from_file, &file_magic);
 		}
 	}
 	while (!eosaf);

@@ -2,8 +2,10 @@ sysstat (10.3.1-1~) UNRELEASED; urgency=medium
 
   * New upstream version (development).
   * Remove 05-defaultfile_message.patch, merged upstream.
+  * Add 11-nfsiostat-whatis-entry.patch to fix `manpage-has-bad-whatis-entry'
+    lintian warning on nfsiostat-sysstat(1) man page.
 
- -- Robert Luberda <robert@debian.org>  Wed, 16 Apr 2014 08:53:30 +0200
+ -- Robert Luberda <robert@debian.org>  Wed, 16 Apr 2014 09:15:06 +0200
 
 sysstat (10.2.1-1) unstable; urgency=medium
 

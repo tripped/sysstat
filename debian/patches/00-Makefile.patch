@@ -8,7 +8,7 @@ Makefile fixes.
  1 file changed, 22 insertions(+), 20 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index 7c46a1e..e9c5475 100644
+index 81fd95c..a2b97a3 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
@@ -36,7 +36,7 @@ index 7c46a1e..e9c5475 100644
  # Phony targets
  .PHONY: clean distclean install install_base install_all uninstall \
 @@ -295,9 +296,6 @@ ifeq ($(INSTALL_DOC),y)
- 	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat.1 $(DESTDIR)$(MAN1_DIR)
+ 	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat-sysstat.1 $(DESTDIR)$(MAN1_DIR)
  	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
  	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
 -ifeq ($(INSTALL_ISAG),y)
@@ -74,7 +74,7 @@ index 7c46a1e..e9c5475 100644
  	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
 @@ -350,18 +355,15 @@ endif
  	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
- 	$(INSTALL_BIN) nfsiostat $(DESTDIR)$(BIN_DIR)
+ 	$(INSTALL_BIN) nfsiostat-sysstat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
 -ifeq ($(INSTALL_ISAG),y)
 -	$(INSTALL_BIN) contrib/isag/isag $(DESTDIR)$(BIN_DIR)
@@ -97,12 +97,12 @@ index 7c46a1e..e9c5475 100644
  endif
  
  install_all: install_base cron/crontab sysstat \
-@@ -516,7 +518,7 @@ clean:
- 	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat cifsiostat *.o *.a core TAGS
+@@ -524,7 +526,7 @@ clean:
+ 	rm -f sadc sar sadf iostat mpstat pidstat nfsiostat-sysstat cifsiostat *.o *.a core TAGS
  	find nls -name "*.gmo" -exec rm -f {} \;
  
 -almost-distclean: clean nls/sysstat.pot
 +almost-distclean: clean
  	rm -f sa1 sa2 sysstat cron/crontab version.h sysconfig.h prealloc.h
  	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily sysstat.service
- 	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in
+ 	rm -f cron/sysstat-collect.service cron/sysstat-collect.timer cron/sysstat-summary.service cron/sysstat-summary.timer

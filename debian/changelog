@@ -1,9 +1,16 @@
 sysstat (10.3.1-1~) UNRELEASED; urgency=medium
 
-  * New upstream version (development).
+  * New upstream version (development):
+    + Daily data files format has changed, and is *not* compatible with the
+      previous one.
+    + sar/sadc/sadf: Now take into account a change of CPU count in datafiles.
+      The number of CPU is displayed in the RESTART messages (closes: #670215).
+    + Rename nfsiostat to nfsiostat-sysstat and indicate it is now obsolete.
+      An nfsiostat command is already included in the nfs-common package.
   * Remove 05-defaultfile_message.patch, merged upstream.
   * Add 11-nfsiostat-whatis-entry.patch to fix `manpage-has-bad-whatis-entry'
     lintian warning on nfsiostat-sysstat(1) man page.
+  * debian/control: Update information about the nfsiostat command.
 
  -- Robert Luberda <robert@debian.org>  Wed, 16 Apr 2014 09:15:06 +0200
 
@@ -39,7 +46,7 @@ sysstat (10.1.7-1) unstable; urgency=low
 sysstat (10.1.6-2) unstable; urgency=low
 
   [ Louis Bouchard ]
-  * New 11-fix-concurrency-build-issue.patch: Extend explicit rules 
+  * New 11-fix-concurrency-build-issue.patch: Extend explicit rules
     to avoid build issues occurring during parallel build (closes: #714153).
 
  -- Robert Luberda <robert@debian.org>  Thu, 01 Aug 2013 08:41:15 +0200

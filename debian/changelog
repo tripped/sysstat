@@ -11,8 +11,10 @@ sysstat (10.3.1-1~) UNRELEASED; urgency=medium
   * Add 11-nfsiostat-whatis-entry.patch to fix `manpage-has-bad-whatis-entry'
     lintian warning on nfsiostat-sysstat(1) man page.
   * debian/control: Update information about the nfsiostat command.
+  * debian/rules: No longer pass --start option to dh_installinit to fix
+    the update-rc.d warnings appearing during installation time.
 
- -- Robert Luberda <robert@debian.org>  Wed, 16 Apr 2014 09:15:06 +0200
+ -- Robert Luberda <robert@debian.org>  Tue, 29 Apr 2014 22:04:49 +0200
 
 sysstat (10.2.1-1) unstable; urgency=medium
 

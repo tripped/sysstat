@@ -1,4 +1,4 @@
-sysstat (10.3.1-1~) UNRELEASED; urgency=medium
+sysstat (10.3.1-1) unstable; urgency=medium
 
   * New upstream version (development):
     + Daily data files format has changed, and is *not* compatible with the
@@ -13,8 +13,10 @@ sysstat (10.3.1-1~) UNRELEASED; urgency=medium
   * debian/control: Update information about the nfsiostat command.
   * debian/rules: No longer pass --start option to dh_installinit to fix
     the update-rc.d warnings appearing during installation time.
+  * Cleanup maintainer scripts: remove sysstat.preinst, and ancient parts
+    of sysstat.postinst.
 
- -- Robert Luberda <robert@debian.org>  Tue, 29 Apr 2014 22:04:49 +0200
+ -- Robert Luberda <robert@debian.org>  Tue, 29 Apr 2014 22:09:36 +0200
 
 sysstat (10.2.1-1) unstable; urgency=medium
 

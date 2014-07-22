@@ -21,7 +21,7 @@ index ddb26fc..597ece9 100644
  # 8am-7pm activity reports every 20 minutes during weekdays.
  # 0 8-18 * * 1-5 @SA_LIB_DIR@/sa1 1200 3 &
 diff --git a/sysstat.sysconfig.in b/sysstat.sysconfig.in
-index 25cc673..2782aa0 100644
+index cff7621..c9de21c 100644
 --- a/sysstat.sysconfig.in
 +++ b/sysstat.sysconfig.in
 @@ -1,6 +1,7 @@
@@ -33,7 +33,7 @@ index 25cc673..2782aa0 100644
  # If value is greater than 28, then log files are kept in
  # multiple directories, one for each month.
  HISTORY=@HISTORY@
-@@ -8,7 +9,9 @@ HISTORY=@HISTORY@
+@@ -8,9 +9,11 @@ HISTORY=@HISTORY@
  # Compress (using gzip or bzip2) sa and sar files older than (in days):
  COMPRESSAFTER=@COMPRESSAFTER@
  
@@ -45,3 +45,5 @@ index 25cc673..2782aa0 100644
 +# statisitcs. Use `-S XALL' to collect all available statistics.
 +SADC_OPTIONS="-S DISK"
  
+ # Directory where sa and sar files are saved.
+ SA_DIR=@SA_DIR@

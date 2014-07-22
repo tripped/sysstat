@@ -26,6 +26,7 @@
 #define P_A_CTXSW	0x08
 #define P_A_STACK	0x10
 #define P_A_KTAB	0x20
+#define P_A_RT		0x40
 
 #define DISPLAY_CPU(m)		(((m) & P_A_CPU) == P_A_CPU)
 #define DISPLAY_MEM(m)		(((m) & P_A_MEM) == P_A_MEM)
@@ -33,6 +34,7 @@
 #define DISPLAY_CTXSW(m)	(((m) & P_A_CTXSW) == P_A_CTXSW)
 #define DISPLAY_STACK(m)	(((m) & P_A_STACK) == P_A_STACK)
 #define DISPLAY_KTAB(m)		(((m) & P_A_KTAB) == P_A_KTAB)
+#define DISPLAY_RT(m)		(((m) & P_A_RT) == P_A_RT)
 
 /* TASK/CHILD */
 #define P_NULL		0x00
@@ -52,6 +54,7 @@
 #define P_D_CMDLINE	0x080
 #define P_D_USERNAME	0x100
 #define P_F_USERSTR	0x200
+#define P_F_PROCSTR	0x400
 
 #define DISPLAY_PID(m)		(((m) & P_D_PID) == P_D_PID)
 #define DISPLAY_ALL_PID(m)	(((m) & P_D_ALL_PID) == P_D_ALL_PID)
@@ -63,6 +66,7 @@
 #define DISPLAY_CMDLINE(m)	(((m) & P_D_CMDLINE) == P_D_CMDLINE)
 #define DISPLAY_USERNAME(m)	(((m) & P_D_USERNAME) == P_D_USERNAME)
 #define USER_STRING(m)		(((m) & P_F_USERSTR) == P_F_USERSTR)
+#define PROCESS_STRING(m)	(((m) & P_F_PROCSTR) == P_F_PROCSTR)
 
 /* Per-process flags */
 #define F_NO_PID_IO	0x01
@@ -105,8 +109,16 @@
 							}					\
 						} while (0)
 
+#define GET_POLICY(p) \
+	(p == SCHED_NORMAL ? "NORMAL" : \
+	(p == SCHED_FIFO   ? "FIFO" : \
+	(p == SCHED_RR     ? "RR" : \
+	(p == SCHED_BATCH  ? "BATCH" : \
+	(p == SCHED_IDLE   ? "IDLE" : \
+	"?")))))
+
 struct pid_stats {
-	unsigned long long read_bytes			__attribute__ ((aligned (8)));
+	unsigned long long read_bytes			__attribute__ ((aligned (16)));
 	unsigned long long write_bytes			__attribute__ ((packed));
 	unsigned long long cancelled_write_bytes	__attribute__ ((packed));
 	unsigned long long total_vsz			__attribute__ ((packed));
@@ -116,18 +128,18 @@ struct pid_stats {
 	unsigned long long total_threads		__attribute__ ((packed));
 	unsigned long long total_fd_nr			__attribute__ ((packed));
 	unsigned long long blkio_swapin_delays		__attribute__ ((packed));
-	unsigned long      minflt			__attribute__ ((packed));
-	unsigned long      cminflt			__attribute__ ((packed));
-	unsigned long      majflt			__attribute__ ((packed));
-	unsigned long      cmajflt			__attribute__ ((packed));
-	unsigned long      utime			__attribute__ ((packed));
-	unsigned long      cutime			__attribute__ ((packed));
-	unsigned long      stime			__attribute__ ((packed));
-	unsigned long      cstime			__attribute__ ((packed));
-	unsigned long      gtime			__attribute__ ((packed));
-	unsigned long      cgtime			__attribute__ ((packed));
-	unsigned long      vsz				__attribute__ ((packed));
-	unsigned long      rss				__attribute__ ((packed));
+	unsigned long long minflt			__attribute__ ((packed));
+	unsigned long long cminflt			__attribute__ ((packed));
+	unsigned long long majflt			__attribute__ ((packed));
+	unsigned long long cmajflt			__attribute__ ((packed));
+	unsigned long long utime			__attribute__ ((packed));
+	long long          cutime			__attribute__ ((packed));
+	unsigned long long stime			__attribute__ ((packed));
+	long long          cstime			__attribute__ ((packed));
+	unsigned long long gtime			__attribute__ ((packed));
+	long long          cgtime			__attribute__ ((packed));
+	unsigned long long vsz				__attribute__ ((packed));
+	unsigned long long rss				__attribute__ ((packed));
 	unsigned long      nvcsw			__attribute__ ((packed));
 	unsigned long      nivcsw			__attribute__ ((packed));
 	unsigned long      stack_size			__attribute__ ((packed));
@@ -143,6 +155,8 @@ struct pid_stats {
 	unsigned int       sk_asum_count		__attribute__ ((packed));
 	unsigned int       delay_asum_count		__attribute__ ((packed));
 	unsigned int       processor			__attribute__ ((packed));
+	unsigned int       priority			__attribute__ ((packed));
+	unsigned int       policy			__attribute__ ((packed));
 	unsigned int       flags			__attribute__ ((packed));
 	unsigned int       uid				__attribute__ ((packed));
 	unsigned int       threads			__attribute__ ((packed));

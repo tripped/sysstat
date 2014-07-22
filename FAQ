@@ -52,6 +52,9 @@ If you don't find the solution to your problem here then send me an email
 2.22. What happened to sar's options -h, -H, -x and -X?
 2.23. What is the exact meaning of the <count> parameter for sar and sadc?
 2.24. Why doesn't sar deal with sub-second sampling/monitoring?
+2.25. Is it possible to save only some specific activities in my daily
+      data files? It would help to make saXX files take less space on disk...
+
 
 3. QUESTIONS RELATING TO IOSTAT
 
@@ -207,10 +210,10 @@ current directory!
 2.4. I get the following error message when I try to run sar:
 Cannot open /var/log/sa/sa30: No such file or directory
 
-Please read the sar(1) manual page! Daily data files are created in the
-/var/log/sa directory using the data collector (sadc) or using option
--o with sar. Once they are created, sar can display statistics saved
-in those files.
+Please read the sar(1) manual page! Daily data files are created by default
+in the /var/log/sa directory using the data collector (sadc) or using
+option -o with sar. Once they are created, sar can display statistics
+saved in those files.
 But sar can also display statistics collected "on the fly": Just enter
 the proper options on the command line to indicate which statistics are
 to be displayed, and also specify <interval> and <count> numbers.
@@ -467,15 +470,21 @@ another file or create a new one. See also question 2.14 above.
 2.19. How can I keep sar data for more than one month?
 
 By default sar saves its data in the standard system activity data file,
-the /var/log/sa/sa<DD> file, where <DD> is the current day in the month.
+the /var/log/sa/saDD file, where DD is the current day in the month.
 To prevent sar from overwriting any existing files, just set the variable
 HISTORY in /etc/sysconfig/sysstat to the number of days during which data
 must be kept. When this variable has a value greater than 28, sa1 script
 uses a month-by-month directory structure; datafiles are named YYYYMM/saDD
 and the script maintains links to these datafiles to mimic the standard
-sar datafile structure.
-However please note that pre-existing datafiles will be deleted as links
-will be created and replace them.
+sar datafile structure. However please note that pre-existing datafiles
+will be deleted as links will be created and replace them.
+Beginning with sysstat version 11.0.0, this tree of directories is no
+longer created. When HISTORY has a value greater than 28, sa1 now calls
+sadc with option -D set, telling it to use saYYYYMMDD instead of saDD
+as the name for the standard system activity daily data files, where
+YYYY stands for the current year, MM for the current month and DD for
+the current day. All these files are saved in the same directory
+(/var/log/sa by default).
 
 ~~~
 
@@ -556,6 +565,31 @@ of data on a sub-second interval basis (and sar really collects
 a lot of data). This can be resource-consuming and you are all the
 more prone to have an influence on the data you are retrieving as
 the interval of time is small.
+
+~~
+
+2.25. Is it possible to save only some specific activities in my
+daily data files? It would help to make saXX files take less space
+on disk...
+
+sadc's option -S followed by a keyword (DISK, SNMP...)  can already
+be used to specify which optional activities are to be collected.
+Without this option, sadc collects a default set of activities (CPU
+activity, memory activity, etc.)
+Yet it is actually possible to specify explicitly which activities
+should be collected by sadc! You have to use sadc's option -S
+followed by a numerical value corresponding to the activity you want
+to collect (the values are those displayed by sadf -H and preceding
+the activity name in the list of activities). The only limitation
+is CPU activity which is always collected for internal purpose.
+Example: To tell sadc to not collect any activities but CPU, enter:
+
+$ sadc -S 0
+
+followed by the other classic options (interval, count, filename...)
+To tell sadc to collect only CPU and network activities, replace
+"-S 0" with "-S 0 -S 12" (the value 12 corresponds to network activity).
+This way you can tell sadc to collect only the desired activities.
 
 
 3. QUESTIONS RELATING TO IOSTAT

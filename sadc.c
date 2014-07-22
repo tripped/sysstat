@@ -88,7 +88,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C <comment> ] [ -F ] [ -L ] [ -V ]\n"
+			  "[ -C <comment> ] [ -D ] [ -F ] [ -L ] [ -V ]\n"
 			  "[ -S { INT | DISK | IPV6 | POWER | SNMP | XDISK | ALL | XALL } ]\n"));
 	exit(1);
 }
@@ -173,7 +173,7 @@ void parse_sadc_S_option(char *argv[], int opt)
 				collect_group_activities(G_DISK + G_XDISK, AO_F_DISK_PART);
 			}
 		}
-		else if (strspn(argv[opt], DIGITS) == strlen(argv[opt])) {
+		else if (strspn(p, DIGITS) == strlen(p)) {
 			/*
 			 * Although undocumented, option -S followed by a numerical value
 			 * enables the user to select each activity that should be
@@ -183,7 +183,7 @@ void parse_sadc_S_option(char *argv[], int opt)
 			 */
 			int act_id;
 
-			act_id = atoi(argv[opt]);
+			act_id = atoi(p);
 			if (act_id > 255) {
 				act_id >>= 8;
 				for (i = 0; i < NR_ACT; i++) {
@@ -240,7 +240,7 @@ void int_handler(int sig)
 		/* sadc hasn't been called by sar */
 		exit(1);
 	}
-	
+
 	/*
 	 * When starting sar then pressing ctrl/c, SIGINT is received
 	 * by sadc, not sar. So send SIGINT to sar so that average stats
@@ -304,7 +304,7 @@ void sa_sys_init(void)
 				act[i]->nr2 = (*act[i]->f_count2)(act[i]);
 			}
 			/* else act[i]->nr2 is a constant and doesn't need to be calculated */
-			
+
 			if (!act[i]->nr2) {
 				act[i]->nr = 0;
 			}
@@ -440,7 +440,7 @@ void fill_magic_header(struct file_magic *file_magic)
 	memset(file_magic, 0, FILE_MAGIC_SIZE);
 
 	file_magic->header_size = FILE_HEADER_SIZE;
-	
+
 	file_magic->sysstat_magic = SYSSTAT_MAGIC;
 	file_magic->format_magic  = FORMAT_MAGIC;
 	file_magic->sysstat_extraversion = 0;
@@ -504,7 +504,7 @@ void setup_file_hdr(int fd)
 	file_hdr.sa_month       = rectime.tm_mon;
 	file_hdr.sa_year        = rectime.tm_year;
 	file_hdr.sa_sizeof_long = sizeof(long);
-	
+
 	/*
 	 * This is a new file (or stdout): Field sa_last_cpu_nr is set to the number
 	 * of CPU items of the machine (1 .. CPU_NR + 1).
@@ -550,7 +550,7 @@ void setup_file_hdr(int fd)
 			if ((n = write_all(fd, &file_act, FILE_ACTIVITY_SIZE))
 			    != FILE_ACTIVITY_SIZE)
 				goto write_error;
-			
+
 			/* Create sequence of volatile activities */
 			if (IS_VOLATILE(act[p]->options)) {
 				vol_id_seq[i] = act[p]->id;
@@ -583,7 +583,7 @@ void write_vol_act_structures(int ofd)
 {
 	struct file_activity file_act;
 	int i, p, n;
-		
+
 	memset(&file_act, 0, FILE_ACTIVITY_SIZE);
 
 	for (i = 0; i < file_hdr.sa_vol_act_nr; i++) {
@@ -598,7 +598,7 @@ void write_vol_act_structures(int ofd)
 		}
 		else {
 			p = get_activity_position(act, vol_id_seq[i]);
-		
+
 			/*
 			 * All the fields in file_activity structure are not used.
 			 * In particular, act[p]->nr2 is left unmodified.
@@ -723,24 +723,24 @@ void write_stats(int ofd)
 void rewrite_file_hdr(int *ofd, off_t fpos, struct file_magic *file_magic)
 {
 	int n;
-	
+
 	/* Remove O_APPEND status flag */
 	if (fcntl(*ofd, F_SETFL, 0) < 0) {
 		perror("fcntl");
 		exit(2);
 	}
-	
+
 	/* Now rewrite file's header with its new CPU number value */
 	if (lseek(*ofd, fpos, SEEK_SET) < fpos) {
 		perror("lseek");
 		exit(2);
 	}
-	
+
 	n = MINIMUM(file_magic->header_size, FILE_HEADER_SIZE);
 	if (write_all(*ofd, &file_hdr, n) != n) {
 		p_write_error();
 	}
-	
+
 	/* Restore O_APPEND status flag */
 	if (fcntl(*ofd, F_SETFL, O_APPEND) < 0) {
 		perror("fcntl");
@@ -831,7 +831,7 @@ void open_ofile(int *ofd, char ofile[], int restart_mark)
 
 	if (!ofile[0])
 		return;
-	
+
 	/* Does file exist? */
 	if (access(ofile, F_OK) < 0) {
 		/* NO: Create it */
@@ -970,7 +970,7 @@ void open_ofile(int *ofd, char ofile[], int restart_mark)
 			id_seq[i] = file_act[i].id;
 			act[p]->options |= AO_COLLECTED;
 		}
-		
+
 		while (j < file_hdr.sa_vol_act_nr) {
 			vol_id_seq[j++] = 0;
 		}
@@ -1063,22 +1063,22 @@ void read_stats(void)
  * Main loop: Read stats from the relevant sources and display them.
  *
  * IN:
- * @count		Number of lines of stats to display.
- * @rectime		Current date and time.
- * @stdfd		Stdout file descriptor.
- * @ofd			Output file descriptor.
- * @ofile		Name of output file.
+ * @count	Number of lines of stats to display.
+ * @stdfd	Stdout file descriptor.
+ * @ofd		Output file descriptor.
+ * @ofile	Name of output file.
+ * @sa_dir	If not an empty string, contains the alternate location of
+ * 		daily data files.
  ***************************************************************************
  */
-void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
-		     char ofile[])
+void rw_sa_stat_loop(long count, int stdfd, int ofd, char ofile[],
+		     char sa_dir[])
 {
 	int do_sa_rotat = 0;
 	unsigned int save_flags;
 	char new_ofile[MAX_FILE_LEN];
+	struct tm rectime;
 
-	new_ofile[0] = '\0';
-	
 	/* Set a handler for SIGINT */
 	memset(&int_act, 0, sizeof(int_act));
 	int_act.sa_handler = (void *) int_handler;
@@ -1095,10 +1095,10 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
 		reset_stats();
 
 		/* Save time */
-		record_hdr.ust_time = get_time(rectime, 0);
-		record_hdr.hour     = rectime->tm_hour;
-		record_hdr.minute   = rectime->tm_min;
-		record_hdr.second   = rectime->tm_sec;
+		record_hdr.ust_time = get_time(&rectime, 0);
+		record_hdr.hour     = rectime.tm_hour;
+		record_hdr.minute   = rectime.tm_min;
+		record_hdr.second   = rectime.tm_sec;
 
 		/* Set record type */
 		if (do_sa_rotat) {
@@ -1176,7 +1176,8 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
 		/* Rotate activity file if necessary */
 		if (WANT_SA_ROTAT(flags)) {
 			/* The user specified '-' as the filename to use */
-			set_default_file(rectime, new_ofile, 0);
+			strcpy(new_ofile, sa_dir);
+			set_default_file(new_ofile, 0, USE_SA_YYYYMMDD(flags));
 
 			if (strcmp(ofile, new_ofile)) {
 				do_sa_rotat = TRUE;
@@ -1198,19 +1199,18 @@ void rw_sa_stat_loop(long count, struct tm *rectime, int stdfd, int ofd,
 int main(int argc, char **argv)
 {
 	int opt = 0;
-	char ofile[MAX_FILE_LEN];
-	struct tm rectime;
+	char ofile[MAX_FILE_LEN], sa_dir[MAX_FILE_LEN];
 	int stdfd = 0, ofd = -1;
 	int restart_mark;
 	long count = 0;
 
 	/* Get HZ */
 	get_HZ();
-	
+
 	/* Compute page shift in kB */
 	get_kb_shift();
 
-	ofile[0] = comment[0] = '\0';
+	ofile[0] = sa_dir[0] = comment[0] = '\0';
 
 #ifdef HAVE_SENSORS
 	/* Initialize sensors, let it use the default cfg file */
@@ -1219,7 +1219,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "sensors_init: %s\n", sensors_strerror(err));
 	}
 #endif /* HAVE_SENSORS */
-	
+
 #ifdef USE_NLS
 	/* Init National Language Support */
 	init_nls();
@@ -1234,6 +1234,10 @@ int main(int argc, char **argv)
 			else {
 				usage(argv[0]);
 			}
+		}
+
+		else if (!strcmp(argv[opt], "-D")) {
+			flags |= S_F_SA_YYYYMMDD;
 		}
 
 		else if (!strcmp(argv[opt], "-F")) {
@@ -1267,26 +1271,23 @@ int main(int argc, char **argv)
 		}
 
 		else if (strspn(argv[opt], DIGITS) != strlen(argv[opt])) {
-			if (!ofile[0]) {
-				stdfd = -1;	/* Don't write to STDOUT */
-				if (!strcmp(argv[opt], "-")) {
-					/* File name set to '-' */
-					set_default_file(&rectime, ofile, 0);
-					flags |= S_F_SA_ROTAT;
-				}
-				else if (!strncmp(argv[opt], "-", 1)) {
-					/* Bad option */
-					usage(argv[0]);
-				}
-				else {
-					/* Write data to file */
-					strncpy(ofile, argv[opt], MAX_FILE_LEN);
-					ofile[MAX_FILE_LEN - 1] = '\0';
-				}
-			}
-			else {
+			if (ofile[0] || WANT_SA_ROTAT(flags)) {
 				/* Outfile already specified */
 				usage(argv[0]);
+			}
+			stdfd = -1;	/* Don't write to STDOUT */
+			if (!strcmp(argv[opt], "-")) {
+				/* File name set to '-' */
+				flags |= S_F_SA_ROTAT;
+			}
+			else if (!strncmp(argv[opt], "-", 1)) {
+				/* Bad option */
+				usage(argv[0]);
+			}
+			else {
+				/* Write data to file */
+				strncpy(ofile, argv[opt], MAX_FILE_LEN);
+				ofile[MAX_FILE_LEN - 1] = '\0';
 			}
 		}
 
@@ -1309,6 +1310,34 @@ int main(int argc, char **argv)
 
 		else {
 			usage(argv[0]);
+		}
+	}
+
+	/* Process file entered on the command line */
+	if (WANT_SA_ROTAT(flags)) {
+		/* File name set to '-' */
+		set_default_file(ofile, 0, USE_SA_YYYYMMDD(flags));
+	}
+	else if (ofile[0]) {
+		/*
+		 * A file (or directory) has been explicitly entered
+		 * on the command line.
+		 * Should ofile be a directory, it will be the alternate
+		 * location for sa files. So save it.
+		 */
+		strcpy(sa_dir, ofile);
+		/* Check if this is an alternate directory for sa files */
+		if (check_alt_sa_dir(ofile, 0, USE_SA_YYYYMMDD(flags))) {
+			/*
+			 * Yes, it was a directory.
+			 * ofile now contains the full path to current
+			 * standard daily data file.
+			 */
+			flags |= S_F_SA_ROTAT;
+		}
+		else {
+			/* No: So we can clear sa_dir */
+			sa_dir[0] = '\0';
 		}
 	}
 
@@ -1338,7 +1367,7 @@ int main(int argc, char **argv)
 	else {
 		restart_mark = FALSE;
 	}
-	
+
 	/*
 	 * Open output file then STDOUT. Write header for each of them.
 	 * NB: Output file must be opened first, because we may change
@@ -1380,7 +1409,7 @@ int main(int argc, char **argv)
 	alarm(interval);
 
 	/* Main loop */
-	rw_sa_stat_loop(count, &rectime, stdfd, ofd, ofile);
+	rw_sa_stat_loop(count, stdfd, ofd, ofile, sa_dir);
 
 #ifdef HAVE_SENSORS
 	/* Cleanup sensors */

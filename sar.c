@@ -107,8 +107,8 @@ void usage(char *progname)
 {
 	print_usage_title(stderr, progname);
 	fprintf(stderr, _("Options are:\n"
-			  "[ -A ] [ -B ] [ -b ] [ -C ] [ -d ] [ -F ] [ -H ] [ -h ] [ -p ] [ -q ] [ -R ]\n"
-			  "[ -r ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -V ] [ -v ] [ -W ] [ -w ] [ -y ]\n"
+			  "[ -A ] [ -B ] [ -b ] [ -C ] [ -D ] [ -d ] [ -F ] [ -H ] [ -h ] [ -p ] [ -q ]\n"
+			  "[ -R ] [ -r ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -V ] [ -v ] [ -W ] [ -w ] [ -y ]\n"
 			  "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
 			  "[ -m { <keyword> [,...] | ALL } ] [ -n { <keyword> [,...] | ALL } ]\n"
 			  "[ -j { ID | LABEL | PATH | UUID | ... } ]\n"
@@ -202,7 +202,7 @@ void int_handler(int sig)
 void init_structures(void)
 {
 	int i;
-	
+
 	for (i = 0; i < 3; i++)
 		memset(&record_hdr[i], 0, RECORD_HEADER_SIZE);
 }
@@ -250,11 +250,11 @@ void print_read_error(void)
 void reverse_check_act(unsigned int act_nr)
 {
 	int i, j;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
-		
+
 		if (IS_SELECTED(act[i]->options)) {
-			
+
 			for (j = 0; j < act_nr; j++) {
 				if (id_seq[j] == act[i]->id)
 					break;
@@ -298,10 +298,10 @@ int sar_get_record_timestamp_struct(int curr)
 			 * The rectime structure has NOT been updated.
 			 */
 			return 1;
-		
+
 		rectime = *ltm;
 	}
-	
+
 	return 0;
 }
 
@@ -320,7 +320,7 @@ int check_line_hdr(void)
 	/* Get number of options entered on the command line */
 	if (get_activity_nr(act, AO_SELECTED, COUNT_OUTPUTS) > 1)
 		return TRUE;
-	
+
 	for (i = 0; i < NR_ACT; i++) {
 		if (IS_SELECTED(act[i]->options)) {
 			/* Special processing for activities using a bitmap */
@@ -387,7 +387,7 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 	int i;
 	unsigned long long itv, g_itv;
 	static __nr_t cpu_nr = -1;
-	
+
 	if (cpu_nr < 0)
 		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
 
@@ -402,15 +402,15 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 	strncpy(timestamp[curr], _("Average:"), TIMESTAMP_LEN);
 	timestamp[curr][TIMESTAMP_LEN - 1] = '\0';
 	strcpy(timestamp[!curr], timestamp[curr]);
-	
+
 	/* Test stdout */
 	TEST_STDOUT(STDOUT_FILENO);
-	
+
 	for (i = 0; i < NR_ACT; i++) {
-		
+
 		if ((act_id != ALL_ACTIVITIES) && (act[i]->id != act_id))
 			continue;
-		
+
 		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
 			/* Display current average activity statistics */
 			(*act[i]->f_print_avg)(act[i], 2, curr,
@@ -509,7 +509,7 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 	}
 
 	avg_count++;
-	
+
 	/* Test stdout */
 	TEST_STDOUT(STDOUT_FILENO);
 
@@ -553,12 +553,12 @@ void write_stats_startup(int curr)
 			memset(act[i]->buf[!curr], 0, act[i]->msize * act[i]->nr * act[i]->nr2);
 		}
 	}
-	
+
 	flags |= S_F_SINCE_BOOT;
 	dis = TRUE;
-	
+
 	write_stats(curr, USE_SADC, &count, NO_TM_START, NO_TM_END, NO_RESET, ALL_ACTIVITIES);
-	
+
 	exit(0);
 }
 
@@ -636,7 +636,7 @@ int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype,
 		/* Don't forget to read the volatile activities structures */
 		new_cpu_nr = read_vol_act_structures(ifd, act, file, file_magic,
 						     file_hdr.sa_vol_act_nr);
-		
+
 		if (dp) {
 			printf("\n%-11s       LINUX RESTART\t(%d CPU)\n",
 			       cur_time, new_cpu_nr > 1 ? new_cpu_nr - 1 : 1);
@@ -675,9 +675,9 @@ void read_sadc_stat_bunch(int curr)
 	if (sa_read(&record_hdr[curr], RECORD_HEADER_SIZE)) {
 		print_read_error();
 	}
-	
+
 	for (i = 0; i < NR_ACT; i++) {
-		
+
 		if (!id_seq[i])
 			continue;
 		if ((p = get_activity_position(act, id_seq[i])) < 0) {
@@ -851,10 +851,10 @@ void read_header_data(void)
 	if (sa_read(&file_hdr, FILE_HEADER_SIZE)) {
 		print_read_error();
 	}
-	
+
 	/* Read activity list */
 	for (i = 0; i < file_hdr.sa_act_nr; i++) {
-		
+
 		if (sa_read(&file_act, FILE_ACTIVITY_SIZE)) {
 			print_read_error();
 		}
@@ -878,7 +878,7 @@ void read_header_data(void)
 	while (i < NR_ACT) {
 		id_seq[i++] = 0;
 	}
-	
+
 	/* Check that all selected activties are actually sent by sadc */
 	reverse_check_act(file_hdr.sa_act_nr);
 }
@@ -969,14 +969,14 @@ void read_stats_from_file(char from_file[])
 
 			if (!id_seq[i])
 				continue;
-			
+
 			if ((p = get_activity_position(act, id_seq[i])) < 0) {
 				/* Should never happen */
 				PANIC(1);
 			}
 			if (!IS_SELECTED(act[p]->options))
 				continue;
-			
+
 			if (!HAS_MULTIPLE_OUTPUTS(act[p]->options)) {
 				handle_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf, rows,
 						      act[p]->id, &reset, file_actlst,
@@ -984,13 +984,13 @@ void read_stats_from_file(char from_file[])
 			}
 			else {
 				unsigned int optf, msk;
-				
+
 				optf = act[p]->opt_flags;
-				
+
 				for (msk = 1; msk < 0x10; msk <<= 1) {
 					if (act[p]->opt_flags & msk) {
 						act[p]->opt_flags &= msk;
-						
+
 						handle_curr_act_stats(ifd, fpos, &curr, &cnt,
 								      &eosaf, rows, act[p]->id,
 								      &reset, file_actlst,
@@ -1029,7 +1029,7 @@ void read_stats_from_file(char from_file[])
 	while (!eosaf);
 
 	close(ifd);
-	
+
 	free(file_actlst);
 }
 
@@ -1155,7 +1155,7 @@ int main(int argc, char **argv)
 #endif
 
 	tm_start.use = tm_end.use = FALSE;
-	
+
 	/* Allocate and init activity bitmaps */
 	allocate_bitmaps(act);
 
@@ -1176,6 +1176,12 @@ int main(int argc, char **argv)
 			}
 		}
 
+		else if (!strcmp(argv[opt], "-D")) {
+			/* Option to tell sar to write to saYYYYMMDD data files */
+			flags |= S_F_SA_YYYYMMDD;
+			opt++;
+		}
+
 		else if (!strcmp(argv[opt], "-P")) {
 			/* Parse -P option */
 			if (parse_sa_P_opt(argv, &opt, &flags, act)) {
@@ -1184,6 +1190,10 @@ int main(int argc, char **argv)
 		}
 
 		else if (!strcmp(argv[opt], "-o")) {
+			if (to_file[0]) {
+				/* Output file already specified */
+				usage(argv[0]);
+			}
 			/* Save stats to a file */
 			if ((argv[++opt]) && strncmp(argv[opt], "-", 1) &&
 			    (strspn(argv[opt], DIGITS) != strlen(argv[opt]))) {
@@ -1196,14 +1206,20 @@ int main(int argc, char **argv)
 		}
 
 		else if (!strcmp(argv[opt], "-f")) {
+			if (from_file[0]) {
+				/* Input file already specified */
+				usage(argv[0]);
+			}
 			/* Read stats from a file */
 			if ((argv[++opt]) && strncmp(argv[opt], "-", 1) &&
 			    (strspn(argv[opt], DIGITS) != strlen(argv[opt]))) {
 				strncpy(from_file, argv[opt++], MAX_FILE_LEN);
 				from_file[MAX_FILE_LEN - 1] = '\0';
+				/* Check if this is an alternate directory for sa files */
+				check_alt_sa_dir(from_file, day_offset, -1);
 			}
 			else {
-				set_default_file(&rectime, from_file, day_offset);
+				set_default_file(from_file, day_offset, -1);
 			}
 		}
 
@@ -1260,7 +1276,7 @@ int main(int argc, char **argv)
 				usage(argv[0]);
 			}
 		}
-		
+
 		else if ((strlen(argv[opt]) > 1) &&
 			 (strlen(argv[opt]) < 4) &&
 			 !strncmp(argv[opt], "-", 1) &&
@@ -1310,7 +1326,7 @@ int main(int argc, char **argv)
 	/* 'sar' is equivalent to 'sar -f' */
 	if ((argc == 1) ||
 	    ((interval < 0) && !from_file[0] && !to_file[0])) {
-		set_default_file(&rectime, from_file, day_offset);
+		set_default_file(from_file, day_offset, -1);
 	}
 
 	if (tm_start.use && tm_end.use && (tm_end.tm_hour < tm_start.tm_hour)) {
@@ -1335,7 +1351,7 @@ int main(int argc, char **argv)
 	if (!interval && (from_file[0] || to_file[0])) {
 		usage(argv[0]);
 	}
-	
+
 	/* Cannot enter a day shift with -o option */
 	if (to_file[0] && day_offset) {
 		usage(argv[0]);
@@ -1344,7 +1360,7 @@ int main(int argc, char **argv)
 	if (USE_PRETTY_OPTION(flags)) {
 		dm_major = get_devmap_major();
 	}
-	
+
 	if (!count) {
 		/*
 		 * count parameter not set: Display all the contents of the file
@@ -1355,7 +1371,7 @@ int main(int argc, char **argv)
 
 	/* Default is CPU activity... */
 	select_default_activity(act);
-	
+
 	/* Reading stats from file: */
 	if (from_file[0]) {
 		if (interval < 0) {
@@ -1364,7 +1380,7 @@ int main(int argc, char **argv)
 
 		/* Read stats from file */
 		read_stats_from_file(from_file);
-		
+
 		/* Free stuctures and activity bitmaps */
 		free_bitmaps(act);
 		free_structures(act);
@@ -1420,9 +1436,13 @@ int main(int argc, char **argv)
 
 		/* Flags to be passed to sadc */
 		salloc(args_idx++, "-z");
-		
+
 		/* Writing data to a file (option -o) */
 		if (to_file[0]) {
+			/* Set option -D if entered */
+			if (USE_SA_YYYYMMDD(flags)) {
+				salloc(args_idx++, "-D");
+			}
 			/* Collect all possible activities (option -S XALL for sadc) */
 			salloc(args_idx++, "-S");
 			salloc(args_idx++, K_XALL);
@@ -1435,7 +1455,7 @@ int main(int argc, char **argv)
 			 * to collect only activities that will be displayed.
 			 */
 			int act_id = 0;
-			
+
 			for (i = 0; i < NR_ACT; i++) {
 				if (IS_SELECTED(act[i]->options)) {
 					act_id |= act[i]->group;

@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <libgen.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/ioctl.h>
 
 #include "sa.h"
@@ -181,7 +182,7 @@ char *get_devname(unsigned int major, unsigned int minor, int pretty)
 	name = get_devname_from_sysfs(major, minor);
 	if (name != NULL)
 		return (name);
-	
+
 	name = ioc_name(major, minor);
 	if ((name != NULL) && strcmp(name, K_NODEV))
 		return (name);
@@ -343,23 +344,154 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
 
 /*
  ***************************************************************************
+ * Look for the most recent of saDD and saYYYYMMDD to decide which one to
+ * use. If neither exists then use saDD by default.
+ *
+ * IN:
+ * @sa_dir	Directory where standard daily data files are saved.
+ * @rectime	Structure containing the current date.
+ *
+ * OUT:
+ * @sa_name	0 to use saDD data files,
+ * 		1 to use saYYYYMMDD data files.
+ ***************************************************************************
+ */
+void guess_sa_name(char *sa_dir, struct tm *rectime, int *sa_name)
+{
+	char filename[MAX_FILE_LEN];
+	struct stat sb;
+	time_t sa_mtime;
+
+	/* Use saDD by default */
+	*sa_name = 0;
+
+	/* Look for saYYYYMMDD */
+	snprintf(filename, MAX_FILE_LEN,
+		 "%s/sa%04d%02d%02d", sa_dir,
+		 rectime->tm_year + 1900,
+		 rectime->tm_mon + 1,
+		 rectime->tm_mday);
+	filename[MAX_FILE_LEN - 1] = '\0';
+
+	if (stat(filename, &sb) < 0)
+		/* Cannot find or access saYYYYMMDD, so use saDD */
+		return;
+	sa_mtime = sb.st_mtime;
+
+	/* Look for saDD */
+	snprintf(filename, MAX_FILE_LEN,
+		 "%s/sa%02d", sa_dir,
+		 rectime->tm_mday);
+	filename[MAX_FILE_LEN - 1] = '\0';
+
+	if (stat(filename, &sb) < 0) {
+		/* Cannot find or access saDD, so use saYYYYMMDD */
+		*sa_name = 1;
+		return;
+	}
+
+	if (sa_mtime > sb.st_mtime) {
+		/* saYYYYMMDD is more recent than saDD, so use it */
+		*sa_name = 1;
+	}
+}
+
+/*
+ ***************************************************************************
  * Set current daily data file name.
  *
  * IN:
+ * @datafile	If not an empty string then this is the alternate directory
+ *		location where daily data files will be saved.
  * @d_off	Day offset (number of days to go back in the past).
+ * @sa_name	0 for saDD data files,
+ * 		1 for saYYYYMMDD data files,
+ * 		-1 if unknown. In this case, will look for the most recent
+ * 		of saDD and saYYYYMMDD and use it.
  *
  * OUT:
- * @rectime	Current date and time.
  * @datafile	Name of daily data file.
  ***************************************************************************
  */
-void set_default_file(struct tm *rectime, char *datafile, int d_off)
+void set_default_file(char *datafile, int d_off, int sa_name)
 {
-	get_time(rectime, d_off);
-	snprintf(datafile, MAX_FILE_LEN,
-		 "%s/sa%02d", SA_DIR, rectime->tm_mday);
+	char sa_dir[MAX_FILE_LEN];
+	struct tm rectime;
+
+	/* Set directory where daily data files will be saved */
+	if (datafile[0]) {
+		strncpy(sa_dir, datafile, MAX_FILE_LEN);
+	}
+	else {
+		strncpy(sa_dir, SA_DIR, MAX_FILE_LEN);
+	}
+	sa_dir[MAX_FILE_LEN - 1] = '\0';
+
+	get_time(&rectime, d_off);
+	if (sa_name < 0) {
+		/*
+		 * Look for the most recent of saDD and saYYYYMMDD
+		 * and use it. If neither exists then use saDD.
+		 * sa_name is set accordingly.
+		 */
+		guess_sa_name(sa_dir, &rectime, &sa_name);
+	}
+	if (sa_name) {
+		/* Using saYYYYMMDD data files */
+		snprintf(datafile, MAX_FILE_LEN,
+			 "%s/sa%04d%02d%02d", sa_dir,
+			 rectime.tm_year + 1900,
+			 rectime.tm_mon + 1,
+			 rectime.tm_mday);
+	}
+	else {
+		/* Using saDD data files */
+		snprintf(datafile, MAX_FILE_LEN,
+			 "%s/sa%02d", sa_dir,
+			 rectime.tm_mday);
+	}
 	datafile[MAX_FILE_LEN - 1] = '\0';
 	default_file_used = TRUE;
+}
+
+/*
+ ***************************************************************************
+ * Check data file type. If it is a directory then this is the alternate
+ * location where daily data files will be saved.
+ *
+ * IN:
+ * @datafile	Name of the daily data file. May be a directory.
+ * @d_off	Day offset (number of days to go back in the past).
+ * @sa_name	0 for saDD data files,
+ * 		1 for saYYYYMMDD data files,
+ * 		-1 if unknown. In this case, will look for the most recent
+ * 		of saDD and saYYYYMMDD and use it.
+ *
+ *
+ * OUT:
+ * @datafile	Name of the daily data file. This is now a plain file, not
+ * 		a directory.
+ *
+ * RETURNS:
+ * 1 if @datafile was a directory, and 0 otherwise.
+ ***************************************************************************
+ */
+int check_alt_sa_dir(char *datafile, int d_off, int sa_name)
+{
+	struct stat sb;
+
+	if (stat(datafile, &sb) == 0) {
+		if (S_ISDIR(sb.st_mode)) {
+			/*
+			 * This is a directory: So append
+			 * the default file name to it.
+			 */
+			set_default_file(datafile, d_off, sa_name);
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 /*
@@ -1019,7 +1151,7 @@ void copy_structures(struct activity *act[], unsigned int id_seq[],
 		    (act[p]->nr < 1) || (act[p]->nr2 < 1)) {
 			PANIC(1);
 		}
-		
+
 		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * act[p]->nr * act[p]->nr2);
 	}
 }
@@ -1110,9 +1242,9 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 	/* Open sa data file */
 	if ((*ifd = open(dfile, O_RDONLY)) < 0) {
 		int saved_errno = errno;
-		
+
 		fprintf(stderr, _("Cannot open %s: %s\n"), dfile, strerror(errno));
-		
+
 		if ((saved_errno == ENOENT) && default_file_used) {
 			fprintf(stderr, _("Please check if data collecting is enabled\n"));
 		}
@@ -1138,12 +1270,12 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 	}
 
 	SREALLOC(buffer, char, file_magic->header_size);
-	
+
 	/* Read sa data file standard header and allocate activity list */
 	sa_fread(*ifd, buffer, file_magic->header_size, HARD_SIZE);
 	memcpy(file_hdr, buffer, MINIMUM(file_magic->header_size, FILE_HEADER_SIZE));
 	free(buffer);
-	
+
 	SREALLOC(*file_actlst, struct file_activity, FILE_ACTIVITY_SIZE * file_hdr->sa_act_nr);
 	fal = *file_actlst;
 
@@ -1164,7 +1296,7 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 		if ((p = get_activity_position(act, fal->id)) < 0)
 			/* Unknown activity */
 			continue;
-		
+
 		if (act[p]->magic != fal->magic) {
 			/* Bad magical number */
 			if (ignore) {
@@ -1263,17 +1395,17 @@ int reallocate_vol_act_structures(struct activity *act[], unsigned int act_nr,
 	                           unsigned int act_id)
 {
 	int j, p;
-	
+
 	if ((p = get_activity_position(act, act_id)) < 0)
 		/* Ignore unknown activity */
 		return -1;
-	
+
 	act[p]->nr = act_nr;
 
 	for (j = 0; j < 3; j++) {
 		SREALLOC(act[p]->buf[j], void, act[p]->msize * act[p]->nr * act[p]->nr2);
 	}
-	
+
 	return 0;
 }
 
@@ -1304,11 +1436,11 @@ __nr_t read_vol_act_structures(int ifd, struct activity *act[], char *file,
 	struct file_activity file_act;
 	int item_nr = 0;
 	int i, rc;
-	
+
 	for (i = 0; i < vol_act_nr; i++) {
-		
+
 		sa_fread(ifd, &file_act, FILE_ACTIVITY_SIZE, HARD_SIZE);
-		
+
 		if (file_act.id) {
 			rc = reallocate_vol_act_structures(act, file_act.nr, file_act.id);
 			if ((rc == 0) && !item_nr) {
@@ -1317,7 +1449,7 @@ __nr_t read_vol_act_structures(int ifd, struct activity *act[], char *file,
 		}
 		/* else ignore empty structures that may exist */
 	}
-	
+
 	if (!item_nr) {
 		/* All volatile activities structures cannot be empty */
 		handle_invalid_sa_file(&ifd, file_magic, file, 0);
@@ -1390,12 +1522,12 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 		case 'F':
 			SELECT_ACTIVITY(A_FILESYSTEM);
 			break;
-			
+
 		case 'H':
 			p = get_activity_position(act, A_HUGE);
 			act[p]->options   |= AO_SELECTED;
 			break;
-			
+
 		case 'j':
 			if (argv[*opt + 1]) {
 				(*opt)++;
@@ -1420,7 +1552,7 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 				return 1;
 			}
 			break;
-			
+
 		case 'p':
 			*flags |= S_F_DEV_PRETTY;
 			break;
@@ -1786,11 +1918,11 @@ int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags, struct activity 
 double compute_ifutil(struct stats_net_dev *st_net_dev, double rx, double tx)
 {
 	unsigned long long speed;
-	
+
 	if (st_net_dev->speed) {
-		
+
 		speed = st_net_dev->speed * 1000000;
-		
+
 		if (st_net_dev->duplex == C_DUPLEX_FULL) {
 			/* Full duplex */
 			if (rx > tx) {
@@ -1805,7 +1937,7 @@ double compute_ifutil(struct stats_net_dev *st_net_dev, double rx, double tx)
 			return ((rx + tx) * 800 / speed);
 		}
 	}
-	
+
 	return 0;
 }
 

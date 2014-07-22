@@ -1,12 +1,14 @@
-.TH PIDSTAT 1 "NOVEMBER 2013" Linux "Linux User's Manual" -*- nroff -*-
+.TH PIDSTAT 1 "JUNE 2014" Linux "Linux User's Manual" -*- nroff -*-
 .SH NAME
 pidstat \- Report statistics for Linux tasks.
 .SH SYNOPSIS
-.B pidstat [ -d ] [ -h ] [ -I ] [ -l ] [ -r ] [ -s ] [ -t ] [ -U [
+.B pidstat [ -d ] [ -h ] [ -I ] [ -l ] [ -R ] [ -r ] [ -s ] [ -t ] [ -U [
 .I username
 .B ] ] [ -u ] [ -V ] [ -v ]
 .B [ -w ] [ -C
 .I comm
+.B ] [ -G
+.I process_name
 .B ] [ -p {
 .I pid
 .B [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ] [
@@ -117,6 +119,14 @@ completion.
 The command name of the task.
 .RE
 .RE
+.IP "-G process_name"
+Display only processes whose command name includes the string
+.IR process_name .
+This string can be a regular expression. If option -t is used
+together with option -G then the threads belonging to that
+process are also displayed (even if their command name doesn't
+include the string
+.IR process_name ).
 .IP -h
 Display all activities horizontally on a single line. This is
 intended to make it easier to be parsed by other programs.
@@ -129,7 +139,7 @@ In an SMP environment, indicate that tasks CPU usage
 Display the process command name and all its arguments.
 .IP "-p { pid [,...] | SELF | ALL }"
 Select tasks (processes) for which statistics are to be reported.
-.B pid
+.I pid
 is the process identification number. The
 .B SELF
 keyword indicates that statistics are to be reported for the
@@ -138,6 +148,41 @@ process itself, whereas the
 .B ALL
 keyword indicates that statistics are to be reported for all the
 tasks managed by the system.
+.IP -R
+Report realtime priority and scheduling policy information.
+The following values may be displayed:
+
+.B UID
+.RS
+.RS
+The real user identification number of the task being monitored.
+.RE
+
+.B USER
+.RS
+The name of the real user owning the task being monitored.
+.RE
+
+.B PID
+.RS
+The identification number of the task being monitored.
+.RE
+
+.B prio
+.RS
+The realtime priority of the task being monitored.
+.RE
+
+.B policy
+.RS
+The scheduling policy of the task being monitored.
+.RE
+
+.B Command
+.RS
+The command name of the task.
+.RE
+.RE
 .IP -r
 Report page faults and memory utilization.
 

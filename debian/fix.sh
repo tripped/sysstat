@@ -28,7 +28,7 @@ for file in `echo $FFILES`; do
  man_re=""
  # try to fix hyphens in systat's man pages
  if [ "${file%man/man*}" != "$file" ] && [ "${file%isag*}" = "$file" ]; then
- 	man_re='2,${:S;s|\([^\\]\)-|\1\\-|g;tS}'
+ 	man_re='2,${s|^-|\\-|;:S;s|\([^\\]\)-|\1\\-|g;tS}'
  fi	
 
  if [ -n "$man_re" ] || grep -q 'l[oi][gb]/sa' "$file" >/dev/null 2>&1 ; then

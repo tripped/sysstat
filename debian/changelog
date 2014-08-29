@@ -1,9 +1,13 @@
-sysstat (11.0.0-1~) UNRELEASED; urgency=medium
+sysstat (11.0.0-1) unstable; urgency=medium
 
-  * New upstream version.
+  * New upstream version:
+    + The standard daily data files may now be named saYYYYMMDD instead
+      of saDD, especially when HISTORY variable is greater than 28.
   * Update patches for the new version.
+  * Add 12-isag-new-format-support.patch to handle the newly introduced
+    saYYYYMMDD log files format.
 
- -- Robert Luberda <robert@debian.org>  Tue, 22 Jul 2014 22:50:34 +0200
+ -- Robert Luberda <robert@debian.org>  Fri, 29 Aug 2014 08:33:19 +0200
 
 sysstat (10.3.1-1) unstable; urgency=medium
 

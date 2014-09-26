@@ -1,8 +1,10 @@
-sysstat (11.0.1-1~) UNRELEASED; urgency=medium
+sysstat (11.0.1-1) unstable; urgency=medium
 
   * New upstream (stable) version.
+  * Update debian/watch to prefer "xz" tarballs.
+  * Standards-Version: 3.9.6 (no changes).
 
- -- Robert Luberda <robert@debian.org>  Fri, 26 Sep 2014 09:40:06 +0200
+ -- Robert Luberda <robert@debian.org>  Fri, 26 Sep 2014 10:03:15 +0200
 
 sysstat (11.0.0-1) unstable; urgency=medium
 

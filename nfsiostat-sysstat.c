@@ -43,7 +43,6 @@
 #define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
 char *sccsid(void) { return (SCCSID); }
 
-unsigned long long uptime[2]  = {0, 0};
 unsigned long long uptime0[2] = {0, 0};
 struct io_nfs_stats *st_ionfs[2];
 struct io_hdr_stats *st_hdr_ionfs;
@@ -89,13 +88,11 @@ void usage(char *progname)
  */
 void set_output_unit(void)
 {
-	char *e;
-
 	if (DISPLAY_KILOBYTES(flags) || DISPLAY_MEGABYTES(flags))
 		return;
 
 	/* Check POSIXLY_CORRECT environment variable */
-	if ((e = getenv(ENV_POSIXLY_CORRECT)) == NULL) {
+	if (getenv(ENV_POSIXLY_CORRECT) == NULL) {
 		/* Variable not set: Unit is kB/s and not blocks/s */
 		flags |= I_D_KILOBYTES;
 	}
@@ -272,7 +269,8 @@ void save_stats(char *name, int curr, void *st_io)
 				st_hdr_ionfs_i->used = TRUE; /* Indicate it is now used */
 				st_hdr_ionfs_i->active = TRUE;
 
-				strcpy(st_hdr_ionfs_i->name, name);
+				strncpy(st_hdr_ionfs_i->name, name, MAX_NAME_LEN - 1);
+				st_hdr_ionfs_i->name[MAX_NAME_LEN - 1] = '\0';
 				st_ionfs_i = st_ionfs[curr] + i;
 				memset(st_ionfs_i, 0, IO_NFS_STATS_SIZE);
 				*st_ionfs_i = *((struct io_nfs_stats *) st_io);
@@ -310,7 +308,8 @@ void save_stats(char *name, int curr, void *st_io)
 			/* Now i shows the first unused entry of the new block */
 			st_hdr_ionfs_i = st_hdr_ionfs + i;
 			st_hdr_ionfs_i->used = TRUE; /* Indicate it is now used */
-			strcpy(st_hdr_ionfs_i->name, name);
+			strncpy(st_hdr_ionfs_i->name, name, MAX_NAME_LEN - 1);
+			st_hdr_ionfs_i->name[MAX_NAME_LEN - 1] = '\0';
 			st_ionfs_i = st_ionfs[curr] + i;
 			memset(st_ionfs_i, 0, IO_NFS_STATS_SIZE);
 		}
@@ -345,7 +344,7 @@ void read_nfs_stat(int curr)
 	char nfs_name[MAX_NAME_LEN];
 	char mount[10], on[10], prefix[10], aux[32];
 	char operation[16];
-	struct io_nfs_stats snfs;
+	struct io_nfs_stats snfs = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 	long int v1;
 
 	/* Every I/O NFS entry is potentially unregistered */
@@ -419,7 +418,7 @@ void read_nfs_stat(int curr)
 			while (sw == 4) {
 				if (fgets(line, sizeof(line), fp) == NULL)
 					break;
-				sscanf(line, "%15s %lu", operation, &v1);
+				sscanf(line, "%15s %ld", operation, &v1);
 				if (!strncmp(operation, "READ:", 5)) {
 					snfs.nfs_rops = v1;
 				}
@@ -538,13 +537,8 @@ void write_stats(int curr, struct tm *rectime)
 #endif
 	}
 
-	/* Interval is multiplied by the number of processors */
-	itv = get_interval(uptime[!curr], uptime[curr]);
-
-	if (cpu_nr > 1) {
-		/* On SMP machines, reduce itv to one processor (see note above) */
-		itv = get_interval(uptime0[!curr], uptime0[curr]);
-	}
+	/* Interval of time, reduced to one processor */
+	itv = get_interval(uptime0[!curr], uptime0[curr]);
 
 	shi = st_hdr_ionfs;
 
@@ -592,15 +586,13 @@ void rw_io_stat_loop(long int count, struct tm *rectime)
 	setbuf(stdout, NULL);
 
 	do {
-		if (cpu_nr > 1) {
-			/*
-			 * Read system uptime (only for SMP machines).
-			 * Init uptime0. So if /proc/uptime cannot fill it,
-			 * this will be done by /proc/stat.
-			 */
-			uptime0[curr] = 0;
-			read_uptime(&(uptime0[curr]));
-		}
+		/* Read system uptime (reduced to one processor) */
+		uptime0[curr] = 0;
+		read_uptime(&(uptime0[curr]));
+		if (!uptime0[curr])
+			/* Cannot read system uptime (/proc/uptime doesn't exist) */
+			exit(2);
+
 		/* Read NFS directories stats */
 		read_nfs_stat(curr);
 
@@ -738,7 +730,7 @@ int main(int argc, char **argv)
 
 	/* Set a handler for SIGALRM */
 	memset(&alrm_act, 0, sizeof(alrm_act));
-	alrm_act.sa_handler = (void *) alarm_handler;
+	alrm_act.sa_handler = alarm_handler;
 	sigaction(SIGALRM, &alrm_act, NULL);
 	alarm(interval);
 

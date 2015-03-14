@@ -22,6 +22,9 @@
 /* Number of activities */
 #define NR_ACT	37
 
+/* Number of functions used to count items */
+#define NR_F_COUNT	10
+
 /* Activities */
 #define A_CPU		1
 #define A_PCSW		2
@@ -63,10 +66,10 @@
 
 
 /* Macro used to flag an activity that should be collected */
-#define COLLECT_ACTIVITY(m)	act[get_activity_position(act, m)]->options |= AO_COLLECTED
+#define COLLECT_ACTIVITY(m)	act[get_activity_position(act, m, EXIT_IF_NOT_FOUND)]->options |= AO_COLLECTED
 
 /* Macro used to flag an activity that should be selected */
-#define SELECT_ACTIVITY(m)	act[get_activity_position(act, m)]->options |= AO_SELECTED
+#define SELECT_ACTIVITY(m)	act[get_activity_position(act, m, EXIT_IF_NOT_FOUND)]->options |= AO_SELECTED
 
 
 /*
@@ -113,10 +116,13 @@
 #define AO_F_MEM_DIA		0x00000001
 #define AO_F_MEM_AMT		0x00000002
 #define AO_F_MEM_SWAP		0x00000004
+/* AO_F_MEM_ALL: See opt_flags in struct activity below */
+#define AO_F_MEM_ALL		(AO_F_MEM_AMT << 8)
 
 #define DISPLAY_MEMORY(m)	(((m) & AO_F_MEM_DIA)     == AO_F_MEM_DIA)
 #define DISPLAY_MEM_AMT(m)	(((m) & AO_F_MEM_AMT)     == AO_F_MEM_AMT)
 #define DISPLAY_SWAP(m)		(((m) & AO_F_MEM_SWAP)    == AO_F_MEM_SWAP)
+#define DISPLAY_MEM_ALL(m)	(((m) & AO_F_MEM_ALL)     == AO_F_MEM_ALL)
 
 /* Output flags for option -u [ ALL ] */
 #define AO_F_CPU_DEF		0x00000001
@@ -194,24 +200,26 @@
  */
 #define BITMAP_SIZE(m)	((((m) + 1) / 8) + 1)
 
-#define UTSNAME_LEN		65
-#define TIMESTAMP_LEN		16
-#define HEADER_LINE_LEN		512
+#define UTSNAME_LEN	65
+#define TIMESTAMP_LEN	16
+#define HEADER_LINE_LEN	512
 
 /* Maximum number of args that can be passed to sadc */
 #define MAX_ARGV_NR	32
 
 /* Miscellaneous constants */
-#define USE_SADC	0
-#define USE_SA_FILE	1
-#define NO_TM_START	0
-#define NO_TM_END	0
-#define NO_RESET	0
-#define NON_FATAL	0
-#define FATAL		1
-#define C_SAR		0
-#define C_SADF		1
-#define ALL_ACTIVITIES	~0U
+#define USE_SADC		0
+#define USE_SA_FILE		1
+#define NO_TM_START		0
+#define NO_TM_END		0
+#define NO_RESET		0
+#define NON_FATAL		0
+#define FATAL			1
+#define C_SAR			0
+#define C_SADF			1
+#define ALL_ACTIVITIES		~0U
+#define EXIT_IF_NOT_FOUND	1
+#define RESUME_IF_NOT_FOUND	0
 
 #define SOFT_SIZE	0
 #define HARD_SIZE	1
@@ -325,18 +333,19 @@ struct activity {
 	 */
 	unsigned int group;
 	/*
-	 * The f_count() function is used to count the number of
-	 * items (serial lines, network interfaces, etc.) -> @nr
+	 * Index in f_count[] array to determine function used to count
+	 * the number of items (serial lines, network interfaces, etc.) -> @nr
 	 * Such a function should _always_ return a value greater than
 	 * or equal to 0.
 	 *
-	 * A NULL value for this function pointer indicates that the number of items
+	 * A value of -1 indicates that the number of items
 	 * is a constant (and @nr is set to this value).
 	 *
-	 * This function is called even if activity has not been selected, to make
-	 * sure that all items have been calculated (including #CPU, etc.)
+	 * These functions are called even if corresponding activities have not
+	 * been selected, to make sure that all items have been calculated
+	 * (including #CPU, etc.)
 	 */
-	__nr_t (*f_count) (struct activity *);
+	int f_count_index;
 	/*
 	 * The f_count2() function is used to count the number of
 	 * sub-items -> @nr2
@@ -375,7 +384,11 @@ struct activity {
 	 */
 	__print_funct_t (*f_json_print) (struct activity *, int, int, unsigned long long);
 	/*
-	 * Header string displayed by sadf -d/-D.
+	 * Header string displayed by sadf -d.
+	 * Header lines for each output (for activities with multiple outputs) are
+	 * separated with a '|' character.
+	 * For a given output, the first field corresponding to extended statistics
+	 * (eg. -r ALL) begins with a '&' character.
 	 */
 	char *hdr_line;
 	/*
@@ -423,6 +436,10 @@ struct activity {
 	/*
 	 * Optional flags for activity. This is eg. used when AO_MULTIPLE_OUTPUTS
 	 * option is set.
+	 * 0x0001 - 0x0080 : Multiple outputs (eg. AO_F_MEM_AMT, AO_F_MEM_SWAP...)
+	 * 0x0100 - 0x8000 : If bit set then display complete header (hdr_line) for
+	 *                   corresponding output
+	 * 0x010000+       : Optional flags
 	 */
 	unsigned int opt_flags;
 	/*
@@ -487,6 +504,12 @@ struct activity {
  */
 #define FORMAT_MAGIC	0x2173
 
+/* Previous datafile format magic number used by older sysstat versions */
+#define PREVIOUS_FORMAT_MAGIC	0x2171
+
+/* Padding in file_magic structure. See below. */
+#define FILE_MAGIC_PADDING	63
+
 /* Structure for file magic header data */
 struct file_magic {
 	/*
@@ -509,9 +532,16 @@ struct file_magic {
 	 */
 	unsigned int header_size;
 	/*
+	 * Set to non zero if data file has been converted with "sadf -c" from
+	 * an old format (version x.y.z) to a newest format (version X.Y.Z).
+	 * In this case, the value is: Y*16 + Z + 1.
+	 * The FORMAT_MAGIC value of the file can be used to determine X.
+	 */
+	unsigned char upgraded;
+	/*
 	 * Padding. Reserved for future use while avoiding a format change.
 	 */
-	unsigned char pad[64];
+	unsigned char pad[FILE_MAGIC_PADDING];
 };
 
 #define FILE_MAGIC_SIZE	(sizeof(struct file_magic))
@@ -830,13 +860,15 @@ extern int
 extern void
 	display_sa_file_version(FILE *, struct file_magic *);
 extern void
+	enum_version_nr(struct file_magic *);
+extern void
 	free_bitmaps(struct activity * []);
 extern void
 	free_structures(struct activity * []);
 extern int
 	get_activity_nr(struct activity * [], unsigned int, int);
 extern int
-	get_activity_position(struct activity * [], unsigned int);
+	get_activity_position(struct activity * [], unsigned int, int);
 extern char *
 	get_devname(unsigned int, unsigned int, int);
 extern void
@@ -871,6 +903,8 @@ extern int
 	reallocate_vol_act_structures(struct activity * [], unsigned int, unsigned int);
 extern int
 	sa_fread(int, void *, int, int);
+extern int
+	sa_open_read_magic(int *, char *, struct file_magic *, int);
 extern void
 	select_all_activities(struct activity * []);
 extern void

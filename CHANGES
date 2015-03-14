@@ -1,16 +1,74 @@
 Changes:
 
-2014/08/30: Version 11.0.1 - Sebastien Godard (sysstat <at> orange.fr)
-	* Added option -[0-9]+ to sadf to show data of that days ago.
+2015/02/13: Version 11.1.3 - Sebastien Godard (sysstat <at> orange.fr)
+	* sar/sadc: Added new metrics from /proc/meminfo to memory
+	  statistics.
+	* sadf: Update output formats to take into account new memory
+	  metrics.
+	* [Peter Schiffer]: Fixes from static analysis.
+	* [Peter Schiffer]: Prefer xz compression program when compressing
+	  sa data files [11.0.3].
+	* [Peter Schiffer]: Portable way to detect 64 bit OS in configure
+	  script [11.0.4].
+	* [Vasant Hegde]: sadc: Fix possible race condition in signal
+	  handler code [11.0.3].
+	* Fix description of %util in iostat and sar manual pages [11.0.3].
+	* Fix wrong size used in upgrade_magic_section() function.
+	* Add new sadc_options variable to configure script.
+	* Rename --disable-man-group option to --disable-file-attr. This
+	  configure's option prevents the build process from setting
+	  attributes of files being installed.
+	* Make sure that no crontabs are activated when configure's option
+	  --enable-copy-only is used [11.0.3].
+	* FAQ updated.
+	* RPM spec file updated.
+	* sar manual page updated.
+	* sadc manual page updated [11.0.3].
+	* CREDITS file updated.
+	* Code cleaned [11.0.3].
+
+2014/10/19: Version 11.1.2 - Sebastien Godard (sysstat <at> orange.fr)
+	* [Robert Elliott]: Added irqtop command. irqtop monitors
+	  differences in /proc/interrupts and /proc/softirqs per CPU,
+	  along with CPU statistics. irqtop is currently in the contrib
+	  directory.
+	* [Lance Shelton]: Added irqstat command, a better way to watch
+	  /proc/interrupts, designed for NUMA systems with many
+	  processors.
+	* [Vasant Hegde]: sadc: Don't send SIGINT signal if parent
+	  process is already dead [11.0.2].
+	* sadc: Make sure that functions used to count items (CPU,
+	  network interfaces, etc.) are called only once.
+	* sar and sadf now tell the user when they cannot read a file
+	  because the endian format doesn't match.
+	* Fixed incomplete sar and sadf output when end time (specified
+	  with option -e) crosses 24 hour boundary [11.0.2].
+	* cifsiostat/nfsiostat: Fix output on single core CPU [11.0.2].
+	* pidstat didn't handle processes with spaces in their name
+	  properly. This is now fixed [11.0.2].
+	* NLS updated.
+	* CREDITS file updated.
+
+2014/08/30: Version 11.1.1 - Sebastien Godard (sysstat <at> orange.fr)
+	* Added option -c to sadf: This option enables the user to
+	  convert an sa datafile with an old format (at least 9.1.6)
+	  to the up-to-date format (11.1.1 as of today).
+	* Update sadf -H output to print datafile date and tell whether
+	  this file has been converted from an old datafile or not.
+	* Added option -[0-9]+ to sadf to show data of that days ago
+	  [11.0.1].
 	* Use statvfs() system call instead of deprecated statfs() to
-	  get filesystems statistics with sar.
-	* sar: Stricter syntax check.
-        * Remove unneeded include file in sa_common.c.
-	* [Kosaki Motohiro]: Update workaround for 32bit CPU counters.
-	* Define unknown scheduling policies in pidstat.h.
-	* [Ivana Varekova]: Test return value for fgets/fscanf calls.
-	* Makefile updated: Follow symlinks when creating the tarballs.
-	* sadf manual page updated.
+	  get filesystems statistics with sar [11.0.1].
+	* sar: Stricter syntax check [11.0.1].
+	* Remove unneeded include file in sa_common.c [11.0.1].
+	* [Kosaki Motohiro]: Update workaround for 32bit CPU counters
+	  [11.0.1].
+	* Define unknown scheduling policies in pidstat.h [11.0.1].
+	* [Ivana Varekova]: Test return value for fgets/fscanf calls
+	  [11.0.1].
+	* Makefile updated: Follow symlinks when creating the tarballs
+	  [11.0.1].
+	* sadf manual page updated [11.0.1].
 
 2014/06/17: Version 11.0.0 - Sebastien Godard (sysstat <at> orange.fr)
 	* [Cedric Marie]: pidstat now displays task scheduling priority

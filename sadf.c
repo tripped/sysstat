@@ -87,7 +87,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C ] [ -d | -j | -p | -x ] [ -H ] [ -h ] [ -T | -t | -U ] [ -V ]\n"
+			  "[ -C ] [ -c | -d | -j | -p | -x ] [ -H ] [ -h ] [ -T | -t | -U ] [ -V ]\n"
 			  "[ -P { <cpu> [,...] | ALL } ] [ -s [ <hh:mm:ss> ] ] [ -e [ <hh:mm:ss> ] ]\n"
 			  "[ -- <sar_options> ]\n"));
 	exit(1);
@@ -434,10 +434,10 @@ void write_textual_comments(int curr, int use_tm_start, int use_tm_end, int tab,
  */
 void list_fields(unsigned int act_id)
 {
-	int i;
+	int i, j;
 	unsigned int msk;
 	char *hl;
-	char hline[HEADER_LINE_LEN];
+	char hline[HEADER_LINE_LEN] = "";
 
 	printf("# hostname;interval;timestamp");
 
@@ -455,10 +455,27 @@ void list_fields(unsigned int act_id)
 			}
 			else {
 				msk = 1;
-				strcpy(hline, act[i]->hdr_line);
+				strncpy(hline, act[i]->hdr_line, HEADER_LINE_LEN - 1);
+				hline[HEADER_LINE_LEN - 1] = '\0';
 				for (hl = strtok(hline, "|"); hl; hl = strtok(NULL, "|"), msk <<= 1) {
-					if ((hl != NULL) && (act[i]->opt_flags & msk)) {
-						printf(";%s", hl);
+					if ((hl != NULL) && ((act[i]->opt_flags & 0xff) & msk)) {
+						if (strchr(hl, '&')) {
+							j = strcspn(hl, "&");
+							if ((act[i]->opt_flags & 0xff00) & (msk << 8)) {
+								/* Display whole header line */
+								*(hl + j) = ';';
+								printf(";%s", hl);
+							}
+							else {
+								/* Display only the first part of the header line */
+								*(hl + j) = '\0';
+								printf(";%s", hl);
+							}
+							*(hl + j) = '&';
+						}
+						else {
+							printf(";%s", hl);
+						}
 						if ((act[i]->nr > 1) && DISPLAY_HORIZONTALLY(flags)) {
 							printf("[...]");
 						}
@@ -546,6 +563,7 @@ void write_mech_stats(int curr, unsigned long dt, unsigned long long itv,
  * 			been used or not) can be saved for current record.
  * @loctime		Structure where timestamp (expressed in local time)
  *			can be saved for current record.
+ * @reset_cd		TRUE if static cross_day variable should be reset.
  *
  * OUT:
  * @cnt			Set to 0 to indicate that no other lines of stats
@@ -557,11 +575,20 @@ void write_mech_stats(int curr, unsigned long dt, unsigned long long itv,
  */
 int write_parsable_stats(int curr, int reset, long *cnt, int use_tm_start,
 			 int use_tm_end, unsigned int act_id, __nr_t cpu_nr,
-			 struct tm *rectime, struct tm *loctime)
+			 struct tm *rectime, struct tm *loctime, int reset_cd)
 {
 	unsigned long long dt, itv, g_itv;
 	char cur_date[32], cur_time[32];
 	static int cross_day = FALSE;
+
+	if (reset_cd) {
+		/*
+		 * See note in sar.c.
+		 * NB: Reseting cross_day is not needed in write_textual_stats()
+		 * function (datafile is never rewinded).
+		 */
+		cross_day = 0;
+	}
 
 	/*
 	 * Check time (1).
@@ -871,7 +898,7 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 			char *file, struct file_magic *file_magic)
 {
 	unsigned char rtype;
-	int next;
+	int next, reset_cd;
 
 	if (lseek(ifd, fpos, SEEK_SET) < fpos) {
 		perror("lseek");
@@ -890,6 +917,7 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 	copy_structures(act, id_seq, record_hdr, !*curr, 2);
 
 	*cnt  = count;
+	reset_cd = 1;
 
 	do {
 		/* Display <count> lines of stats */
@@ -914,7 +942,8 @@ void rw_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf,
 
 			next = write_parsable_stats(*curr, *reset, cnt,
 						    tm_start.use, tm_end.use, act_id,
-						    cpu_nr, rectime, loctime);
+						    cpu_nr, rectime, loctime, reset_cd);
+			reset_cd = 0;
 
 			if (next) {
 				/*
@@ -995,8 +1024,8 @@ void textual_display_loop(int ifd, struct file_activity *file_actlst, char *dfil
 			  struct tm *rectime, struct tm *loctime, char *file)
 {
 	int curr, tab = 0, rtype;
-	int eosaf = TRUE, next, reset = FALSE;
-	__nr_t save_act_nr[NR_ACT];
+	int eosaf, next, reset = FALSE;
+	__nr_t save_act_nr[NR_ACT] = {0};
 	unsigned int new_cpu_nr;
 	long cnt = 1;
 	off_t fpos;
@@ -1349,10 +1378,7 @@ void main_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_nr
 				if (!id_seq[i])
 					continue;
 
-				if ((p = get_activity_position(act, id_seq[i])) < 0) {
-					/* Should never happen */
-					PANIC(1);
-				}
+				p = get_activity_position(act, id_seq[i], EXIT_IF_NOT_FOUND);
 				if (!IS_SELECTED(act[p]->options))
 					continue;
 
@@ -1367,9 +1393,9 @@ void main_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_nr
 
 					optf = act[p]->opt_flags;
 
-					for (msk = 1; msk < 0x10; msk <<= 1) {
-						if (act[p]->opt_flags & msk) {
-							act[p]->opt_flags &= msk;
+					for (msk = 1; msk < 0x100; msk <<= 1) {
+						if ((act[p]->opt_flags & 0xff) & msk) {
+							act[p]->opt_flags &= (0xffffff00 + msk);
 
 							rw_curr_act_stats(ifd, fpos, &curr, &cnt, &eosaf,
 									  act[p]->id, &reset, file_actlst,
@@ -1437,7 +1463,7 @@ void read_stats_from_file(char dfile[])
 			  &file_actlst, id_seq, ignore);
 
 	/* Now pick up number of proc for this file */
-	cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
+	cpu_nr = act[get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND)]->nr;
 
 	if (DISPLAY_HDR_ONLY(flags)) {
 		if (*fmt[f_position]->f_header) {
@@ -1593,6 +1619,13 @@ int main(int argc, char **argv)
 						flags |= S_F_COMMENT;
 						break;
 
+					case 'c':
+						if (format) {
+							usage(argv[0]);
+						}
+						format = F_CONV_OUTPUT;
+						break;
+
 					case 'd':
 						if (format) {
 							usage(argv[0]);
@@ -1744,8 +1777,14 @@ int main(int argc, char **argv)
 		interval = 1;
 	}
 
-	/* Read stats from file */
-	read_stats_from_file(dfile);
+	if (format == F_CONV_OUTPUT) {
+		/* Convert file to current format */
+		convert_file(dfile, act);
+	}
+	else {
+		/* Read stats from file */
+		read_stats_from_file(dfile);
+	}
 
 	/* Free bitmaps */
 	free_bitmaps(act);

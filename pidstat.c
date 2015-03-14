@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <dirent.h>
 #include <ctype.h>
@@ -139,7 +140,7 @@ void init_stats(void)
  */
 void salloc_pid_array(unsigned int len)
 {
-	if ((pid_array = (unsigned int *) malloc(sizeof(int) * len)) == NULL) {
+	if ((pid_array = (unsigned int *) malloc(sizeof(unsigned int) * len)) == NULL) {
 		perror("malloc");
 		exit(4);
 	}
@@ -310,10 +311,10 @@ void read_proc_meminfo(void)
 int read_proc_pid_stat(unsigned int pid, struct pid_stats *pst,
 		       unsigned int *thread_nr, unsigned int tgid)
 {
-	FILE *fp;
-	char filename[128], format[256], comm[MAX_COMM_LEN + 1];
-	size_t len;
-	int rc;
+	int fd, sz, rc, commsz;
+	char filename[128];
+	static char buffer[1024 + 1];
+	char *start, *end;
 
 	if (tgid) {
 		sprintf(filename, TASK_STAT, tgid, pid);
@@ -322,39 +323,45 @@ int read_proc_pid_stat(unsigned int pid, struct pid_stats *pst,
 		sprintf(filename, PID_STAT, pid);
 	}
 
-	if ((fp = fopen(filename, "r")) == NULL)
+	if ((fd = open(filename, O_RDONLY)) < 0)
 		/* No such process */
 		return 1;
 
-	sprintf(format, "%%*d (%%%ds %%*s %%*d %%*d %%*d %%*d %%*d %%*u %%llu %%llu"
-		" %%llu %%llu %%llu %%llu %%lld %%lld %%*d %%*d %%u %%*u %%*d %%llu %%llu"
-		" %%*u %%*u %%*u %%*u %%*u %%*u %%*u %%*u %%*u %%*u %%*u %%*u %%*u"
-		" %%*u %%u %%u %%u %%llu %%llu %%lld\\n", MAX_COMM_LEN);
+	sz = read(fd, buffer, 1024);
+	close(fd);
+	if (sz <= 0)
+		return 1;
+	buffer[sz] = '\0';
 
-	rc = fscanf(fp, format, comm,
+	if ((start = strchr(buffer, '(')) == NULL)
+		return 1;
+	start += 1;
+	if ((end = strrchr(start, ')')) == NULL)
+		return 1;
+	commsz = end - start;
+	if (commsz >= MAX_COMM_LEN)
+		return 1;
+	memcpy(pst->comm, start, commsz);
+	pst->comm[commsz] = '\0';
+	start = end + 2;
+
+	rc = sscanf(start,
+		    "%*s %*d %*d %*d %*d %*d %*u %llu %llu"
+		    " %llu %llu %llu %llu %lld %lld %*d %*d %u %*u %*d %llu %llu"
+		    " %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u %*u"
+		    " %*u %u %u %u %llu %llu %lld\n",
 		    &pst->minflt, &pst->cminflt, &pst->majflt, &pst->cmajflt,
 		    &pst->utime,  &pst->stime, &pst->cutime, &pst->cstime,
 		    thread_nr, &pst->vsz, &pst->rss, &pst->processor,
 		    &pst->priority, &pst->policy,
 		    &pst->blkio_swapin_delays, &pst->gtime, &pst->cgtime);
 
-	fclose(fp);
-
-	if (rc < 18)
+	if (rc < 17)
 		return 1;
 
 	/* Convert to kB */
 	pst->vsz >>= 10;
 	pst->rss = PG_TO_KB(pst->rss);
-
-	strncpy(pst->comm, comm, MAX_COMM_LEN);
-	pst->comm[MAX_COMM_LEN - 1] = '\0';
-
-	/* Remove trailing ')' */
-	len = strlen(pst->comm);
-	if (len && (pst->comm[len - 1] == ')')) {
-		pst->comm[len - 1] = '\0';
-	}
 
 	pst->pid = pid;
 	pst->tgid = tgid;
@@ -397,10 +404,10 @@ int read_proc_pid_status(unsigned int pid, struct pid_stats *pst,
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
 		if (!strncmp(line, "Uid:", 4)) {
-			sscanf(line + 5, "%d", &pst->uid);
+			sscanf(line + 5, "%u", &pst->uid);
 		}
 		else if (!strncmp(line, "Threads:", 8)) {
-			sscanf(line + 9, "%d", &pst->threads);
+			sscanf(line + 9, "%u", &pst->threads);
 		}
 		else if (!strncmp(line, "voluntary_ctxt_switches:", 24)) {
 			sscanf(line + 25, "%lu", &pst->nvcsw);
@@ -516,7 +523,7 @@ int read_proc_pid_cmdline(unsigned int pid, struct pid_stats *pst,
 
 	memset(line, 0, MAX_CMDLINE_LEN);
 
-	if ((len = fread(line, 1, MAX_CMDLINE_LEN - 1, fp)) < 0) {
+	if ((len = fread(line, 1, MAX_CMDLINE_LEN - 1, fp)) == 0) {
 		/* Nothing to read doesn't mean that process no longer exists */
 		fclose(fp);
 		return 1;
@@ -529,7 +536,8 @@ int read_proc_pid_cmdline(unsigned int pid, struct pid_stats *pst,
 	}
 
 	fclose(fp);
-	strncpy(pst->cmdline, line, MAX_CMDLINE_LEN);
+	strncpy(pst->cmdline, line, MAX_CMDLINE_LEN - 1);
+	pst->cmdline[MAX_CMDLINE_LEN - 1] = '\0';
 	return 0;
 }
 
@@ -2324,7 +2332,7 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 
 	/* Set a handler for SIGALRM */
 	memset(&alrm_act, 0, sizeof(alrm_act));
-	alrm_act.sa_handler = (void *) alarm_handler;
+	alrm_act.sa_handler = alarm_handler;
 	sigaction(SIGALRM, &alrm_act, NULL);
 	alarm(interval);
 
@@ -2336,7 +2344,7 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 
 	/* Set a handler for SIGINT */
 	memset(&int_act, 0, sizeof(int_act));
-	int_act.sa_handler = (void *) int_handler;
+	int_act.sa_handler = int_handler;
 	sigaction(SIGINT, &int_act, NULL);
 
 	/* Wait for SIGALRM (or possibly SIGINT) signal */

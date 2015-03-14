@@ -21,7 +21,7 @@ index ddb26fc..597ece9 100644
  # 8am-7pm activity reports every 20 minutes during weekdays.
  # 0 8-18 * * 1-5 @SA_LIB_DIR@/sa1 1200 3 &
 diff --git a/sysstat.sysconfig.in b/sysstat.sysconfig.in
-index cff7621..c9de21c 100644
+index 9096ccb..1444b55 100644
 --- a/sysstat.sysconfig.in
 +++ b/sysstat.sysconfig.in
 @@ -1,6 +1,7 @@
@@ -34,13 +34,13 @@ index cff7621..c9de21c 100644
  # multiple directories, one for each month.
  HISTORY=@HISTORY@
 @@ -8,9 +9,11 @@ HISTORY=@HISTORY@
- # Compress (using gzip or bzip2) sa and sar files older than (in days):
+ # Compress (using xz, gzip or bzip2) sa and sar files older than (in days):
  COMPRESSAFTER=@COMPRESSAFTER@
  
 -# Parameters for the system activity data collector (see sadc manual page)
 +# Parameters for the system activity data collector (see sadc(8) manual page)
  # which are used for the generation of log files.
--SADC_OPTIONS="@COLLECT_ALL@"
+-SADC_OPTIONS="@COLLECT_ALL@ @SADC_OPT@"
 +# By default contains the `-S DISK' option responsible for generating disk
 +# statisitcs. Use `-S XALL' to collect all available statistics.
 +SADC_OPTIONS="-S DISK"

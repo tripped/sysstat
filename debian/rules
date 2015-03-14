@@ -46,7 +46,7 @@ override_dh_compress:
 debian/configure.stamp:
 	dh_auto_configure $(DH_AUTO_OPTIONS) --         \
 	            --enable-yesterday                  \
-	            --disable-man-group                 \
+	            --disable-file-attr                 \
 	            --disable-compress-manpg            \
 	            --enable-copy-only                  \
 	            sa_lib_dir=/usr/lib/sysstat         \

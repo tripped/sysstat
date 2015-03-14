@@ -108,7 +108,8 @@ void usage(char *progname)
 	print_usage_title(stderr, progname);
 	fprintf(stderr, _("Options are:\n"
 			  "[ -A ] [ -B ] [ -b ] [ -C ] [ -D ] [ -d ] [ -F ] [ -H ] [ -h ] [ -p ] [ -q ]\n"
-			  "[ -R ] [ -r ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -V ] [ -v ] [ -W ] [ -w ] [ -y ]\n"
+			  "[ -R ] [ -r [ ALL ] ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -V ] [ -v ] [ -W ]\n"
+			  "[ -w ] [ -y ]\n"
 			  "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
 			  "[ -m { <keyword> [,...] | ALL } ] [ -n { <keyword> [,...] | ALL } ]\n"
 			  "[ -j { ID | LABEL | PATH | UUID | ... } ]\n"
@@ -168,7 +169,8 @@ void display_help(char *progname)
 		 "\t\tUDP6\tUDP traffic\t(v6)\n"));
 	printf(_("\t-q\tQueue length and load average statistics\n"));
 	printf(_("\t-R\tMemory statistics\n"));
-	printf(_("\t-r\tMemory utilization statistics\n"));
+	printf(_("\t-r [ ALL ]\n"
+		 "\tMemory utilization statistics\n"));
 	printf(_("\t-S\tSwap space utilization statistics\n"));
 	printf(_("\t-u [ ALL ]\n"
 		 "\t\tCPU utilization statistics\n"));
@@ -389,7 +391,7 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
 	static __nr_t cpu_nr = -1;
 
 	if (cpu_nr < 0)
-		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = act[get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND)]->nr;
 
 	/* Interval value in jiffies */
 	g_itv = get_interval(record_hdr[2].uptime, record_hdr[curr].uptime);
@@ -442,6 +444,8 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
  * @act_id		Activity that can be displayed or ~0 for all.
  *			Remember that when reading stats from a file, only
  *			one activity can be displayed at a time.
+ * @reset_cd		TRUE if static cross_day variable should be reset
+ * 			(see below).
  *
  * OUT:
  * @cnt			Number of remaining lines to display.
@@ -451,7 +455,7 @@ void write_stats_avg(int curr, int read_from_file, unsigned int act_id)
  ***************************************************************************
  */
 int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
-		int use_tm_end, int reset, unsigned int act_id)
+		int use_tm_end, int reset, unsigned int act_id, int reset_cd)
 {
 	int i;
 	unsigned long long itv, g_itv;
@@ -459,7 +463,21 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 	static __nr_t cpu_nr = -1;
 
 	if (cpu_nr < 0)
-		cpu_nr = act[get_activity_position(act, A_CPU)]->nr;
+		cpu_nr = act[get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND)]->nr;
+
+	if (reset_cd) {
+		/*
+		 * cross_day is a static variable that is set to 1 when the first
+		 * record of stats from a new day is read from a unique data file
+		 * (in the case where the file contains data from two consecutive
+		 * days). When set to 1, every following records timestamp will
+		 * have its hour value increased by 24.
+		 * Yet when a new activity (being read from the file) is going to
+		 * be displayed, we start reading the file from the beginning
+		 * again, and so cross_day should be reset in this case.
+		 */
+		cross_day = 0;
+	}
 
 	/* Check time (1) */
 	if (read_from_file) {
@@ -550,14 +568,16 @@ void write_stats_startup(int curr)
 
 	for (i = 0; i < NR_ACT; i++) {
 		if (IS_SELECTED(act[i]->options) && (act[i]->nr > 0)) {
-			memset(act[i]->buf[!curr], 0, act[i]->msize * act[i]->nr * act[i]->nr2);
+			memset(act[i]->buf[!curr], 0,
+			       (size_t) act[i]->msize * (size_t) act[i]->nr * (size_t) act[i]->nr2);
 		}
 	}
 
 	flags |= S_F_SINCE_BOOT;
 	dis = TRUE;
 
-	write_stats(curr, USE_SADC, &count, NO_TM_START, NO_TM_END, NO_RESET, ALL_ACTIVITIES);
+	write_stats(curr, USE_SADC, &count, NO_TM_START, NO_TM_END, NO_RESET,
+		    ALL_ACTIVITIES, TRUE);
 
 	exit(0);
 }
@@ -680,9 +700,7 @@ void read_sadc_stat_bunch(int curr)
 
 		if (!id_seq[i])
 			continue;
-		if ((p = get_activity_position(act, id_seq[i])) < 0) {
-			PANIC(1);
-		}
+		p = get_activity_position(act, id_seq[i], EXIT_IF_NOT_FOUND);
 
 		if (sa_read(act[p]->buf[curr], act[p]->fsize * act[p]->nr * act[p]->nr2)) {
 			print_read_error();
@@ -717,10 +735,10 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 			   struct file_activity *file_actlst, char *file,
 			   struct file_magic *file_magic)
 {
-	int p;
+	int p, reset_cd;
 	unsigned long lines = 0;
 	unsigned char rtype;
-	int davg = 0, next, inc = -2;
+	int davg = 0, next, inc;
 
 	if (lseek(ifd, fpos, SEEK_SET) < fpos) {
 		perror("lseek");
@@ -736,19 +754,16 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 	*cnt  = count;
 
 	/* Assess number of lines printed */
-	if ((p = get_activity_position(act, act_id)) >= 0) {
-		if (act[p]->bitmap) {
-			inc = count_bits(act[p]->bitmap->b_array,
-					 BITMAP_SIZE(act[p]->bitmap->b_size));
-		}
-		else {
-			inc = act[p]->nr;
-		}
+	p = get_activity_position(act, act_id, EXIT_IF_NOT_FOUND);
+	if (act[p]->bitmap) {
+		inc = count_bits(act[p]->bitmap->b_array,
+				 BITMAP_SIZE(act[p]->bitmap->b_size));
 	}
-	if (inc < 0) {
-		/* Should never happen */
-		PANIC(inc);
+	else {
+		inc = act[p]->nr;
 	}
+
+	reset_cd = 1;
 
 	do {
 		/* Display count lines of stats */
@@ -783,7 +798,8 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 
 			/* next is set to 1 when we were close enough to desired interval */
 			next = write_stats(*curr, USE_SA_FILE, cnt, tm_start.use, tm_end.use,
-					   *reset, act_id);
+					   *reset, act_id, reset_cd);
+			reset_cd = 0;
 			if (next && (*cnt > 0)) {
 				(*cnt)--;
 			}
@@ -859,7 +875,7 @@ void read_header_data(void)
 			print_read_error();
 		}
 
-		p = get_activity_position(act, file_act.id);
+		p = get_activity_position(act, file_act.id, RESUME_IF_NOT_FOUND);
 
 		if ((p < 0) || (act[p]->fsize != file_act.size)
 			    || !file_act.nr
@@ -913,7 +929,7 @@ void read_stats_from_file(char from_file[])
 
 	/* Print report header */
 	print_report_hdr(flags, &rectime, &file_hdr,
-			 act[get_activity_position(act, A_CPU)]->nr);
+			 act[get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND)]->nr);
 
 	/* Read system statistics from file */
 	do {
@@ -970,10 +986,7 @@ void read_stats_from_file(char from_file[])
 			if (!id_seq[i])
 				continue;
 
-			if ((p = get_activity_position(act, id_seq[i])) < 0) {
-				/* Should never happen */
-				PANIC(1);
-			}
+			p = get_activity_position(act, id_seq[i], EXIT_IF_NOT_FOUND);
 			if (!IS_SELECTED(act[p]->options))
 				continue;
 
@@ -987,9 +1000,9 @@ void read_stats_from_file(char from_file[])
 
 				optf = act[p]->opt_flags;
 
-				for (msk = 1; msk < 0x10; msk <<= 1) {
-					if (act[p]->opt_flags & msk) {
-						act[p]->opt_flags &= msk;
+				for (msk = 1; msk < 0x100; msk <<= 1) {
+					if ((act[p]->opt_flags & 0xff) & msk) {
+						act[p]->opt_flags &= (0xffffff00 + msk);
 
 						handle_curr_act_stats(ifd, fpos, &curr, &cnt,
 								      &eosaf, rows, act[p]->id,
@@ -1042,7 +1055,7 @@ void read_stats(void)
 {
 	int curr = 1;
 	unsigned long lines;
-	unsigned int rows = 23;
+	unsigned int rows;
 	int dis_hdr = 0;
 
 	/* Don't buffer data if redirected to a pipe... */
@@ -1066,7 +1079,7 @@ void read_stats(void)
 
 	/* Print report header */
 	print_report_hdr(flags, &rectime, &file_hdr,
-			 act[get_activity_position(act, A_CPU)]->nr);
+			 act[get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND)]->nr);
 
 	/* Read system statistics sent by the data collector */
 	read_sadc_stat_bunch(0);
@@ -1081,7 +1094,7 @@ void read_stats(void)
 
 	/* Set a handler for SIGINT */
 	memset(&int_act, 0, sizeof(int_act));
-	int_act.sa_handler = (void *) int_handler;
+	int_act.sa_handler = int_handler;
 	int_act.sa_flags = SA_RESTART;
 	sigaction(SIGINT, &int_act, NULL);
 
@@ -1100,7 +1113,7 @@ void read_stats(void)
 			lines++;
 		}
 		write_stats(curr, USE_SADC, &count, NO_TM_START, tm_end.use,
-			    NO_RESET, ALL_ACTIVITIES);
+			    NO_RESET, ALL_ACTIVITIES, TRUE);
 
 		if (record_hdr[curr].record_type == R_LAST_STATS) {
 			/* File rotation is happening: Re-read header data sent by sadc */

@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "version.h"
 #include "sa.h"
 #include "common.h"
 #include "ioconf.h"
@@ -83,7 +84,8 @@ void allocate_structures(struct activity *act[])
 	for (i = 0; i < NR_ACT; i++) {
 		if (act[i]->nr > 0) {
 			for (j = 0; j < 3; j++) {
-				SREALLOC(act[i]->buf[j], void, act[i]->msize * act[i]->nr * act[i]->nr2);
+				SREALLOC(act[i]->buf[j], void,
+						(size_t) act[i]->msize * (size_t) act[i]->nr * (size_t) act[i]->nr2);
 			}
 		}
 	}
@@ -332,11 +334,12 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
 	char timestamp[9];
 
 	if ((argv[++(*opt)]) && (strlen(argv[*opt]) == 8)) {
-		strcpy(timestamp, argv[(*opt)++]);
+		strncpy(timestamp, argv[(*opt)++], 8);
 	}
 	else {
-		strcpy(timestamp, def_timestamp);
+		strncpy(timestamp, def_timestamp, 8);
 	}
+	timestamp[8] = '\0';
 
 	return decode_timestamp(timestamp, tse);
 }
@@ -415,7 +418,7 @@ void guess_sa_name(char *sa_dir, struct tm *rectime, int *sa_name)
 void set_default_file(char *datafile, int d_off, int sa_name)
 {
 	char sa_dir[MAX_FILE_LEN];
-	struct tm rectime;
+	struct tm rectime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL};
 
 	/* Set directory where daily data files will be saved */
 	if (datafile[0]) {
@@ -910,6 +913,7 @@ void free_bitmaps(struct activity *act[])
  * IN:
  * @act		Array of activities.
  * @act_flag	Activity flag to look for.
+ * @stop	TRUE if sysstat should exit when activity is not found.
  *
  * RETURNS:
  * Position of activity in array, or -1 if not found (this may happen when
@@ -917,19 +921,20 @@ void free_bitmaps(struct activity *act[])
  * sysstat).
  ***************************************************************************
  */
-int get_activity_position(struct activity *act[], unsigned int act_flag)
+int get_activity_position(struct activity *act[], unsigned int act_flag, int stop)
 {
 	int i;
 
 	for (i = 0; i < NR_ACT; i++) {
 		if (act[i]->id == act_flag)
-			break;
+			return i;
 	}
 
-	if (i == NR_ACT)
-		return -1;
+	if (stop) {
+		PANIC((int) act_flag);
+	}
 
-	return i;
+	return -1;
 }
 
 /*
@@ -956,8 +961,8 @@ int get_activity_nr(struct activity *act[], unsigned int option, int count_outpu
 		if ((act[i]->options & option) == option) {
 
 			if (HAS_MULTIPLE_OUTPUTS(act[i]->options) && count_outputs) {
-				for (msk = 1; msk < 0x10; msk <<= 1) {
-					if (act[i]->opt_flags & msk) {
+				for (msk = 1; msk < 0x100; msk <<= 1) {
+					if ((act[i]->opt_flags & 0xff) & msk) {
 						n++;
 					}
 				}
@@ -1007,7 +1012,7 @@ void select_default_activity(struct activity *act[])
 {
 	int p;
 
-	p = get_activity_position(act, A_CPU);
+	p = get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND);
 
 	/* Default is CPU activity... */
 	if (!get_activity_nr(act, AO_SELECTED, COUNT_ACTIVITIES)) {
@@ -1107,15 +1112,28 @@ void display_sa_file_version(FILE *st, struct file_magic *file_magic)
 void handle_invalid_sa_file(int *fd, struct file_magic *file_magic, char *file,
 			    int n)
 {
+	unsigned short sm;
+
 	fprintf(stderr, _("Invalid system activity file: %s\n"), file);
 
-	if ((n == FILE_MAGIC_SIZE) && (file_magic->sysstat_magic == SYSSTAT_MAGIC)) {
-		/* This is a sysstat file, but this file has an old format */
-		display_sa_file_version(stderr, file_magic);
+	if (n == FILE_MAGIC_SIZE) {
+		sm = (file_magic->sysstat_magic << 8) | (file_magic->sysstat_magic >> 8);
+		if ((file_magic->sysstat_magic == SYSSTAT_MAGIC) || (sm == SYSSTAT_MAGIC)) {
+			/*
+			 * This is a sysstat file, but this file has an old format
+			 * or its internal endian format doesn't match.
+			 */
+			display_sa_file_version(stderr, file_magic);
 
-		fprintf(stderr,
-			_("Current sysstat version can no longer read the format of this file (%#x)\n"),
-			file_magic->format_magic);
+			if (sm == SYSSTAT_MAGIC) {
+				fprintf(stderr, _("Endian format mismatch\n"));
+			}
+			else {
+				fprintf(stderr,
+					_("Current sysstat version cannot read the format of this file (%#x)\n"),
+					file_magic->format_magic);
+			}
+		}
 	}
 
 	close (*fd);
@@ -1146,12 +1164,13 @@ void copy_structures(struct activity *act[], unsigned int id_seq[],
 		if (!id_seq[i])
 			continue;
 
-		if (((p = get_activity_position(act, id_seq[i])) < 0) ||
-		    (act[p]->nr < 1) || (act[p]->nr2 < 1)) {
+		p = get_activity_position(act, id_seq[i], EXIT_IF_NOT_FOUND);
+		if ((act[p]->nr < 1) || (act[p]->nr2 < 1)) {
 			PANIC(1);
 		}
 
-		memcpy(act[p]->buf[dest], act[p]->buf[src], act[p]->msize * act[p]->nr * act[p]->nr2);
+		memcpy(act[p]->buf[dest], act[p]->buf[src],
+		       (size_t) act[p]->msize * (size_t) act[p]->nr * (size_t) act[p]->nr2);
 	}
 }
 
@@ -1172,16 +1191,18 @@ void read_file_stat_bunch(struct activity *act[], int curr, int ifd, int act_nr,
 {
 	int i, j, k, p;
 	struct file_activity *fal = file_actlst;
+	off_t offset;
 
 	for (i = 0; i < act_nr; i++, fal++) {
 
-		if (((p = get_activity_position(act, fal->id)) < 0) ||
+		if (((p = get_activity_position(act, fal->id, RESUME_IF_NOT_FOUND)) < 0) ||
 		    (act[p]->magic != fal->magic)) {
 			/*
 			 * Ignore current activity in file, which is unknown to
 			 * current sysstat version or has an unknown format.
 			 */
-			if (lseek(ifd, fal->size * fal->nr * fal->nr2, SEEK_CUR) < (fal->size * fal->nr * fal->nr2)) {
+			offset = (off_t) fal->size * (off_t) fal->nr * (off_t) fal->nr2;
+			if (lseek(ifd, offset, SEEK_CUR) < offset) {
 				close(ifd);
 				perror("lseek");
 				exit(2);
@@ -1202,44 +1223,37 @@ void read_file_stat_bunch(struct activity *act[], int curr, int ifd, int act_nr,
 			sa_fread(ifd, act[p]->buf[curr], act[p]->fsize * act[p]->nr * act[p]->nr2, HARD_SIZE);
 		}
 		else {
-			PANIC(act[p]->nr);
+			PANIC(p);
 		}
 	}
 }
 
 /*
  ***************************************************************************
- * Open a data file, and perform various checks before reading.
+ * Open a sysstat activity data file and read its magic structure.
  *
  * IN:
- * @dfile	Name of system activity data file
- * @act		Array of activities.
+ * @dfile	Name of system activity data file.
  * @ignore	Set to 1 if a true sysstat activity file but with a bad
  * 		format should not yield an error message. Useful with
  * 		sadf -H.
  *
  * OUT:
- * @ifd		System activity data file descriptor
+ * @fd		System activity data file descriptor.
  * @file_magic	file_magic structure containing data read from file magic
- *		header
- * @file_hdr	file_hdr structure containing data read from file standard
- * 		header
- * @file_actlst	Acvtivity list in file.
- * @id_seq	Activity sequence.
+ *		header.
+ *
+ * RETURNS:
+ * -1 if data file is a sysstat file with an old format, 0 otherwise.
  ***************************************************************************
  */
-void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
-		       struct file_magic *file_magic, struct file_header *file_hdr,
-		       struct file_activity **file_actlst, unsigned int id_seq[],
+int sa_open_read_magic(int *fd, char *dfile, struct file_magic *file_magic,
 		       int ignore)
 {
-	int i, j, n, p;
-	unsigned int a_cpu = FALSE;
-	struct file_activity *fal;
-	void *buffer = NULL;
+	int n;
 
 	/* Open sa data file */
-	if ((*ifd = open(dfile, O_RDONLY)) < 0) {
+	if ((*fd = open(dfile, O_RDONLY)) < 0) {
 		int saved_errno = errno;
 
 		fprintf(stderr, _("Cannot open %s: %s\n"), dfile, strerror(errno));
@@ -1251,22 +1265,55 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 	}
 
 	/* Read file magic data */
-	n = read(*ifd, file_magic, FILE_MAGIC_SIZE);
+	n = read(*fd, file_magic, FILE_MAGIC_SIZE);
 
 	if ((n != FILE_MAGIC_SIZE) ||
 	    (file_magic->sysstat_magic != SYSSTAT_MAGIC) ||
-	    (file_magic->format_magic != FORMAT_MAGIC)) {
-
-		if (ignore &&
-		    (n == FILE_MAGIC_SIZE) &&
-		    (file_magic->sysstat_magic == SYSSTAT_MAGIC))
-			/* Don't display error message. This is for sadf -H */
-			return;
-		else {
-			/* Display error message and exit */
-			handle_invalid_sa_file(ifd, file_magic, dfile, n);
-		}
+	    ((file_magic->format_magic != FORMAT_MAGIC) && !ignore)) {
+		/* Display error message and exit */
+		handle_invalid_sa_file(fd, file_magic, dfile, n);
 	}
+	if (file_magic->format_magic != FORMAT_MAGIC)
+		/* This is an old sa datafile format */
+		return -1;
+
+	return 0;
+}
+
+/*
+ ***************************************************************************
+ * Open a data file, and perform various checks before reading.
+ *
+ * IN:
+ * @dfile	Name of system activity data file.
+ * @act		Array of activities.
+ * @ignore	Set to 1 if a true sysstat activity file but with a bad
+ * 		format should not yield an error message. Useful with
+ * 		sadf -H.
+ *
+ * OUT:
+ * @ifd		System activity data file descriptor.
+ * @file_magic	file_magic structure containing data read from file magic
+ *		header.
+ * @file_hdr	file_hdr structure containing data read from file standard
+ * 		header.
+ * @file_actlst	Acvtivity list in file.
+ * @id_seq	Activity sequence.
+ ***************************************************************************
+ */
+void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
+		       struct file_magic *file_magic, struct file_header *file_hdr,
+		       struct file_activity **file_actlst, unsigned int id_seq[],
+		       int ignore)
+{
+	int i, j, p;
+	unsigned int a_cpu = FALSE;
+	struct file_activity *fal;
+	void *buffer = NULL;
+
+	/* Open sa data file and read its magic structure */
+	if (sa_open_read_magic(ifd, dfile, file_magic, ignore) < 0)
+		return;
 
 	SREALLOC(buffer, char, file_magic->header_size);
 
@@ -1292,7 +1339,7 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 			handle_invalid_sa_file(ifd, file_magic, dfile, 0);
 		}
 
-		if ((p = get_activity_position(act, fal->id)) < 0)
+		if ((p = get_activity_position(act, fal->id, RESUME_IF_NOT_FOUND)) < 0)
 			/* Unknown activity */
 			continue;
 
@@ -1395,14 +1442,15 @@ int reallocate_vol_act_structures(struct activity *act[], unsigned int act_nr,
 {
 	int j, p;
 
-	if ((p = get_activity_position(act, act_id)) < 0)
+	if ((p = get_activity_position(act, act_id, RESUME_IF_NOT_FOUND)) < 0)
 		/* Ignore unknown activity */
 		return -1;
 
 	act[p]->nr = act_nr;
 
 	for (j = 0; j < 3; j++) {
-		SREALLOC(act[p]->buf[j], void, act[p]->msize * act[p]->nr * act[p]->nr2);
+		SREALLOC(act[p]->buf[j], void,
+			 (size_t) act[p]->msize * (size_t) act[p]->nr * (size_t) act[p]->nr2);
 	}
 
 	return 0;
@@ -1480,23 +1528,27 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 	int i, p;
 
 	for (i = 1; *(argv[*opt] + i); i++) {
+		/*
+		 * Note: argv[*opt] contains something like "-BruW"
+		 *     *(argv[*opt] + i) will contain 'B', 'r', etc.
+		 */
 
 		switch (*(argv[*opt] + i)) {
 
 		case 'A':
 			select_all_activities(act);
 
-			/* Force '-P ALL -I XALL' */
+			/* Force '-P ALL -I XALL -r ALL -u ALL' */
 
-			p = get_activity_position(act, A_MEMORY);
+			p = get_activity_position(act, A_MEMORY, EXIT_IF_NOT_FOUND);
 			act[p]->opt_flags |= AO_F_MEM_AMT + AO_F_MEM_DIA +
-					     AO_F_MEM_SWAP;
+					     AO_F_MEM_SWAP + AO_F_MEM_ALL;
 
-			p = get_activity_position(act, A_IRQ);
+			p = get_activity_position(act, A_IRQ, EXIT_IF_NOT_FOUND);
 			set_bitmap(act[p]->bitmap->b_array, ~0,
 				   BITMAP_SIZE(act[p]->bitmap->b_size));
 
-			p = get_activity_position(act, A_CPU);
+			p = get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND);
 			set_bitmap(act[p]->bitmap->b_array, ~0,
 				   BITMAP_SIZE(act[p]->bitmap->b_size));
 			act[p]->opt_flags = AO_F_CPU_ALL;
@@ -1523,7 +1575,7 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			break;
 
 		case 'H':
-			p = get_activity_position(act, A_HUGE);
+			p = get_activity_position(act, A_HUGE, EXIT_IF_NOT_FOUND);
 			act[p]->options   |= AO_SELECTED;
 			break;
 
@@ -1561,19 +1613,24 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			break;
 
 		case 'r':
-			p = get_activity_position(act, A_MEMORY);
+			p = get_activity_position(act, A_MEMORY, EXIT_IF_NOT_FOUND);
 			act[p]->options   |= AO_SELECTED;
 			act[p]->opt_flags |= AO_F_MEM_AMT;
+			if (!*(argv[*opt] + i + 1) && argv[*opt + 1] && !strcmp(argv[*opt + 1], K_ALL)) {
+				(*opt)++;
+				act[p]->opt_flags |= AO_F_MEM_ALL;
+				return 0;
+			}
 			break;
 
 		case 'R':
-			p = get_activity_position(act, A_MEMORY);
+			p = get_activity_position(act, A_MEMORY, EXIT_IF_NOT_FOUND);
 			act[p]->options   |= AO_SELECTED;
 			act[p]->opt_flags |= AO_F_MEM_DIA;
 			break;
 
 		case 'S':
-			p = get_activity_position(act, A_MEMORY);
+			p = get_activity_position(act, A_MEMORY, EXIT_IF_NOT_FOUND);
 			act[p]->options   |= AO_SELECTED;
 			act[p]->opt_flags |= AO_F_MEM_SWAP;
 			break;
@@ -1593,7 +1650,7 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			break;
 
 		case 'u':
-			p = get_activity_position(act, A_CPU);
+			p = get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND);
 			act[p]->options |= AO_SELECTED;
 			if (!*(argv[*opt] + i + 1) && argv[*opt + 1] && !strcmp(argv[*opt + 1], K_ALL)) {
 				(*opt)++;
@@ -1811,7 +1868,7 @@ int parse_sar_I_opt(char *argv[], int *opt, struct activity *act[])
 	char *t;
 
 	/* Select interrupt activity */
-	p = get_activity_position(act, A_IRQ);
+	p = get_activity_position(act, A_IRQ, EXIT_IF_NOT_FOUND);
 	act[p]->options |= AO_SELECTED;
 
 	for (t = strtok(argv[*opt], ","); t; t = strtok(NULL, ",")) {
@@ -1869,7 +1926,7 @@ int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags, struct activity 
 	int i, p;
 	char *t;
 
-	p = get_activity_position(act, A_CPU);
+	p = get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND);
 
 	if (argv[++(*opt)]) {
 
@@ -1920,7 +1977,7 @@ double compute_ifutil(struct stats_net_dev *st_net_dev, double rx, double tx)
 
 	if (st_net_dev->speed) {
 
-		speed = st_net_dev->speed * 1000000;
+		speed = (unsigned long long) st_net_dev->speed * 1000000;
 
 		if (st_net_dev->duplex == C_DUPLEX_FULL) {
 			/* Full duplex */
@@ -1940,3 +1997,40 @@ double compute_ifutil(struct stats_net_dev *st_net_dev, double rx, double tx)
 	return 0;
 }
 
+/*
+ ***************************************************************************
+ * Fill system activity file magic header.
+ *
+ * IN:
+ * @file_magic	System activity file magic header.
+ ***************************************************************************
+ */
+void enum_version_nr(struct file_magic *fm)
+{
+	char *v;
+	char version[16];
+
+	fm->sysstat_extraversion = 0;
+
+	strcpy(version, VERSION);
+
+	/* Get version number */
+	if ((v = strtok(version, ".")) == NULL)
+		return;
+	fm->sysstat_version = atoi(v) & 0xff;
+
+	/* Get patchlevel number */
+	if ((v = strtok(NULL, ".")) == NULL)
+		return;
+	fm->sysstat_patchlevel = atoi(v) & 0xff;
+
+	/* Get sublevel number */
+	if ((v = strtok(NULL, ".")) == NULL)
+		return;
+	fm->sysstat_sublevel = atoi(v) & 0xff;
+
+	/* Get extraversion number. Don't necessarily exist */
+	if ((v = strtok(NULL, ".")) == NULL)
+		return;
+	fm->sysstat_extraversion = atoi(v) & 0xff;
+}

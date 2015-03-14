@@ -87,7 +87,9 @@ time_t get_localtime(struct tm *rectime, int d_off)
 	timer -= SEC_PER_DAY * d_off;
 	ltm = localtime(&timer);
 
-	*rectime = *ltm;
+	if (ltm) {
+		*rectime = *ltm;
+	}
 	return timer;
 }
 
@@ -114,7 +116,9 @@ time_t get_gmtime(struct tm *rectime, int d_off)
 	timer -= SEC_PER_DAY * d_off;
 	ltm = gmtime(&timer);
 
-	*rectime = *ltm;
+	if (ltm) {
+		*rectime = *ltm;
+	}
 	return timer;
 }
 
@@ -598,21 +602,19 @@ unsigned long long get_per_cpu_interval(struct stats_cpu *scc,
 
 /*
  ***************************************************************************
- * Unhandled situation: Panic and exit.
+ * Unhandled situation: Panic and exit. Should never happen.
  *
  * IN:
  * @function	Function name where situation occured.
  * @error_code	Error code.
  ***************************************************************************
  */
-#ifdef DEBUG
 void sysstat_panic(const char *function, int error_code)
 {
-	fprintf(stderr, "sysstat: %s[%d]: Last chance handler...\n",
+	fprintf(stderr, "sysstat: %s[%d]: Internal error...\n",
 		function, error_code);
 	exit(1);
 }
-#endif
 
 /*
  ***************************************************************************

@@ -1,4 +1,4 @@
-sysstat (11.1.3-1~) UNRELEASED; urgency=medium
+sysstat (11.1.3-1) experimental; urgency=medium
 
   * New upstream (development) version.
   * Update patches for the new version.
@@ -6,8 +6,9 @@ sysstat (11.1.3-1~) UNRELEASED; urgency=medium
     macros in order to make builds reproducible.
   * Install newly introduced contrib scripts irqstat and irqtop into
     examples directory.
+  * Fix debian/watch file not to include "xz" extension in upstream version.
 
- -- Robert Luberda <robert@debian.org>  Sat, 14 Mar 2015 10:31:17 +0100
+ -- Robert Luberda <robert@debian.org>  Sun, 15 Mar 2015 11:03:59 +0100
 
 sysstat (11.0.1-1) unstable; urgency=medium
 

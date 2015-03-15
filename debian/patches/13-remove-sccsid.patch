@@ -1,0 +1,131 @@
+From: Robert Luberda <robert@debian.org>
+Date: Sun, 15 Mar 2015 10:40:22 +0100
+Subject: 13-remove-sccsid
+
+Remove sccsid() function togethwe with SCCSID string that
+contained __DATE__ and __TIME__ macros. This should cause
+binary to be more reproducible, see
+https://wiki.debian.org/ReproducibleBuilds/TimestampsFromCPPMacros
+---
+ cifsiostat.c        | 3 ---
+ iostat.c            | 3 ---
+ mpstat.c            | 3 ---
+ nfsiostat-sysstat.c | 3 ---
+ pidstat.c           | 3 ---
+ sadc.c              | 3 ---
+ sadf.c              | 3 ---
+ sar.c               | 3 ---
+ 8 files changed, 24 deletions(-)
+
+diff --git a/cifsiostat.c b/cifsiostat.c
+index 7224f2f..d6a7152 100644
+--- a/cifsiostat.c
++++ b/cifsiostat.c
+@@ -41,9 +41,6 @@
+ #define _(string) (string)
+ #endif
+ 
+-#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
+-char *sccsid(void) { return (SCCSID); }
+-
+ unsigned long long uptime0[2] = {0, 0};
+ struct cifs_stats *st_cifs[2];
+ struct io_hdr_stats *st_hdr_cifs;
+diff --git a/iostat.c b/iostat.c
+index 78afe24..bafbb28 100644
+--- a/iostat.c
++++ b/iostat.c
+@@ -48,9 +48,6 @@
+ #define _(string) (string)
+ #endif
+ 
+-#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
+-char *sccsid(void) { return (SCCSID); }
+-
+ struct stats_cpu *st_cpu[2];
+ unsigned long long uptime[2]  = {0, 0};
+ unsigned long long uptime0[2] = {0, 0};
+diff --git a/mpstat.c b/mpstat.c
+index 9f8df52..5abc3cb 100644
+--- a/mpstat.c
++++ b/mpstat.c
+@@ -42,9 +42,6 @@
+ #define _(string) (string)
+ #endif
+ 
+-#define SCCSID "@(#)sysstat-" VERSION ": "  __FILE__ " compiled " __DATE__ " " __TIME__
+-char *sccsid(void) { return (SCCSID); }
+-
+ unsigned long long uptime[3] = {0, 0, 0};
+ unsigned long long uptime0[3] = {0, 0, 0};
+ 
+diff --git a/nfsiostat-sysstat.c b/nfsiostat-sysstat.c
+index 24d4773..a8aa973 100644
+--- a/nfsiostat-sysstat.c
++++ b/nfsiostat-sysstat.c
+@@ -40,9 +40,6 @@
+ #define _(string) (string)
+ #endif
+ 
+-#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
+-char *sccsid(void) { return (SCCSID); }
+-
+ unsigned long long uptime0[2] = {0, 0};
+ struct io_nfs_stats *st_ionfs[2];
+ struct io_hdr_stats *st_hdr_ionfs;
+diff --git a/pidstat.c b/pidstat.c
+index 6bbdc26..8a943fd 100644
+--- a/pidstat.c
++++ b/pidstat.c
+@@ -47,9 +47,6 @@
+ #define _(string) (string)
+ #endif
+ 
+-#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
+-char *sccsid(void) { return (SCCSID); }
+-
+ unsigned long long uptime[3] = {0, 0, 0};
+ unsigned long long uptime0[3] = {0, 0, 0};
+ struct pid_stats *st_pid_list[3] = {NULL, NULL, NULL};
+diff --git a/sadc.c b/sadc.c
+index f4ec90e..bf0a5ad 100644
+--- a/sadc.c
++++ b/sadc.c
+@@ -52,9 +52,6 @@
+ #include "sensors/error.h"
+ #endif
+ 
+-#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
+-char *sccsid(void) { return (SCCSID); }
+-
+ long interval = 0;
+ unsigned int flags = 0;
+ 
+diff --git a/sadf.c b/sadf.c
+index 72d8fc3..d64d737 100644
+--- a/sadf.c
++++ b/sadf.c
+@@ -41,9 +41,6 @@
+ # define _(string) (string)
+ #endif
+ 
+-#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
+-char *sccsid(void) { return (SCCSID); }
+-
+ long interval = -1, count = 0;
+ 
+ unsigned int flags = 0;
+diff --git a/sar.c b/sar.c
+index e62d699..d29c0ab 100644
+--- a/sar.c
++++ b/sar.c
+@@ -41,9 +41,6 @@
+ #define _(string) (string)
+ #endif
+ 
+-#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
+-char *sccsid(void) { return (SCCSID); }
+-
+ /* Interval and count parameters */
+ long interval = -1, count = 0;
+ 

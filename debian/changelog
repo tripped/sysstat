@@ -4,6 +4,8 @@ sysstat (11.1.3-1~) UNRELEASED; urgency=medium
   * Update patches for the new version.
   * Add 13-remove-sccsid.patch to remove usage of __DATE__ and __TIME__
     macros in order to make builds reproducible.
+  * Install newly introduced contrib scripts irqstat and irqtop into
+    examples directory.
 
  -- Robert Luberda <robert@debian.org>  Sat, 14 Mar 2015 10:31:17 +0100
 

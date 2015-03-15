@@ -39,6 +39,10 @@ override_dh_installchangelogs:
 override_dh_installinit:
 	dh_installinit --no-start
 
+override_dh_installexamples-arch:
+	dh_installexamples
+	cd debian/sysstat/usr/share/doc/sysstat/examples && mv README.md README.irqstat
+
 override_dh_compress:
 	set -ex; for p in $(shell dh_listpackages) ; do sh debian/fix.sh $$p; done
 	dh_compress

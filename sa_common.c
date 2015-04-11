@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2014 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2015 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -314,7 +314,7 @@ int datecmp(struct tm *rectime, struct tstamp *tse)
 
 /*
  ***************************************************************************
- * Parse a timestamp entered on the command line (hh:mm:ss) and decode it.
+ * Parse a timestamp entered on the command line (hh:mm[:ss]) and decode it.
  *
  * IN:
  * @argv		Arguments list.
@@ -333,10 +333,23 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
 {
 	char timestamp[9];
 
-	if ((argv[++(*opt)]) && (strlen(argv[*opt]) == 8)) {
-		strncpy(timestamp, argv[(*opt)++], 8);
-	}
-	else {
+	if (argv[++(*opt)]) {
+		switch (strlen(argv[*opt])) {
+
+			case 5:
+				strncpy(timestamp, argv[(*opt)++], 5);
+				strcat(timestamp,":00");
+				break;
+
+			case 8:
+				strncpy(timestamp, argv[(*opt)++], 8);
+				break;
+
+			default:
+				strncpy(timestamp, def_timestamp, 8);
+				break;
+		}
+	} else {
 		strncpy(timestamp, def_timestamp, 8);
 	}
 	timestamp[8] = '\0';
@@ -1571,7 +1584,13 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			break;
 
 		case 'F':
-			SELECT_ACTIVITY(A_FILESYSTEM);
+			p = get_activity_position(act, A_FILESYSTEM, EXIT_IF_NOT_FOUND);
+			act[p]->options |= AO_SELECTED;
+			if (!*(argv[*opt] + i + 1) && argv[*opt + 1] && !strcmp(argv[*opt + 1], K_MOUNT)) {
+				(*opt)++;
+				act[p]->opt_flags |= AO_F_MOUNT;
+				return 0;
+			}
 			break;
 
 		case 'H':

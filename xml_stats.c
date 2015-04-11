@@ -1,6 +1,6 @@
 /*
  * xml_stats.c: Funtions used by sadf to display statistics in XML.
- * (C) 1999-2014 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2015 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -112,12 +112,7 @@ __print_funct_t xml_print_cpu_stats(struct activity *a, int curr, int tab,
 	struct stats_cpu *scc, *scp;
 	char cpuno[8];
 
-	if (DISPLAY_CPU_DEF(a->opt_flags)) {
-		xprintf(tab++, "<cpu-load>");
-	}
-	else if (DISPLAY_CPU_ALL(a->opt_flags)) {
-		xprintf(tab++, "<cpu-load-all>");
-	}
+	xprintf(tab++, "<cpu-load>");
 
 	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 
@@ -251,12 +246,7 @@ __print_funct_t xml_print_cpu_stats(struct activity *a, int curr, int tab,
 		}
 	}
 
-	if (DISPLAY_CPU_DEF(a->opt_flags)) {
-		xprintf(--tab, "</cpu-load>");
-	}
-	else if (DISPLAY_CPU_ALL(a->opt_flags)) {
-		xprintf(--tab, "</cpu-load-all>");
-	}
+	xprintf(--tab, "</cpu-load>");
 }
 
 /*
@@ -2043,7 +2033,7 @@ __print_funct_t xml_print_filesystem_stats(struct activity *a, int curr, int tab
 			/* Size of filesystem is null: We are at the end of the list */
 			break;
 
-		xprintf(tab, "<filesystem fsname=\"%s\" "
+		xprintf(tab, "<filesystem %s=\"%s\" "
 			"MBfsfree=\"%.0f\" "
 			"MBfsused=\"%.0f\" "
 			"fsused-percent=\"%.2f\" "
@@ -2051,7 +2041,8 @@ __print_funct_t xml_print_filesystem_stats(struct activity *a, int curr, int tab
 			"Ifree=\"%llu\" "
 			"Iused=\"%llu\" "
 			"Iused-percent=\"%.2f\"/>",
-			sfc->fs_name,
+			DISPLAY_MOUNT(a->opt_flags) ? "mountp" : "fsname",
+			DISPLAY_MOUNT(a->opt_flags) ? sfc->mountp : sfc->fs_name,
 			(double) sfc->f_bfree / 1024 / 1024,
 			(double) (sfc->f_blocks - sfc->f_bfree) / 1024 / 1024,
 			/* f_blocks is not null. But test it anyway ;-) */

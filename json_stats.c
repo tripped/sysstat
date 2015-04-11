@@ -1,6 +1,6 @@
 /*
  * json_stats.c: Funtions used by sadf to display statistics in JSON format.
- * (C) 1999-2014 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2015 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -115,12 +115,7 @@ __print_funct_t json_print_cpu_stats(struct activity *a, int curr, int tab,
 	struct stats_cpu *scc, *scp;
 	char cpuno[8];
 
-	if (DISPLAY_CPU_DEF(a->opt_flags)) {
-		xprintf(tab++, "\"cpu-load\": [");
-	}
-	else if (DISPLAY_CPU_ALL(a->opt_flags)) {
-		xprintf(tab++, "\"cpu-load-all\": [");
-	}
+	xprintf(tab++, "\"cpu-load\": [");
 
 	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
 
@@ -2139,7 +2134,7 @@ __print_funct_t json_print_filesystem_stats(struct activity *a, int curr, int ta
 		}
 		sep = TRUE;
 
-		xprintf0(tab, "{\"filesystem\": \"%s\", "
+		xprintf0(tab, "{\"%s\": \"%s\", "
 			 "\"MBfsfree\": %.0f, "
 			 "\"MBfsused\": %.0f, "
 			 "\"%%fsused\": %.2f, "
@@ -2147,7 +2142,8 @@ __print_funct_t json_print_filesystem_stats(struct activity *a, int curr, int ta
 			 "\"Ifree\": %llu, "
 			 "\"Iused\": %llu, "
 			 "\"%%Iused\": %.2f}",
-			 sfc->fs_name,
+			 DISPLAY_MOUNT(a->opt_flags) ? "mountpoint" : "filesystem",
+			 DISPLAY_MOUNT(a->opt_flags) ? sfc->mountp : sfc->fs_name,
 			 (double) sfc->f_bfree / 1024 / 1024,
 			 (double) (sfc->f_blocks - sfc->f_bfree) / 1024 / 1024,
 			 sfc->f_blocks ? SP_VALUE(sfc->f_bfree, sfc->f_blocks, sfc->f_blocks)

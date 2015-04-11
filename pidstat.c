@@ -1,6 +1,6 @@
 /*
  * pidstat: Report statistics for Linux tasks
- * (C) 2007-2014 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 2007-2015 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -356,8 +356,13 @@ int read_proc_pid_stat(unsigned int pid, struct pid_stats *pst,
 		    &pst->priority, &pst->policy,
 		    &pst->blkio_swapin_delays, &pst->gtime, &pst->cgtime);
 
-	if (rc < 17)
+	if (rc < 15)
 		return 1;
+
+	if (rc < 17) {
+		/* gtime and cgtime fields are unavailable in file */
+		pst->gtime = pst->cgtime = 0;
+	}
 
 	/* Convert to kB */
 	pst->vsz >>= 10;

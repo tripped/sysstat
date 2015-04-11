@@ -1,6 +1,6 @@
 /*
  * sadf_misc.c: Funtions used by sadf to display special records
- * (C) 2011-2014 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 2011-2015 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -500,7 +500,10 @@ __printf_funct_t print_xml_header(int *tab, int action, char *dfile,
 		printf("\"http://pagesperso-orange.fr/sebastien.godard/sysstat-%s.dtd\">\n",
 		       XML_DTD_VERSION);
 
-		xprintf(*tab, "<sysstat>");
+		xprintf(*tab, "<sysstat\n"
+			      "xmlns=\"http://pagesperso-orange.fr/sebastien.godard/sysstat\"\n"
+			      "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+			      "xsi:schemaLocation=\"http://pagesperso-orange.fr/sebastien.godard sysstat.xsd\">");
 
 		xprintf(++(*tab), "<sysdata-version>%s</sysdata-version>",
 			XML_DTD_VERSION);

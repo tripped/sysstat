@@ -1,6 +1,6 @@
 /*
  * rd_stats.h: Include file used to read system statistics
- * (C) 1999-2014 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2015 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _RD_STATS_H
@@ -26,7 +26,7 @@
 /* Maximum length of USB product string */
 #define MAX_PROD_LEN	48
 /* Maximum length of filesystem name */
-#define MAX_FS_LEN	72
+#define MAX_FS_LEN	128
 
 #define CNT_PART	1
 #define CNT_ALL_DEV	0
@@ -543,6 +543,7 @@ struct stats_filesystem {
 	unsigned long long f_files		__attribute__ ((aligned (16)));
 	unsigned long long f_ffree		__attribute__ ((aligned (16)));
 	char 		   fs_name[MAX_FS_LEN]	__attribute__ ((aligned (16)));
+	char 		   mountp[MAX_FS_LEN];
 };
 
 #define STATS_FILESYSTEM_SIZE	(sizeof(struct stats_filesystem))

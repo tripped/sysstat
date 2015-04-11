@@ -1,6 +1,6 @@
 /*
  * rndr_stats.c: Funtions used by sadf to display statistics in selected format.
- * (C) 1999-2014 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2015 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -2859,7 +2859,7 @@ __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
 		render(isdb, pre, PT_USERND,
 		       "%s\tMBfsfree",
 		       "%s",
-		       cons(sv, sfc->fs_name, NOVAL),
+		       cons(sv, DISPLAY_MOUNT(a->opt_flags) ? sfc->mountp : sfc->fs_name, NOVAL),
 		       NOVAL,
 		       (double) sfc->f_bfree / 1024 / 1024,
 		       NULL);
@@ -2867,7 +2867,7 @@ __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
 		render(isdb, pre, PT_USERND,
 		       "%s\tMBfsused",
 		       NULL,
-		       cons(sv, sfc->fs_name, NOVAL),
+		       cons(sv, DISPLAY_MOUNT(a->opt_flags) ? sfc->mountp : sfc->fs_name, NOVAL),
 		       NOVAL,
 		       (double) (sfc->f_blocks - sfc->f_bfree) / 1024 / 1024,
 		       NULL);
@@ -2875,7 +2875,7 @@ __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
 		render(isdb, pre, PT_NOFLAG,
 		       "%s\t%%fsused",
 		       NULL,
-		       cons(sv, sfc->fs_name, NOVAL),
+		       cons(sv, DISPLAY_MOUNT(a->opt_flags) ? sfc->mountp : sfc->fs_name, NOVAL),
 		       NOVAL,
 		       sfc->f_blocks ? SP_VALUE(sfc->f_bfree, sfc->f_blocks, sfc->f_blocks)
 				     : 0.0,
@@ -2884,7 +2884,7 @@ __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
 		render(isdb, pre, PT_NOFLAG,
 		       "%s\t%%ufsused",
 		       NULL,
-		       cons(sv, sfc->fs_name, NOVAL),
+		       cons(sv, DISPLAY_MOUNT(a->opt_flags) ? sfc->mountp : sfc->fs_name, NOVAL),
 		       NOVAL,
 		       sfc->f_blocks ? SP_VALUE(sfc->f_bavail, sfc->f_blocks, sfc->f_blocks)
 				     : 0.0,
@@ -2893,7 +2893,7 @@ __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
 		render(isdb, pre, PT_USEINT,
 		       "%s\tIfree",
 		       NULL,
-		       cons(sv, sfc->fs_name, NOVAL),
+		       cons(sv, DISPLAY_MOUNT(a->opt_flags) ? sfc->mountp : sfc->fs_name, NOVAL),
 		       sfc->f_ffree,
 		       NOVAL,
 		       NULL);
@@ -2901,7 +2901,7 @@ __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
 		render(isdb, pre, PT_USEINT,
 		       "%s\tIused",
 		       NULL,
-		       cons(sv, sfc->fs_name, NOVAL),
+		       cons(sv, DISPLAY_MOUNT(a->opt_flags) ? sfc->mountp : sfc->fs_name, NOVAL),
 		       sfc->f_files - sfc->f_ffree,
 		       NOVAL,
 		       NULL);
@@ -2910,7 +2910,7 @@ __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
 		       (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN),
 		       "%s\t%%Iused",
 		       NULL,
-		       cons(sv, sfc->fs_name, NOVAL),
+		       cons(sv, DISPLAY_MOUNT(a->opt_flags) ? sfc->mountp : sfc->fs_name, NOVAL),
 		       NOVAL,
 		       sfc->f_files ? SP_VALUE(sfc->f_ffree, sfc->f_files, sfc->f_files)
 				    : 0.0,

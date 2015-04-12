@@ -1,6 +1,7 @@
 sysstat (11.1.4-1~) UNRELEASED; urgency=medium
 
   * New upstream (development) version.
+  * Update patches for the new version.
 
  -- Robert Luberda <robert@debian.org>  Sat, 11 Apr 2015 08:36:35 +0200
 

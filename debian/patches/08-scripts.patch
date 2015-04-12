@@ -8,15 +8,15 @@ Minor sa2 script fixes.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/sa2.in b/sa2.in
-index 0fbb9ed..3e80326 100644
+index 6cbca71..416ce45 100644
 --- a/sa2.in
 +++ b/sa2.in
-@@ -33,7 +33,7 @@ ENDIR=@bindir@
+@@ -43,7 +43,7 @@ ENDIR=@bindir@
  
- [ -f "$DFILE" ] || exit 0
+ [ -f "${DFILE}" ] || exit 0
  cd ${ENDIR}
 -${ENDIR}/sar $* -f ${DFILE} > ${RPT}
 +${ENDIR}/sar.sysstat $* -f ${DFILE} > ${RPT}
  
- find ${SA_DIR} \( -name 'sar??' -o -name 'sa??' -o -name 'sar??.xz' -o -name 'sa??.xz' -o -name 'sar??.gz' -o -name 'sa??.gz' -o -name 'sar??.bz2' -o -name 'sa??.bz2' \) \
- 	-mtime +"${HISTORY}" -exec rm -f {} \;
+ SAFILES_REGEX='/sar?[0-9]{2,8}(\.(Z|gz|bz2|xz|lz|lzo))?$'
+ 

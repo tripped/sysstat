@@ -4,35 +4,33 @@ Subject: 02-sargraph
 
 Fix paths in sargraph script
 ---
- contrib/sargraph/sargraph | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ contrib/sargraph/sargraph  | 2 +-
+ contrib/sargraph/sargraph2 | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/contrib/sargraph/sargraph b/contrib/sargraph/sargraph
-index 2f3e717..9829a64 100755
+index 22ee46e..b1aab52 100755
 --- a/contrib/sargraph/sargraph
 +++ b/contrib/sargraph/sargraph
-@@ -5,12 +5,12 @@
- # Our dependencies
- ZENITY="/usr/bin/zenity"
- XSLTPROC="/usr/bin/xsltproc"
--SADF="/usr/local/bin/sadf"
-+SADF="/usr/bin/sadf"
- GNUPLOT="/usr/bin/gnuplot"
- MKTEMP="/bin/mktemp"
- FIND="/usr/bin/find"
--SORT="/bin/sort"
--CUT="/bin/cut"
-+SORT="/usr/bin/sort"
-+CUT="/usr/bin/cut"
+@@ -17,7 +17,7 @@ GZIP=`which gzip`
+ set +e
  
- # sar / sysstat DTD is published here:
- # http://pagesperso-orange.fr/sebastien.godard/sysstat.dtd
-@@ -367,7 +367,7 @@ while /bin/true; do
+ # Default for --sa-dir
+-SA_DIR="/var/log/sa"
++SA_DIR="/var/log/sysstat"
  
- # Prompt for sar file
+ SA_REGEX='/sa[0-9][0-9]+(\.(gz|bz2|xz|lz|lzo))?$'
  
--SARLIST=`$FIND /var/log/sa -name 'sa[0-9][0-9]' -printf '%T@,%p\n'| $SORT -n -r | $CUT -d, -f2`
-+SARLIST=`$FIND /var/log/sysstat -name 'sa[0-9][0-9]' -printf '%T@,%p\n'| $SORT -n -r | $CUT -d, -f2`
- SARFILE=`$ZENITY --list --text "Select data source" --column "sar file" $SARLIST`
- if [ "$SARFILE" == "" ]; then
-     exit
+diff --git a/contrib/sargraph/sargraph2 b/contrib/sargraph/sargraph2
+index 215ec8d..286c5b4 100755
+--- a/contrib/sargraph/sargraph2
++++ b/contrib/sargraph/sargraph2
+@@ -14,7 +14,7 @@ GNUPLOT=`which gnuplot`
+ SA_FILE=""
+ 
+ # Default for --sa-dir
+-SA_DIR="/var/log/sa"
++SA_DIR="/var/log/sysstat"
+ 
+ # Default for --type
+ GRAPH_TYPE=CPU

@@ -10,10 +10,10 @@ Merge the following change from Ubuntu:
  1 file changed, 1 deletion(-)
 
 diff --git a/sar.c b/sar.c
-index 80bada3..e62d699 100644
+index d79a7b0..a4d98bb 100644
 --- a/sar.c
 +++ b/sar.c
-@@ -1492,7 +1492,6 @@ int main(int argc, char **argv)
+@@ -1493,7 +1493,6 @@ int main(int argc, char **argv)
  
  		/* Call now the data collector */
  		execv(SADC_PATH, args);

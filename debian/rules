@@ -5,26 +5,14 @@ DESTDIR         := $(CURDIR)/debian/tmp
 CFLAGS          := $(shell dpkg-buildflags --get CPPFLAGS) $(shell dpkg-buildflags --get CFLAGS) $(shell getconf LFS_CFLAGS)
 LDFLAGS         := $(shell dpkg-buildflags --get LDFLAGS)
 
+ifneq ($(DEB_HOST_GNU_TYPE),$(DEB_BUILD_GNU_TYPE))
+  CC  := $(DEB_HOST_GNU_TYPE)-gcc
+else
+  CC  := gcc
+endif
 
-build: export MISSING_BUILD_DEPS := $(shell dpkg-checkbuilddeps 2>&1)
 binary binary-arch binary-indep build build-arch build-indep clean:
 	dh ${@}
-
-ifneq ($(shell dh_listpackages),$(shell dh_listpackages -i))  # arch:any packages are built
-override_dh_auto_build:   debian/build-arch.stamp
-
-override_dh_auto_install: install-arch-files
-endif
-
-ifneq ($(shell dh_listpackages),$(shell dh_listpackages -a)) # arch:all packages are built
-  ifneq (,$(MISSING_BUILD_DEPS))
-    $(warning $(MISSING_BUILD_DEPS))
-    $(warning Postponing build of architecture independent files until binary or binary-indep target is called)
-  else
-override_dh_auto_build:   debian/build-indep.stamp
-  endif
-override_dh_auto_install: install-indep-files
-endif
 
 override_dh_auto_configure: debian/configure.stamp
 
@@ -32,15 +20,17 @@ override_dh_auto_clean:
 	rm -f debian/*.stamp config.log
 	[ ! -f Makefile ] || dh_auto_clean $(DH_AUTO_OPTIONS)
 
-override_dh_installchangelogs:
+override_dh_installchangelogs-arch:
 	dh_installchangelogs -a CHANGES
+
+override_dh_installchangelogs-indep:
 	dh_installchangelogs -i
 
 override_dh_installinit:
 	dh_installinit --no-start
 
 override_dh_installexamples-arch:
-	dh_installexamples
+	dh_installexamples -a
 	cd debian/sysstat/usr/share/doc/sysstat/examples && mv README.md README.irqstat
 
 override_dh_compress:
@@ -49,40 +39,37 @@ override_dh_compress:
 
 debian/configure.stamp:
 	dh_auto_configure $(DH_AUTO_OPTIONS) --         \
-	            --enable-yesterday                  \
+	            --disable-stripping                 \
 	            --disable-file-attr                 \
 	            --disable-compress-manpg            \
 	            --enable-copy-only                  \
 	            sa_lib_dir=/usr/lib/sysstat         \
 	            sa_dir=/var/log/sysstat             \
 	            conf_dir=/etc/sysstat               \
+	            CC="$(CC)"                          \
 	            CFLAGS="$(CFLAGS)"                  \
 	            LDFLAGS="$(LDFLAGS)"
 	touch "$@"
 
-debian/build-arch.stamp: debian/configure.stamp
+override_dh_auto_build-arch:
 	dh_auto_build $(DH_AUTO_OPTIONS)
-	touch "$@"
 
-
-debian/build-indep.stamp: debian/configure.stamp
+override_dh_auto_build-indep:
 	dh_auto_build $(DH_AUTO_OPTIONS) -- contrib/isag/isag
-	touch "$@"
 
-install-arch-files: debian/build-arch.stamp
+override_dh_auto_install-arch:
 	dh_auto_install $(DH_AUTO_OPTIONS) --destdir="$(DESTDIR)"
 	
-	mkdir -p -m 755 $(DESTDIR)/usr/lib/sysstat
 	mv $(DESTDIR)/usr/bin/sar $(DESTDIR)/usr/bin/sar.sysstat
 	mv $(DESTDIR)/usr/share/man/man1/sar.1 $(DESTDIR)/usr/share/man/man1/sar.sysstat.1
 	rm -rf $(DESTDIR)/usr/doc
 
-
-install-indep-files: debian/build-indep.stamp
+override_dh_auto_install-indep:
 	$(MAKE) DESTDIR="$(DESTDIR)" install_isag
 
-
-.PHONY: binary binary-arch binary-indep build build-arch build-indep clean \
-	override_dh_auto_build override_dh_auto_install override_dh_auto_clean \
-	override_dh_auto_configure override_dh_installchangelogs override_dh_installinit \
-	override_dh_compress install-arch-files install-indep-files
+.PHONY: binary binary-arch binary-indep build build-arch build-indep clean     \
+        override_dh_auto_configure override_dh_auto_clean override_dh_compress \
+        override_dh_installchangelogs-arch override_dh_installchangelogs-indep \
+        override_dh_installinit override_dh_installexamples-arch               \
+        override_dh_auto_build-arch override_dh_auto_build-indep               \
+        override_dh_auto_install-arch override_dh_auto_install-indep

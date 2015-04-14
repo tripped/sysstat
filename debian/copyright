@@ -1,33 +1,29 @@
-This package was debianized by Robert Luberda <robert@debian.org> on
-Wed, 29 Nov 2000 21:48:44 +0100.
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Sebastien Godar
+Upstream-Contact: sysstat <at> orange.fr
+Source: http://pagesperso-orange.fr/sebastien.godard/
 
-It was downloaded from http://pagesperso-orange.fr/sebastien.godard/
+Files: *
+Copyright: © 1998-2015, Sebastien Godard (sysstat <at> orange.fr)
+License: GPL-2+
 
-The isag script is distributed together with sysstat's sources, but
-can also be found on
-  http://www.volny.cz/linux_monitor/isag/index.html
+Files: cifsiostat.c nfsiostat-sysstat.c ioconf.c
+Copyright: © 2004, 2010, Red Hat, Inc.
+License: GPL-2+
 
-Upstream Author:
-    Sebastien Godard <sysstat<at>orange.fr>
-    David Doubrava <linux_monitor<at>volny.cz> (the isag script)
+Files: contrib/isag/*
+Copyright: © 2000, 2001 David Doubrava (linux_monitor(at)volny(dot)cz)
+License: GPL-2+
 
-Copyright:
-    Copyright (C) 1998-2008 by Sebastien GODARD (sysstat <at> orange.fr)
-    Copyright (C) 2000, 2001 David Doubrava (linux_monitor(at)volny(dot)cz)
-    Copyright (C) 2004, Red Hat, Inc
+Files: debian/*
+Copyright: © 2000-2015 Robert Luberda <robert@debian.org>
+License: GPL-2+
 
-License:
-
-   This program is free software; you can redistribute it and/or modify it
-   under the terms of the GNU General Public License as published  by  the
-   Free Software Foundation; either version 2 of the License, or (at  your
-   option) any later version.
-
-   This program is distributed in the hope that it  will  be  useful,  but
-   WITHOUT ANY WARRANTY; without the implied warranty  of  MERCHANTABILITY
-   or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
-   for more details.
-
-On Debian GNU/Linux systems you can find a copy of the GNU General Public
-Licenses in /usr/share/common-licenses/GPL-2 and
-/usr/share/common-licenses/GPL-3 files.
+License: GPL-2+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; version 2 dated June, 1991, or (at
+ your option) any later version.
+ .
+ On Debian systems, the complete text of version 2 of the GNU General
+ Public License can be found in '/usr/share/common-licenses/GPL-2'.

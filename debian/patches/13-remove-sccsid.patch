@@ -18,7 +18,7 @@ https://wiki.debian.org/ReproducibleBuilds/TimestampsFromCPPMacros
  8 files changed, 24 deletions(-)
 
 diff --git a/cifsiostat.c b/cifsiostat.c
-index 7224f2f..d6a7152 100644
+index 94239dd..6926f3e 100644
 --- a/cifsiostat.c
 +++ b/cifsiostat.c
 @@ -41,9 +41,6 @@
@@ -88,7 +88,7 @@ index d24ae02..d267ad7 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  struct pid_stats *st_pid_list[3] = {NULL, NULL, NULL};
 diff --git a/sadc.c b/sadc.c
-index fc68944..1a32293 100644
+index 6d32a1f..017d912 100644
 --- a/sadc.c
 +++ b/sadc.c
 @@ -52,9 +52,6 @@
@@ -102,7 +102,7 @@ index fc68944..1a32293 100644
  unsigned int flags = 0;
  
 diff --git a/sadf.c b/sadf.c
-index a2aae0d..14c95d4 100644
+index 9650a18..4fe4f56 100644
 --- a/sadf.c
 +++ b/sadf.c
 @@ -41,9 +41,6 @@
@@ -116,10 +116,10 @@ index a2aae0d..14c95d4 100644
  
  unsigned int flags = 0;
 diff --git a/sar.c b/sar.c
-index a4d98bb..aca4587 100644
+index e829cca..67c843f 100644
 --- a/sar.c
 +++ b/sar.c
-@@ -41,9 +41,6 @@
+@@ -42,9 +42,6 @@
  #define _(string) (string)
  #endif
  

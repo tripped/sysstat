@@ -26,6 +26,7 @@
 #include <time.h>
 #include <errno.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 #include "version.h"
 #include "sa.h"
@@ -109,7 +110,7 @@ void usage(char *progname)
 	fprintf(stderr, _("Options are:\n"
 			  "[ -A ] [ -B ] [ -b ] [ -C ] [ -D ] [ -d ] [ -F [ MOUNTS ] ] [ -H ] [ -h ]\n"
 			  "[ -p ] [ -q ] [ -R ] [ -r [ ALL ] ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -V ]\n"
-			  "[ -v ] [ -W ] [ -w ] [ -y ]\n"
+			  "[ -v ] [ -W ] [ -w ] [ -y ] [ --sadc ]\n"
 			  "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
 			  "[ -m { <keyword> [,...] | ALL } ] [ -n { <keyword> [,...] | ALL } ]\n"
 			  "[ -j { ID | LABEL | PATH | UUID | ... } ]\n"
@@ -167,7 +168,8 @@ void display_help(char *progname)
 		 "\t\tEIP6\tIP traffic\t(v6) (errors)\n"
 		 "\t\tICMP6\tICMP traffic\t(v6)\n"
 		 "\t\tEICMP6\tICMP traffic\t(v6) (errors)\n"
-		 "\t\tUDP6\tUDP traffic\t(v6)\n"));
+		 "\t\tUDP6\tUDP traffic\t(v6)\n"
+		 "\t\tFC\tFibre channel HBAs\n"));
 	printf(_("\t-q\tQueue length and load average statistics\n"));
 	printf(_("\t-R\tMemory statistics\n"));
 	printf(_("\t-r [ ALL ]\n"
@@ -181,6 +183,25 @@ void display_help(char *progname)
 	printf(_("\t-y\tTTY devices statistics\n"));
 	exit(0);
 }
+
+/*
+ ***************************************************************************
+ * Give a hint to the user about where is located the data collector.
+ ***************************************************************************
+ */
+void which_sadc(void)
+{
+	struct stat buf;
+
+	if (stat(SADC_PATH, &buf) < 0) {
+		printf(_("Data collector will be sought in PATH\n"));
+	}
+	else {
+		printf(_("Data collector found: %s\n"), SADC_PATH);
+	}
+	exit(0);
+}
+
 
 /*
  ***************************************************************************
@@ -668,8 +689,7 @@ int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype,
 		char file_comment[MAX_COMMENT_LEN];
 
 		/* Don't forget to read comment record even if it won't be displayed... */
-		sa_fread(ifd, file_comment, MAX_COMMENT_LEN, HARD_SIZE);
-		file_comment[MAX_COMMENT_LEN - 1] = '\0';
+		replace_nonprintable_char(ifd, file_comment);
 
 		if (dp && DISPLAY_COMMENT(flags)) {
 			printf("%-11s  COM %s\n", cur_time, file_comment);
@@ -850,13 +870,12 @@ void read_header_data(void)
 	    strcmp(version, VERSION)) {
 
 		/* sar and sadc commands are not consistent */
-		fprintf(stderr, _("Invalid data format\n"));
-
 		if (!rc && (file_magic.sysstat_magic == SYSSTAT_MAGIC)) {
 			fprintf(stderr,
 				_("Using a wrong data collector from a different sysstat version\n"));
 		}
-		exit(3);
+
+		goto input_error;
 	}
 
 	/*
@@ -868,6 +887,9 @@ void read_header_data(void)
 	if (sa_read(&file_hdr, FILE_HEADER_SIZE)) {
 		print_read_error();
 	}
+
+	if (file_hdr.sa_act_nr > NR_ACT)
+		goto input_error;
 
 	/* Read activity list */
 	for (i = 0; i < file_hdr.sa_act_nr; i++) {
@@ -881,11 +903,9 @@ void read_header_data(void)
 		if ((p < 0) || (act[p]->fsize != file_act.size)
 			    || !file_act.nr
 			    || !file_act.nr2
-			    || (act[p]->magic != file_act.magic)) {
+			    || (act[p]->magic != file_act.magic))
 			/* Remember that we are reading data from sadc and not from a file... */
-			fprintf(stderr, _("Inconsistent input data\n"));
-			exit(3);
-		}
+			goto input_error;
 
 		id_seq[i]   = file_act.id;	/* We necessarily have "i < NR_ACT" */
 		act[p]->nr  = file_act.nr;
@@ -898,6 +918,15 @@ void read_header_data(void)
 
 	/* Check that all selected activties are actually sent by sadc */
 	reverse_check_act(file_hdr.sa_act_nr);
+
+	return;
+
+input_error:
+
+	/* Strange data sent by sadc...! */
+	fprintf(stderr, _("Inconsistent input data\n"));
+
+	exit(3);
 }
 
 /*
@@ -1178,7 +1207,12 @@ int main(int argc, char **argv)
 	/* Process options */
 	while (opt < argc) {
 
-		if (!strcmp(argv[opt], "-I")) {
+		if (!strcmp(argv[opt], "--sadc")) {
+			/* Locate sadc */
+			which_sadc();
+		}
+
+		else if (!strcmp(argv[opt], "-I")) {
 			if (argv[++opt]) {
 				/* Parse -I option */
 				if (parse_sar_I_opt(argv, &opt, act)) {

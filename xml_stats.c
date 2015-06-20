@@ -615,8 +615,7 @@ __print_funct_t xml_print_serial_stats(struct activity *a, int curr, int tab,
 	int i;
 	struct stats_serial *ssc, *ssp;
 
-	xprintf(tab, "<serial per=\"second\">");
-	tab++;
+	xprintf(tab++, "<serial per=\"second\">");
 
 	for (i = 0; i < a->nr; i++) {
 
@@ -667,8 +666,7 @@ __print_funct_t xml_print_disk_stats(struct activity *a, int curr, int tab,
 	struct ext_disk_stats xds;
 	char *dev_name, *persist_dev_name;
 
-	xprintf(tab, "<disk per=\"second\">");
-	tab++;
+	xprintf(tab++, "<disk per=\"second\">");
 
 	for (i = 0; i < a->nr; i++) {
 
@@ -2022,8 +2020,7 @@ __print_funct_t xml_print_filesystem_stats(struct activity *a, int curr, int tab
 	int i;
 	struct stats_filesystem *sfc;
 
-	xprintf(tab, "<filesystems>");
-	tab++;
+	xprintf(tab++, "<filesystems>");
 
 	for (i = 0; i < a->nr; i++) {
 
@@ -2057,4 +2054,55 @@ __print_funct_t xml_print_filesystem_stats(struct activity *a, int curr, int tab
 	}
 
 	xprintf(--tab, "</filesystems>");
+}
+
+/*
+ ***************************************************************************
+ * Display Fibre Channel HBA statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_fchost_stats(struct activity *a, int curr, int tab,
+				       unsigned long long itv)
+{
+	int i;
+	struct stats_fchost *sfcc, *sfcp;
+
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	for (i = 0; i < a->nr; i++) {
+
+		sfcc = (struct stats_fchost *) ((char *) a->buf[curr] + i * a->msize);
+		sfcp = (struct stats_fchost *) ((char *) a->buf[!curr] + i * a->msize);
+
+		if (!sfcc->fchost_name[0])
+			/* We are at the end of the list */
+			break;
+
+		xprintf(tab, "<fchost name=\"%s\" "
+			"fch_rxf=\"%.2f\" "
+			"fch_txf=\"%.2f\" "
+			"fch_rxw=\"%.2f\" "
+			"fch_txw=\"%.2f\"/>",
+			sfcc->fchost_name,
+			S_VALUE(sfcp->f_rxframes, sfcc->f_rxframes, itv),
+			S_VALUE(sfcp->f_txframes, sfcc->f_txframes, itv),
+			S_VALUE(sfcp->f_rxwords,  sfcc->f_rxwords,  itv),
+			S_VALUE(sfcp->f_txwords,  sfcc->f_rxwords,  itv));
+	}
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
 }

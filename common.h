@@ -65,10 +65,10 @@
 #define SYSFS_BMAXPOWER		"bMaxPower"
 #define SYSFS_MANUFACTURER	"manufacturer"
 #define SYSFS_PRODUCT		"product"
+#define SYSFS_FCHOST		"/sys/class/fc_host"
 
 #define MAX_FILE_LEN		256
 #define MAX_PF_NAME		1024
-#define DEFAULT_DEVMAP_MAJOR	253
 #define MAX_NAME_LEN		72
 
 #define IGNORE_VIRTUAL_DEVICES	FALSE

@@ -30,6 +30,7 @@
 #include <libgen.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctype.h>
 
 #include "version.h"
 #include "sa.h"
@@ -1282,7 +1283,8 @@ int sa_open_read_magic(int *fd, char *dfile, struct file_magic *file_magic,
 
 	if ((n != FILE_MAGIC_SIZE) ||
 	    (file_magic->sysstat_magic != SYSSTAT_MAGIC) ||
-	    ((file_magic->format_magic != FORMAT_MAGIC) && !ignore)) {
+	    ((file_magic->format_magic != FORMAT_MAGIC) && !ignore) ||
+	    (file_magic->header_size > MAX_FILE_HEADER_SIZE)) {
 		/* Display error message and exit */
 		handle_invalid_sa_file(fd, file_magic, dfile, n);
 	}
@@ -1334,6 +1336,17 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 	sa_fread(*ifd, buffer, file_magic->header_size, HARD_SIZE);
 	memcpy(file_hdr, buffer, MINIMUM(file_magic->header_size, FILE_HEADER_SIZE));
 	free(buffer);
+
+	/*
+	 * Sanity check.
+	 * Compare against MAX_NR_ACT and not NR_ACT because
+	 * we are maybe reading a datafile from a future sysstat version
+	 * with more activities than known today.
+	 */
+	if (file_hdr->sa_act_nr > MAX_NR_ACT) {
+		/* Maybe a "false positive" sysstat datafile? */
+		handle_invalid_sa_file(ifd, file_magic, dfile, 0);
+	}
 
 	SREALLOC(*file_actlst, struct file_activity, FILE_ACTIVITY_SIZE * file_hdr->sa_act_nr);
 	fal = *file_actlst;
@@ -1836,6 +1849,9 @@ int parse_sar_n_opt(char *argv[], int *opt, struct activity *act[])
 		else if (!strcmp(t, K_UDP6)) {
 			SELECT_ACTIVITY(A_NET_UDP6);
 		}
+		else if (!strcmp(t, K_FC)) {
+			SELECT_ACTIVITY(A_NET_FC);
+		}
 		else if (!strcmp(t, K_ALL)) {
 			SELECT_ACTIVITY(A_NET_DEV);
 			SELECT_ACTIVITY(A_NET_EDEV);
@@ -1855,6 +1871,7 @@ int parse_sar_n_opt(char *argv[], int *opt, struct activity *act[])
 			SELECT_ACTIVITY(A_NET_ICMP6);
 			SELECT_ACTIVITY(A_NET_EICMP6);
 			SELECT_ACTIVITY(A_NET_UDP6);
+			SELECT_ACTIVITY(A_NET_FC);
 		}
 		else
 			return 1;
@@ -2052,4 +2069,28 @@ void enum_version_nr(struct file_magic *fm)
 	if ((v = strtok(NULL, ".")) == NULL)
 		return;
 	fm->sysstat_extraversion = atoi(v) & 0xff;
+}
+
+/*
+ ***************************************************************************
+ * Read and replace unprintable characters in comment with ".".
+ *
+ * IN:
+ * @ifd		Input file descriptor.
+ * @comment	Comment.
+ ***************************************************************************
+ */
+void replace_nonprintable_char(int ifd, char *comment)
+{
+	int i;
+
+	/* Read comment */
+	sa_fread(ifd, comment, MAX_COMMENT_LEN, HARD_SIZE);
+	comment[MAX_COMMENT_LEN - 1] = '\0';
+
+	/* Replace non printable chars */
+	for (i = 0; i < strlen(comment); i++) {
+		if (!isprint(comment[i]))
+			comment[i] = '.';
+	}
 }

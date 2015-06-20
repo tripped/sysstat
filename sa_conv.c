@@ -470,6 +470,10 @@ int upgrade_header_section(char dfile[], int fd, int stdfd,
 
 	free(buffer);
 
+	/* Sanity check */
+	if (file_hdr->sa_act_nr > MAX_NR_ACT)
+		goto invalid_header;
+
 	/* Read file activity list */
 	SREALLOC(*file_actlst, struct file_activity, FILE_ACTIVITY_SIZE * file_hdr->sa_act_nr);
 	fal = *file_actlst;
@@ -479,14 +483,12 @@ int upgrade_header_section(char dfile[], int fd, int stdfd,
 
 		sa_fread(fd, fal, FILE_ACTIVITY_SIZE, HARD_SIZE);
 
-		if ((fal->nr < 1) || (fal->nr2 < 1)) {
+		if ((fal->nr < 1) || (fal->nr2 < 1))
 			/*
 			 * Every activity, known or unknown,
 			 * should have at least one item and sub-item.
 			 */
-			fprintf(stderr, _("\nInvalid data found. Aborting...\n"));
-			return -1;
-		}
+			goto invalid_header;
 
 		if ((p = get_activity_position(act, fal->id, RESUME_IF_NOT_FOUND)) >= 0) {
 			/* This is a known activity, maybe with an unknown format */
@@ -522,6 +524,10 @@ int upgrade_header_section(char dfile[], int fd, int stdfd,
 				}
 				a_cpu = TRUE;
 			}
+
+			/* Size of an activity cannot be zero */
+			if (!fal->size)
+				goto invalid_header;
 
 			/* Size of activity in file is larger than up-to-date activity size */
 			if (fal->size > act[p]->msize) {
@@ -566,6 +572,13 @@ int upgrade_header_section(char dfile[], int fd, int stdfd,
 	fprintf(stderr, "OK\n");
 
 	return 0;
+
+invalid_header:
+
+	fprintf(stderr, _("\nInvalid data found. Aborting...\n"));
+
+	return -1;
+
 }
 
 /*
@@ -745,6 +758,8 @@ int upgrade_common_record(int fd, int stdfd, struct activity *act[],
 		if ((p = get_activity_position(act, fal->id, RESUME_IF_NOT_FOUND)) < 0) {
 			/* An unknown activity should still be read and written */
 			size = (size_t) fal->size * (size_t) fal->nr * (size_t) fal->nr2;
+			if (!size)
+				return -1;
 			SREALLOC(buffer, void, size);
 			sa_fread(fd, buffer, fal->size * fal->nr * fal->nr2, HARD_SIZE);
 			if (write(stdfd, (char *) buffer, size) != size) {

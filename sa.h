@@ -1,6 +1,6 @@
 /*
  * sar/sadc: Report system activity
- * (C) 1999-2014 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2015 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SA_H
@@ -20,10 +20,12 @@
  */
 
 /* Number of activities */
-#define NR_ACT	37
+#define NR_ACT		38
+/* The value below is used for sanity check */
+#define MAX_NR_ACT	256
 
 /* Number of functions used to count items */
-#define NR_F_COUNT	10
+#define NR_F_COUNT	11
 
 /* Activities */
 #define A_CPU		1
@@ -63,6 +65,7 @@
 #define A_PWR_WGHFREQ	35
 #define A_PWR_USB	36
 #define A_FILESYSTEM	37
+#define A_NET_FC	38
 
 
 /* Macro used to flag an activity that should be collected */
@@ -174,6 +177,7 @@
 #define K_IN		"IN"
 #define K_FREQ		"FREQ"
 #define K_MOUNT		"MOUNT"
+#define K_FC		"FC"
 
 #define K_INT		"INT"
 #define K_DISK		"DISK"
@@ -529,10 +533,10 @@ struct file_magic {
 	/*
 	 * Sysstat version used to create the file.
 	 */
-	unsigned char  sysstat_version;
-	unsigned char  sysstat_patchlevel;
-	unsigned char  sysstat_sublevel;
-	unsigned char  sysstat_extraversion;
+	unsigned char sysstat_version;
+	unsigned char sysstat_patchlevel;
+	unsigned char sysstat_sublevel;
+	unsigned char sysstat_extraversion;
 	/*
 	 * Size of file's header (size of file_header structure used by file).
 	 */
@@ -604,6 +608,8 @@ struct file_header {
 };
 
 #define FILE_HEADER_SIZE	(sizeof(struct file_header))
+/* The value below is used for sanity check */
+#define MAX_FILE_HEADER_SIZE	8192
 
 
 /*
@@ -762,6 +768,8 @@ extern __nr_t
 	wrap_get_usb_nr(struct activity *);
 extern __nr_t
 	wrap_get_filesystem_nr(struct activity *);
+extern __nr_t
+	wrap_get_fchost_nr(struct activity *);
 
 /* Functions used to read activities statistics */
 extern __read_funct_t
@@ -838,6 +846,8 @@ extern __read_funct_t
 	wrap_read_bus_usb_dev(struct activity *);
 extern __read_funct_t
 	wrap_read_filesystem(struct activity *);
+extern __read_funct_t
+	wrap_read_fchost(struct activity *);
 
 /* Other functions */
 extern void
@@ -907,6 +917,8 @@ extern __nr_t
 			        unsigned int);
 extern int
 	reallocate_vol_act_structures(struct activity * [], unsigned int, unsigned int);
+extern void
+	replace_nonprintable_char(int, char *);
 extern int
 	sa_fread(int, void *, int, int);
 extern int

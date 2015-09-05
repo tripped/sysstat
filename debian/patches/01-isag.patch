@@ -45,7 +45,7 @@ index 8281a7a..8d4c199 100644
  .IX Header "PREREQUSITIES"
  Here is list of prerequsities including versioning and built-in features.
 diff --git a/contrib/isag/isag.in b/contrib/isag/isag.in
-index 5627fee..f7300ff 100644
+index 5281ea1..0ad999b 100644
 --- a/contrib/isag/isag.in
 +++ b/contrib/isag/isag.in
 @@ -211,7 +211,7 @@ if {$tcl_version < $needed_version} {

@@ -16,7 +16,7 @@ as `DD' files in `saYYYYMM' submenus.
  1 file changed, 59 insertions(+), 50 deletions(-)
 
 diff --git a/contrib/isag/isag.in b/contrib/isag/isag.in
-index 3b76aa1..e2fecae 100644
+index 6bf16ac..9011fae 100644
 --- a/contrib/isag/isag.in
 +++ b/contrib/isag/isag.in
 @@ -275,7 +275,7 @@ proc out_msg {title text} {

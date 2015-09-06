@@ -11,6 +11,10 @@ Files: cifsiostat.c nfsiostat-sysstat.c ioconf.c
 Copyright: © 2004, 2010, Red Hat, Inc.
 License: GPL-2+
 
+Files: tapestat.c
+Copyright: 2015, Hewlett-Packard Development Company, L.P
+License: GPL-2+
+
 Files: contrib/isag/*
 Copyright: © 2000, 2001 David Doubrava (linux_monitor(at)volny(dot)cz)
 License: GPL-2+

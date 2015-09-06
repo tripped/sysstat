@@ -1,8 +1,11 @@
-sysstat (11.1.6-1~) UNRELEASED; urgency=medium
+sysstat (11.1.6-1) unstable; urgency=medium
 
   * New upstream version.
+  * Document newly added tapestat command in the package description,
+    and mention its source file in debian/copyright.
+  * Add cron-daemon alternative to sysstat's Recommends (closes: #796873).
 
- -- Robert Luberda <robert@debian.org>  Sat, 05 Sep 2015 12:07:16 +0200
+ -- Robert Luberda <robert@debian.org>  Sun, 06 Sep 2015 15:50:14 +0200
 
 sysstat (11.1.5-1) unstable; urgency=medium
 

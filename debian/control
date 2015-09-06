@@ -15,12 +15,13 @@ Depends: bzip2,
          ucf (>= 2.003),
          ${misc:Depends},
          ${shlibs:Depends}
-Recommends: cron
+Recommends: cron | cron-daemon
 Suggests: isag
 Description: system performance tools for Linux
  The sysstat package contains the following system performance tools:
   - sar: collects and reports system activity information;
   - iostat: reports CPU utilization and disk I/O statistics;
+  - tapestat: reports statistics for tapes connected to the system;
   - mpstat: reports global and per-processor statistics;
   - pidstat: reports statistics for Linux tasks (processes);
   - sadf: displays data collected by sar in various formats;

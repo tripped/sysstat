@@ -1,5 +1,5 @@
 From: Robert Luberda <robert@debian.org>
-Date: Sun, 15 Mar 2015 10:40:22 +0100
+Date: Wed, 9 Sep 2015 21:37:37 +0200
 Subject: 13-remove-sccsid
 
 Remove sccsid() function togethwe with SCCSID string that
@@ -15,7 +15,8 @@ https://wiki.debian.org/ReproducibleBuilds/TimestampsFromCPPMacros
  sadc.c              | 3 ---
  sadf.c              | 3 ---
  sar.c               | 3 ---
- 8 files changed, 24 deletions(-)
+ tapestat.c          | 3 ---
+ 9 files changed, 27 deletions(-)
 
 diff --git a/cifsiostat.c b/cifsiostat.c
 index 94239dd..6926f3e 100644
@@ -128,4 +129,18 @@ index a05e85a..3d8af7a 100644
 -
  /* Interval and count parameters */
  long interval = -1, count = 0;
+ 
+diff --git a/tapestat.c b/tapestat.c
+index cd82141..2a757ac 100644
+--- a/tapestat.c
++++ b/tapestat.c
+@@ -50,9 +50,6 @@
+ #define _(string) (string)
+ #endif
+ 
+-#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
+-char *sccsid(void) { return (SCCSID); }
+-
+ int cpu_nr = 0;		/* Nb of processors on the machine */
+ int flags = 0;		/* Flag for common options and system state */
  

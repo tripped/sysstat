@@ -1,3 +1,9 @@
+sysstat (11.1.7-1~) UNRELEASED; urgency=medium
+
+  * New upstream version.
+
+ -- Robert Luberda <robert@debian.org>  Thu, 24 Sep 2015 10:33:32 +0200
+
 sysstat (11.1.6-2) unstable; urgency=medium
 
   * Update 13-remove-sccsid.patch for tapestat.c to make builds

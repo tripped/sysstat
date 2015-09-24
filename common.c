@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <time.h>
 #include <errno.h>
 #include <unistd.h>	/* For STDOUT_FILENO, among others */
@@ -48,6 +49,16 @@
 unsigned int hz;
 /* Number of bit shifts to convert pages to kB */
 unsigned int kb_shift;
+
+/* Colors strings */
+char sc_percent_high[] = C_BOLD_RED;
+char sc_percent_low[] = C_BOLD_BLUE;
+char sc_zero_int_stat[] = C_LIGHT_YELLOW;
+char sc_int_stat[] = C_BOLD_YELLOW;
+char sc_item_name[] = C_LIGHT_GREEN;
+char sc_sa_restart[] = C_LIGHT_RED;
+char sc_sa_comment[] = C_LIGHT_CYAN;
+char sc_normal[] = C_NORMAL;
 
 /* Type of persistent device names used in sar and iostat */
 char persistent_name_type[MAX_FILE_LEN];
@@ -918,4 +929,202 @@ char *get_pretty_name_from_persistent(char *persistent)
 		return (NULL);
 
 	return pretty;
+}
+
+/*
+ ***************************************************************************
+ * Init color strings.
+ ***************************************************************************
+ */
+void init_colors(void)
+{
+	/* Read environment variable value */
+	if (!getenv(ENV_COLORS) || !isatty(STDOUT_FILENO)) {
+		/*
+		 * Environment variable is not set or stdout is not a terminal:
+		 * Unset color strings.
+		 */
+		strcpy(sc_percent_high, "");
+		strcpy(sc_percent_low, "");
+		strcpy(sc_zero_int_stat, "");
+		strcpy(sc_int_stat, "");
+		strcpy(sc_item_name, "");
+		strcpy(sc_sa_comment, "");
+		strcpy(sc_sa_restart, "");
+		strcpy(sc_normal, "");
+	}
+}
+
+/*
+ ***************************************************************************
+ * Print "unsigned long long" statistics values using colors.
+ *
+ * IN:
+ * @num		Number of values to print.
+ * @width	Output width.
+ ***************************************************************************
+*/
+void cprintf_ull(int num, int width, ...)
+{
+	int i;
+	unsigned long long val;
+	va_list args;
+
+	va_start(args, width);
+
+	for (i = 0; i < num; i++) {
+		val = va_arg(args, unsigned long long);
+		if (!val) {
+			printf("%s", sc_zero_int_stat);
+		}
+		else {
+			printf("%s", sc_int_stat);
+		}
+		printf(" %*llu", width, val);
+		printf("%s", sc_normal);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Print hex values using colors.
+ *
+ * IN:
+ * @num		Number of values to print.
+ * @width	Output width.
+ ***************************************************************************
+*/
+void cprintf_x(int num, int width, ...)
+{
+	int i;
+	unsigned int val;
+	va_list args;
+
+	va_start(args, width);
+
+	for (i = 0; i < num; i++) {
+		val = va_arg(args, unsigned int);
+		printf("%s", sc_int_stat);
+		printf(" %*x", width, val);
+		printf("%s", sc_normal);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Print "double" statistics values using colors.
+ *
+ * IN:
+ * @num		Number of values to print.
+ * @width	Output width.
+ * @wd		Number of decimal places.
+ ***************************************************************************
+*/
+void cprintf_f(int num, int wi, int wd, ...)
+{
+	int i;
+	double val;
+	va_list args;
+
+	va_start(args, wd);
+
+	for (i = 0; i < num; i++) {
+		val = va_arg(args, double);
+		if (((val < 0.005) && (val > -0.005)) ||
+		    ((wd == 0) && (val < 0.5))) {
+			printf("%s", sc_zero_int_stat);
+		}
+		else {
+			printf("%s", sc_int_stat);
+		}
+		printf(" %*.*f", wi, wd, val);
+		printf("%s", sc_normal);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Print "percent" statistics values using colors.
+ *
+ * IN:
+ * @num		Number of values to print.
+ * @width	Output width.
+ * @wd		Number of decimal places.
+ ***************************************************************************
+*/
+void cprintf_pc(int num, int wi, int wd, ...)
+{
+	int i;
+	double val;
+	va_list args;
+
+	va_start(args, wd);
+
+	for (i = 0; i < num; i++) {
+		val = va_arg(args, double);
+		if (val >= PERCENT_LIMIT_HIGH) {
+			printf("%s", sc_percent_high);
+		}
+		else if (val >= PERCENT_LIMIT_LOW) {
+			printf("%s", sc_percent_low);
+		}
+		else if (val < 0.005) {
+			printf("%s", sc_zero_int_stat);
+		}
+		else {
+			printf("%s", sc_int_stat);
+		}
+		printf(" %*.*f", wi, wd, val);
+		printf("%s", sc_normal);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Print item name using selected color.
+ * Only one name can be displayed. Name can be an integer or a string.
+ *
+ * IN:
+ * @type	0 if name is an int, 1 if name is a string
+ * @format	Output format.
+ * @item_string	Item name (given as a string of characters).
+ * @item_int	Item name (given as an integer value).
+ ***************************************************************************
+*/
+void cprintf_in(int type, char *format, char *item_string, int item_int)
+{
+	printf("%s", sc_item_name);
+	if (type) {
+		printf(format, item_string);
+	}
+	else {
+		printf(format, item_int);
+	}
+	printf("%s", sc_normal);
+}
+
+/*
+ ***************************************************************************
+ * Print a string using selected color.
+ *
+ * IN:
+ * @type	Type of string to display.
+ * @format	Output format.
+ * @string	String to display.
+ ***************************************************************************
+*/
+void cprintf_s(int type, char *format, char *string)
+{
+	if (type == IS_RESTART) {
+		printf("%s", sc_sa_restart);
+	}
+	else if (type == IS_COMMENT) {
+		printf("%s", sc_sa_comment);
+	}
+	else {
+		/* IS_STR */
+		printf("%s", sc_int_stat);
+	}
+	printf(format, string);
+	printf("%s", sc_normal);
 }

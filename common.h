@@ -11,6 +11,13 @@
 
 #include <time.h>
 #include <sched.h>	/* For __CPU_SETSIZE */
+#include <limits.h>
+
+#ifdef HAVE_SYS_SYSMACROS_H
+/* Needed on some non-glibc environments */
+#include <sys/sysmacros.h>
+#endif
+
 #include "rd_stats.h"
 
 /*
@@ -69,7 +76,7 @@
 
 #define MAX_FILE_LEN		256
 #define MAX_PF_NAME		1024
-#define MAX_NAME_LEN		72
+#define MAX_NAME_LEN		128
 
 #define IGNORE_VIRTUAL_DEVICES	FALSE
 #define ACCEPT_VIRTUAL_DEVICES	TRUE
@@ -77,6 +84,7 @@
 /* Environment variables */
 #define ENV_TIME_FMT		"S_TIME_FORMAT"
 #define ENV_TIME_DEFTM		"S_TIME_DEF_TIME"
+#define ENV_COLORS		"S_COLORS"
 
 #define DIGITS			"0123456789"
 
@@ -144,6 +152,29 @@ extern char persistent_name_type[MAX_FILE_LEN];
 
 /*
  ***************************************************************************
+ * Colors definitions
+ ***************************************************************************
+ */
+
+#define C_LIGHT_RED	"\e[31;22m"
+#define C_BOLD_RED	"\e[31;1m"
+#define C_LIGHT_GREEN	"\e[32;22m"
+#define C_LIGHT_YELLOW	"\e[33;22m"
+#define C_BOLD_YELLOW	"\e[33;1m"
+#define C_BOLD_BLUE	"\e[34;1m"
+#define C_LIGHT_CYAN	"\e[36;22m"
+#define C_NORMAL	"\e[0m"
+
+#define PERCENT_LIMIT_HIGH	75.0
+#define PERCENT_LIMIT_LOW	50.0
+
+#define IS_INT		0
+#define IS_STR		1
+#define IS_RESTART	2
+#define IS_COMMENT	3
+
+/*
+ ***************************************************************************
  * Structures definitions
  ***************************************************************************
  */
@@ -169,6 +200,18 @@ extern int
 	count_bits(void *, int);
 extern int
 	count_csvalues(int, char **);
+extern void
+	cprintf_f(int, int, int, ...);
+extern void
+	cprintf_in(int, char *, char *, int);
+extern void
+	cprintf_pc(int, int, int, ...);
+extern void
+	cprintf_s(int, char *, char *);
+extern void
+	cprintf_ull(int, int, ...);
+extern void
+	cprintf_x(int, int, ...);
 extern char *
 	device_name(char *);
 extern void
@@ -195,6 +238,8 @@ extern int
 	get_sysfs_dev_nr(int);
 extern int
 	get_win_height(void);
+extern void
+	init_colors(void);
 extern void
 	init_nls(void);
 extern int

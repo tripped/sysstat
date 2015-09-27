@@ -33,7 +33,7 @@ index 94239dd..6926f3e 100644
  struct cifs_stats *st_cifs[2];
  struct io_hdr_stats *st_hdr_cifs;
 diff --git a/iostat.c b/iostat.c
-index 38517c4..857b42c 100644
+index 4866880..02659c7 100644
 --- a/iostat.c
 +++ b/iostat.c
 @@ -48,9 +48,6 @@
@@ -47,7 +47,7 @@ index 38517c4..857b42c 100644
  unsigned long long uptime[2]  = {0, 0};
  unsigned long long uptime0[2] = {0, 0};
 diff --git a/mpstat.c b/mpstat.c
-index 9284992..bfff7a7 100644
+index d0cb940..43f4b2a 100644
 --- a/mpstat.c
 +++ b/mpstat.c
 @@ -42,9 +42,6 @@
@@ -75,7 +75,7 @@ index 24d4773..a8aa973 100644
  struct io_nfs_stats *st_ionfs[2];
  struct io_hdr_stats *st_hdr_ionfs;
 diff --git a/pidstat.c b/pidstat.c
-index d24ae02..d267ad7 100644
+index f54c1da..cc2439a 100644
 --- a/pidstat.c
 +++ b/pidstat.c
 @@ -47,9 +47,6 @@
@@ -117,7 +117,7 @@ index 9650a18..4fe4f56 100644
  
  unsigned int flags = 0;
 diff --git a/sar.c b/sar.c
-index a05e85a..3d8af7a 100644
+index c6fcd33..f57061b 100644
 --- a/sar.c
 +++ b/sar.c
 @@ -42,9 +42,6 @@
@@ -131,10 +131,10 @@ index a05e85a..3d8af7a 100644
  long interval = -1, count = 0;
  
 diff --git a/tapestat.c b/tapestat.c
-index cd82141..2a757ac 100644
+index 2c2adc5..dedc861 100644
 --- a/tapestat.c
 +++ b/tapestat.c
-@@ -50,9 +50,6 @@
+@@ -52,9 +52,6 @@
  #define _(string) (string)
  #endif
  

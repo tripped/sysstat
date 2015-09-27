@@ -22,7 +22,7 @@ index 22ee46e..b1aab52 100755
  SA_REGEX='/sa[0-9][0-9]+(\.(gz|bz2|xz|lz|lzo))?$'
  
 diff --git a/contrib/sargraph/sargraph2 b/contrib/sargraph/sargraph2
-index 215ec8d..286c5b4 100755
+index 7eaa5a8..c8c95b6 100755
 --- a/contrib/sargraph/sargraph2
 +++ b/contrib/sargraph/sargraph2
 @@ -14,7 +14,7 @@ GNUPLOT=`which gnuplot`

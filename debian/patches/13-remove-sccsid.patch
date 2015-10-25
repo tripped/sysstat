@@ -19,7 +19,7 @@ https://wiki.debian.org/ReproducibleBuilds/TimestampsFromCPPMacros
  9 files changed, 27 deletions(-)
 
 diff --git a/cifsiostat.c b/cifsiostat.c
-index 94239dd..6926f3e 100644
+index 713b894..9432f4b 100644
 --- a/cifsiostat.c
 +++ b/cifsiostat.c
 @@ -41,9 +41,6 @@
@@ -33,7 +33,7 @@ index 94239dd..6926f3e 100644
  struct cifs_stats *st_cifs[2];
  struct io_hdr_stats *st_hdr_cifs;
 diff --git a/iostat.c b/iostat.c
-index 4866880..02659c7 100644
+index 4bf0342..ac6baff 100644
 --- a/iostat.c
 +++ b/iostat.c
 @@ -48,9 +48,6 @@
@@ -75,7 +75,7 @@ index 24d4773..a8aa973 100644
  struct io_nfs_stats *st_ionfs[2];
  struct io_hdr_stats *st_hdr_ionfs;
 diff --git a/pidstat.c b/pidstat.c
-index f54c1da..cc2439a 100644
+index a94e410..fa04f7b 100644
 --- a/pidstat.c
 +++ b/pidstat.c
 @@ -47,9 +47,6 @@
@@ -89,7 +89,7 @@ index f54c1da..cc2439a 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  struct pid_stats *st_pid_list[3] = {NULL, NULL, NULL};
 diff --git a/sadc.c b/sadc.c
-index 31fa9ed..a227229 100644
+index d2e2cdf..cb53aa9 100644
 --- a/sadc.c
 +++ b/sadc.c
 @@ -52,9 +52,6 @@
@@ -117,7 +117,7 @@ index 9650a18..4fe4f56 100644
  
  unsigned int flags = 0;
 diff --git a/sar.c b/sar.c
-index c6fcd33..f57061b 100644
+index 1e5b12a..8126f83 100644
 --- a/sar.c
 +++ b/sar.c
 @@ -42,9 +42,6 @@
@@ -131,7 +131,7 @@ index c6fcd33..f57061b 100644
  long interval = -1, count = 0;
  
 diff --git a/tapestat.c b/tapestat.c
-index 2c2adc5..dedc861 100644
+index c6b0e6c..5fc0193 100644
 --- a/tapestat.c
 +++ b/tapestat.c
 @@ -52,9 +52,6 @@

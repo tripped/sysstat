@@ -1,8 +1,10 @@
-sysstat (11.1.8-1~) UNRELEASED; urgency=medium
+sysstat (11.1.8-1) unstable; urgency=medium
 
   * New upstream version.
+  * Removed isag.menu file to fix `command-in-menu-file-and-desktop-file'
+    given by lintian.
 
- -- Robert Luberda <robert@debian.org>  Sun, 25 Oct 2015 14:19:34 +0100
+ -- Robert Luberda <robert@debian.org>  Mon, 26 Oct 2015 00:54:44 +0100
 
 sysstat (11.1.7-1) unstable; urgency=medium
 

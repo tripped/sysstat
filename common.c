@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <inttypes.h>
 #include <time.h>
 #include <errno.h>
 #include <unistd.h>	/* For STDOUT_FILENO, among others */
@@ -51,14 +52,14 @@ unsigned int hz;
 unsigned int kb_shift;
 
 /* Colors strings */
-char sc_percent_high[] = C_BOLD_RED;
-char sc_percent_low[] = C_BOLD_BLUE;
-char sc_zero_int_stat[] = C_LIGHT_YELLOW;
-char sc_int_stat[] = C_BOLD_YELLOW;
-char sc_item_name[] = C_LIGHT_GREEN;
-char sc_sa_restart[] = C_LIGHT_RED;
-char sc_sa_comment[] = C_LIGHT_CYAN;
-char sc_normal[] = C_NORMAL;
+char sc_percent_high[MAX_SGR_LEN] = C_BOLD_RED;
+char sc_percent_low[MAX_SGR_LEN] = C_BOLD_BLUE;
+char sc_zero_int_stat[MAX_SGR_LEN] = C_LIGHT_YELLOW;
+char sc_int_stat[MAX_SGR_LEN] = C_BOLD_YELLOW;
+char sc_item_name[MAX_SGR_LEN] = C_LIGHT_GREEN;
+char sc_sa_restart[MAX_SGR_LEN] = C_LIGHT_RED;
+char sc_sa_comment[MAX_SGR_LEN] = C_LIGHT_CYAN;
+char sc_normal[MAX_SGR_LEN] = C_NORMAL;
 
 /* Type of persistent device names used in sar and iostat */
 char persistent_name_type[MAX_FILE_LEN];
@@ -938,10 +939,16 @@ char *get_pretty_name_from_persistent(char *persistent)
  */
 void init_colors(void)
 {
-	/* Read environment variable value */
-	if (!getenv(ENV_COLORS) || !isatty(STDOUT_FILENO)) {
+	char *e, *p;
+	int len;
+
+	/* Read S_COLORS environment variable */
+	if (((e = getenv(ENV_COLORS)) == NULL) ||
+	    !strcmp(e, C_NEVER) ||
+	    (strcmp(e, C_ALWAYS) && !isatty(STDOUT_FILENO))) {
 		/*
-		 * Environment variable is not set or stdout is not a terminal:
+		 * Environment variable not set, or set to "never",
+		 * or set to "auto" and stdout is not a terminal:
 		 * Unset color strings.
 		 */
 		strcpy(sc_percent_high, "");
@@ -952,22 +959,62 @@ void init_colors(void)
 		strcpy(sc_sa_comment, "");
 		strcpy(sc_sa_restart, "");
 		strcpy(sc_normal, "");
+
+		return;
+	}
+
+	/* Read S_COLORS_SGR environment variable */
+	if ((e = getenv(ENV_COLORS_SGR)) == NULL)
+		/* Environment variable not set */
+		return;
+
+	for (p = strtok(e, ":"); p; p =strtok(NULL, ":")) {
+
+		len = strlen(p);
+		if ((len > 7) || (len < 3) || (*(p + 1) != '=') ||
+		    (strspn(p + 2, ";0123456789") != (len - 2)))
+			/* Ignore malformed codes */
+			continue;
+
+		switch (*p) {
+			case 'H':
+				snprintf(sc_percent_high, MAX_SGR_LEN, "\e[%sm", p + 2);
+				break;
+			case 'M':
+				snprintf(sc_percent_low, MAX_SGR_LEN, "\e[%sm", p + 2);
+				break;
+			case 'Z':
+				snprintf(sc_zero_int_stat, MAX_SGR_LEN, "\e[%sm", p + 2);
+				break;
+			case 'N':
+				snprintf(sc_int_stat, MAX_SGR_LEN, "\e[%sm", p + 2);
+				break;
+			case 'I':
+				snprintf(sc_item_name, MAX_SGR_LEN, "\e[%sm", p + 2);
+				break;
+			case 'C':
+				snprintf(sc_sa_comment, MAX_SGR_LEN, "\e[%sm", p + 2);
+				break;
+			case 'R':
+				snprintf(sc_sa_restart, MAX_SGR_LEN, "\e[%sm", p + 2);
+				break;
+		}
 	}
 }
 
 /*
  ***************************************************************************
- * Print "unsigned long long" statistics values using colors.
+ * Print 64 bit unsigned values using colors.
  *
  * IN:
  * @num		Number of values to print.
  * @width	Output width.
  ***************************************************************************
 */
-void cprintf_ull(int num, int width, ...)
+void cprintf_u64(int num, int width, ...)
 {
 	int i;
-	unsigned long long val;
+	uint64_t val;
 	va_list args;
 
 	va_start(args, width);
@@ -980,9 +1027,11 @@ void cprintf_ull(int num, int width, ...)
 		else {
 			printf("%s", sc_int_stat);
 		}
-		printf(" %*llu", width, val);
+		printf(" %*"PRIu64, width, val);
 		printf("%s", sc_normal);
 	}
+
+	va_end(args);
 }
 
 /*
@@ -1008,6 +1057,8 @@ void cprintf_x(int num, int width, ...)
 		printf(" %*x", width, val);
 		printf("%s", sc_normal);
 	}
+
+	va_end(args);
 }
 
 /*
@@ -1040,6 +1091,8 @@ void cprintf_f(int num, int wi, int wd, ...)
 		printf(" %*.*f", wi, wd, val);
 		printf("%s", sc_normal);
 	}
+
+	va_end(args);
 }
 
 /*
@@ -1077,6 +1130,8 @@ void cprintf_pc(int num, int wi, int wd, ...)
 		printf(" %*.*f", wi, wd, val);
 		printf("%s", sc_normal);
 	}
+
+	va_end(args);
 }
 
 /*
@@ -1115,15 +1170,18 @@ void cprintf_in(int type, char *format, char *item_string, int item_int)
 */
 void cprintf_s(int type, char *format, char *string)
 {
-	if (type == IS_RESTART) {
+	if (type == IS_STR) {
+		printf("%s", sc_int_stat);
+	}
+	else if (type == IS_ZERO) {
+		printf("%s", sc_zero_int_stat);
+	}
+	else if (type == IS_RESTART) {
 		printf("%s", sc_sa_restart);
 	}
-	else if (type == IS_COMMENT) {
-		printf("%s", sc_sa_comment);
-	}
 	else {
-		/* IS_STR */
-		printf("%s", sc_int_stat);
+		/* IS_COMMENT */
+		printf("%s", sc_sa_comment);
 	}
 	printf(format, string);
 	printf("%s", sc_normal);

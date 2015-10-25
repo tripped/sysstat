@@ -42,7 +42,7 @@
 #endif
 
 /* Maximum number of interrupts */
-#define NR_IRQS			1024
+#define NR_IRQS		1024
 
 /* Size of /proc/interrupts line, CPU data excluded */
 #define INTERRUPTS_LINE	128
@@ -85,6 +85,10 @@
 #define ENV_TIME_FMT		"S_TIME_FORMAT"
 #define ENV_TIME_DEFTM		"S_TIME_DEF_TIME"
 #define ENV_COLORS		"S_COLORS"
+#define ENV_COLORS_SGR		"S_COLORS_SGR"
+
+#define C_NEVER			"never"
+#define C_ALWAYS		"always"
 
 #define DIGITS			"0123456789"
 
@@ -104,9 +108,15 @@
 				         		exit(4);				 \
 				      		}						 \
 				      		/* If the ptr was null, then it's a malloc() */	 \
-   				      		if (!_p_)					 \
-      				         		memset(S, 0, (SIZE));			 \
+						if (!_p_) {					 \
+							memset(S, 0, (SIZE));			 \
+						}						 \
 				   	}							 \
+					if (!S) {						 \
+						/* Should never happen */			 \
+						fprintf(stderr, "srealloc\n");		 	 \
+						exit(4);					 \
+					}							 \
 				} while (0)
 
 /*
@@ -168,10 +178,13 @@ extern char persistent_name_type[MAX_FILE_LEN];
 #define PERCENT_LIMIT_HIGH	75.0
 #define PERCENT_LIMIT_LOW	50.0
 
+#define MAX_SGR_LEN	16
+
 #define IS_INT		0
 #define IS_STR		1
 #define IS_RESTART	2
 #define IS_COMMENT	3
+#define IS_ZERO		4
 
 /*
  ***************************************************************************
@@ -209,7 +222,7 @@ extern void
 extern void
 	cprintf_s(int, char *, char *);
 extern void
-	cprintf_ull(int, int, ...);
+	cprintf_u64(int, int, ...);
 extern void
 	cprintf_x(int, int, ...);
 extern char *

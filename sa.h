@@ -214,6 +214,24 @@
 #define TIMESTAMP_LEN	16
 #define HEADER_LINE_LEN	512
 
+/*
+ * Define upper limit for various items.
+ * Made necessary because we have to check the number of
+ * items for each activity when we read a (possibly tainted)
+ * sa data file.
+ */
+#define MAX_NR_SERIAL_LINES	512
+#define MAX_NR_DISKS		8192
+#define MAX_NR_IFACES		512
+#define MAX_NR_FANS		128
+#define MAX_NR_TEMP_SENSORS	128
+#define MAX_NR_IN_SENSORS	128
+#define MAX_NR_USB		1024
+#define MAX_NR_FS		8192
+#define MAX_NR_FCHOSTS		8192
+
+#define NR2_MAX		128
+
 /* Maximum number of args that can be passed to sadc */
 #define MAX_ARGV_NR	32
 
@@ -430,6 +448,12 @@ struct activity {
 	 *    Note: If @nr2 > 0 then @nr is undetermined (may be -1, 0 or >0).
 	 */
 	__nr_t nr2;
+	/*
+	 * Maximum number of elements that sar can handle for this item.
+	 * NB: The maximu number of elements that sar can handle for sub-items
+	 * is NR2_MAX.
+	 */
+	__nr_t nr_max;
 	/*
 	 * Size of an item.
 	 * This is the size of the corresponding structure, as read from or written

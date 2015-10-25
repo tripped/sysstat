@@ -1,3 +1,9 @@
+sysstat (11.1.8-1~) UNRELEASED; urgency=medium
+
+  * New upstream version.
+
+ -- Robert Luberda <robert@debian.org>  Sun, 25 Oct 2015 14:19:34 +0100
+
 sysstat (11.1.7-1) unstable; urgency=medium
 
   * New upstream version.

@@ -74,6 +74,7 @@ extern struct activity *act[];
 extern __nr_t (*f_count[]) (struct activity *);
 
 struct sigaction alrm_act, int_act;
+int sigint_caught = 0;
 
 /*
  ***************************************************************************
@@ -238,6 +239,8 @@ void alarm_handler(int sig)
 void int_handler(int sig)
 {
 	pid_t ppid = getppid();
+
+	sigint_caught = 1;
 
 	if (!optz || (ppid == 1)) {
 		/* sadc hasn't been called by sar or sar process is already dead */
@@ -896,9 +899,11 @@ void open_ofile(int *ofd, char ofile[], int restart_mark)
 	}
 
 	/* OK: It's a true system activity file */
-	if (!file_hdr.sa_act_nr || (file_hdr.sa_act_nr > NR_ACT))
+	if (!file_hdr.sa_act_nr || (file_hdr.sa_act_nr > NR_ACT) ||
+	    (file_hdr.sa_vol_act_nr > NR_ACT))
 		/*
-		 * No activities at all or at least one unknown activity:
+		 * No activities at all or at least one unknown activity,
+		 * or too many volatile activities:
 		 * Cannot append data to such a file.
 		 */
 		goto append_error;
@@ -920,8 +925,13 @@ void open_ofile(int *ofd, char ofile[], int restart_mark)
 			 */
 			goto append_error;
 
-		if (!file_act[i].nr || !file_act[i].nr2) {
-			/* Number of items and subitems should never be null */
+		if (!file_act[i].nr || !file_act[i].nr2 ||
+		    (file_act[i].nr > act[p]->nr_max) ||
+		    (file_act[i].nr2 > NR2_MAX)) {
+			/*
+			 * Number of items and subitems should never be null,
+			 * or greater than their upper limit.
+			 */
 			goto append_error;
 		}
 	}
@@ -1164,8 +1174,13 @@ void rw_sa_stat_loop(long count, int stdfd, int ofd, char ofile[],
 		}
 
 		if (count) {
+			/* Wait for a signal (probably SIGALRM or SIGINT) */
 			pause();
 		}
+
+		if (sigint_caught)
+			/* SIGINT caught: Stop now */
+			break;
 
 		/* Rotate activity file if necessary */
 		if (WANT_SA_ROTAT(flags)) {

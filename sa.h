@@ -230,6 +230,8 @@
 #define MAX_NR_FS		8192
 #define MAX_NR_FCHOSTS		8192
 
+/* NR_MAX is the upper limit used for unknown activities */
+#define NR_MAX		65536
 #define NR2_MAX		128
 
 /* Maximum number of args that can be passed to sadc */
@@ -330,7 +332,7 @@ struct act_bitmap {
 	 */
 	unsigned char *b_array;
 	/*
-	 * Size of the bitmap in bits. In fact, bitmap is sized to bitmap_size + 1
+	 * Size of the bitmap in bits. In fact, bitmap is sized to b_size + 1
 	 * to take into account CPU "all"
 	 */
 	int b_size;
@@ -446,11 +448,13 @@ struct activity {
 	 *    Note: If @nr = 0, then @nr2 is undetermined (may be -1, 0 or >0).
 	 * 2) IF @nr > 0 THEN @nr2 > 0.
 	 *    Note: If @nr2 > 0 then @nr is undetermined (may be -1, 0 or >0).
+	 * 3) IF @nr <= 0 THEN @nr2 = -1 (this is the default value for @nr2,
+	 * meaning that it has not been calculated).
 	 */
 	__nr_t nr2;
 	/*
 	 * Maximum number of elements that sar can handle for this item.
-	 * NB: The maximu number of elements that sar can handle for sub-items
+	 * NB: The maximum number of elements that sar can handle for sub-items
 	 * is NR2_MAX.
 	 */
 	__nr_t nr_max;

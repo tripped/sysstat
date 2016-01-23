@@ -25,9 +25,7 @@ Description: system performance tools for Linux
   - mpstat: reports global and per-processor statistics;
   - pidstat: reports statistics for Linux tasks (processes);
   - sadf: displays data collected by sar in various formats;
-  - cifsiostat: reports I/O statistics for CIFS filesystems;
-  - nfsiostat-sysstat: (obsolete) reports I/O statistics
-    for network filesystems.
+  - cifsiostat: reports I/O statistics for CIFS filesystems.
  .
  The statistics reported by sar deal with I/O transfer rates,
  paging activity, process-related activities, interrupts,

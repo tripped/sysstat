@@ -1250,7 +1250,7 @@ void read_file_stat_bunch(struct activity *act[], int curr, int ifd, int act_nr,
  * @dfile	Name of system activity data file.
  * @ignore	Set to 1 if a true sysstat activity file but with a bad
  * 		format should not yield an error message. Useful with
- * 		sadf -H.
+ * 		sadf -H and sadf -c.
  *
  * OUT:
  * @fd		System activity data file descriptor.
@@ -1284,7 +1284,8 @@ int sa_open_read_magic(int *fd, char *dfile, struct file_magic *file_magic,
 	if ((n != FILE_MAGIC_SIZE) ||
 	    (file_magic->sysstat_magic != SYSSTAT_MAGIC) ||
 	    ((file_magic->format_magic != FORMAT_MAGIC) && !ignore) ||
-	    (file_magic->header_size > MAX_FILE_HEADER_SIZE)) {
+	    ((file_magic->header_size > MAX_FILE_HEADER_SIZE) && !ignore) ||
+	    ((file_magic->header_size < FILE_HEADER_SIZE) && !ignore)) {
 		/* Display error message and exit */
 		handle_invalid_sa_file(fd, file_magic, dfile, n);
 	}
@@ -1304,7 +1305,7 @@ int sa_open_read_magic(int *fd, char *dfile, struct file_magic *file_magic,
  * @act		Array of activities.
  * @ignore	Set to 1 if a true sysstat activity file but with a bad
  * 		format should not yield an error message. Useful with
- * 		sadf -H.
+ * 		sadf -H and sadf -c.
  *
  * OUT:
  * @ifd		System activity data file descriptor.
@@ -1334,7 +1335,11 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 
 	/* Read sa data file standard header and allocate activity list */
 	sa_fread(*ifd, buffer, file_magic->header_size, HARD_SIZE);
-	memcpy(file_hdr, buffer, MINIMUM(file_magic->header_size, FILE_HEADER_SIZE));
+	/*
+	 * Data file header size may be greater than FILE_HEADER_SIZE, but
+	 * anyway only the first FILE_HEADER_SIZE bytes can be interpreted.
+	 */
+	memcpy(file_hdr, buffer, FILE_HEADER_SIZE);
 	free(buffer);
 
 	/*
@@ -1357,11 +1362,19 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 
 		sa_fread(*ifd, fal, FILE_ACTIVITY_SIZE, HARD_SIZE);
 
-		if ((fal->nr < 1) || (fal->nr2 < 1)) {
-			/*
-			 * Every activity, known or unknown,
-			 * should have at least one item and sub-item.
-			 */
+		/*
+		 * Every activity, known or unknown, should have
+		 * at least one item and sub-item.
+		 * Also check that the number of items and sub-items
+		 * doesn't exceed a max value. This is necessary
+		 * because we will use @nr and @nr2 to
+		 * allocate memory to read the file contents. So we
+		 * must make sure the file is not corrupted.
+		 * NB: Another check will be made below for known
+		 * activities which have each a specific max value.
+		 */
+		if ((fal->nr < 1) || (fal->nr2 < 1) ||
+		    (fal->nr > NR_MAX) || (fal->nr2 > NR2_MAX)) {
 			handle_invalid_sa_file(ifd, file_magic, dfile, 0);
 		}
 
@@ -1380,6 +1393,11 @@ void check_file_actlst(int *ifd, char *dfile, struct activity *act[],
 			}
 			else
 				continue;
+		}
+
+		/* Check max value for known activities */
+		if (fal->nr > act[p]->nr_max) {
+			handle_invalid_sa_file(ifd, file_magic, dfile, 0);
 		}
 
 		if (fal->id == A_CPU) {

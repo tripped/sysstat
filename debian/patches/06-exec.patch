@@ -10,7 +10,7 @@ Merge the following change from Ubuntu:
  1 file changed, 1 deletion(-)
 
 diff --git a/sar.c b/sar.c
-index 371bc8b..1e5b12a 100644
+index ca152c6..c293b80 100644
 --- a/sar.c
 +++ b/sar.c
 @@ -1548,7 +1548,6 @@ int main(int argc, char **argv)

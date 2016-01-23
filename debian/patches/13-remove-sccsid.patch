@@ -7,16 +7,15 @@ contained __DATE__ and __TIME__ macros. This should cause
 binary to be more reproducible, see
 https://wiki.debian.org/ReproducibleBuilds/TimestampsFromCPPMacros
 ---
- cifsiostat.c        | 3 ---
- iostat.c            | 3 ---
- mpstat.c            | 3 ---
- nfsiostat-sysstat.c | 3 ---
- pidstat.c           | 3 ---
- sadc.c              | 3 ---
- sadf.c              | 3 ---
- sar.c               | 3 ---
- tapestat.c          | 3 ---
- 9 files changed, 27 deletions(-)
+ cifsiostat.c | 3 ---
+ iostat.c     | 3 ---
+ mpstat.c     | 3 ---
+ pidstat.c    | 3 ---
+ sadc.c       | 3 ---
+ sadf.c       | 3 ---
+ sar.c        | 3 ---
+ tapestat.c   | 3 ---
+ 8 files changed, 24 deletions(-)
 
 diff --git a/cifsiostat.c b/cifsiostat.c
 index 713b894..9432f4b 100644
@@ -47,7 +46,7 @@ index 4bf0342..ac6baff 100644
  unsigned long long uptime[2]  = {0, 0};
  unsigned long long uptime0[2] = {0, 0};
 diff --git a/mpstat.c b/mpstat.c
-index d0cb940..43f4b2a 100644
+index 3b62aa0..57e71d4 100644
 --- a/mpstat.c
 +++ b/mpstat.c
 @@ -42,9 +42,6 @@
@@ -60,20 +59,6 @@ index d0cb940..43f4b2a 100644
  unsigned long long uptime[3] = {0, 0, 0};
  unsigned long long uptime0[3] = {0, 0, 0};
  
-diff --git a/nfsiostat-sysstat.c b/nfsiostat-sysstat.c
-index 24d4773..a8aa973 100644
---- a/nfsiostat-sysstat.c
-+++ b/nfsiostat-sysstat.c
-@@ -40,9 +40,6 @@
- #define _(string) (string)
- #endif
- 
--#define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
--char *sccsid(void) { return (SCCSID); }
--
- unsigned long long uptime0[2] = {0, 0};
- struct io_nfs_stats *st_ionfs[2];
- struct io_hdr_stats *st_hdr_ionfs;
 diff --git a/pidstat.c b/pidstat.c
 index a94e410..fa04f7b 100644
 --- a/pidstat.c
@@ -89,7 +74,7 @@ index a94e410..fa04f7b 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  struct pid_stats *st_pid_list[3] = {NULL, NULL, NULL};
 diff --git a/sadc.c b/sadc.c
-index d2e2cdf..cb53aa9 100644
+index 160f9c5..6f09158 100644
 --- a/sadc.c
 +++ b/sadc.c
 @@ -52,9 +52,6 @@
@@ -117,7 +102,7 @@ index 9650a18..4fe4f56 100644
  
  unsigned int flags = 0;
 diff --git a/sar.c b/sar.c
-index 1e5b12a..8126f83 100644
+index c293b80..25fd5b6 100644
 --- a/sar.c
 +++ b/sar.c
 @@ -42,9 +42,6 @@
@@ -131,7 +116,7 @@ index 1e5b12a..8126f83 100644
  long interval = -1, count = 0;
  
 diff --git a/tapestat.c b/tapestat.c
-index c6b0e6c..5fc0193 100644
+index a55e341..7865eef 100644
 --- a/tapestat.c
 +++ b/tapestat.c
 @@ -52,9 +52,6 @@

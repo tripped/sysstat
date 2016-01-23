@@ -8,7 +8,7 @@ Makefile fixes.
  1 file changed, 22 insertions(+), 20 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index 339c7fe..7b12f4b 100644
+index cde6839..4480a24 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
@@ -23,7 +23,7 @@ index 339c7fe..7b12f4b 100644
  DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
  DFLAGS += $(DFSENSORS)
  
-@@ -275,8 +275,9 @@ else
+@@ -271,8 +271,9 @@ else
  locales:
  endif
  
@@ -35,8 +35,8 @@ index 339c7fe..7b12f4b 100644
  
  # Phony targets
  .PHONY: clean distclean install install_base install_all uninstall \
-@@ -311,9 +312,6 @@ ifeq ($(INSTALL_DOC),y)
- 	$(INSTALL_DATA) $(MANGRPARG) man/nfsiostat-sysstat.1 $(DESTDIR)$(MAN1_DIR)
+@@ -305,9 +306,6 @@ ifeq ($(INSTALL_DOC),y)
+ 	$(INSTALL_DATA) $(MANGRPARG) man/pidstat.1 $(DESTDIR)$(MAN1_DIR)
  	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
  	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
 -ifeq ($(INSTALL_ISAG),y)
@@ -45,7 +45,7 @@ index 339c7fe..7b12f4b 100644
  ifeq ($(COMPRESS_MANPG),y)
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
-@@ -353,8 +351,15 @@ ifdef REQUIRE_NLS
+@@ -346,8 +344,15 @@ ifdef REQUIRE_NLS
  	done
  endif
  
@@ -63,7 +63,7 @@ index 339c7fe..7b12f4b 100644
  	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
  	mkdir -p $(DESTDIR)$(SA_DIR)
  ifeq ($(CLEAN_SA_DIR),y)
-@@ -363,7 +368,7 @@ ifeq ($(CLEAN_SA_DIR),y)
+@@ -356,7 +361,7 @@ ifeq ($(CLEAN_SA_DIR),y)
  	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
  endif
  	mkdir -p $(DESTDIR)$(BIN_DIR)
@@ -72,9 +72,9 @@ index 339c7fe..7b12f4b 100644
  	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
  	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
-@@ -376,18 +381,15 @@ endif
+@@ -368,18 +373,15 @@ endif
+ 	$(INSTALL_BIN) mpstat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
- 	$(INSTALL_BIN) nfsiostat-sysstat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
 -ifeq ($(INSTALL_ISAG),y)
 -	$(INSTALL_BIN) contrib/isag/isag $(DESTDIR)$(BIN_DIR)
@@ -97,8 +97,8 @@ index 339c7fe..7b12f4b 100644
  endif
  
  install_all: install_base cron/crontab sysstat \
-@@ -591,7 +593,7 @@ clean:
- 	rm -f sadc sar sadf iostat tapestat mpstat pidstat nfsiostat-sysstat cifsiostat *.o *.a core TAGS
+@@ -581,7 +583,7 @@ clean:
+ 	rm -f sadc sar sadf iostat tapestat mpstat pidstat cifsiostat *.o *.a core TAGS
  	find nls -name "*.gmo" -exec rm -f {} \;
  
 -almost-distclean: clean nls/sysstat.pot

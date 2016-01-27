@@ -4,6 +4,7 @@ sysstat (11.2.0-1~) UNRELEASED; urgency=medium
   * Removed 11-nfsiostat-whatis-entry.patch - no longer applicable,
     the nfsiostat-systat command was removed by upstream.
   * Update package description not to mention the removed command.
+  * Enable `pie' and `bindnow' hardening flags.
 
  -- Robert Luberda <robert@debian.org>  Sat, 23 Jan 2016 09:21:44 +0100
 

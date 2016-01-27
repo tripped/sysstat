@@ -1,12 +1,13 @@
-sysstat (11.2.0-1~) UNRELEASED; urgency=medium
+sysstat (11.2.0-1) unstable; urgency=medium
 
   * New upstream version.
   * Removed 11-nfsiostat-whatis-entry.patch - no longer applicable,
     the nfsiostat-systat command was removed by upstream.
   * Update package description not to mention the removed command.
   * Enable `pie' and `bindnow' hardening flags.
+  * Use https protocol in Vcs-Browser control field.
 
- -- Robert Luberda <robert@debian.org>  Sat, 23 Jan 2016 09:21:44 +0100
+ -- Robert Luberda <robert@debian.org>  Wed, 27 Jan 2016 23:19:49 +0100
 
 sysstat (11.1.8-1) unstable; urgency=medium
 

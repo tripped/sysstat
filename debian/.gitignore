@@ -1,5 +1,5 @@
 *.debhelper
-*.stamp
+*[.-]stamp
 *.substvars
 files
 isag

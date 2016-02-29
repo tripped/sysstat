@@ -1,6 +1,6 @@
 /*
  * activity.c: Define system activities available for sar/sadc.
- * (C) 1999-2015 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2016 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -15,7 +15,7 @@
  *                                                                         *
  * You should have received a copy of the GNU General Public License along *
  * with this program; if not, write to the Free Software Foundation, Inc., *
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA                   *
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335 USA              *
  ***************************************************************************
  */
 
@@ -34,6 +34,7 @@
 #include "rndr_stats.h"
 #include "xml_stats.h"
 #include "json_stats.h"
+#include "svg_stats.h"
 #endif
 
 /*
@@ -88,6 +89,7 @@ struct activity cpu_act = {
 	.hdr_line	= "CPU;%user;%nice;%system;%iowait;%steal;%idle|"
 		          "CPU;%usr;%nice;%sys;%iowait;%steal;%irq;%soft;%guest;%gnice;%idle",
 	.name		= "A_CPU",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -118,8 +120,10 @@ struct activity pcsw_act = {
 	.f_render	= render_pcsw_stats,
 	.f_xml_print	= xml_print_pcsw_stats,
 	.f_json_print	= json_print_pcsw_stats,
+	.f_svg_print	= svg_print_pcsw_stats,
 	.hdr_line	= "proc/s;cswch/s",
 	.name		= "A_PCSW",
+	.g_nr		= 2,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -152,6 +156,7 @@ struct activity irq_act = {
 	.f_json_print	= json_print_irq_stats,
 	.hdr_line	= "INTR;intr/s",
 	.name		= "A_IRQ",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -184,6 +189,7 @@ struct activity swap_act = {
 	.f_json_print	= json_print_swap_stats,
 	.hdr_line	= "pswpin/s;pswpout/s",
 	.name		= "A_SWAP",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -217,6 +223,7 @@ struct activity paging_act = {
 	.hdr_line	= "pgpgin/s;pgpgout/s;fault/s;majflt/s;"
 		          "pgfree/s;pgscank/s;pgscand/s;pgsteal/s;%vmeff",
 	.name		= "A_PAGE",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -249,6 +256,7 @@ struct activity io_act = {
 	.f_json_print	= json_print_io_stats,
 	.hdr_line	= "tps;rtps;wtps;bread/s;bwrtn/s",
 	.name		= "A_IO",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -283,6 +291,7 @@ struct activity memory_act = {
 		          "kbmemfree;kbmemused;%memused;kbbuffers;kbcached;kbcommit;%commit;kbactive;kbinact;kbdirty&kbanonpg;kbslab;kbkstack;kbpgtbl;kbvmused|"
 		          "kbswpfree;kbswpused;%swpused;kbswpcad;%swpcad",
 	.name		= "A_MEMORY",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -315,6 +324,7 @@ struct activity ktables_act = {
 	.f_json_print	= json_print_ktables_stats,
 	.hdr_line	= "dentunusd;file-nr;inode-nr;pty-nr",
 	.name		= "A_KTABLES",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -347,6 +357,7 @@ struct activity queue_act = {
 	.f_json_print	= json_print_queue_stats,
 	.hdr_line	= "runq-sz;plist-sz;ldavg-1;ldavg-5;ldavg-15;blocked",
 	.name		= "A_QUEUE",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -379,6 +390,7 @@ struct activity serial_act = {
 	.f_json_print	= json_print_serial_stats,
 	.hdr_line	= "TTY;rcvin/s;txmtin/s;framerr/s;prtyerr/s;brk/s;ovrun/s",
 	.name		= "A_SERIAL",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -411,6 +423,7 @@ struct activity disk_act = {
 	.f_json_print	= json_print_disk_stats,
 	.hdr_line	= "DEV;tps;rd_sec/s;wr_sec/s;avgrq-sz;avgqu-sz;await;svctm;%util",
 	.name		= "A_DISK",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -443,6 +456,7 @@ struct activity net_dev_act = {
 	.f_json_print	= json_print_net_dev_stats,
 	.hdr_line	= "IFACE;rxpck/s;txpck/s;rxkB/s;txkB/s;rxcmp/s;txcmp/s;rxmcst/s;%ifutil",
 	.name		= "A_NET_DEV",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -476,6 +490,7 @@ struct activity net_edev_act = {
 	.hdr_line	= "IFACE;rxerr/s;txerr/s;coll/s;rxdrop/s;txdrop/s;"
 		          "txcarr/s;rxfram/s;rxfifo/s;txfifo/s",
 	.name		= "A_NET_EDEV",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -508,6 +523,7 @@ struct activity net_nfs_act = {
 	.f_json_print	= json_print_net_nfs_stats,
 	.hdr_line	= "call/s;retrans/s;read/s;write/s;access/s;getatt/s",
 	.name		= "A_NET_NFS",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -541,6 +557,7 @@ struct activity net_nfsd_act = {
 	.hdr_line	= "scall/s;badcall/s;packet/s;udp/s;tcp/s;hit/s;miss/s;"
 		          "sread/s;swrite/s;saccess/s;sgetatt/s",
 	.name		= "A_NET_NFSD",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -573,6 +590,7 @@ struct activity net_sock_act = {
 	.f_json_print	= json_print_net_sock_stats,
 	.hdr_line	= "totsck;tcpsck;udpsck;rawsck;ip-frag;tcp-tw",
 	.name		= "A_NET_SOCK",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -605,6 +623,7 @@ struct activity net_ip_act = {
 	.f_json_print	= json_print_net_ip_stats,
 	.hdr_line	= "irec/s;fwddgm/s;idel/s;orq/s;asmrq/s;asmok/s;fragok/s;fragcrt/s",
 	.name		= "A_NET_IP",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -637,6 +656,7 @@ struct activity net_eip_act = {
 	.f_json_print	= json_print_net_eip_stats,
 	.hdr_line	= "ihdrerr/s;iadrerr/s;iukwnpr/s;idisc/s;odisc/s;onort/s;asmf/s;fragf/s",
 	.name		= "A_NET_EIP",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -670,6 +690,7 @@ struct activity net_icmp_act = {
 	.hdr_line	= "imsg/s;omsg/s;iech/s;iechr/s;oech/s;oechr/s;itm/s;itmr/s;otm/s;"
 		          "otmr/s;iadrmk/s;iadrmkr/s;oadrmk/s;oadrmkr/s",
 	.name		= "A_NET_ICMP",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -703,6 +724,7 @@ struct activity net_eicmp_act = {
 	.hdr_line	= "ierr/s;oerr/s;idstunr/s;odstunr/s;itmex/s;otmex/s;"
 		          "iparmpb/s;oparmpb/s;isrcq/s;osrcq/s;iredir/s;oredir/s",
 	.name		= "A_NET_EICMP",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -735,6 +757,7 @@ struct activity net_tcp_act = {
 	.f_json_print	= json_print_net_tcp_stats,
 	.hdr_line	= "active/s;passive/s;iseg/s;oseg/s",
 	.name		= "A_NET_TCP",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -767,6 +790,7 @@ struct activity net_etcp_act = {
 	.f_json_print	= json_print_net_etcp_stats,
 	.hdr_line	= "atmptf/s;estres/s;retrans/s;isegerr/s;orsts/s",
 	.name		= "A_NET_ETCP",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -799,6 +823,7 @@ struct activity net_udp_act = {
 	.f_json_print	= json_print_net_udp_stats,
 	.hdr_line	= "idgm/s;odgm/s;noport/s;idgmerr/s",
 	.name		= "A_NET_UDP",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -831,6 +856,7 @@ struct activity net_sock6_act = {
 	.f_json_print	= json_print_net_sock6_stats,
 	.hdr_line	= "tcp6sck;udp6sck;raw6sck;ip6-frag",
 	.name		= "A_NET_SOCK6",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -864,6 +890,7 @@ struct activity net_ip6_act = {
 	.hdr_line	= "irec6/s;fwddgm6/s;idel6/s;orq6/s;asmrq6/s;asmok6/s;"
 			  "imcpck6/s;omcpck6/s;fragok6/s;fragcr6/s",
 	.name		= "A_NET_IP6",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -897,6 +924,7 @@ struct activity net_eip6_act = {
 	.hdr_line	= "ihdrer6/s;iadrer6/s;iukwnp6/s;i2big6/s;idisc6/s;odisc6/s;"
 			  "inort6/s;onort6/s;asmf6/s;fragf6/s;itrpck6/s",
 	.name		= "A_NET_EIP6",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -931,6 +959,7 @@ struct activity net_icmp6_act = {
 			  "igmbrd6/s;ogmbrd6/s;irtsol6/s;ortsol6/s;irtad6/s;inbsol6/s;onbsol6/s;"
 			  "inbad6/s;onbad6/s",
 	.name		= "A_NET_ICMP6",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -964,6 +993,7 @@ struct activity net_eicmp6_act = {
 	.hdr_line	= "ierr6/s;idtunr6/s;odtunr6/s;itmex6/s;otmex6/s;"
 		          "iprmpb6/s;oprmpb6/s;iredir6/s;oredir6/s;ipck2b6/s;opck2b6/s",
 	.name		= "A_NET_EICMP6",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -996,6 +1026,7 @@ struct activity net_udp6_act = {
 	.f_json_print	= json_print_net_udp6_stats,
 	.hdr_line	= "idgm6/s;odgm6/s;noport6/s;idgmer6/s",
 	.name		= "A_NET_UDP6",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -1028,6 +1059,7 @@ struct activity pwr_cpufreq_act = {
 	.f_json_print	= json_print_pwr_cpufreq_stats,
 	.hdr_line	= "CPU;MHz",
 	.name		= "A_PWR_CPUFREQ",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1060,6 +1092,7 @@ struct activity pwr_fan_act = {
 	.f_json_print	= json_print_pwr_fan_stats,
 	.hdr_line	= "FAN;DEVICE;rpm;drpm",
 	.name		= "A_PWR_FAN",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1092,6 +1125,7 @@ struct activity pwr_temp_act = {
 	.f_json_print	= json_print_pwr_temp_stats,
 	.hdr_line	= "TEMP;DEVICE;degC;%temp",
 	.name		= "A_PWR_TEMP",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1124,6 +1158,7 @@ struct activity pwr_in_act = {
 	.f_json_print	= json_print_pwr_in_stats,
 	.hdr_line	= "IN;DEVICE;inV;%in",
 	.name		= "A_PWR_IN",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1156,6 +1191,7 @@ struct activity huge_act = {
 	.f_json_print	= json_print_huge_stats,
 	.hdr_line	= "kbhugfree;kbhugused;%hugused",
 	.name		= "A_HUGE",
+	.g_nr		= 0,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -1188,6 +1224,7 @@ struct activity pwr_wghfreq_act = {
 	.f_json_print	= json_print_pwr_wghfreq_stats,
 	.hdr_line	= "CPU;wghMHz",
 	.name		= "A_PWR_WGHFREQ",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= -1,
@@ -1220,6 +1257,7 @@ struct activity pwr_usb_act = {
 	.f_json_print	= json_print_pwr_usb_stats,
 	.hdr_line	= "manufact;product;BUS;idvendor;idprod;maxpower",
 	.name		= "A_PWR_USB",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1252,6 +1290,7 @@ struct activity filesystem_act = {
 	.f_json_print	= json_print_filesystem_stats,
 	.hdr_line	= "FILESYSTEM;MBfsfree;MBfsused;%fsused;%ufsused;Ifree;Iused;%Iused",
 	.name		= "A_FILESYSTEM",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1284,6 +1323,7 @@ struct activity fchost_act = {
 	.f_json_print	= json_print_fchost_stats,
 	.hdr_line	= "FCHOST;fch_rxf/s;fch_txf/s;fch_rxw/s;fch_txw/s",
 	.name		= "A_FCHOST",
+	.g_nr		= 0,
 #endif
 	.nr		= -1,
 	.nr2		= 1,

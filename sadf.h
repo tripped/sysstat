@@ -1,6 +1,6 @@
 /*
  * sadf: System activity data formatter
- * (C) 1999-2015 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2016 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SADF_H
@@ -11,14 +11,15 @@
 /* DTD version for XML output */
 #define XML_DTD_VERSION	"3.1"
 
-/* Possible actions for functions used to display reports */
-#define F_BEGIN	0x01
-#define F_MAIN	0x02
-#define F_END	0x04
-
 /* Various constants */
 #define DO_SAVE		0
 #define DO_RESTORE	1
+
+#define IGNORE_NOTHING		0
+#define IGNORE_RESTART		1
+#define DONT_READ_VOLATILE	2
+#define IGNORE_COMMENT		4
+#define SET_TIMESTAMPS		8
 
 /*
  ***************************************************************************
@@ -27,7 +28,7 @@
  */
 
 /* Number of output formats */
-#define NR_FMT	6
+#define NR_FMT	7
 
 /* Output formats */
 #define F_DB_OUTPUT	1
@@ -36,12 +37,7 @@
 #define F_XML_OUTPUT	4
 #define F_JSON_OUTPUT	5
 #define F_CONV_OUTPUT	6
-
-/*
- ***************************************************************************
- * Generic description of an output format.
- ***************************************************************************
- */
+#define F_SVG_OUTPUT	7
 
 /* Format options */
 
@@ -97,6 +93,18 @@
  */
 #define FO_FIELD_LIST		0x40
 
+/*
+ * Indicate that flag AO_CLOSE_MARKUP (set for activities that need it)
+ * should be taken into account for this output format.
+ */
+#define FO_TEST_MARKUP		0x80
+
+/*
+ * Indicate that timestamp cannot be displayed in the original local time
+ * of the data file creator.
+ */
+#define FO_NO_TRUE_TIME		0x100
+
 #define DISPLAY_GROUPED_STATS(m)	(((m) & FO_GROUPED_STATS)	== FO_GROUPED_STATS)
 #define ACCEPT_HEADER_ONLY(m)		(((m) & FO_HEADER_ONLY)		== FO_HEADER_ONLY)
 #define ACCEPT_BAD_FILE_FORMAT(m)	(((m) & FO_BAD_FILE_FORMAT)	== FO_BAD_FILE_FORMAT)
@@ -104,77 +112,9 @@
 #define ACCEPT_HORIZONTALLY(m)		(((m) & FO_HORIZONTALLY)	== FO_HORIZONTALLY)
 #define ACCEPT_SEC_EPOCH(m)		(((m) & FO_SEC_EPOCH)		== FO_SEC_EPOCH)
 #define DISPLAY_FIELD_LIST(m)		(((m) & FO_FIELD_LIST)		== FO_FIELD_LIST)
+#define TEST_MARKUP(m)			(((m) & FO_TEST_MARKUP)		== FO_TEST_MARKUP)
+#define REJECT_TRUE_TIME(m)		(((m) & FO_NO_TRUE_TIME)	== FO_NO_TRUE_TIME)
 
-/* Type for all functions used by sadf to display stats in various formats */
-#define __printf_funct_t void
-
-/*
- * Structure used to define a report.
- * A XML-like report has the following format:
- *       __
- *      |
- *      | Header block
- *      |  __
- *      | |
- *      | | Statistics block
- *      | |  __
- *      | | |
- *      | | | Timestamp block
- *      | | |  __
- *      | | | |
- *      | | | | Activity #1
- *      | | | |__
- *      | | | |
- *      | | | | ...
- *      | | | |__
- *      | | | |
- *      | | | | Activity #n
- *      | | | |__
- *      | | |__
- *      | |__
- *      | |
- *      | | Restart messages block
- *      | |__
- *      | |
- *      | | Comments block
- *      | |__
- *      |__
- */
-struct report_format {
-	/*
-	 * This variable contains the identification value (F_...) for this report format.
-	 */
-	unsigned int id;
-	/*
-	 * Format options (FO_...).
-	 */
-	unsigned int options;
-	/*
-	 * This function displays the report header
-	 * (data displayed once at the beginning of the report).
-	 */
-	__printf_funct_t (*f_header) (int *, int, char *, struct file_magic *, struct file_header *,
-				      __nr_t, struct activity * [], unsigned int []);
-	/*
-	 * This function defines the statistics part of the report.
-	 * Used only with textual (XML-like) reports.
-	 */
-	__printf_funct_t (*f_statistics) (int *, int);
-	/*
-	 * This function defines the timestamp part of the report.
-	 * Used only with textual (XML-like) reports.
-	 */
-	__printf_funct_t (*f_timestamp) (int *, int, char *, char *, int, unsigned long long);
-	/*
-	 * This function displays the restart messages.
-	 */
-	__printf_funct_t (*f_restart) (int *, int, char *, char *, int, struct file_header *,
-				       unsigned int);
-	/*
-	 * This function displays the comments.
-	 */
-	__printf_funct_t (*f_comment) (int *, int, char *, char *, int, char *, struct file_header *);
-};
 
 /*
  ***************************************************************************
@@ -182,64 +122,75 @@ struct report_format {
  ***************************************************************************
  */
 
-extern void
-	convert_file(char [], struct activity *[]);
-extern void
-	xprintf(int, const char *, ...);
-extern void
-	xprintf0(int, const char *, ...);
+void convert_file
+	(char [], struct activity *[]);
+void xprintf
+	(int, const char *, ...);
+void xprintf0
+	(int, const char *, ...);
 
 /*
  * Prototypes used to display restart messages
  */
-__printf_funct_t
-	print_db_restart(int *, int, char *, char *, int, struct file_header *, unsigned int);
-__printf_funct_t
-	print_ppc_restart(int *, int, char *, char *, int, struct file_header *, unsigned int);
-__printf_funct_t
-	print_xml_restart(int *, int, char *, char *, int, struct file_header *, unsigned int);
-__printf_funct_t
-	print_json_restart(int *, int, char *, char *, int, struct file_header *, unsigned int);
+__printf_funct_t print_db_restart
+	(int *, int, char *, char *, int, struct file_header *, unsigned int);
+__printf_funct_t print_ppc_restart
+	(int *, int, char *, char *, int, struct file_header *, unsigned int);
+__printf_funct_t print_xml_restart
+	(int *, int, char *, char *, int, struct file_header *, unsigned int);
+__printf_funct_t print_json_restart
+	(int *, int, char *, char *, int, struct file_header *, unsigned int);
+__printf_funct_t print_sar_restart
+	(int *, int, char *, char *, int, struct file_header *, unsigned int);
 
 /*
  * Prototypes used to display comments
  */
-__printf_funct_t
-	print_db_comment(int *, int, char *, char *, int, char *, struct file_header *);
-__printf_funct_t
-	print_ppc_comment(int *, int, char *, char *, int, char *, struct file_header *);
-__printf_funct_t
-	print_xml_comment(int *, int, char *, char *, int, char *, struct file_header *);
-__printf_funct_t
-	print_json_comment(int *, int, char *, char *, int, char *, struct file_header *);
+__printf_funct_t print_db_comment
+	(int *, int, char *, char *, int, char *, struct file_header *);
+__printf_funct_t print_ppc_comment
+	(int *, int, char *, char *, int, char *, struct file_header *);
+__printf_funct_t print_xml_comment
+	(int *, int, char *, char *, int, char *, struct file_header *);
+__printf_funct_t print_json_comment
+	(int *, int, char *, char *, int, char *, struct file_header *);
+__printf_funct_t print_sar_comment
+	(int *, int, char *, char *, int, char *, struct file_header *);
 
 /*
  * Prototypes used to display the statistics part of the report
  */
-__printf_funct_t
-	print_xml_statistics(int *, int);
-__printf_funct_t
-	print_json_statistics(int *, int);
+__printf_funct_t print_xml_statistics
+	(int *, int);
+__printf_funct_t print_json_statistics
+	(int *, int);
 
 /*
  * Prototypes used to display the timestamp part of the report
  */
-__printf_funct_t
-	print_xml_timestamp(int *, int, char *, char *, int, unsigned long long);
-__printf_funct_t
-	print_json_timestamp(int *, int, char *, char *, int, unsigned long long);
+__tm_funct_t print_db_timestamp
+	(void *, int, char *, char *, unsigned long long, struct file_header *, unsigned int);
+__tm_funct_t print_ppc_timestamp
+	(void *, int, char *, char *, unsigned long long, struct file_header *, unsigned int);
+__tm_funct_t print_xml_timestamp
+	(void *, int, char *, char *, unsigned long long, struct file_header *, unsigned int);
+__tm_funct_t print_json_timestamp
+	(void *, int, char *, char *, unsigned long long, struct file_header *, unsigned int);
 
 /*
  * Prototypes used to display the report header
  */
-__printf_funct_t
-	print_xml_header(int *, int, char *, struct file_magic *, struct file_header *,
-			 __nr_t, struct activity * [], unsigned int []);
-__printf_funct_t
-	print_json_header(int *, int, char *, struct file_magic *, struct file_header *,
-			  __nr_t, struct activity * [], unsigned int []);
-__printf_funct_t
-	print_hdr_header(int *, int, char *, struct file_magic *, struct file_header *,
-			 __nr_t, struct activity * [], unsigned int []);
+__printf_funct_t print_xml_header
+	(void *, int, char *, struct file_magic *, struct file_header *,
+	 __nr_t, struct activity * [], unsigned int []);
+__printf_funct_t print_json_header
+	(void *, int, char *, struct file_magic *, struct file_header *,
+	 __nr_t, struct activity * [], unsigned int []);
+__printf_funct_t print_hdr_header
+	(void *, int, char *, struct file_magic *, struct file_header *,
+	 __nr_t, struct activity * [], unsigned int []);
+__printf_funct_t print_svg_header
+	(void *, int, char *, struct file_magic *, struct file_header *,
+	 __nr_t, struct activity * [], unsigned int []);
 
 #endif  /* _SADF_H */

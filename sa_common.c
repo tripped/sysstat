@@ -1,6 +1,6 @@
 /*
  * sar and sadf common routines.
- * (C) 1999-2015 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2016 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -15,7 +15,7 @@
  *                                                                         *
  * You should have received a copy of the GNU General Public License along *
  * with this program; if not, write to the Free Software Foundation, Inc., *
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA                   *
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335 USA              *
  ***************************************************************************
  */
 
@@ -2111,4 +2111,233 @@ void replace_nonprintable_char(int ifd, char *comment)
 		if (!isprint(comment[i]))
 			comment[i] = '.';
 	}
+}
+
+/*
+ ***************************************************************************
+ * Fill the rectime and loctime structures with current record's date and
+ * time, based on current record's "number of seconds since the epoch" saved
+ * in file.
+ * For loctime (if given): The timestamp is expressed in local time.
+ * For rectime: The timestamp is expressed in UTC, in local time, or in the
+ * time of the file's creator depending on options entered by the user on the
+ * command line.
+ *
+ * IN:
+ * @l_flags	Flags indicating the type of time expected by the user.
+ * 		S_F_LOCAL_TIME means time should be expressed in local time.
+ * 		S_F_TRUE_TIME means time should be expressed in time of
+ * 		file's creator.
+ * 		Default is time expressed in UTC (except for sar, where it
+ * 		is local time).
+ * @record_hdr	Record header containing the number of seconds since the
+ * 		epoch, and the HH:MM:SS of the file's creator.
+ *
+ * OUT:
+ * @rectime	Structure where timestamp for current record has been saved
+ * 		(in local time or in UTC depending on options used).
+ * @loctime	If given, structure where timestamp for current record has
+ * 		been saved (expressed in local time). This field will be used
+ * 		for time comparison if options -s and/or -e have been used.
+ *
+ * RETURNS:
+ * 1 if an error was detected, or 0 otherwise.
+ ***************************************************************************
+*/
+int sa_get_record_timestamp_struct(unsigned int l_flags, struct record_header *record_hdr,
+				   struct tm *rectime, struct tm *loctime)
+{
+	struct tm *ltm = NULL;
+	int rc = 0;
+
+	/* Fill localtime structure if given */
+	if (loctime) {
+		if ((ltm = localtime((const time_t *) &(record_hdr->ust_time))) != NULL) {
+			*loctime = *ltm;
+		}
+		else {
+			rc = 1;
+		}
+	}
+
+	/* Fill generic rectime structure */
+	if (PRINT_LOCAL_TIME(l_flags) && !ltm) {
+		/* Get local time if not already done */
+		ltm = localtime((const time_t *) &(record_hdr->ust_time));
+	}
+
+	if (!PRINT_LOCAL_TIME(l_flags) && !PRINT_TRUE_TIME(l_flags)) {
+		/*
+		 * Get time in UTC
+		 * (the user doesn't want local time nor time of file's creator).
+		 */
+		ltm = gmtime((const time_t *) &(record_hdr->ust_time));
+	}
+
+	if (ltm) {
+		/* Done even in true time mode so that we have some default values */
+		*rectime = *ltm;
+	}
+	else {
+		rc = 1;
+	}
+
+	if (PRINT_TRUE_TIME(l_flags)) {
+		/* Time of file's creator */
+		rectime->tm_hour = record_hdr->hour;
+		rectime->tm_min  = record_hdr->minute;
+		rectime->tm_sec  = record_hdr->second;
+	}
+
+	return rc;
+}
+
+/*
+ ***************************************************************************
+ * Set current record's timestamp strings (date and time) using the time
+ * data saved in @rectime structure. The string may be the number of seconds
+ * since the epoch if flag S_F_SEC_EPOCH has been set.
+ *
+ * IN:
+ * @l_flags	Flags indicating the type of time expected by the user.
+ * 		S_F_SEC_EPOCH means the time should be expressed in seconds
+ * 		since the epoch (01/01/1970).
+ * @record_hdr	Record header containing the number of seconds since the
+ * 		epoch.
+ * @cur_date	String where timestamp's date will be saved. May be NULL.
+ * @cur_time	String where timestamp's time will be saved.
+ * @len		Maximum length of timestamp strings.
+ * @rectime	Structure with current timestamp (expressed in local time or
+ *		in UTC depending on whether options -T or -t have been used
+ * 		or not) that should be broken down in date and time strings.
+ *
+ * OUT:
+ * @cur_date	Timestamp's date string (if expected).
+ * @cur_time	Timestamp's time string. May contain the number of seconds
+ *		since the epoch (01-01-1970) if corresponding option has
+ * 		been used.
+ ***************************************************************************
+*/
+void set_record_timestamp_string(unsigned int l_flags, struct record_header *record_hdr,
+				 char *cur_date, char *cur_time, int len, struct tm *rectime)
+{
+	/* Set cur_time date value */
+	if (PRINT_SEC_EPOCH(l_flags) && cur_date) {
+		sprintf(cur_time, "%ld", record_hdr->ust_time);
+		strcpy(cur_date, "");
+	}
+	else {
+		/*
+		 * If options -T or -t have been used then cur_time is
+		 * expressed in local time. Else it is expressed in UTC.
+		 */
+		if (cur_date) {
+			strftime(cur_date, len, "%Y-%m-%d", rectime);
+		}
+		if (USE_PREFD_TIME_OUTPUT(l_flags)) {
+			strftime(cur_time, len, "%X", rectime);
+		}
+		else {
+			strftime(cur_time, len, "%H:%M:%S", rectime);
+		}
+	}
+}
+
+/*
+ ***************************************************************************
+ * Print contents of a special (RESTART or COMMENT) record.
+ *
+ * IN:
+ * @record_hdr	Current record header.
+ * @l_flags	Flags for common options.
+ * @tm_start	Structure filled when option -s has been used.
+ * @tm_end	Structure filled when option -e has been used.
+ * @rtype	Record type (R_RESTART or R_COMMENT).
+ * @ifd		Input file descriptor.
+ * @rectime	Structure where timestamp (expressed in local time or in UTC
+ *		depending on whether options -T/-t have	been used or not) can
+ *		be saved for current record.
+ * @loctime	Structure where timestamp (expressed in local time) can be
+ *		saved for current record. May be NULL.
+ * @file	Name of file being read.
+ * @tab		Number of tabulations to print.
+ * @file_magic	file_magic structure filled with file magic header data.
+ * @file_hdr	System activity file standard header.
+ * @act		Array of activities.
+ * @ofmt		Pointer on report output format structure.
+ *
+ * OUT:
+ * @rectime		Structure where timestamp (expressed in local time
+ * 			or in UTC) has been saved.
+ * @loctime		Structure where timestamp (expressed in local time)
+ * 			has been saved (if requested).
+ *
+ * RETURNS:
+ * 1 if the record has been successfully displayed, and 0 otherwise.
+ ***************************************************************************
+ */
+int print_special_record(struct record_header *record_hdr, unsigned int l_flags,
+			 struct tstamp *tm_start, struct tstamp *tm_end, int rtype, int ifd,
+			 struct tm *rectime, struct tm *loctime, char *file, int tab,
+			 struct file_magic *file_magic, struct file_header *file_hdr,
+			 struct activity *act[], struct report_format *ofmt)
+{
+	char cur_date[32], cur_time[32];
+	int dp = 1;
+	unsigned int new_cpu_nr;
+
+	/* Fill timestamp structure (rectime) for current record */
+	if (sa_get_record_timestamp_struct(l_flags, record_hdr, rectime, loctime))
+		return 0;
+
+	/* If loctime is NULL, then use rectime for comparison */
+	if (!loctime) {
+		loctime = rectime;
+	}
+
+	/* The record must be in the interval specified by -s/-e options */
+	if ((tm_start->use && (datecmp(loctime, tm_start) < 0)) ||
+	    (tm_end->use && (datecmp(loctime, tm_end) > 0))) {
+		/* Will not display the special record */
+		dp = 0;
+	}
+	else {
+		/* Set date and time strings to be displayed for current record */
+		set_record_timestamp_string(l_flags, record_hdr,
+					    cur_date, cur_time, 32, rectime);
+	}
+
+	if (rtype == R_RESTART) {
+		/* Don't forget to read the volatile activities structures */
+		new_cpu_nr = read_vol_act_structures(ifd, act, file, file_magic,
+						     file_hdr->sa_vol_act_nr);
+
+		if (!dp)
+			return 0;
+
+		if (*ofmt->f_restart) {
+			(*ofmt->f_restart)(&tab, F_MAIN, cur_date, cur_time,
+					   !PRINT_LOCAL_TIME(l_flags) &&
+					   !PRINT_TRUE_TIME(l_flags), file_hdr,
+					   new_cpu_nr);
+		}
+	}
+	else if (rtype == R_COMMENT) {
+		char file_comment[MAX_COMMENT_LEN];
+
+		/* Read and replace non printable chars in comment */
+		replace_nonprintable_char(ifd, file_comment);
+
+		if (!dp || !DISPLAY_COMMENT(l_flags))
+			return 0;
+
+		if (*ofmt->f_comment) {
+			(*ofmt->f_comment)(&tab, F_MAIN, cur_date, cur_time,
+					   !PRINT_LOCAL_TIME(l_flags) &&
+					   !PRINT_TRUE_TIME(l_flags), file_comment,
+					   file_hdr);
+		}
+	}
+
+	return 1;
 }

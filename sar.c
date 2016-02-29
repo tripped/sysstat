@@ -1,6 +1,6 @@
 /*
  * sar: report system activity
- * (C) 1999-2015 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2016 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -15,7 +15,7 @@
  *                                                                         *
  * You should have received a copy of the GNU General Public License along *
  * with this program; if not, write to the Free Software Foundation, Inc., *
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA                   *
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335 USA              *
  ***************************************************************************
  */
 
@@ -78,6 +78,7 @@ struct tstamp tm_start, tm_end;
 char *args[MAX_ARGV_NR];
 
 extern struct activity *act[];
+extern struct report_format sar_fmt;
 
 struct sigaction int_act;
 int sigint_caught = 0;
@@ -290,46 +291,6 @@ void reverse_check_act(unsigned int act_nr)
 
 /*
  ***************************************************************************
- * Fill the (struct tm) rectime structure with current record's time,
- * based on current record's time data saved in file.
- * The resulting timestamp is expressed in the locale of the file creator
- * or in the user's own locale depending on whether option -t has been used
- * or not.
- *
- * IN:
- * @curr	Index in array for current sample statistics.
- *
- * RETURNS:
- * 1 if an error was detected, or 0 otherwise.
- ***************************************************************************
-*/
-int sar_get_record_timestamp_struct(int curr)
-{
-	struct tm *ltm;
-
-	/* Check if option -t was specified on the command line */
-	if (PRINT_TRUE_TIME(flags)) {
-		/* -t */
-		rectime.tm_hour = record_hdr[curr].hour;
-		rectime.tm_min  = record_hdr[curr].minute;
-		rectime.tm_sec  = record_hdr[curr].second;
-	}
-	else {
-		if ((ltm = localtime((const time_t *) &record_hdr[curr].ust_time)) == NULL)
-			/*
-			 * An error was detected.
-			 * The rectime structure has NOT been updated.
-			 */
-			return 1;
-
-		rectime = *ltm;
-	}
-
-	return 0;
-}
-
-/*
- ***************************************************************************
  * Determine if a stat header line has to be displayed.
  *
  * RETURNS:
@@ -362,34 +323,6 @@ int check_line_hdr(void)
 	}
 
 	return rc;
-}
-
-/*
- ***************************************************************************
- * Set current record's timestamp string.
- *
- * IN:
- * @curr	Index in array for current sample statistics.
- * @len		Maximum length of timestamp string.
- *
- * OUT:
- * @cur_time	Timestamp string.
- *
- * RETURNS:
- * 1 if an error was detected, or 0 otherwise.
- ***************************************************************************
-*/
-int set_record_timestamp_string(int curr, char *cur_time, int len)
-{
-	/* Fill timestamp structure */
-	if (sar_get_record_timestamp_struct(curr))
-		/* Error detected */
-		return 1;
-
-	/* Set cur_time date value */
-	strftime(cur_time, len, "%X", &rectime);
-
-	return 0;
 }
 
 /*
@@ -508,12 +441,19 @@ int write_stats(int curr, int read_from_file, long *cnt, int use_tm_start,
 			return 0;
 	}
 
-	/* Set previous timestamp */
-	if (set_record_timestamp_string(!curr, timestamp[!curr], 16))
+	/* Get then set previous timestamp */
+	if (sa_get_record_timestamp_struct(flags + S_F_LOCAL_TIME, &record_hdr[!curr],
+					   &rectime, NULL))
 		return 0;
-	/* Set current timestamp */
-	if (set_record_timestamp_string(curr,  timestamp[curr],  16))
+	set_record_timestamp_string(S_F_PREFD_TIME_OUTPUT, &record_hdr[!curr],
+				    NULL, timestamp[!curr], 16, &rectime);
+
+	/* Get then set current timestamp */
+	if (sa_get_record_timestamp_struct(flags + S_F_LOCAL_TIME, &record_hdr[curr],
+					   &rectime, NULL))
 		return 0;
+	set_record_timestamp_string(S_F_PREFD_TIME_OUTPUT, &record_hdr[curr],
+				    NULL, timestamp[curr], 16, &rectime);
 
 	/* Check if we are beginning a new day */
 	if (use_tm_start && record_hdr[!curr].ust_time &&
@@ -640,66 +580,49 @@ int sa_read(void *buffer, int size)
 
 /*
  ***************************************************************************
- * Print a Linux restart message (contents of a RESTART record) or a
- * comment (contents of a COMMENT record).
+ * Display a restart message (contents of a R_RESTART record).
  *
  * IN:
- * @curr		Index in array for current sample statistics.
- * @use_tm_start	Set to TRUE if option -s has been used.
- * @use_tm_end		Set to TRUE if option -e has been used.
- * @rtype		Record type to display.
- * @ifd			Input file descriptor.
- * @file		Name of file being read.
- * @file_magic		file_magic structure filled with file magic header
- * 			data.
- *
- * RETURNS:
- * 1 if the record has been successfully displayed, and 0 otherwise.
+ * @tab		Number of tabulations (unused here).
+ * @action	Action expected from current function (unused here).
+ * @cur_date	Date string of current restart message (unused here).
+ * @cur_time	Time string of current restart message.
+ * @utc		True if @cur_time is expressed in UTC (unused here).
+ * @file_hdr	System activity file standard header (unused here).
+ * @cpu_nr	CPU count associated with restart mark.
  ***************************************************************************
  */
-int sar_print_special(int curr, int use_tm_start, int use_tm_end, int rtype,
-		      int ifd, char *file, struct file_magic *file_magic)
+__print_funct_t print_sar_restart(int *tab, int action, char *cur_date, char *cur_time, int utc,
+				  struct file_header *file_hdr, unsigned int cpu_nr)
 {
-	char cur_time[26], restart[64];
-	int dp = 1;
-	unsigned int new_cpu_nr;
+	char restart[64];
 
-	if (set_record_timestamp_string(curr, cur_time, 26))
-		return 0;
+	printf("\n%-11s", cur_time);
+	sprintf(restart, "  LINUX RESTART\t(%d CPU)\n",
+		cpu_nr > 1 ? cpu_nr - 1 : 1);
+	cprintf_s(IS_RESTART, "%s", restart);
 
-	/* The record must be in the interval specified by -s/-e options */
-	if ((use_tm_start && (datecmp(&rectime, &tm_start) < 0)) ||
-	    (use_tm_end && (datecmp(&rectime, &tm_end) > 0))) {
-		dp = 0;
-	}
+}
 
-	if (rtype == R_RESTART) {
-		/* Don't forget to read the volatile activities structures */
-		new_cpu_nr = read_vol_act_structures(ifd, act, file, file_magic,
-						     file_hdr.sa_vol_act_nr);
-
-		if (dp) {
-			printf("\n%-11s", cur_time);
-			sprintf(restart, "  LINUX RESTART\t(%d CPU)\n",
-				new_cpu_nr > 1 ? new_cpu_nr - 1 : 1);
-			cprintf_s(IS_RESTART, "%s", restart);
-			return 1;
-		}
-	}
-	else if (rtype == R_COMMENT) {
-		char file_comment[MAX_COMMENT_LEN];
-
-		/* Don't forget to read comment record even if it won't be displayed... */
-		replace_nonprintable_char(ifd, file_comment);
-
-		if (dp && DISPLAY_COMMENT(flags)) {
-			printf("%-11s", cur_time);
-			cprintf_s(IS_COMMENT, "  COM %s\n", file_comment);
-			return 1;
-		}
-	}
-
-	return 0;
+/*
+ ***************************************************************************
+ * Display a comment (contents of R_COMMENT record).
+ *
+ * IN:
+ * @tab		Number of tabulations (unused here).
+ * @action	Action expected from current function (unused here).
+ * @cur_date	Date string of current comment (unused here).
+ * @cur_time	Time string of current comment.
+ * @utc		True if @cur_time is expressed in UTC (unused here).
+ * @comment	Comment to display.
+ * @file_hdr	System activity file standard header (unused here).
+ ***************************************************************************
+ */
+__print_funct_t print_sar_comment(int *tab, int action, char *cur_date, char *cur_time, int utc,
+				  char *comment, struct file_header *file_hdr)
+{
+	printf("%-11s", cur_time);
+	cprintf_s(IS_COMMENT, "  COM %s\n", comment);
 }
 
 /*
@@ -818,8 +741,10 @@ void handle_curr_act_stats(int ifd, off_t fpos, int *curr, long *cnt, int *eosaf
 
 			if (rtype == R_COMMENT) {
 				/* Display comment */
-				next = sar_print_special(*curr, tm_start.use, tm_end.use,
-						     R_COMMENT, ifd, file, file_magic);
+				next = print_special_record(&record_hdr[*curr], flags + S_F_LOCAL_TIME,
+							    &tm_start, &tm_end, R_COMMENT, ifd,
+							    &rectime, NULL, file, 0,
+							    file_magic, &file_hdr, act, &sar_fmt);
 				if (next) {
 					/* A line of comment was actually displayed */
 					lines++;
@@ -984,8 +909,10 @@ void read_stats_from_file(char from_file[])
 
 			rtype = record_hdr[0].record_type;
 			if ((rtype == R_RESTART) || (rtype == R_COMMENT)) {
-				sar_print_special(0, tm_start.use, tm_end.use, rtype,
-						  ifd, from_file, &file_magic);
+				print_special_record(&record_hdr[0], flags + S_F_LOCAL_TIME,
+						     &tm_start, &tm_end, rtype, ifd,
+						     &rectime, NULL, from_file, 0, &file_magic,
+						     &file_hdr, act, &sar_fmt);
 			}
 			else {
 				/*
@@ -994,7 +921,9 @@ void read_stats_from_file(char from_file[])
 				 */
 				read_file_stat_bunch(act, 0, ifd, file_hdr.sa_act_nr,
 						     file_actlst);
-				if (sar_get_record_timestamp_struct(0))
+				if (sa_get_record_timestamp_struct(flags + S_F_LOCAL_TIME,
+								   &record_hdr[0],
+								   &rectime, NULL))
 					/*
 					 * An error was detected.
 					 * The timestamp hasn't been updated.
@@ -1066,8 +995,10 @@ void read_stats_from_file(char from_file[])
 				}
 				else if (!eosaf && (rtype == R_COMMENT)) {
 					/* This was a COMMENT record: print it */
-					sar_print_special(curr, tm_start.use, tm_end.use, R_COMMENT,
-							  ifd, from_file, &file_magic);
+					print_special_record(&record_hdr[curr], flags + S_F_LOCAL_TIME,
+							     &tm_start, &tm_end, R_COMMENT, ifd,
+							     &rectime, NULL, from_file, 0,
+							     &file_magic, &file_hdr, act, &sar_fmt);
 				}
 			}
 			while (!eosaf && (rtype != R_RESTART));
@@ -1075,8 +1006,10 @@ void read_stats_from_file(char from_file[])
 
 		/* The last record we read was a RESTART one: Print it */
 		if (!eosaf && (record_hdr[curr].record_type == R_RESTART)) {
-			sar_print_special(curr, tm_start.use, tm_end.use, R_RESTART,
-					  ifd, from_file, &file_magic);
+			print_special_record(&record_hdr[curr], flags + S_F_LOCAL_TIME,
+					     &tm_start, &tm_end, R_RESTART, ifd,
+					     &rectime, NULL, from_file, 0,
+					     &file_magic, &file_hdr, act, &sar_fmt);
 		}
 	}
 	while (!eosaf);

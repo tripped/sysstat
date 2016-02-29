@@ -8,7 +8,7 @@ Makefile fixes.
  1 file changed, 22 insertions(+), 20 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index cde6839..4480a24 100644
+index b25c57a..ed0fd75 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -69,9 +69,9 @@ NLS_DIR = $(PREFIX)/share/locale
@@ -23,7 +23,7 @@ index cde6839..4480a24 100644
  DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
  DFLAGS += $(DFSENSORS)
  
-@@ -271,8 +271,9 @@ else
+@@ -277,8 +277,9 @@ else
  locales:
  endif
  
@@ -35,7 +35,7 @@ index cde6839..4480a24 100644
  
  # Phony targets
  .PHONY: clean distclean install install_base install_all uninstall \
-@@ -305,9 +306,6 @@ ifeq ($(INSTALL_DOC),y)
+@@ -311,9 +312,6 @@ ifeq ($(INSTALL_DOC),y)
  	$(INSTALL_DATA) $(MANGRPARG) man/pidstat.1 $(DESTDIR)$(MAN1_DIR)
  	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
  	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
@@ -45,7 +45,7 @@ index cde6839..4480a24 100644
  ifeq ($(COMPRESS_MANPG),y)
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
  	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
-@@ -346,8 +344,15 @@ ifdef REQUIRE_NLS
+@@ -352,8 +350,15 @@ ifdef REQUIRE_NLS
  	done
  endif
  
@@ -63,7 +63,7 @@ index cde6839..4480a24 100644
  	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
  	mkdir -p $(DESTDIR)$(SA_DIR)
  ifeq ($(CLEAN_SA_DIR),y)
-@@ -356,7 +361,7 @@ ifeq ($(CLEAN_SA_DIR),y)
+@@ -362,7 +367,7 @@ ifeq ($(CLEAN_SA_DIR),y)
  	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
  endif
  	mkdir -p $(DESTDIR)$(BIN_DIR)
@@ -72,7 +72,7 @@ index cde6839..4480a24 100644
  	mkdir -p $(DESTDIR)$(SYSCONFIG_DIR)
  	$(INSTALL_BIN) sa1 $(DESTDIR)$(SA_LIB_DIR)
  	$(INSTALL_BIN) sa2 $(DESTDIR)$(SA_LIB_DIR)
-@@ -368,18 +373,15 @@ endif
+@@ -374,18 +379,15 @@ endif
  	$(INSTALL_BIN) mpstat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
  	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
@@ -85,19 +85,19 @@ index cde6839..4480a24 100644
 -	$(INSTALL_DATA) CHANGES $(DESTDIR)$(DOC_DIR)
 -	$(INSTALL_DATA) COPYING $(DESTDIR)$(DOC_DIR)
 -	$(INSTALL_DATA) CREDITS $(DESTDIR)$(DOC_DIR)
--	$(INSTALL_DATA) README $(DESTDIR)$(DOC_DIR)
+-	$(INSTALL_DATA) README.md $(DESTDIR)$(DOC_DIR)
 -	$(INSTALL_DATA) FAQ $(DESTDIR)$(DOC_DIR)
 -	$(INSTALL_DATA) *.lsm $(DESTDIR)$(DOC_DIR)
 +#	$(INSTALL_DATA) CHANGES $(DESTDIR)$(DOC_DIR)
 +#	$(INSTALL_DATA) COPYING $(DESTDIR)$(DOC_DIR)
 +#	$(INSTALL_DATA) CREDITS $(DESTDIR)$(DOC_DIR)
-+#	$(INSTALL_DATA) README $(DESTDIR)$(DOC_DIR)
++#	$(INSTALL_DATA) README.md $(DESTDIR)$(DOC_DIR)
 +#	$(INSTALL_DATA) FAQ $(DESTDIR)$(DOC_DIR)
 +#	$(INSTALL_DATA) *.lsm $(DESTDIR)$(DOC_DIR)
  endif
  
  install_all: install_base cron/crontab sysstat \
-@@ -581,7 +583,7 @@ clean:
+@@ -587,7 +589,7 @@ clean:
  	rm -f sadc sar sadf iostat tapestat mpstat pidstat cifsiostat *.o *.a core TAGS
  	find nls -name "*.gmo" -exec rm -f {} \;
  

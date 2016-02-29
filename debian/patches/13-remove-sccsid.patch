@@ -32,7 +32,7 @@ index 713b894..9432f4b 100644
  struct cifs_stats *st_cifs[2];
  struct io_hdr_stats *st_hdr_cifs;
 diff --git a/iostat.c b/iostat.c
-index 4bf0342..ac6baff 100644
+index 02bf1ab..41a7e0a 100644
 --- a/iostat.c
 +++ b/iostat.c
 @@ -48,9 +48,6 @@
@@ -46,7 +46,7 @@ index 4bf0342..ac6baff 100644
  unsigned long long uptime[2]  = {0, 0};
  unsigned long long uptime0[2] = {0, 0};
 diff --git a/mpstat.c b/mpstat.c
-index 3b62aa0..57e71d4 100644
+index 822ec73..0367db2 100644
 --- a/mpstat.c
 +++ b/mpstat.c
 @@ -42,9 +42,6 @@
@@ -60,7 +60,7 @@ index 3b62aa0..57e71d4 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  
 diff --git a/pidstat.c b/pidstat.c
-index a94e410..fa04f7b 100644
+index ac8fbfc..81d9746 100644
 --- a/pidstat.c
 +++ b/pidstat.c
 @@ -47,9 +47,6 @@
@@ -74,7 +74,7 @@ index a94e410..fa04f7b 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  struct pid_stats *st_pid_list[3] = {NULL, NULL, NULL};
 diff --git a/sadc.c b/sadc.c
-index 160f9c5..6f09158 100644
+index 016d8f2..aaf219f 100644
 --- a/sadc.c
 +++ b/sadc.c
 @@ -52,9 +52,6 @@
@@ -88,7 +88,7 @@ index 160f9c5..6f09158 100644
  unsigned int flags = 0;
  
 diff --git a/sadf.c b/sadf.c
-index 9650a18..4fe4f56 100644
+index 9045652..6ea2e5b 100644
 --- a/sadf.c
 +++ b/sadf.c
 @@ -41,9 +41,6 @@
@@ -102,7 +102,7 @@ index 9650a18..4fe4f56 100644
  
  unsigned int flags = 0;
 diff --git a/sar.c b/sar.c
-index c293b80..25fd5b6 100644
+index c2fcbf1..44280c4 100644
 --- a/sar.c
 +++ b/sar.c
 @@ -42,9 +42,6 @@
@@ -116,7 +116,7 @@ index c293b80..25fd5b6 100644
  long interval = -1, count = 0;
  
 diff --git a/tapestat.c b/tapestat.c
-index a55e341..7865eef 100644
+index a715b49..e5b201b 100644
 --- a/tapestat.c
 +++ b/tapestat.c
 @@ -52,9 +52,6 @@

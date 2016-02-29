@@ -1,6 +1,6 @@
 /*
  * json_stats.c: Funtions used by sadf to display statistics in JSON format.
- * (C) 1999-2015 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2016 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -15,7 +15,7 @@
  *                                                                         *
  * You should have received a copy of the GNU General Public License along *
  * with this program; if not, write to the Free Software Foundation, Inc., *
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA                   *
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335 USA              *
  ***************************************************************************
  */
 
@@ -2178,6 +2178,12 @@ __print_funct_t json_print_fchost_stats(struct activity *a, int curr, int tab,
 	struct stats_fchost *sfcc, *sfcp;
 	int sep = FALSE;
 
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+		goto close_json_markup;
+
+	json_markup_network(tab, OPEN_JSON_MARKUP);
+	tab++;
+
 	xprintf(tab++, "\"fchosts\": [");
 
 	for (i = 0; i < a->nr; i++) {
@@ -2207,4 +2213,11 @@ __print_funct_t json_print_fchost_stats(struct activity *a, int curr, int tab,
 
 	printf("\n");
 	xprintf0(--tab, "]");
+
+	tab --;
+
+close_json_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		json_markup_network(tab, CLOSE_JSON_MARKUP);
+	}
 }

@@ -1,6 +1,6 @@
 /*
  * rd_sensors.h: Include file used to read sensors statistics
- * (C) 1999-2015 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2016 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _RD_SENSORS_H
@@ -55,12 +55,12 @@ struct stats_pwr_in {
  ***************************************************************************
  */
 
-extern void
-	read_fan(struct stats_pwr_fan *, int);
-extern void
-	read_temp(struct stats_pwr_temp *, int);
-extern void
-	read_in(struct stats_pwr_in *, int);
+void read_fan
+	(struct stats_pwr_fan *, int);
+void read_temp
+	(struct stats_pwr_temp *, int);
+void read_in
+	(struct stats_pwr_in *, int);
 
 /*
  ***************************************************************************
@@ -68,11 +68,11 @@ extern void
  ***************************************************************************
  */
 
-extern int
-	get_fan_nr(void);
-extern int
-	get_temp_nr(void);
-extern int
-	get_in_nr(void);
+int get_fan_nr
+	(void);
+int get_temp_nr
+	(void);
+int get_in_nr
+	(void);
 
 #endif /* _RD_SENSORS_H */

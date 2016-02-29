@@ -1,6 +1,6 @@
 /*
- * format.c: Output format definitions for sadf
- * (C) 2011-2015 by Sebastien GODARD (sysstat <at> orange.fr)
+ * format.c: Output format definitions for sadf and sar
+ * (C) 2011-2016 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -15,11 +15,17 @@
  *                                                                         *
  * You should have received a copy of the GNU General Public License along *
  * with this program; if not, write to the Free Software Foundation, Inc., *
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA                   *
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335 USA              *
  ***************************************************************************
  */
 
+#ifdef SOURCE_SADF
 #include "sadf.h"
+#endif
+
+#ifdef SOURCE_SAR
+#include "sa.h"
+#endif
 
 /*
  ***************************************************************************
@@ -28,6 +34,7 @@
  ***************************************************************************
  */
 
+#ifdef SOURCE_SADF
 /*
  * Display only datafile header.
  */
@@ -50,7 +57,7 @@ struct report_format db_fmt = {
 			  FO_SEC_EPOCH + FO_FIELD_LIST,
 	.f_header	= NULL,
 	.f_statistics	= NULL,
-	.f_timestamp	= NULL,
+	.f_timestamp	= print_db_timestamp,
 	.f_restart	= print_db_restart,
 	.f_comment	= print_db_comment
 };
@@ -63,7 +70,7 @@ struct report_format ppc_fmt = {
 	.options	= FO_GROUPED_STATS + FO_LOCAL_TIME + FO_SEC_EPOCH,
 	.f_header	= NULL,
 	.f_statistics	= NULL,
-	.f_timestamp	= NULL,
+	.f_timestamp	= print_ppc_timestamp,
 	.f_restart	= print_ppc_restart,
 	.f_comment	= print_ppc_comment
 };
@@ -73,7 +80,7 @@ struct report_format ppc_fmt = {
  */
 struct report_format xml_fmt = {
 	.id		= F_XML_OUTPUT,
-	.options	= FO_HEADER_ONLY + FO_LOCAL_TIME,
+	.options	= FO_HEADER_ONLY + FO_LOCAL_TIME + FO_TEST_MARKUP,
 	.f_header	= print_xml_header,
 	.f_statistics	= print_xml_statistics,
 	.f_timestamp	= print_xml_timestamp,
@@ -86,7 +93,7 @@ struct report_format xml_fmt = {
  */
 struct report_format json_fmt = {
 	.id		= F_JSON_OUTPUT,
-	.options	= FO_HEADER_ONLY + FO_LOCAL_TIME,
+	.options	= FO_HEADER_ONLY + FO_LOCAL_TIME + FO_TEST_MARKUP,
 	.f_header	= print_json_header,
 	.f_statistics	= print_json_statistics,
 	.f_timestamp	= print_json_timestamp,
@@ -95,12 +102,25 @@ struct report_format json_fmt = {
 };
 
 /*
- * Display only datafile header.
+ * Convert an old datafile to up-to-date format.
  */
 struct report_format conv_fmt = {
 	.id		= F_CONV_OUTPUT,
 	.options	= FO_BAD_FILE_FORMAT,
 	.f_header	= NULL,
+	.f_statistics	= NULL,
+	.f_timestamp	= NULL,
+	.f_restart	= NULL,
+	.f_comment	= NULL
+};
+
+/*
+ * SVG output.
+ */
+struct report_format svg_fmt = {
+	.id		= F_SVG_OUTPUT,
+	.options	= FO_HEADER_ONLY + FO_LOCAL_TIME + FO_NO_TRUE_TIME,
+	.f_header	= print_svg_header,
 	.f_statistics	= NULL,
 	.f_timestamp	= NULL,
 	.f_restart	= NULL,
@@ -116,5 +136,24 @@ struct report_format *fmt[NR_FMT] = {
 	&ppc_fmt,
 	&xml_fmt,
 	&json_fmt,
-	&conv_fmt
+	&conv_fmt,
+	&svg_fmt
 };
+#endif
+
+#ifdef SOURCE_SAR
+/*
+ * Special output format for sar.
+ * Used only for functions to display special
+ * (RESTART and COMMENT) records.
+ */
+struct report_format sar_fmt = {
+	.id		= 0,
+	.options	= 0,
+	.f_header	= NULL,
+	.f_statistics	= NULL,
+	.f_timestamp	= NULL,
+	.f_restart	= print_sar_restart,
+	.f_comment	= print_sar_comment
+};
+#endif

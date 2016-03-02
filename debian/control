@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Robert Luberda <robert@debian.org>
 Build-Depends: debhelper (>= 9), gettext, libsensors4-dev, pkg-config
-Standards-Version: 3.9.6
+Standards-Version: 3.9.7
 Homepage: http://pagesperso-orange.fr/sebastien.godard/
 Vcs-Git: git://anonscm.debian.org/users/robert/sysstat.git
 Vcs-Browser: https://anonscm.debian.org/gitweb/?p=users/robert/sysstat.git

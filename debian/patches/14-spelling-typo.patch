@@ -1,0 +1,21 @@
+From: Robert Luberda <robert@debian.org>
+Date: Tue, 22 Mar 2016 09:14:21 +0100
+Subject: Fix spelling error found by lintian
+
+---
+ man/sadf.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/man/sadf.in b/man/sadf.in
+index 51557f3..f590832 100644
+--- a/man/sadf.in
++++ b/man/sadf.in
+@@ -217,7 +217,7 @@ by a pattern processing command.
+ 
+ .SH BUGS
+ SVG output (as created by option -g) is fully compliant with SVG 1.1 standard.
+-Graphics have been succesfully displayed in various web browsers, including
++Graphics have been successfully displayed in various web browsers, including
+ Firefox, Chrome and Opera. Yet SVG rendering is broken on Microsoft browsers
+ (tested on Internet Explorer 11 and Edge 13.1): So please don't use them.
+ 

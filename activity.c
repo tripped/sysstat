@@ -187,9 +187,10 @@ struct activity swap_act = {
 	.f_render	= render_swap_stats,
 	.f_xml_print	= xml_print_swap_stats,
 	.f_json_print	= json_print_swap_stats,
+	.f_svg_print	= svg_print_swap_stats,
 	.hdr_line	= "pswpin/s;pswpout/s",
 	.name		= "A_SWAP",
-	.g_nr		= 0,
+	.g_nr		= 1,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -220,10 +221,11 @@ struct activity paging_act = {
 	.f_render	= render_paging_stats,
 	.f_xml_print	= xml_print_paging_stats,
 	.f_json_print	= json_print_paging_stats,
+	.f_svg_print	= svg_print_paging_stats,
 	.hdr_line	= "pgpgin/s;pgpgout/s;fault/s;majflt/s;"
 		          "pgfree/s;pgscank/s;pgscand/s;pgsteal/s;%vmeff",
 	.name		= "A_PAGE",
-	.g_nr		= 0,
+	.g_nr		= 3,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -438,7 +440,7 @@ struct activity disk_act = {
 /* Network interfaces activity */
 struct activity net_dev_act = {
 	.id		= A_NET_DEV,
-	.options	= AO_COLLECTED,
+	.options	= AO_COLLECTED | AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE + 2,
 	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
@@ -454,9 +456,10 @@ struct activity net_dev_act = {
 	.f_render	= render_net_dev_stats,
 	.f_xml_print	= xml_print_net_dev_stats,
 	.f_json_print	= json_print_net_dev_stats,
+	.f_svg_print	= svg_print_net_dev_stats,
 	.hdr_line	= "IFACE;rxpck/s;txpck/s;rxkB/s;txkB/s;rxcmp/s;txcmp/s;rxmcst/s;%ifutil",
 	.name		= "A_NET_DEV",
-	.g_nr		= 0,
+	.g_nr		= 4,
 #endif
 	.nr		= -1,
 	.nr2		= 1,

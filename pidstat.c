@@ -1360,15 +1360,15 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 			cprintf_pc(4, 7, 2,
 				   (pstc->utime - pstc->gtime) < (pstp->utime - pstp->gtime) ?
 				   0.0 :
-				   SP_VALUE(pstp->utime - pstp->gtime,
+				   SP_VALUE_100(pstp->utime - pstp->gtime,
 					    pstc->utime - pstc->gtime, itv),
-				   SP_VALUE(pstp->stime,  pstc->stime, itv),
-				   SP_VALUE(pstp->gtime,  pstc->gtime, itv),
+				   SP_VALUE_100(pstp->stime,  pstc->stime, itv),
+				   SP_VALUE_100(pstp->gtime,  pstc->gtime, itv),
 				   /* User time already includes guest time */
 				   IRIX_MODE_OFF(pidflag) ?
-				   SP_VALUE(pstp->utime + pstp->stime,
+				   SP_VALUE_100(pstp->utime + pstp->stime,
 					    pstc->utime + pstc->stime, g_itv) :
-				   SP_VALUE(pstp->utime + pstp->stime,
+				   SP_VALUE_100(pstp->utime + pstp->stime,
 					    pstc->utime + pstc->stime, itv));
 
 			cprintf_in(IS_INT, "   %3d", "", pstc->processor);
@@ -1560,15 +1560,15 @@ int write_pid_task_cpu_stats(int prev, int curr, int dis, int disp_avg,
 		cprintf_pc(4, 7, 2,
 			   (pstc->utime - pstc->gtime) < (pstp->utime - pstp->gtime) ?
 			   0.0 :
-			   SP_VALUE(pstp->utime - pstp->gtime,
+			   SP_VALUE_100(pstp->utime - pstp->gtime,
 				    pstc->utime - pstc->gtime, itv),
-			   SP_VALUE(pstp->stime, pstc->stime, itv),
-			   SP_VALUE(pstp->gtime, pstc->gtime, itv),
+			   SP_VALUE_100(pstp->stime, pstc->stime, itv),
+			   SP_VALUE_100(pstp->gtime, pstc->gtime, itv),
 			   /* User time already includes guest time */
 			   IRIX_MODE_OFF(pidflag) ?
-			   SP_VALUE(pstp->utime + pstp->stime,
+			   SP_VALUE_100(pstp->utime + pstp->stime,
 				    pstc->utime + pstc->stime, g_itv) :
-			   SP_VALUE(pstp->utime + pstp->stime,
+			   SP_VALUE_100(pstp->utime + pstp->stime,
 				    pstc->utime + pstc->stime, itv));
 
 		if (!disp_avg) {
@@ -2321,10 +2321,20 @@ int write_stats(int curr, int dis)
 	char cur_time[2][16];
 
 	/* Get previous timestamp */
-	strftime(cur_time[!curr], sizeof(cur_time[!curr]), "%X", &ps_tstamp[!curr]);
+	if (is_iso_time_fmt()) {
+		strftime(cur_time[!curr], sizeof(cur_time[!curr]), "%H:%M:%S", &ps_tstamp[!curr]);
+	}
+	else {
+		strftime(cur_time[!curr], sizeof(cur_time[!curr]), "%X", &ps_tstamp[!curr]);
+	}
 
 	/* Get current timestamp */
-	strftime(cur_time[curr], sizeof(cur_time[curr]), "%X", &ps_tstamp[curr]);
+	if (is_iso_time_fmt()) {
+		strftime(cur_time[curr], sizeof(cur_time[curr]), "%H:%M:%S", &ps_tstamp[curr]);
+	}
+	else {
+		strftime(cur_time[curr], sizeof(cur_time[curr]), "%X", &ps_tstamp[curr]);
+	}
 
 	return (write_stats_core(!curr, curr, dis, FALSE,
 				 cur_time[!curr], cur_time[curr]));

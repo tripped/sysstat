@@ -831,7 +831,7 @@ __printf_funct_t print_svg_header(void *parm, int action, char *dfile,
 	int *graph_nr = (int *) parm;
 
 	if (action & F_BEGIN) {
-		printf("<?xml version=\"1.0\"?>\n");
+		printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 		printf("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" ");
 		printf("\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
 		printf("<svg xmlns=\"http://www.w3.org/2000/svg\"");
@@ -844,7 +844,7 @@ __printf_funct_t print_svg_header(void *parm, int action, char *dfile,
 		printf(" width=\"%d\" height=\"%d\""
 		       " fill=\"black\" stroke=\"gray\" stroke-width=\"1\">\n",
 		       SVG_V_XSIZE, SVG_H_YSIZE + SVG_T_YSIZE * (*graph_nr));
-		printf("<text x= \"0\" y=\"30\" text-anchror=\"start\" stroke=\"brown\">");
+		printf("<text x= \"0\" y=\"30\" text-anchor=\"start\" stroke=\"brown\">");
 		print_gal_header(localtime((const time_t *) &(file_hdr->sa_ust_time)),
 				 file_hdr->sa_sysname, file_hdr->sa_release,
 				 file_hdr->sa_nodename, file_hdr->sa_machine,

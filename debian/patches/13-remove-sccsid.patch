@@ -46,7 +46,7 @@ index 02bf1ab..41a7e0a 100644
  unsigned long long uptime[2]  = {0, 0};
  unsigned long long uptime0[2] = {0, 0};
 diff --git a/mpstat.c b/mpstat.c
-index 822ec73..0367db2 100644
+index 168e905..3c5156d 100644
 --- a/mpstat.c
 +++ b/mpstat.c
 @@ -42,9 +42,6 @@
@@ -60,7 +60,7 @@ index 822ec73..0367db2 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  
 diff --git a/pidstat.c b/pidstat.c
-index ac8fbfc..81d9746 100644
+index 3110d0b..8544622 100644
 --- a/pidstat.c
 +++ b/pidstat.c
 @@ -47,9 +47,6 @@
@@ -88,7 +88,7 @@ index 016d8f2..aaf219f 100644
  unsigned int flags = 0;
  
 diff --git a/sadf.c b/sadf.c
-index 9045652..6ea2e5b 100644
+index dd7f977..eceeb5e 100644
 --- a/sadf.c
 +++ b/sadf.c
 @@ -41,9 +41,6 @@
@@ -102,7 +102,7 @@ index 9045652..6ea2e5b 100644
  
  unsigned int flags = 0;
 diff --git a/sar.c b/sar.c
-index c2fcbf1..44280c4 100644
+index c881fbc..22e0803 100644
 --- a/sar.c
 +++ b/sar.c
 @@ -42,9 +42,6 @@

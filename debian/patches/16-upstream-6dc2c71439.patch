@@ -1,0 +1,286 @@
+From: Peter Portante <peter.portante@redhat.com>
+Date: Tue, 22 Mar 2016 21:42:14 -0400
+Subject: Quick fix for cprintf_u64 non-uintv64_t
+
+Patch taken from https://github.com/sysstat/sysstat/commit/6dc2c71439047c24fd37d8d16eac0037de769199
+that fixes https://github.com/sysstat/sysstat/issues/108
+---
+ pidstat.c  | 32 +++++++++++++-------------
+ pr_stats.c | 76 +++++++++++++++++++++++++++++++-------------------------------
+ 2 files changed, 54 insertions(+), 54 deletions(-)
+
+diff --git a/pidstat.c b/pidstat.c
+index 8544622..43eed9a 100644
+--- a/pidstat.c
++++ b/pidstat.c
+@@ -1384,8 +1384,8 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
+ 
+ 		if (DISPLAY_STACK(actflag)) {
+ 			cprintf_u64(2, 7,
+-				    pstc->stack_size,
+-				    pstc->stack_ref);
++				    (unsigned long long) pstc->stack_size,
++				    (unsigned long long) pstc->stack_ref);
+ 		}
+ 
+ 		if (DISPLAY_IO(actflag)) {
+@@ -1407,7 +1407,7 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
+ 			}
+ 			/* I/O delays come from another file (/proc/#/stat) */
+ 			cprintf_u64(1, 7,
+-				    pstc->blkio_swapin_delays - pstp->blkio_swapin_delays);
++				    (unsigned long long) (pstc->blkio_swapin_delays - pstp->blkio_swapin_delays));
+ 		}
+ 
+ 		if (DISPLAY_CTXSW(actflag)) {
+@@ -1418,19 +1418,19 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
+ 
+ 		if (DISPLAY_KTAB(actflag)) {
+ 			cprintf_u64(1, 7,
+-				    pstc->threads);
++				    (unsigned long long) pstc->threads);
+ 			if (NO_PID_FD(pstc->flags)) {
+ 				/* /proc/#/fd directory not readable */
+ 				cprintf_s(IS_ZERO, " %7s", "-1");
+ 			}
+ 			else {
+-				cprintf_u64(1, 7, pstc->fd_nr);
++				cprintf_u64(1, 7, (unsigned long long) pstc->fd_nr);
+ 			}
+ 		}
+ 
+ 		if (DISPLAY_RT(actflag)) {
+ 			cprintf_u64(1, 4,
+-				    pstc->priority);
++				    (unsigned long long) pstc->priority);
+ 			cprintf_s(IS_STR, " %6s",
+ 				  GET_POLICY(pstc->policy));
+ 		}
+@@ -1498,8 +1498,8 @@ int write_pid_child_all_stats(int prev, int curr, int dis,
+ 
+ 		if (DISPLAY_MEM(actflag)) {
+ 			cprintf_u64(2, 9,
+-				    (pstc->minflt + pstc->cminflt) - (pstp->minflt + pstp->cminflt),
+-				    (pstc->majflt + pstc->cmajflt) - (pstp->majflt + pstp->cmajflt));
++				    (unsigned long long) ((pstc->minflt + pstc->cminflt) - (pstp->minflt + pstp->cminflt)),
++				    (unsigned long long) ((pstc->majflt + pstc->cmajflt) - (pstp->majflt + pstp->cmajflt)));
+ 		}
+ 
+ 		print_comm(pstc);
+@@ -1810,8 +1810,8 @@ int write_pid_child_memory_stats(int prev, int curr, int dis, int disp_avg,
+ 		}
+ 		else {
+ 			cprintf_u64(2, 9,
+-				    (pstc->minflt + pstc->cminflt) - (pstp->minflt + pstp->cminflt),
+-				    (pstc->majflt + pstc->cmajflt) - (pstp->majflt + pstp->cmajflt));
++				    (unsigned long long) ((pstc->minflt + pstc->cminflt) - (pstp->minflt + pstp->cminflt)),
++                    (unsigned long long) ((pstc->majflt + pstc->cmajflt) - (pstp->majflt + pstp->cmajflt)));
+ 		}
+ 		print_comm(pstc);
+ 		again = 1;
+@@ -1882,8 +1882,8 @@ int write_pid_stack_stats(int prev, int curr, int dis, int disp_avg,
+ 		}
+ 		else {
+ 			cprintf_u64(2, 7,
+-				    pstc->stack_size,
+-				    pstc->stack_ref);
++				    (unsigned long long) pstc->stack_size,
++				    (unsigned long long) pstc->stack_ref);
+ 		}
+ 
+ 		print_comm(pstc);
+@@ -1966,7 +1966,7 @@ int write_pid_io_stats(int prev, int curr, int dis, int disp_avg,
+ 		}
+ 		else {
+ 			cprintf_u64(1, 7,
+-				    pstc->blkio_swapin_delays - pstp->blkio_swapin_delays);
++				    (unsigned long long) (pstc->blkio_swapin_delays - pstp->blkio_swapin_delays));
+ 		}
+ 
+ 		print_comm(pstc);
+@@ -2069,7 +2069,7 @@ int write_pid_rt_stats(int prev, int curr, int dis,
+ 
+ 		print_line_id(curr_string, pstc);
+ 		cprintf_u64(1, 4,
+-			    pstc->priority);
++			    (unsigned long long) pstc->priority);
+ 		cprintf_s(IS_STR, " %6s", GET_POLICY(pstc->policy));
+ 		print_comm(pstc);
+ 		again = 1;
+@@ -2143,13 +2143,13 @@ int write_pid_ktab_stats(int prev, int curr, int dis, int disp_avg,
+ 		}
+ 		else {
+ 			cprintf_u64(1, 7,
+-				    pstc->threads);
++				    (unsigned long long) pstc->threads);
+ 			if (NO_PID_FD(pstc->flags)) {
+ 				cprintf_s(IS_ZERO, " %7s", "-1");
+ 			}
+ 			else {
+ 				cprintf_u64(1, 7,
+-					    pstc->fd_nr);
++					    (unsigned long long) pstc->fd_nr);
+ 			}
+ 		}
+ 
+diff --git a/pr_stats.c b/pr_stats.c
+index ca9af7f..ac1ee78 100644
+--- a/pr_stats.c
++++ b/pr_stats.c
+@@ -460,33 +460,33 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
+ 			/* Display instantaneous values */
+ 			printf("%-11s", timestamp[curr]);
+ 			cprintf_u64(2, 9,
+-				    smc->frmkb,
+-				    smc->tlmkb - smc->frmkb);
++				    (unsigned long long) smc->frmkb,
++				    (unsigned long long) (smc->tlmkb - smc->frmkb));
+ 			cprintf_pc(1, 9, 2,
+ 				   smc->tlmkb ?
+ 				   SP_VALUE(smc->frmkb, smc->tlmkb, smc->tlmkb)
+ 				   : 0.0);
+ 			cprintf_u64(3, 9,
+-				    smc->bufkb,
+-				    smc->camkb,
+-				    smc->comkb);
++				    (unsigned long long) smc->bufkb,
++				    (unsigned long long) smc->camkb,
++				    (unsigned long long) smc->comkb);
+ 			cprintf_pc(1, 9, 2,
+ 				   (smc->tlmkb + smc->tlskb) ?
+ 				   SP_VALUE(0, smc->comkb, smc->tlmkb + smc->tlskb)
+ 				   : 0.0);
+ 			cprintf_u64(3, 9,
+-				    smc->activekb,
+-				    smc->inactkb,
+-				    smc->dirtykb);
++				    (unsigned long long) smc->activekb,
++				    (unsigned long long) smc->inactkb,
++				    (unsigned long long) smc->dirtykb);
+ 
+ 			if (DISPLAY_MEM_ALL(a->opt_flags)) {
+ 				/* Display extended memory statistics */
+ 				cprintf_u64(5, 9,
+-					    smc->anonpgkb,
+-					    smc->slabkb,
+-					    smc->kstackkb,
+-					    smc->pgtblkb,
+-					    smc->vmusedkb);
++					    (unsigned long long) smc->anonpgkb,
++					    (unsigned long long) smc->slabkb,
++					    (unsigned long long) smc->kstackkb,
++					    (unsigned long long) smc->pgtblkb,
++					    (unsigned long long) smc->vmusedkb);
+ 			}
+ 
+ 			printf("\n");
+@@ -561,17 +561,17 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
+ 			/* Display instantaneous values */
+ 			printf("%-11s", timestamp[curr]);
+ 			cprintf_u64(2, 9,
+-				    smc->frskb,
+-				    smc->tlskb - smc->frskb);
++				    (unsigned long long) smc->frskb,
++				    (unsigned long long) (smc->tlskb - smc->frskb));
+ 			cprintf_pc(1, 9, 2,
+ 				   smc->tlskb ?
+-				   SP_VALUE(smc->frskb, smc->tlskb, smc->tlskb) 
++				   SP_VALUE(smc->frskb, smc->tlskb, smc->tlskb)
+ 				   : 0.0);
+ 			cprintf_u64(1, 9,
+-				    smc->caskb);
++				    (unsigned long long) smc->caskb);
+ 			cprintf_pc(1, 9, 2,
+ 				   (smc->tlskb - smc->frskb) ?
+-				   SP_VALUE(0, smc->caskb, smc->tlskb - smc->frskb) 
++				   SP_VALUE(0, smc->caskb, smc->tlskb - smc->frskb)
+ 				   : 0.0);
+ 
+ 			printf("\n");
+@@ -678,10 +678,10 @@ void stub_print_ktables_stats(struct activity *a, int curr, int dispavg)
+ 		/* Display instantaneous values */
+ 		printf("%-11s", timestamp[curr]);
+ 		cprintf_u64(4, 9,
+-			    skc->dentry_stat,
+-			    skc->file_used,
+-			    skc->inode_used,
+-			    skc->pty_nr);
++			    (unsigned long long) skc->dentry_stat,
++			    (unsigned long long) skc->file_used,
++			    (unsigned long long) skc->inode_used,
++			    (unsigned long long) skc->pty_nr);
+ 		printf("\n");
+ 
+ 		/*
+@@ -774,14 +774,14 @@ void stub_print_queue_stats(struct activity *a, int curr, int dispavg)
+ 		/* Display instantaneous values */
+ 		printf("%-11s", timestamp[curr]);
+ 		cprintf_u64(2, 9,
+-			    sqc->nr_running,
+-			    sqc->nr_threads);
++			    (unsigned long long) sqc->nr_running,
++			    (unsigned long long) sqc->nr_threads);
+ 		cprintf_f(3, 9, 2,
+ 			  (double) sqc->load_avg_1  / 100,
+ 			  (double) sqc->load_avg_5  / 100,
+ 			  (double) sqc->load_avg_15 / 100);
+ 		cprintf_u64(1, 9,
+-			    sqc->procs_blocked);
++			    (unsigned long long) sqc->procs_blocked);
+ 		printf("\n");
+ 
+ 		/* Will be used to compute the average */
+@@ -1183,12 +1183,12 @@ void stub_print_net_sock_stats(struct activity *a, int curr, int dispavg)
+ 		/* Display instantaneous values */
+ 		printf("%-11s", timestamp[curr]);
+ 		cprintf_u64(6, 9,
+-			    snsc->sock_inuse,
+-			    snsc->tcp_inuse,
+-			    snsc->udp_inuse,
+-			    snsc->raw_inuse,
+-			    snsc->frag_inuse,
+-			    snsc->tcp_tw);
++			    (unsigned long long) snsc->sock_inuse,
++			    (unsigned long long) snsc->tcp_inuse,
++			    (unsigned long long) snsc->udp_inuse,
++			    (unsigned long long) snsc->raw_inuse,
++			    (unsigned long long) snsc->frag_inuse,
++			    (unsigned long long) snsc->tcp_tw);
+ 		printf("\n");
+ 
+ 		/* Will be used to compute the average */
+@@ -1534,10 +1534,10 @@ void stub_print_net_sock6_stats(struct activity *a, int curr, int dispavg)
+ 		/* Display instantaneous values */
+ 		printf("%-11s", timestamp[curr]);
+ 		cprintf_u64(4, 9,
+-			    snsc->tcp6_inuse,
+-			    snsc->udp6_inuse,
+-			    snsc->raw6_inuse,
+-			    snsc->frag6_inuse);
++			    (unsigned long long) snsc->tcp6_inuse,
++			    (unsigned long long) snsc->udp6_inuse,
++			    (unsigned long long) snsc->raw6_inuse,
++			    (unsigned long long) snsc->frag6_inuse);
+ 		printf("\n");
+ 
+ 		/* Will be used to compute the average */
+@@ -2316,8 +2316,8 @@ void stub_print_huge_stats(struct activity *a, int curr, int dispavg)
+ 		/* Display instantaneous values */
+ 		printf("%-11s", timestamp[curr]);
+ 		cprintf_u64(2, 9,
+-			    smc->frhkb,
+-			    smc->tlhkb - smc->frhkb);
++			    (unsigned long long) smc->frhkb,
++			    (unsigned long long) (smc->tlhkb - smc->frhkb));
+ 		cprintf_pc(1, 9, 2,
+ 			   smc->tlhkb ?
+ 			   SP_VALUE(smc->frhkb, smc->tlhkb, smc->tlhkb) : 0.0);
+@@ -2499,7 +2499,7 @@ void stub_print_pwr_usb_stats(struct activity *a, int curr, int dispavg)
+ 			  suc->product_id);
+ 		cprintf_u64(1, 9,
+ 			    /* bMaxPower is expressed in 2 mA units */
+-			    suc->bmaxpower << 1);
++			    (unsigned long long) (suc->bmaxpower << 1));
+ 
+ 		snprintf(fmt, 16, " %%%ds", MAX_MANUF_LEN - 1);
+ 		cprintf_s(IS_STR, fmt, suc->manufacturer);

@@ -4,6 +4,8 @@ sysstat (11.3.2-1~) UNRELEASED; urgency=medium
   * New patches:
     + 14-spelling-typo.patch to fix a typo in man page spotted by lintian;
     + 15-isag-xz.patch to support .xz files in isag;
+    + 16-upstream-6dc2c71439.patch taken from the upstream github repository
+      to fix incorrect display of some stats on 32-bit systems.
 
  -- Robert Luberda <robert@debian.org>  Tue, 22 Mar 2016 09:04:47 +0100
 

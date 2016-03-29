@@ -1,7 +1,9 @@
 sysstat (11.3.2-1~) UNRELEASED; urgency=medium
 
   * New upstream version.
-  * Add 14-spelling-typo.patch to fix a typo in man page spotted by lintian.
+  * New patches:
+    + 14-spelling-typo.patch to fix a typo in man page spotted by lintian;
+    + 15-isag-xz.patch to support .xz files in isag;
 
  -- Robert Luberda <robert@debian.org>  Tue, 22 Mar 2016 09:04:47 +0100
 

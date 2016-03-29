@@ -5,14 +5,14 @@ Maintainer: Robert Luberda <robert@debian.org>
 Build-Depends: debhelper (>= 9), gettext, libsensors4-dev, pkg-config
 Standards-Version: 3.9.7
 Homepage: http://pagesperso-orange.fr/sebastien.godard/
-Vcs-Git: git://anonscm.debian.org/users/robert/sysstat.git
-Vcs-Browser: https://anonscm.debian.org/gitweb/?p=users/robert/sysstat.git
+Vcs-Git: https://anonscm.debian.org/git/users/robert/sysstat.git
+Vcs-Browser: https://anonscm.debian.org/cgit/users/robert/sysstat.git/
 
 Package: sysstat
 Architecture: linux-any
-Depends: bzip2,
-         lsb-base (>= 3.0-6),
+Depends: lsb-base (>= 3.0-6),
          ucf (>= 2.003),
+         xz-utils,
          ${misc:Depends},
          ${shlibs:Depends}
 Recommends: cron | cron-daemon
@@ -37,7 +37,7 @@ Package: isag
 Architecture: all
 Depends: gnuplot-x11,
          sysstat (>= ${source:Version}),
-         tk|wish,
+         tk | wish,
          ${misc:Depends}
 Suggests: rcs
 Description: Interactive System Activity Grapher for sysstat

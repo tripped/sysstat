@@ -1,4 +1,4 @@
-sysstat (11.3.2-1~) UNRELEASED; urgency=medium
+sysstat (11.3.2-1) unstable; urgency=medium
 
   * New upstream version.
   * New patches:
@@ -6,8 +6,12 @@ sysstat (11.3.2-1~) UNRELEASED; urgency=medium
     + 15-isag-xz.patch to support .xz files in isag;
     + 16-upstream-6dc2c71439.patch taken from the upstream github repository
       to fix incorrect display of some stats on 32-bit systems.
+  * debian/control:
+    + depend on xz-utils instead of bzip2 (closes: #818956);
+    + switch Vcs-Git to https, and Vcs-Browser to cgit;
+    + sort the file with wrap-and-sort command.
 
- -- Robert Luberda <robert@debian.org>  Tue, 22 Mar 2016 09:04:47 +0100
+ -- Robert Luberda <robert@debian.org>  Tue, 29 Mar 2016 23:57:41 +0200
 
 sysstat (11.3.1-1) unstable; urgency=medium
 

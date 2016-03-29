@@ -4,7 +4,7 @@ Upstream-Contact: sysstat <at> orange.fr
 Source: http://pagesperso-orange.fr/sebastien.godard/
 
 Files: *
-Copyright: © 1998-2015, Sebastien Godard (sysstat <at> orange.fr)
+Copyright: © 1998-2016, Sebastien Godard (sysstat <at> orange.fr)
 License: GPL-2+
 
 Files: cifsiostat.c ioconf.c
@@ -20,7 +20,7 @@ Copyright: © 2000, 2001 David Doubrava (linux_monitor(at)volny(dot)cz)
 License: GPL-2+
 
 Files: debian/*
-Copyright: © 2000-2015 Robert Luberda <robert@debian.org>
+Copyright: © 2000-2016 Robert Luberda <robert@debian.org>
 License: GPL-2+
 
 License: GPL-2+

@@ -1,5 +1,5 @@
-usr/lib/sysstat
-var/log/sysstat
-usr/share/man
-usr/bin
 etc/sysstat
+usr/bin
+usr/lib/sysstat
+usr/share/man
+var/log/sysstat

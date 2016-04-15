@@ -70,7 +70,8 @@ struct act_bitmap irq_bitmap = {
  */
 struct activity cpu_act = {
 	.id		= A_CPU,
-	.options	= AO_COLLECTED + AO_VOLATILE + AO_GLOBAL_ITV + AO_MULTIPLE_OUTPUTS,
+	.options	= AO_COLLECTED + AO_VOLATILE + AO_GLOBAL_ITV + AO_MULTIPLE_OUTPUTS +
+			  AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE,
 	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
@@ -86,10 +87,11 @@ struct activity cpu_act = {
 	.f_render	= render_cpu_stats,
 	.f_xml_print	= xml_print_cpu_stats,
 	.f_json_print	= json_print_cpu_stats,
+	.f_svg_print	= svg_print_cpu_stats,
 	.hdr_line	= "CPU;%user;%nice;%system;%iowait;%steal;%idle|"
 		          "CPU;%usr;%nice;%sys;%iowait;%steal;%irq;%soft;%guest;%gnice;%idle",
 	.name		= "A_CPU",
-	.g_nr		= 0,
+	.g_nr		= 1,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -289,11 +291,12 @@ struct activity memory_act = {
 	.f_render	= render_memory_stats,
 	.f_xml_print	= xml_print_memory_stats,
 	.f_json_print	= json_print_memory_stats,
+	.f_svg_print	= svg_print_memory_stats,
 	.hdr_line	= "frmpg/s;bufpg/s;campg/s|"
 		          "kbmemfree;kbmemused;%memused;kbbuffers;kbcached;kbcommit;%commit;kbactive;kbinact;kbdirty&kbanonpg;kbslab;kbkstack;kbpgtbl;kbvmused|"
 		          "kbswpfree;kbswpused;%swpused;kbswpcad;%swpcad",
 	.name		= "A_MEMORY",
-	.g_nr		= 0,
+	.g_nr		= 9,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -357,9 +360,10 @@ struct activity queue_act = {
 	.f_render	= render_queue_stats,
 	.f_xml_print	= xml_print_queue_stats,
 	.f_json_print	= json_print_queue_stats,
+	.f_svg_print	= svg_print_queue_stats,
 	.hdr_line	= "runq-sz;plist-sz;ldavg-1;ldavg-5;ldavg-15;blocked",
 	.name		= "A_QUEUE",
-	.g_nr		= 0,
+	.g_nr		= 3,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -1044,7 +1048,7 @@ struct activity net_udp6_act = {
 /* CPU frequency */
 struct activity pwr_cpufreq_act = {
 	.id		= A_PWR_CPUFREQ,
-	.options	= AO_VOLATILE,
+	.options	= AO_VOLATILE + AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE,
 	.group		= G_POWER,
 #ifdef SOURCE_SADC
@@ -1060,9 +1064,10 @@ struct activity pwr_cpufreq_act = {
 	.f_render	= render_pwr_cpufreq_stats,
 	.f_xml_print	= xml_print_pwr_cpufreq_stats,
 	.f_json_print	= json_print_pwr_cpufreq_stats,
+	.f_svg_print	= svg_print_pwr_cpufreq_stats,
 	.hdr_line	= "CPU;MHz",
 	.name		= "A_PWR_CPUFREQ",
-	.g_nr		= 0,
+	.g_nr		= 1,
 #endif
 	.nr		= -1,
 	.nr2		= 1,

@@ -42,9 +42,9 @@ extern unsigned int flags;
 extern unsigned int dm_major;
 
 unsigned int svg_colors[] = {0x00cc00, 0xff00bf, 0x00ffff, 0xff0000,
-			     0x0000ff, 0xffbf00, 0x00ff00, 0x7030a0,
-			     0xffffbf, 0xffff00, 0xd60093, 0x00bfbf,
-			     0xcc3300, 0xbfbfbf, 0x666635, 0xff3300};
+			     0xe85f00, 0x0000ff, 0x006020, 0x7030a0,
+			     0xffff00, 0x666635, 0xd60093, 0x00bfbf,
+			     0xcc3300, 0xbfbfbf, 0xffffbf, 0xff3300};
 #define SVG_COLORS_IDX_MASK	0x0f
 
 /*
@@ -61,7 +61,7 @@ unsigned int svg_colors[] = {0x00cc00, 0xff00bf, 0x00ffff, 0xff0000,
  * @lu_nr	Number of unsigned long fields composing the structure.
  * @u_nr	Number of unsigned int fields composing the structure.
  * @cs		Pointer on current sample statistics structure.
- * @ps		Pointer on previous sample statistics structure.
+ * @ps		Pointer on previous sample statistics structure (may be NULL).
  * @itv		Interval of time in jiffies.
  * @minv	Array containing min values already found for this activity.
  * @maxv	Array containing max values already found for this activity.
@@ -87,7 +87,16 @@ void save_extrema(int llu_nr, int lu_nr, int u_nr, void *cs, void *ps,
 	lluc = (unsigned long long *) cs;
 	llup = (unsigned long long *) ps;
 	for (i = 0; i < llu_nr; i++, m++) {
-		val = S_VALUE(*llup, *lluc, itv);
+		if (ps) {
+			val = S_VALUE(*llup, *lluc, itv);
+		}
+		else {
+			/*
+			 * If no pointer on previous sample has been given
+			 * then the value is not a per-second one.
+			 */
+			val = (double) *lluc;
+		}
 		if (val < minv[m]) {
 			minv[m] = val;
 		}
@@ -95,14 +104,21 @@ void save_extrema(int llu_nr, int lu_nr, int u_nr, void *cs, void *ps,
 			maxv[m] = val;
 		}
 		lluc = (unsigned long long *) ((char *) lluc + ULL_ALIGNMENT_WIDTH);
-		llup = (unsigned long long *) ((char *) llup + ULL_ALIGNMENT_WIDTH);
+		if (ps) {
+			llup = (unsigned long long *) ((char *) llup + ULL_ALIGNMENT_WIDTH);
+		}
 	}
 
 	/* Compare unsigned long fields */
 	luc = (unsigned long *) lluc;
 	lup = (unsigned long *) llup;
 	for (i = 0; i < lu_nr; i++, m++) {
-		val = S_VALUE(*lup, *luc, itv);
+		if (ps) {
+			val = S_VALUE(*lup, *luc, itv);
+		}
+		else {
+			val = (double) *luc;
+		}
 		if (val < minv[m]) {
 			minv[m] = val;
 		}
@@ -110,14 +126,21 @@ void save_extrema(int llu_nr, int lu_nr, int u_nr, void *cs, void *ps,
 			maxv[m] = val;
 		}
 		luc = (unsigned long *) ((char *) luc + UL_ALIGNMENT_WIDTH);
-		lup = (unsigned long *) ((char *) lup + UL_ALIGNMENT_WIDTH);
+		if (ps) {
+			lup = (unsigned long *) ((char *) lup + UL_ALIGNMENT_WIDTH);
+		}
 	}
 
 	/* Compare unsigned int fields */
 	uc = (unsigned int *) luc;
 	up = (unsigned int *) lup;
 	for (i = 0; i < u_nr; i++, m++) {
-		val = S_VALUE(*up, *uc, itv);
+		if (ps) {
+			val = S_VALUE(*up, *uc, itv);
+		}
+		else {
+			val = (double) *uc;
+		}
 		if (val < minv[m]) {
 			minv[m] = val;
 		}
@@ -125,7 +148,9 @@ void save_extrema(int llu_nr, int lu_nr, int u_nr, void *cs, void *ps,
 			maxv[m] = val;
 		}
 		uc = (unsigned int *) ((char *) uc + U_ALIGNMENT_WIDTH);
-		up = (unsigned int *) ((char *) up + U_ALIGNMENT_WIDTH);
+		if (ps) {
+			up = (unsigned int *) ((char *) up + U_ALIGNMENT_WIDTH);
+		}
 	}
 }
 
@@ -235,7 +260,44 @@ char **allocate_graph_lines(int n, int **outsize, double **spmin, double **spmax
 
 /*
  ***************************************************************************
- * Update graph definition by appending current X,Y coordinates.
+ * Save SVG code for current graph.
+ *
+ * IN:
+ * @data	SVG code to append to current graph definition.
+ * @out		Pointer on array of chars for current graph definition.
+ * @outsize	Size of array of chars for current graph definition.
+ *
+ * OUT:
+ * @out		Pointer on array of chars for current graph definition that
+ *		has been updated with the addition of current sample data.
+ * @outsize	Array that containing the (possibly new) sizes of each
+ *		element in array of chars.
+ ***************************************************************************
+ */
+void save_svg_data(char *data, char **out, int *outsize)
+{
+	char *out_p;
+	int len;
+
+	out_p = *out;
+	/* Determine space left in array */
+	len = *outsize - strlen(out_p) - 1;
+	if (strlen(data) >= len) {
+		/*
+		 * If current array of chars doesn't have enough space left
+		 * then reallocate it with CHUNKSIZE more bytes.
+		 */
+		SREALLOC(out_p, char, *outsize + CHUNKSIZE);
+		*out = out_p;
+		*outsize += CHUNKSIZE;
+		len += CHUNKSIZE;
+	}
+	strncat(out_p, data, len);
+}
+
+/*
+ ***************************************************************************
+ * Update line graph definition by appending current X,Y coordinates.
  *
  * IN:
  * @timetag	Timestamp in seconds since the epoch for current sample
@@ -245,9 +307,6 @@ char **allocate_graph_lines(int n, int **outsize, double **spmin, double **spmax
  * @outsize	Size of array of chars for current graph definition.
  * @restart	Set to TRUE if a RESTART record has been read since the last
  * 		statistics sample.
- * @dt		Interval of time in seconds between current and previous
- * 		sample.
- * @g_type	Graph type: SVG_LINE_GRAPH or SVG_BAR_GRAPH (for %values).
  *
  * OUT:
  * @out		Pointer on array of chars for current graph definition that
@@ -256,37 +315,184 @@ char **allocate_graph_lines(int n, int **outsize, double **spmin, double **spmax
  *		element in array of chars.
  ***************************************************************************
  */
-void lnappend(unsigned long timetag, double value, char **out, int *outsize, int restart,
-	      unsigned long dt, int g_type)
+void lnappend(unsigned long timetag, double value, char **out, int *outsize, int restart)
 {
-	char point[128];
-	char *out_p;
-	int len;
+	char data[128];
 
 	/* Prepare additional graph definition data */
-	if (g_type == SVG_LINE_GRAPH) {
-		snprintf(point, 128, " %c%lu,%.2f", restart ? 'M' : 'L', timetag, value);
+	snprintf(data, 128, " %c%lu,%.2f", restart ? 'M' : 'L', timetag, value);
+	data[127] = '\0';
+
+	save_svg_data(data, out, outsize);
+}
+
+/*
+ ***************************************************************************
+ * Update line graph definition by appending current X,Y coordinates. Use
+ * (unsigned long) integer values here.
+ *
+ * IN:
+ * @timetag	Timestamp in seconds since the epoch for current sample
+ *		stats. Will be used as X coordinate.
+ * @value	Value of current sample metric. Will be used as Y coordinate.
+ * @out		Pointer on array of chars for current graph definition.
+ * @outsize	Size of array of chars for current graph definition.
+ * @restart	Set to TRUE if a RESTART record has been read since the last
+ * 		statistics sample.
+ *
+ * OUT:
+ * @out		Pointer on array of chars for current graph definition that
+ *		has been updated with the addition of current sample data.
+ * @outsize	Array that containing the (possibly new) sizes of each
+ *		element in array of chars.
+ ***************************************************************************
+ */
+void lniappend(unsigned long timetag, unsigned long value, char **out, int *outsize,
+	       int restart)
+{
+	char data[128];
+
+	/* Prepare additional graph definition data */
+	snprintf(data, 128, " %c%lu,%lu", restart ? 'M' : 'L', timetag, value);
+	data[127] = '\0';
+
+	save_svg_data(data, out, outsize);
+}
+
+/*
+ ***************************************************************************
+ * Update bar graph definition by adding a new rectangle.
+ *
+ * IN:
+ * @timetag	Timestamp in seconds since the epoch for current sample
+ *		stats. Will be used as X coordinate.
+ * @value	Value of current sample metric. Will be used as rectangle
+ *		height.
+ * @offset	Offset for Y coordinate.
+ * @out		Pointer on array of chars for current graph definition.
+ * @outsize	Size of array of chars for current graph definition.
+ * @dt		Interval of time in seconds between current and previous
+ * 		sample.
+ *
+ * OUT:
+ * @out		Pointer on array of chars for current graph definition that
+ *		has been updated with the addition of current sample data.
+ * @outsize	Array that containing the (possibly new) sizes of each
+ *		element in array of chars.
+ ***************************************************************************
+ */
+void brappend(unsigned long timetag, double offset, double value, char **out, int *outsize,
+	      unsigned long dt)
+{
+	char data[128];
+
+	/* Prepare additional graph definition data */
+	if (value == 0.0)
+		/* Dont draw a flat rectangle! */
+		return;
+
+	snprintf(data, 128, "<rect x=\"%lu\" y=\"%.2f\" height=\"%.2f\" width=\"%lu\"/>",
+		 timetag - dt, MINIMUM(offset, 100.0), MINIMUM(value, (100.0 - offset)), dt);
+	data[127] = '\0';
+
+	save_svg_data(data, out, outsize);
+
+}
+
+/*
+ ***************************************************************************
+ * Update CPU graph and min/max values for each metric.
+ *
+ * IN:
+ * @timetag	Timestamp in seconds since the epoch for current sample
+ *		stats. Will be used as X coordinate.
+ * @offset	Offset for Y coordinate.
+ * @value	Value of current CPU metric. Will be used as rectangle
+ *		height.
+ * @out		Pointer on array of chars for current graph definition.
+ * @outsize	Size of array of chars for current graph definition.
+ * @dt		Interval of time in seconds between current and previous
+ * 		sample.
+ * @spmin	Min value already found for this CPU metric.
+ * @spmax	Max value already found for this CPU metric.
+ *
+ * OUT:
+ * @offset	New offset value, to use to draw next rectangle
+ * @out		Pointer on array of chars for current graph definition that
+ *		has been updated with the addition of current sample data.
+ * @outsize	Array that containing the (possibly new) sizes of each
+ *		element in array of chars.
+ ***************************************************************************
+ */
+void cpuappend(unsigned long timetag, double *offset, double value, char **out, int *outsize,
+	       unsigned long dt, double *spmin, double *spmax)
+{
+	/* Save min and max values */
+	if (value < *spmin) {
+		*spmin = value;
 	}
-	else {
-		if (value == 0.0)
-			/* Dont draw a flat rectangle! */
-			return;
-		snprintf(point, 128, "<rect x=\"%lu\" y=\"0\" height=\"%.2f\" width=\"%lu\"/>",
-			 timetag - dt, MINIMUM(value, 100.0), dt);
+	if (value > *spmax) {
+		*spmax = value;
 	}
-	point[127] = '\0';
-	out_p = *out;
-	len = *outsize - strlen(out_p) - 1;
-	if (strlen(point) >= len) {
-		/*
-		 * If current array of chars doesn't have enough space left
-		 * then reallocate it with CHUNKSIZE more bytes.
-		 */
-		SREALLOC(out_p, char, *outsize + CHUNKSIZE);
-		*out = out_p;
-		*outsize += CHUNKSIZE;
+	/* Prepare additional graph definition data */
+	brappend(timetag, *offset, value, out, outsize, dt);
+
+	*offset += value;
+}
+
+/*
+ ***************************************************************************
+ * Update rectangular graph and min/max values.
+ *
+ * IN:
+ * @timetag	Timestamp in seconds since the epoch for current sample
+ *		stats. Will be used as X coordinate.
+ * @p_value	Metric value for previous sample
+ * @value	Metric value for current sample.
+ * @out		Pointer on array of chars for current graph definition.
+ * @outsize	Size of array of chars for current graph definition.
+ * @restart	Set to TRUE if a RESTART record has been read since the last
+ * 		statistics sample.
+ * @dt		Interval of time in seconds between current and previous
+ * 		sample.
+ * @spmin	Min value already found for this metric.
+ * @spmax	Max value already found for this metric.
+ *
+ * OUT:
+ * @out		Pointer on array of chars for current graph definition that
+ *		has been updated with the addition of current sample data.
+ * @outsize	Array that containing the (possibly new) sizes of each
+ *		element in array of chars.
+ * @spmin	Min value for this metric.
+ * @spmax	Max value for this metric.
+ ***************************************************************************
+ */
+void recappend(unsigned long timetag, double p_value, double value, char **out, int *outsize,
+	       int restart, unsigned long dt, double *spmin, double *spmax)
+{
+	char data[128], data1[128], data2[128];
+
+	/* Save min and max values */
+	if (value < *spmin) {
+		*spmin = value;
 	}
-	strncat(out_p, point, len);
+	if (value > *spmax) {
+		*spmax = value;
+	}
+	/* Prepare additional graph definition data */
+	if (restart) {
+		snprintf(data1, 128, " M%lu,%.2f", timetag - dt, p_value);
+		data1[127] = '\0';
+	}
+	if (p_value != value) {
+		snprintf(data2, 128, " L%lu,%.2f", timetag, value);
+		data2[127] = '\0';
+	}
+	snprintf(data, 128, "%s L%lu,%.2f%s", restart ? data1 : "", timetag, p_value,
+		 p_value != value ? data2 : "");
+	data[127] = '\0';
+
+	save_svg_data(data, out, outsize);
 }
 
 /*
@@ -345,7 +551,10 @@ double ygrid(double lmax, int *dp)
  */
 long int xgrid(unsigned long timestart, unsigned long timeend)
 {
-	return ((timeend - timestart) / SVG_V_GRIDNR);
+	if ((timeend - timestart) <= SVG_V_GRIDNR)
+		return 1;
+	else
+		return ((timeend - timestart) / SVG_V_GRIDNR);
 }
 
 /*
@@ -453,11 +662,13 @@ void draw_activity_graphs(int g_nr, int g_type, char *title[], char *g_title[], 
 
 		/* Caption */
 		for (j = 0; j < group[i]; j++) {
+			/* Set dp to TRUE (1) if current metric is based on integer values */
+			dp = (g_title[pos + j][0] == '~');
 			printf("<text x=\"%d\" y=\"%d\" style=\"fill: #%06x; stroke: none; font-size: 12px\">"
-			       "%s (%.2f, %.2f)</text>\n",
+			       "%s (%.*f, %.*f)</text>\n",
 			       5 + SVG_M_XSIZE + SVG_G_XSIZE, SVG_M_YSIZE + i * SVG_T_YSIZE + j * 15,
-			       svg_colors[(pos + j) & SVG_COLORS_IDX_MASK], g_title[pos + j],
-		       *(spmin + pos + j), *(spmax + pos + j));
+			       svg_colors[(pos + j) & SVG_COLORS_IDX_MASK], g_title[pos + j] + dp,
+			       !dp * 2, *(spmin + pos + j), !dp * 2, *(spmax + pos + j));
 		}
 
 		/* Get global min and max value for current set of graphs */
@@ -477,13 +688,24 @@ void draw_activity_graphs(int g_nr, int g_type, char *title[], char *g_title[], 
 			else {
 				lmax = *(spmax + pos);
 			}
-			ypos = ygrid(*(spmax + pos), &dp);
+			/* Max value cannot be too small, else Y graduations will be meaningless */
+			if (lmax < SVG_H_GRIDNR * 0.01) {
+				lmax = SVG_H_GRIDNR * 0.01;
+			}
+			ypos = ygrid(lmax, &dp);
 		}
 		else {
 			/* For bar graphs (used for %values) */
-			lmax = 100.0;	/* Max is always 100% */
 			ypos = 25.0; 	/* Draw lines at 25%, 50%, 75% and 100% */
 			dp = 0;		/* No decimals */
+
+			/* Max should be always 100% except for percentage values greater than 100% */
+			if (*(spmax + pos) > 100.0) {
+				lmax = *(spmax + pos);
+			}
+			else {
+				lmax = 100.0;
+			}
 		}
 		yfactor = (double) -SVG_G_YSIZE / lmax;
 		j = 1;
@@ -506,14 +728,12 @@ void draw_activity_graphs(int g_nr, int g_type, char *title[], char *g_title[], 
 		k = xgrid(svg_p->record_hdr->ust_time, record_hdr->ust_time);
 		xfactor = (double) SVG_G_XSIZE / (record_hdr->ust_time - svg_p->record_hdr->ust_time);
 		stamp = *svg_p->record_hdr;
-		for (j = 1; j <= SVG_V_GRIDNR; j++) {
+		for (j = 0; (j <= SVG_V_GRIDNR) && (stamp.ust_time <= record_hdr->ust_time); j++) {
+			sa_get_record_timestamp_struct(flags, &stamp, &rectime, NULL);
+			set_record_timestamp_string(flags, &stamp, NULL, cur_time, 32, &rectime);
 			printf("<polyline points=\"%ld,0 %ld,%d\" style=\"vector-effect: non-scaling-stroke; "
 			       "stroke: #202020\" transform=\"scale(%f,1)\"/>\n",
 			       k * j, k * j, -SVG_G_YSIZE, xfactor);
-		}
-		for (j = 0; j <= SVG_V_GRIDNR; j++) {
-			sa_get_record_timestamp_struct(flags, &stamp, &rectime, NULL);
-			set_record_timestamp_string(flags, &stamp, NULL, cur_time, 32, &rectime);
 			printf("<text x=\"%ld\" y=\"10\" style=\"fill: white; stroke: none; font-size: 12px; "
 			       "text-anchor: start\" transform=\"rotate(45,%ld,0)\">%s</text>\n",
 			       (long) (k * j * xfactor), (long) (k * j * xfactor), cur_time);
@@ -538,7 +758,7 @@ void draw_activity_graphs(int g_nr, int g_type, char *title[], char *g_title[], 
 				       xfactor,
 				       yfactor);
 			}
-			else {
+			else if (*out_p) {	/* Ignore flat bars */
 				/* Bar graphs */
 				printf("<g style=\"fill: #%06x; stroke: none\" transform=\"scale(%f,%f)\">\n",
 				       svg_colors[(pos + j) & SVG_COLORS_IDX_MASK], xfactor, yfactor);
@@ -554,6 +774,266 @@ void draw_activity_graphs(int g_nr, int g_type, char *title[], char *g_title[], 
 
 	/* Next graph */
 	(svg_p->graph_no) += g_nr;
+}
+
+/*
+ ***************************************************************************
+ * Display CPU statistics in SVG
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @action	Action expected from current function.
+ * @svg_p	SVG specific parameters: Current graph number (.@graph_no),
+ * 		flag indicating that a restart record has been previously
+ * 		found (.@restart) and a pointer on a record header structure
+ * 		(.@record_hdr) containing the first stats sample.
+ * @itv		Interval of time in jiffies (only with F_MAIN action).
+ * @record_hdr	Pointer on record header of current stats sample.
+ ***************************************************************************
+ */
+__print_funct_t svg_print_cpu_stats(struct activity *a, int curr, int action, struct svg_parm *svg_p,
+				    unsigned long long g_itv, struct record_header *record_hdr)
+{
+	struct stats_cpu *scc, *scp;
+	int group1[] = {5};
+	int group2[] = {9};
+	char *title[] = {"CPU load"};
+	char *g_title1[] = {"%user", "%nice", "%system", "%iowait", "%steal", "%idle"};
+	char *g_title2[] = {"%usr", "%nice", "%sys", "%iowait", "%steal", "%irq", "%soft", "%guest", "%gnice", "%idle"};
+	static double *spmin, *spmax;
+	static char **out;
+	static int *outsize;
+	char item_name[8];
+	double offset, val;
+	int i, j, k, pos, cpu_offline;
+
+	if (action & F_BEGIN) {
+		/*
+		 * Allocate arrays that will contain the graphs data
+		 * and the min/max values.
+		 */
+		out = allocate_graph_lines(10 * a->nr, &outsize, &spmin, &spmax);
+	}
+
+	if (action & F_MAIN) {
+		/* For each CPU */
+		for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+
+			scc = (struct stats_cpu *) ((char *) a->buf[curr]  + i * a->msize);
+			scp = (struct stats_cpu *) ((char *) a->buf[!curr] + i * a->msize);
+
+			/* Should current CPU (including CPU "all") be displayed? */
+			if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
+				/* No */
+				continue;
+
+			pos = i * 10;
+			offset = 0.0;
+
+			if (i) {	/* Don't test CPU "all" here */
+				/*
+				 * If the CPU is offline then it is omited from /proc/stat:
+				 * All the fields couldn't have been read and the sum of them is zero.
+				 * (Remember that guest/guest_nice times are already included in
+				 * user/nice modes.)
+				 */
+				if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
+				     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
+				     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
+					/*
+					 * Set current struct fields (which have been set to zero)
+					 * to values from previous iteration. Hence their values won't
+					 * jump from zero when the CPU comes back online.
+					 */
+					*scc = *scp;
+
+					g_itv = 0;
+					cpu_offline = TRUE;
+				}
+				else {
+					/*
+					 * Recalculate interval for current proc.
+					 * If result is 0 then current CPU is a tickless one.
+					 */
+					g_itv = get_per_cpu_interval(scc, scp);
+					cpu_offline = FALSE;
+				}
+
+				if (!g_itv) {	/* Current CPU is offline or tickless */
+
+					val = (cpu_offline ? 0.0	/* Offline CPU: %idle = 0% */
+							   : 100.0);	/* Tickless CPU: %idle = 100% */
+
+					if (DISPLAY_CPU_DEF(a->opt_flags)) {
+						j  = 5;	/* -u */
+					}
+					else {	/* DISPLAY_CPU_ALL(a->opt_flags) */
+						j = 9;	/* -u ALL */
+					}
+
+					/* Check min/max values for %user, etc. */
+					for (k = 0; k < j; k++) {
+						if (0.0 < *(spmin + pos + k)) {
+							*(spmin + pos + k) = 0.0;
+						}
+						if (0.0 > *(spmax + pos + k)) {
+							*(spmax + pos + k) = 0.0;
+						}
+					}
+
+					/* %idle */
+					cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+						  &offset, val,
+						  out + pos + j, outsize + pos + j, svg_p->dt,
+						  spmin + pos + j, spmax + pos + j);
+					continue;
+				}
+			}
+
+			if (DISPLAY_CPU_DEF(a->opt_flags)) {
+				/* %user */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset, ll_sp_value(scp->cpu_user, scc->cpu_user, g_itv),
+					  out + pos, outsize + pos, svg_p->dt,
+					  spmin + pos, spmax + pos);
+			}
+			else {
+				/* %usr */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset,
+					  (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
+					   0.0 :
+					   ll_sp_value(scp->cpu_user - scp->cpu_guest,
+						       scc->cpu_user - scc->cpu_guest, g_itv),
+					  out + pos, outsize + pos, svg_p->dt,
+					  spmin + pos, spmax + pos);
+			}
+
+			if (DISPLAY_CPU_DEF(a->opt_flags)) {
+				/* %nice */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset, ll_sp_value(scp->cpu_nice, scc->cpu_nice, g_itv),
+					  out + pos + 1, outsize + pos + 1, svg_p->dt,
+					  spmin + pos + 1, spmax + pos + 1);
+			}
+			else {
+				/* %nice */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset,
+					  (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
+					   0.0 :
+					   ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
+						       scc->cpu_nice - scc->cpu_guest_nice, g_itv),
+					  out + pos + 1, outsize + pos + 1, svg_p->dt,
+					  spmin + pos + 1, spmax + pos + 1);
+			}
+
+			if (DISPLAY_CPU_DEF(a->opt_flags)) {
+				/* %system */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset,
+					  ll_sp_value(scp->cpu_sys + scp->cpu_hardirq + scp->cpu_softirq,
+						      scc->cpu_sys + scc->cpu_hardirq + scc->cpu_softirq,
+						      g_itv),
+					  out + pos + 2, outsize + pos + 2, svg_p->dt,
+					  spmin + pos + 2, spmax + pos + 2);
+			}
+			else {
+				/* %sys */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset, ll_sp_value(scp->cpu_sys, scc->cpu_sys, g_itv),
+					  out + pos + 2, outsize + pos + 2, svg_p->dt,
+					  spmin + pos + 2, spmax + pos + 2);
+			}
+
+			/* %iowait */
+			cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+				  &offset, ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, g_itv),
+				  out + pos + 3, outsize + pos + 3, svg_p->dt,
+				  spmin + pos + 3, spmax + pos + 3);
+
+			/* %steal */
+			cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+				  &offset, ll_sp_value(scp->cpu_steal, scc->cpu_steal, g_itv),
+				  out + pos + 4, outsize + pos + 4, svg_p->dt,
+				  spmin + pos + 4, spmax + pos + 4);
+
+			if (DISPLAY_CPU_ALL(a->opt_flags)) {
+				/* %irq */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset, ll_sp_value(scp->cpu_hardirq, scc->cpu_hardirq, g_itv),
+					  out + pos + 5, outsize + pos + 5, svg_p->dt,
+					  spmin + pos + 5, spmax + pos + 5);
+
+				/* %soft */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset, ll_sp_value(scp->cpu_softirq, scc->cpu_softirq, g_itv),
+					  out + pos + 6, outsize + pos + 6, svg_p->dt,
+					  spmin + pos + 6, spmax + pos + 6);
+
+				/* %guest */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset, ll_sp_value(scp->cpu_guest, scc->cpu_guest, g_itv),
+					  out + pos + 7, outsize + pos + 7, svg_p->dt,
+					  spmin + pos + 7, spmax + pos + 7);
+
+				/* %gnice */
+				cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+					  &offset, ll_sp_value(scp->cpu_guest_nice, scc->cpu_guest_nice, g_itv),
+					  out + pos + 8, outsize + pos + 8, svg_p->dt,
+					  spmin + pos + 8, spmax + pos + 8);
+
+				j = 9;
+			}
+			else {
+				j = 5;
+			}
+
+			/* %idle */
+			cpuappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+				  &offset,
+				  (scc->cpu_idle < scp->cpu_idle ? 0.0 :
+				   ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv)),
+				  out + pos + j, outsize + pos + j, svg_p->dt,
+				  spmin + pos + j, spmax + pos + j);
+		}
+	}
+
+	if (action & F_END) {
+		for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+
+			/* Should current CPU (including CPU "all") be displayed? */
+			if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
+				/* No */
+				continue;
+
+			pos = i * 10;
+			if (!i) {
+				/* This is CPU "all" */
+				strcpy(item_name, "all");
+			}
+			else {
+				sprintf(item_name, "%d", i - 1);
+			}
+
+			if (DISPLAY_CPU_DEF(a->opt_flags)) {
+				draw_activity_graphs(a->g_nr, SVG_BAR_GRAPH,
+						     title, g_title1, item_name, group1,
+						     spmin + pos, spmax + pos, out + pos, outsize + pos,
+						     svg_p, record_hdr);
+			}
+			else {
+				draw_activity_graphs(a->g_nr, SVG_BAR_GRAPH,
+						     title, g_title2, item_name, group2,
+						     spmin + pos, spmax + pos, out + pos, outsize + pos,
+						     svg_p, record_hdr);
+			}
+		}
+
+		/* Free remaining structures */
+		free_graphs(out, outsize, spmin, spmax);
+	}
 }
 
 /*
@@ -601,11 +1081,11 @@ __print_funct_t svg_print_pcsw_stats(struct activity *a, int curr, int action, s
 		/* cswch/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->context_switch, spc->context_switch, itv),
-			 out, outsize, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out, outsize, svg_p->restart);
 		/* proc/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->processes, spc->processes, itv),
-			 out + 1, outsize + 1, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out + 1, outsize + 1, svg_p->restart);
 	}
 
 	if (action & F_END) {
@@ -661,11 +1141,11 @@ __print_funct_t svg_print_swap_stats(struct activity *a, int curr, int action, s
 		/* pswpin/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(ssp->pswpin, ssc->pswpin, itv),
-			 out, outsize, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out, outsize, svg_p->restart);
 		/* pswpout/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(ssp->pswpout, ssc->pswpout, itv),
-			 out + 1, outsize + 1, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out + 1, outsize + 1, svg_p->restart);
 	}
 
 	if (action & F_END) {
@@ -723,38 +1203,359 @@ __print_funct_t svg_print_paging_stats(struct activity *a, int curr, int action,
 		/* pgpgin/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->pgpgin, spc->pgpgin, itv),
-			 out, outsize, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out, outsize, svg_p->restart);
 		/* pgpgout/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->pgpgout, spc->pgpgout, itv),
-			 out + 1, outsize + 1, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out + 1, outsize + 1, svg_p->restart);
 		/* fault/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->pgfault, spc->pgfault, itv),
-			 out + 2, outsize + 2, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out + 2, outsize + 2, svg_p->restart);
 		/* majflt/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->pgmajfault, spc->pgmajfault, itv),
-			 out + 3, outsize + 3, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out + 3, outsize + 3, svg_p->restart);
 		/* pgfree/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->pgfree, spc->pgfree, itv),
-			 out + 4, outsize + 4, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out + 4, outsize + 4, svg_p->restart);
 		/* pgscank/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->pgscan_kswapd, spc->pgscan_kswapd, itv),
-			 out + 5, outsize + 5, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out + 5, outsize + 5, svg_p->restart);
 		/* pgscand/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->pgscan_direct, spc->pgscan_direct, itv),
-			 out + 6, outsize + 6, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out + 6, outsize + 6, svg_p->restart);
 		/* pgsteal/s */
 		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 			 S_VALUE(spp->pgsteal, spc->pgsteal, itv),
-			 out + 7, outsize + 7, svg_p->restart, svg_p->dt, SVG_LINE_GRAPH);
+			 out + 7, outsize + 7, svg_p->restart);
 	}
 
 	if (action & F_END) {
+		draw_activity_graphs(a->g_nr, SVG_LINE_GRAPH, title, g_title, NULL, group,
+				     spmin, spmax, out, outsize, svg_p, record_hdr);
+
+		/* Free remaining structures */
+		free_graphs(out, outsize, spmin, spmax);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display memory statistics in SVG.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @action	Action expected from current function.
+ * @svg_p	SVG specific parameters: Current graph number (.@graph_no),
+ * 		flag indicating that a restart record has been previously
+ * 		found (.@restart) and a pointer on a record header structure
+ * 		(.@record_hdr) containing the first stats sample.
+ * @itv		Interval of time in jiffies (only with F_MAIN action).
+ * @record_hdr	Pointer on record header of current stats sample.
+ ***************************************************************************
+ */
+__print_funct_t svg_print_memory_stats(struct activity *a, int curr, int action, struct svg_parm *svg_p,
+				       unsigned long long itv, struct record_header *record_hdr)
+{
+	struct stats_memory
+		*smc = (struct stats_memory *) a->buf[curr];
+	int group1a[] = {2, 2};
+	int group1b[] = {1, 1};
+	int group1c[] = {4, 5};
+	int group2a[] = {3};
+	int group2b[] = {1, 1};
+	char *title1a[] = {"Memory utilization (1)", "Memory utilization (2)"};
+	char *title1b[] = {"Memory utilization (3)", "Memory utilization (4)"};
+	char *title1c[] = {"Memory utilization (5)", "Memory utilization (6)"};
+	char *title2a[] = {"Swap utilization (1)"};
+	char *title2b[] = {"Swap utilization (2)", "Swap utilization (3)"};
+	char *g_title1a[] = {"MBmemfree", "MBmemused",
+			     "MBcached", "MBbuffers"};
+	char *g_title1b[] = {"%memused", "%commit"};
+	char *g_title1c[] = {"MBcommit", "MBactive", "MBinact", "MBdirty",
+			     "MBanonpg", "MBslab", "MBkstack", "MBpgtbl", "MBvmused"};
+	char *g_title2a[] = {"MBswpfree", "MBswpused", "MBswpcad"};
+	char *g_title2b[] = {"%swpused", "%swpcad"};
+	static double *spmin, *spmax;
+	static char **out;
+	static int *outsize;
+	double tval;
+	int i;
+
+	if (action & F_BEGIN) {
+		/*
+		 * Allocate arrays that will contain the graphs data
+		 * and the min/max values.
+		 */
+		out = allocate_graph_lines(22, &outsize, &spmin, &spmax);
+	}
+
+	if (action & F_MAIN) {
+		/* Check for min/max values */
+		save_extrema(0, 16, 0, (void *) a->buf[curr], NULL,
+			     0, spmin, spmax);
+		/* Compute %memused min/max values */
+		tval = smc->tlmkb ? SP_VALUE(smc->frmkb, smc->tlmkb, smc->tlmkb) : 0.0;
+		if (tval > *(spmax + 16)) {
+			*(spmax + 16) = tval;
+		}
+		if (tval < *(spmin + 16)) {
+			*(spmin + 16) = tval;
+		}
+		/* Compute %commit min/max values */
+		tval = (smc->tlmkb + smc->tlskb) ?
+		       SP_VALUE(0, smc->comkb, smc->tlmkb + smc->tlskb) : 0.0;
+		if (tval > *(spmax + 17)) {
+			*(spmax + 17) = tval;
+		}
+		if (tval < *(spmin + 17)) {
+			*(spmin + 17) = tval;
+		}
+		/* Compute %swpused min/max values */
+		tval = smc->tlskb ?
+		       SP_VALUE(smc->frskb, smc->tlskb, smc->tlskb) : 0.0;
+		if (tval > *(spmax + 18)) {
+			*(spmax + 18) = tval;
+		}
+		if (tval < *(spmin + 18)) {
+			*(spmin + 18) = tval;
+		}
+		/* Compute %swpcad min/max values */
+		tval = (smc->tlskb - smc->frskb) ?
+		       SP_VALUE(0, smc->caskb, smc->tlskb - smc->frskb) : 0.0;
+		if (tval > *(spmax + 19)) {
+			*(spmax + 19) = tval;
+		}
+		if (tval < *(spmin + 19)) {
+			*(spmin + 19) = tval;
+		}
+		/* Compute memused min/max values in MB */
+		tval = ((double) (smc->tlmkb - smc->frmkb)) / 1024;
+		if (tval > *(spmax + 20)) {
+			*(spmax + 20) = tval;
+		}
+		if (tval < *(spmin + 20)) {
+			*(spmin + 20) = tval;
+		}
+		/* Compute swpused min/max values in MB */
+		tval = ((double) (smc->tlskb - smc->frskb)) / 1024;
+		if (tval > *(spmax + 21)) {
+			*(spmax + 21) = tval;
+		}
+		if (tval < *(spmin + 21)) {
+			*(spmin + 21) = tval;
+		}
+
+		/* MBmemfree */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->frmkb) / 1024,
+			 out, outsize, svg_p->restart);
+		/* MBmemused */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) (smc->tlmkb - smc->frmkb)) / 1024,
+			 out + 1, outsize + 1, svg_p->restart);
+		/* MBcached */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->camkb) / 1024,
+			  out + 2, outsize + 2, svg_p->restart);
+		/* MBbuffers */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->bufkb) / 1024,
+			 out + 3, outsize + 3, svg_p->restart);
+		/* MBswpfree */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->frskb) / 1024,
+			 out + 4, outsize + 4, svg_p->restart);
+		/* MBswpused */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) (smc->tlskb - smc->frskb)) / 1024,
+			 out + 5, outsize + 5, svg_p->restart);
+		/* MBswpcad */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->caskb) / 1024,
+			 out + 6, outsize + 6, svg_p->restart);
+		/* MBcommit */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->comkb) / 1024,
+			 out + 7, outsize + 7, svg_p->restart);
+		/* MBactive */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->activekb) / 1024,
+			 out + 8, outsize + 8, svg_p->restart);
+		/* MBinact */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->inactkb) / 1024,
+			 out + 9, outsize + 9, svg_p->restart);
+		/* MBdirty */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->dirtykb) / 1024,
+			 out + 10, outsize + 10, svg_p->restart);
+		/* MBanonpg */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->anonpgkb) / 1024,
+			 out + 11, outsize + 11, svg_p->restart);
+		/* MBslab */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->slabkb) / 1024,
+			 out + 12, outsize + 12, svg_p->restart);
+		/* MBkstack */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->kstackkb) / 1024,
+			 out + 13, outsize + 13, svg_p->restart);
+		/* MBpgtbl */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->pgtblkb) / 1024,
+			 out + 14, outsize + 14, svg_p->restart);
+		/* MBvmused */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 ((double) smc->vmusedkb) / 1024,
+			 out + 15, outsize + 15, svg_p->restart);
+		/* %memused */
+		brappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 0.0,
+			 smc->tlmkb ?
+			 SP_VALUE(smc->frmkb, smc->tlmkb, smc->tlmkb) : 0.0,
+			 out + 16, outsize + 16, svg_p->dt);
+		/* %commit */
+		brappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 0.0,
+			 (smc->tlmkb + smc->tlskb) ?
+			 SP_VALUE(0, smc->comkb, smc->tlmkb + smc->tlskb) : 0.0,
+			 out + 17, outsize + 17, svg_p->dt);
+		/* %swpused */
+		brappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 0.0,
+			 smc->tlskb ?
+			 SP_VALUE(smc->frskb, smc->tlskb, smc->tlskb) : 0.0,
+			 out + 18, outsize + 18, svg_p->dt);
+		/* %swpcad */
+		brappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 0.0,
+			 (smc->tlskb - smc->frskb) ?
+			 SP_VALUE(0, smc->caskb, smc->tlskb - smc->frskb) : 0.0,
+			 out + 19, outsize + 19, svg_p->dt);
+	}
+
+	if (action & F_END) {
+
+		/* Conversion kB -> MB */
+		for (i = 0; i < 16; i++) {
+			*(spmin + i) /= 1024;
+			*(spmax + i) /= 1024;
+		}
+
+		if (DISPLAY_MEM_AMT(a->opt_flags)) {
+			/* frmkb and tlmkb should be together because they will be drawn on the same view */
+			*(spmax + 3) = *(spmax + 1);
+			*(spmin + 3) = *(spmin + 1);
+			/* Move memused min/max values */
+			*(spmax + 1) = *(spmax + 20);
+			*(spmin + 1) = *(spmin + 20);
+
+			draw_activity_graphs(2, SVG_LINE_GRAPH, title1a, g_title1a, NULL, group1a,
+					     spmin, spmax, out, outsize, svg_p, record_hdr);
+			draw_activity_graphs(2, SVG_BAR_GRAPH, title1b, g_title1b, NULL, group1b,
+					     spmin + 16, spmax + 16, out + 16, outsize + 16, svg_p, record_hdr);
+			draw_activity_graphs(DISPLAY_MEM_ALL(a->opt_flags) ? 2 : 1,
+					     SVG_LINE_GRAPH, title1c, g_title1c, NULL, group1c,
+					     spmin + 7, spmax + 7, out + 7, outsize + 7, svg_p, record_hdr);
+		}
+
+		if (DISPLAY_SWAP(a->opt_flags)) {
+			/* Move swpused min/max values */
+			*(spmax + 5) = *(spmax + 21);
+			*(spmin + 5) = *(spmin + 21);
+
+			draw_activity_graphs(1, SVG_LINE_GRAPH, title2a, g_title2a, NULL, group2a,
+					     spmin + 4, spmax + 4, out + 4, outsize + 4, svg_p, record_hdr);
+			draw_activity_graphs(2, SVG_BAR_GRAPH, title2b, g_title2b, NULL, group2b,
+					     spmin + 18, spmax + 18, out + 18, outsize + 18, svg_p, record_hdr);
+		}
+
+		/* Free remaining structures */
+		free_graphs(out, outsize, spmin, spmax);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display queue and load statistics in SVG
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @action	Action expected from current function.
+ * @svg_p	SVG specific parameters: Current graph number (.@graph_no),
+ * 		flag indicating that a restart record has been previously
+ * 		found (.@restart) and a pointer on a record header structure
+ * 		(.@record_hdr) containing the first stats sample.
+ * @itv		Interval of time in jiffies (only with F_MAIN action).
+ * @record_hdr	Pointer on record header of current stats sample.
+ ***************************************************************************
+ */
+__print_funct_t svg_print_queue_stats(struct activity *a, int curr, int action, struct svg_parm *svg_p,
+				      unsigned long long itv, struct record_header *record_hdr)
+{
+	struct stats_queue
+		*sqc = (struct stats_queue *) a->buf[curr];
+	int group[] = {2, 3, 1};
+	char *title[] = {"Queue length", "Load average", "Task list"};
+	char *g_title[] = {"~runq-sz", "~blocked",
+			   "ldavg-1", "ldavg-5", "ldavg-15",
+			   "~plist-sz"};
+	static double *spmin, *spmax;
+	static char **out;
+	static int *outsize;
+
+	if (action & F_BEGIN) {
+		/*
+		 * Allocate arrays that will contain the graphs data
+		 * and the min/max values.
+		 */
+		out = allocate_graph_lines(6, &outsize, &spmin, &spmax);
+	}
+
+	if (action & F_MAIN) {
+		/* Check for min/max values */
+		save_extrema(0, 2, 4, (void *) a->buf[curr], NULL,
+			     itv, spmin, spmax);
+		/* runq-sz */
+		lniappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			  (unsigned long) sqc->nr_running,
+			  out, outsize, svg_p->restart);
+		/* blocked */
+		lniappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			  (unsigned long) sqc->procs_blocked,
+			  out + 1, outsize + 1, svg_p->restart);
+		/* ldavg-1 */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 (double) sqc->load_avg_1 / 100,
+			 out + 2, outsize + 2, svg_p->restart);
+		/* ldavg-5 */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 (double) sqc->load_avg_5 / 100,
+			 out + 3, outsize + 3, svg_p->restart);
+		/* ldavg-15 */
+		lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			 (double) sqc->load_avg_15 / 100,
+			 out + 4, outsize + 4, svg_p->restart);
+		/* plist-sz */
+		lniappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+			  (unsigned long) sqc->nr_threads,
+			  out + 5, outsize + 5, svg_p->restart);
+	}
+
+	if (action & F_END) {
+		/* Fix min/max values for load average */
+		*(spmin + 2) /= 100; *(spmax + 2) /= 100;
+		*(spmin + 3) /= 100; *(spmax + 3) /= 100;
+		*(spmin + 4) /= 100; *(spmax + 4) /= 100;
+
 		draw_activity_graphs(a->g_nr, SVG_LINE_GRAPH, title, g_title, NULL, group,
 				     spmin, spmax, out, outsize, svg_p, record_hdr);
 
@@ -889,42 +1690,42 @@ __print_funct_t svg_print_net_dev_stats(struct activity *a, int curr, int action
 			/* rxpck/s */
 			lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 				 S_VALUE(sndp->rx_packets, sndc->rx_packets, itv),
-				 out + pos, outsize + pos, restart, svg_p->dt, SVG_LINE_GRAPH);
+				 out + pos, outsize + pos, restart);
 
 			/* txpck/s */
 			lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 				 S_VALUE(sndp->tx_packets, sndc->tx_packets, itv),
-				 out + pos + 1, outsize + pos + 1, restart, svg_p->dt, SVG_LINE_GRAPH);
+				 out + pos + 1, outsize + pos + 1, restart);
 
 			/* rxkB/s */
 			lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 				 rxkb / 1024,
-				 out + pos + 2, outsize + pos + 2, restart, svg_p->dt, SVG_LINE_GRAPH);
+				 out + pos + 2, outsize + pos + 2, restart);
 
 			/* txkB/s */
 			lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 				 txkb / 1024,
-				 out + pos + 3, outsize + pos + 3, restart, svg_p->dt, SVG_LINE_GRAPH);
+				 out + pos + 3, outsize + pos + 3, restart);
 
 			/* rxcmp/s */
 			lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 				 S_VALUE(sndp->rx_compressed, sndc->rx_compressed, itv),
-				 out + pos + 4, outsize + pos + 4, restart, svg_p->dt, SVG_LINE_GRAPH);
+				 out + pos + 4, outsize + pos + 4, restart);
 
 			/* txcmp/s */
 			lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 				 S_VALUE(sndp->tx_compressed, sndc->tx_compressed, itv),
-				 out + pos + 5, outsize + pos + 5, restart, svg_p->dt, SVG_LINE_GRAPH);
+				 out + pos + 5, outsize + pos + 5, restart);
 
 			/* rxmcst/s */
 			lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
 				 S_VALUE(sndp->multicast, sndc->multicast, itv),
-				 out + pos + 6, outsize + pos + 6, restart, svg_p->dt, SVG_LINE_GRAPH);
+				 out + pos + 6, outsize + pos + 6, restart);
 
 			/* %ifutil */
-			lnappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
-				 ifutil,
-				 out + pos + 7, outsize + pos + 7, restart, svg_p->dt, SVG_BAR_GRAPH);
+			brappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+				 0.0, ifutil,
+				 out + pos + 7, outsize + pos + 7, svg_p->dt);
 		}
 
 		/* Mark interfaces not seen here as now unregistered */
@@ -961,6 +1762,91 @@ __print_funct_t svg_print_net_dev_stats(struct activity *a, int curr, int action
 			draw_activity_graphs(1, SVG_BAR_GRAPH,
 					     title2, g_title2, item_name, group2,
 					     spmin + pos + 7, spmax + pos + 7, out + pos + 7, outsize + pos + 7,
+					     svg_p, record_hdr);
+		}
+
+		/* Free remaining structures */
+		free_graphs(out, outsize, spmin, spmax);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display CPU frequency statistics in SVG.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @action	Action expected from current function.
+ * @svg_p	SVG specific parameters: Current graph number (.@graph_no),
+ * 		flag indicating that a restart record has been previously
+ * 		found (.@restart) and a pointer on a record header structure
+ * 		(.@record_hdr) containing the first stats sample.
+ * @itv		Interval of time in jiffies (only with F_MAIN action).
+ * @record_hdr	Pointer on record header of current stats sample.
+ ***************************************************************************
+ */
+__print_funct_t svg_print_pwr_cpufreq_stats(struct activity *a, int curr, int action, struct svg_parm *svg_p,
+					    unsigned long long g_itv, struct record_header *record_hdr)
+{
+	struct stats_pwr_cpufreq *spc, *spp;
+	int group[] = {1};
+	char *title[] = {"CPU frequency"};
+	char *g_title[] = {"MHz"};
+	static double *spmin, *spmax;
+	static char **out;
+	static int *outsize;
+	char item_name[8];
+	int i;
+
+	if (action & F_BEGIN) {
+		/*
+		 * Allocate arrays that will contain the graphs data
+		 * and the min/max values.
+		 */
+		out = allocate_graph_lines(a->nr, &outsize, &spmin, &spmax);
+	}
+
+	if (action & F_MAIN) {
+		/* For each CPU */
+		for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+
+			spc = (struct stats_pwr_cpufreq *) ((char *) a->buf[curr]  + i * a->msize);
+			spp = (struct stats_pwr_cpufreq *) ((char *) a->buf[!curr]  + i * a->msize);
+
+			/* Should current CPU (including CPU "all") be displayed? */
+			if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
+				/* No */
+				continue;
+
+			/* MHz */
+			recappend(record_hdr->ust_time - svg_p->record_hdr->ust_time,
+				  ((double) spp->cpufreq) / 100,
+				  ((double) spc->cpufreq) / 100,
+				  out + i, outsize + i, svg_p->restart, svg_p->dt,
+				  spmin + i, spmax + i);
+		}
+	}
+
+	if (action & F_END) {
+		for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+
+			/* Should current CPU (including CPU "all") be displayed? */
+			if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
+				/* No */
+				continue;
+
+			if (!i) {
+				/* This is CPU "all" */
+				strcpy(item_name, "all");
+			}
+			else {
+				sprintf(item_name, "%d", i - 1);
+			}
+
+			draw_activity_graphs(a->g_nr, SVG_LINE_GRAPH,
+					     title, g_title, item_name, group,
+					     spmin + i, spmax + i, out + i, outsize + i,
 					     svg_p, record_hdr);
 		}
 

@@ -60,7 +60,7 @@ index 168e905..3c5156d 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  
 diff --git a/pidstat.c b/pidstat.c
-index 3110d0b..8544622 100644
+index 53accfa..a7b12ec 100644
 --- a/pidstat.c
 +++ b/pidstat.c
 @@ -47,9 +47,6 @@
@@ -88,7 +88,7 @@ index 016d8f2..aaf219f 100644
  unsigned int flags = 0;
  
 diff --git a/sadf.c b/sadf.c
-index dd7f977..eceeb5e 100644
+index 41e4f40..2e4f9e7 100644
 --- a/sadf.c
 +++ b/sadf.c
 @@ -41,9 +41,6 @@

@@ -6,7 +6,7 @@ is called with interval and count parameters, e.g. `sar 1 10')
 or all-day statistics (when is called without those parameters,
 e.g. just `sar').
 
-To display all-day statistics with the sar(1) command, the  the data must
+To display all-day statistics with the sar(1) command, the data must
 have been collected first with sadc(8) or sa1(8) and saved in a file
 in /var/log/sysstat directory.
 This Debian package provides a system crontab file, which runs sa1 script,

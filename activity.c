@@ -258,9 +258,10 @@ struct activity io_act = {
 	.f_render	= render_io_stats,
 	.f_xml_print	= xml_print_io_stats,
 	.f_json_print	= json_print_io_stats,
+	.f_svg_print	= svg_print_io_stats,
 	.hdr_line	= "tps;rtps;wtps;bread/s;bwrtn/s",
 	.name		= "A_IO",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -327,9 +328,10 @@ struct activity ktables_act = {
 	.f_render	= render_ktables_stats,
 	.f_xml_print	= xml_print_ktables_stats,
 	.f_json_print	= json_print_ktables_stats,
+	.f_svg_print	= svg_print_ktables_stats,
 	.hdr_line	= "dentunusd;file-nr;inode-nr;pty-nr",
 	.name		= "A_KTABLES",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -411,7 +413,7 @@ struct activity serial_act = {
 /* Block devices activity */
 struct activity disk_act = {
 	.id		= A_DISK,
-	.options	= AO_NULL,
+	.options	= AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_DISK,
 #ifdef SOURCE_SADC
@@ -427,9 +429,10 @@ struct activity disk_act = {
 	.f_render	= render_disk_stats,
 	.f_xml_print	= xml_print_disk_stats,
 	.f_json_print	= json_print_disk_stats,
+	.f_svg_print	= svg_print_disk_stats,
 	.hdr_line	= "DEV;tps;rd_sec/s;wr_sec/s;avgrq-sz;avgqu-sz;await;svctm;%util",
 	.name		= "A_DISK",
-	.g_nr		= 0,
+	.g_nr		= 5,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -444,7 +447,7 @@ struct activity disk_act = {
 /* Network interfaces activity */
 struct activity net_dev_act = {
 	.id		= A_NET_DEV,
-	.options	= AO_COLLECTED | AO_GRAPH_PER_ITEM,
+	.options	= AO_COLLECTED + AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE + 2,
 	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
@@ -475,10 +478,10 @@ struct activity net_dev_act = {
 	.bitmap		= NULL
 };
 
-/* Network interfaces activity */
+/* Network interfaces (errors) activity */
 struct activity net_edev_act = {
 	.id		= A_NET_EDEV,
-	.options	= AO_COLLECTED,
+	.options	= AO_COLLECTED + AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE + 1,
 	.group		= G_DEFAULT,
 #ifdef SOURCE_SADC
@@ -494,10 +497,11 @@ struct activity net_edev_act = {
 	.f_render	= render_net_edev_stats,
 	.f_xml_print	= xml_print_net_edev_stats,
 	.f_json_print	= json_print_net_edev_stats,
+	.f_svg_print	= svg_print_net_edev_stats,
 	.hdr_line	= "IFACE;rxerr/s;txerr/s;coll/s;rxdrop/s;txdrop/s;"
 		          "txcarr/s;rxfram/s;rxfifo/s;txfifo/s",
 	.name		= "A_NET_EDEV",
-	.g_nr		= 0,
+	.g_nr		= 4,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -528,9 +532,10 @@ struct activity net_nfs_act = {
 	.f_render	= render_net_nfs_stats,
 	.f_xml_print	= xml_print_net_nfs_stats,
 	.f_json_print	= json_print_net_nfs_stats,
+	.f_svg_print	= svg_print_net_nfs_stats,
 	.hdr_line	= "call/s;retrans/s;read/s;write/s;access/s;getatt/s",
 	.name		= "A_NET_NFS",
-	.g_nr		= 0,
+	.g_nr		= 3,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -561,10 +566,11 @@ struct activity net_nfsd_act = {
 	.f_render	= render_net_nfsd_stats,
 	.f_xml_print	= xml_print_net_nfsd_stats,
 	.f_json_print	= json_print_net_nfsd_stats,
+	.f_svg_print	= svg_print_net_nfsd_stats,
 	.hdr_line	= "scall/s;badcall/s;packet/s;udp/s;tcp/s;hit/s;miss/s;"
 		          "sread/s;swrite/s;saccess/s;sgetatt/s",
 	.name		= "A_NET_NFSD",
-	.g_nr		= 0,
+	.g_nr		= 5,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -595,9 +601,10 @@ struct activity net_sock_act = {
 	.f_render	= render_net_sock_stats,
 	.f_xml_print	= xml_print_net_sock_stats,
 	.f_json_print	= json_print_net_sock_stats,
+	.f_svg_print	= svg_print_net_sock_stats,
 	.hdr_line	= "totsck;tcpsck;udpsck;rawsck;ip-frag;tcp-tw",
 	.name		= "A_NET_SOCK",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -628,9 +635,10 @@ struct activity net_ip_act = {
 	.f_render	= render_net_ip_stats,
 	.f_xml_print	= xml_print_net_ip_stats,
 	.f_json_print	= json_print_net_ip_stats,
+	.f_svg_print	= svg_print_net_ip_stats,
 	.hdr_line	= "irec/s;fwddgm/s;idel/s;orq/s;asmrq/s;asmok/s;fragok/s;fragcrt/s",
 	.name		= "A_NET_IP",
-	.g_nr		= 0,
+	.g_nr		= 3,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -661,9 +669,10 @@ struct activity net_eip_act = {
 	.f_render	= render_net_eip_stats,
 	.f_xml_print	= xml_print_net_eip_stats,
 	.f_json_print	= json_print_net_eip_stats,
+	.f_svg_print	= svg_print_net_eip_stats,
 	.hdr_line	= "ihdrerr/s;iadrerr/s;iukwnpr/s;idisc/s;odisc/s;onort/s;asmf/s;fragf/s",
 	.name		= "A_NET_EIP",
-	.g_nr		= 0,
+	.g_nr		= 3,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -694,10 +703,11 @@ struct activity net_icmp_act = {
 	.f_render	= render_net_icmp_stats,
 	.f_xml_print	= xml_print_net_icmp_stats,
 	.f_json_print	= json_print_net_icmp_stats,
+	.f_svg_print	= svg_print_net_icmp_stats,
 	.hdr_line	= "imsg/s;omsg/s;iech/s;iechr/s;oech/s;oechr/s;itm/s;itmr/s;otm/s;"
 		          "otmr/s;iadrmk/s;iadrmkr/s;oadrmk/s;oadrmkr/s",
 	.name		= "A_NET_ICMP",
-	.g_nr		= 0,
+	.g_nr		= 4,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -728,10 +738,11 @@ struct activity net_eicmp_act = {
 	.f_render	= render_net_eicmp_stats,
 	.f_xml_print	= xml_print_net_eicmp_stats,
 	.f_json_print	= json_print_net_eicmp_stats,
+	.f_svg_print	= svg_print_net_eicmp_stats,
 	.hdr_line	= "ierr/s;oerr/s;idstunr/s;odstunr/s;itmex/s;otmex/s;"
 		          "iparmpb/s;oparmpb/s;isrcq/s;osrcq/s;iredir/s;oredir/s",
 	.name		= "A_NET_EICMP",
-	.g_nr		= 0,
+	.g_nr		= 6,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -762,9 +773,10 @@ struct activity net_tcp_act = {
 	.f_render	= render_net_tcp_stats,
 	.f_xml_print	= xml_print_net_tcp_stats,
 	.f_json_print	= json_print_net_tcp_stats,
+	.f_svg_print	= svg_print_net_tcp_stats,
 	.hdr_line	= "active/s;passive/s;iseg/s;oseg/s",
 	.name		= "A_NET_TCP",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -795,9 +807,10 @@ struct activity net_etcp_act = {
 	.f_render	= render_net_etcp_stats,
 	.f_xml_print	= xml_print_net_etcp_stats,
 	.f_json_print	= json_print_net_etcp_stats,
+	.f_svg_print	= svg_print_net_etcp_stats,
 	.hdr_line	= "atmptf/s;estres/s;retrans/s;isegerr/s;orsts/s",
 	.name		= "A_NET_ETCP",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -828,9 +841,10 @@ struct activity net_udp_act = {
 	.f_render	= render_net_udp_stats,
 	.f_xml_print	= xml_print_net_udp_stats,
 	.f_json_print	= json_print_net_udp_stats,
+	.f_svg_print	= svg_print_net_udp_stats,
 	.hdr_line	= "idgm/s;odgm/s;noport/s;idgmerr/s",
 	.name		= "A_NET_UDP",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -861,9 +875,10 @@ struct activity net_sock6_act = {
 	.f_render	= render_net_sock6_stats,
 	.f_xml_print	= xml_print_net_sock6_stats,
 	.f_json_print	= json_print_net_sock6_stats,
+	.f_svg_print	= svg_print_net_sock6_stats,
 	.hdr_line	= "tcp6sck;udp6sck;raw6sck;ip6-frag",
 	.name		= "A_NET_SOCK6",
-	.g_nr		= 0,
+	.g_nr		= 1,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -894,10 +909,11 @@ struct activity net_ip6_act = {
 	.f_render	= render_net_ip6_stats,
 	.f_xml_print	= xml_print_net_ip6_stats,
 	.f_json_print	= json_print_net_ip6_stats,
+	.f_svg_print	= svg_print_net_ip6_stats,
 	.hdr_line	= "irec6/s;fwddgm6/s;idel6/s;orq6/s;asmrq6/s;asmok6/s;"
 			  "imcpck6/s;omcpck6/s;fragok6/s;fragcr6/s",
 	.name		= "A_NET_IP6",
-	.g_nr		= 0,
+	.g_nr		= 4,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -928,10 +944,11 @@ struct activity net_eip6_act = {
 	.f_render	= render_net_eip6_stats,
 	.f_xml_print	= xml_print_net_eip6_stats,
 	.f_json_print	= json_print_net_eip6_stats,
+	.f_svg_print	= svg_print_net_eip6_stats,
 	.hdr_line	= "ihdrer6/s;iadrer6/s;iukwnp6/s;i2big6/s;idisc6/s;odisc6/s;"
 			  "inort6/s;onort6/s;asmf6/s;fragf6/s;itrpck6/s",
 	.name		= "A_NET_EIP6",
-	.g_nr		= 0,
+	.g_nr		= 4,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -962,11 +979,12 @@ struct activity net_icmp6_act = {
 	.f_render	= render_net_icmp6_stats,
 	.f_xml_print	= xml_print_net_icmp6_stats,
 	.f_json_print	= json_print_net_icmp6_stats,
+	.f_svg_print	= svg_print_net_icmp6_stats,
 	.hdr_line	= "imsg6/s;omsg6/s;iech6/s;iechr6/s;oechr6/s;igmbq6/s;igmbr6/s;ogmbr6/s;"
 			  "igmbrd6/s;ogmbrd6/s;irtsol6/s;ortsol6/s;irtad6/s;inbsol6/s;onbsol6/s;"
 			  "inbad6/s;onbad6/s",
 	.name		= "A_NET_ICMP6",
-	.g_nr		= 0,
+	.g_nr		= 5,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -997,10 +1015,11 @@ struct activity net_eicmp6_act = {
 	.f_render	= render_net_eicmp6_stats,
 	.f_xml_print	= xml_print_net_eicmp6_stats,
 	.f_json_print	= json_print_net_eicmp6_stats,
+	.f_svg_print	= svg_print_net_eicmp6_stats,
 	.hdr_line	= "ierr6/s;idtunr6/s;odtunr6/s;itmex6/s;otmex6/s;"
 		          "iprmpb6/s;oprmpb6/s;iredir6/s;oredir6/s;ipck2b6/s;opck2b6/s",
 	.name		= "A_NET_EICMP6",
-	.g_nr		= 0,
+	.g_nr		= 6,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -1031,9 +1050,10 @@ struct activity net_udp6_act = {
 	.f_render	= render_net_udp6_stats,
 	.f_xml_print	= xml_print_net_udp6_stats,
 	.f_json_print	= json_print_net_udp6_stats,
+	.f_svg_print	= svg_print_net_udp6_stats,
 	.hdr_line	= "idgm6/s;odgm6/s;noport6/s;idgmer6/s",
 	.name		= "A_NET_UDP6",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -1082,7 +1102,7 @@ struct activity pwr_cpufreq_act = {
 /* Fan */
 struct activity pwr_fan_act = {
 	.id		= A_PWR_FAN,
-	.options	= AO_NULL,
+	.options	= AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE,
 	.group		= G_POWER,
 #ifdef SOURCE_SADC
@@ -1098,9 +1118,10 @@ struct activity pwr_fan_act = {
 	.f_render	= render_pwr_fan_stats,
 	.f_xml_print	= xml_print_pwr_fan_stats,
 	.f_json_print	= json_print_pwr_fan_stats,
+	.f_svg_print	= svg_print_pwr_fan_stats,
 	.hdr_line	= "FAN;DEVICE;rpm;drpm",
 	.name		= "A_PWR_FAN",
-	.g_nr		= 0,
+	.g_nr		= 1,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1115,7 +1136,7 @@ struct activity pwr_fan_act = {
 /* Temperature */
 struct activity pwr_temp_act = {
 	.id		= A_PWR_TEMP,
-	.options	= AO_NULL,
+	.options	= AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE,
 	.group		= G_POWER,
 #ifdef SOURCE_SADC
@@ -1131,9 +1152,10 @@ struct activity pwr_temp_act = {
 	.f_render	= render_pwr_temp_stats,
 	.f_xml_print	= xml_print_pwr_temp_stats,
 	.f_json_print	= json_print_pwr_temp_stats,
+	.f_svg_print	= svg_print_pwr_temp_stats,
 	.hdr_line	= "TEMP;DEVICE;degC;%temp",
 	.name		= "A_PWR_TEMP",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1148,7 +1170,7 @@ struct activity pwr_temp_act = {
 /* Voltage inputs */
 struct activity pwr_in_act = {
 	.id		= A_PWR_IN,
-	.options	= AO_NULL,
+	.options	= AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE,
 	.group		= G_POWER,
 #ifdef SOURCE_SADC
@@ -1164,9 +1186,10 @@ struct activity pwr_in_act = {
 	.f_render	= render_pwr_in_stats,
 	.f_xml_print	= xml_print_pwr_in_stats,
 	.f_json_print	= json_print_pwr_in_stats,
+	.f_svg_print	= svg_print_pwr_in_stats,
 	.hdr_line	= "IN;DEVICE;inV;%in",
 	.name		= "A_PWR_IN",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1197,9 +1220,10 @@ struct activity huge_act = {
 	.f_render	= render_huge_stats,
 	.f_xml_print	= xml_print_huge_stats,
 	.f_json_print	= json_print_huge_stats,
+	.f_svg_print	= svg_print_huge_stats,
 	.hdr_line	= "kbhugfree;kbhugused;%hugused",
 	.name		= "A_HUGE",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= 1,
 	.nr2		= 1,
@@ -1280,7 +1304,7 @@ struct activity pwr_usb_act = {
 /* Filesystem usage activity */
 struct activity filesystem_act = {
 	.id		= A_FILESYSTEM,
-	.options	= AO_NULL,
+	.options	= AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE,
 	.group		= G_XDISK,
 #ifdef SOURCE_SADC
@@ -1296,9 +1320,10 @@ struct activity filesystem_act = {
 	.f_render	= render_filesystem_stats,
 	.f_xml_print	= xml_print_filesystem_stats,
 	.f_json_print	= json_print_filesystem_stats,
+	.f_svg_print	= svg_print_filesystem_stats,
 	.hdr_line	= "FILESYSTEM;MBfsfree;MBfsused;%fsused;%ufsused;Ifree;Iused;%Iused",
 	.name		= "A_FILESYSTEM",
-	.g_nr		= 0,
+	.g_nr		= 4,
 #endif
 	.nr		= -1,
 	.nr2		= 1,
@@ -1313,7 +1338,7 @@ struct activity filesystem_act = {
 /* Fibre Channel HBA usage activity */
 struct activity fchost_act = {
 	.id		= A_NET_FC,
-	.options	= AO_CLOSE_MARKUP,
+	.options	= AO_CLOSE_MARKUP + AO_GRAPH_PER_ITEM,
 	.magic		= ACTIVITY_MAGIC_BASE,
 	.group		= G_DISK,
 #ifdef SOURCE_SADC
@@ -1329,9 +1354,10 @@ struct activity fchost_act = {
 	.f_render	= render_fchost_stats,
 	.f_xml_print	= xml_print_fchost_stats,
 	.f_json_print	= json_print_fchost_stats,
+	.f_svg_print	= svg_print_fchost_stats,
 	.hdr_line	= "FCHOST;fch_rxf/s;fch_txf/s;fch_rxw/s;fch_txw/s",
 	.name		= "A_FCHOST",
-	.g_nr		= 0,
+	.g_nr		= 2,
 #endif
 	.nr		= -1,
 	.nr2		= 1,

@@ -18,7 +18,7 @@ https://wiki.debian.org/ReproducibleBuilds/TimestampsFromCPPMacros
  8 files changed, 24 deletions(-)
 
 diff --git a/cifsiostat.c b/cifsiostat.c
-index 713b894..9432f4b 100644
+index 6e1693d..31f4e8e 100644
 --- a/cifsiostat.c
 +++ b/cifsiostat.c
 @@ -41,9 +41,6 @@
@@ -32,7 +32,7 @@ index 713b894..9432f4b 100644
  struct cifs_stats *st_cifs[2];
  struct io_hdr_stats *st_hdr_cifs;
 diff --git a/iostat.c b/iostat.c
-index e0ba524..6dff34f 100644
+index d383fcc..9f68fc7 100644
 --- a/iostat.c
 +++ b/iostat.c
 @@ -48,9 +48,6 @@
@@ -60,7 +60,7 @@ index 168e905..3c5156d 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  
 diff --git a/pidstat.c b/pidstat.c
-index 74a6fd5..407d869 100644
+index 5dea8ee..4b9ab16 100644
 --- a/pidstat.c
 +++ b/pidstat.c
 @@ -47,9 +47,6 @@

@@ -641,7 +641,7 @@ int generic_write_stats(int curr, int use_tm_start, int use_tm_end, int reset,
 {
 	int i;
 	unsigned long long dt, itv, g_itv;
-	char cur_date[32], cur_time[32], *pre = NULL;
+	char cur_date[TIMESTAMP_LEN], cur_time[TIMESTAMP_LEN], *pre = NULL;
 	static int cross_day = FALSE;
 
 	if (reset_cd) {
@@ -705,7 +705,7 @@ int generic_write_stats(int curr, int use_tm_start, int use_tm_end, int reset,
 
 	/* Set date and time strings for current record */
 	set_record_timestamp_string(flags, &record_hdr[curr],
-				    cur_date, cur_time, 32, rectime);
+				    cur_date, cur_time, TIMESTAMP_LEN, rectime);
 
 	if (*fmt[f_position]->f_timestamp) {
 		pre = (char *) (*fmt[f_position]->f_timestamp)(parm, F_BEGIN, cur_date, cur_time,
@@ -1011,6 +1011,11 @@ void logic1_display_loop(int ifd, struct file_activity *file_actlst, char *file,
 	__nr_t save_act_nr[NR_ACT] = {0};
 	long cnt = 1;
 	off_t fpos;
+
+	if (format == F_JSON_OUTPUT) {
+		/* Use a decimal point to make JSON code compliant with RFC7159 */
+		setlocale(LC_NUMERIC, "C");
+	}
 
 	/* Save current file position */
 	if ((fpos = lseek(ifd, 0, SEEK_CUR)) < 0) {

@@ -224,7 +224,6 @@
 #define BITMAP_SIZE(m)	((((m) + 1) / 8) + 1)
 
 #define UTSNAME_LEN	65
-#define TIMESTAMP_LEN	16
 #define HEADER_LINE_LEN	512
 
 /*
@@ -1078,10 +1077,10 @@ int check_disk_reg
 void check_file_actlst
 	(int *, char *, struct activity * [], struct file_magic *, struct file_header *,
 	 struct file_activity **, unsigned int [], int);
-unsigned int check_net_dev_reg
-	(struct activity *, int, int, unsigned int);
-unsigned int check_net_edev_reg
-	(struct activity *, int, int, unsigned int);
+int check_net_dev_reg
+	(struct activity *, int, int, int);
+int check_net_edev_reg
+	(struct activity *, int, int, int);
 double compute_ifutil
 	(struct stats_net_dev *, double, double);
 void copy_structures

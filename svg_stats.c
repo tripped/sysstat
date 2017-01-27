@@ -44,7 +44,7 @@ extern unsigned int dm_major;
 unsigned int svg_colors[] = {0x00cc00, 0xff00bf, 0x00ffff, 0xff0000,
 			     0xe85f00, 0x0000ff, 0x006020, 0x7030a0,
 			     0xffff00, 0x666635, 0xd60093, 0x00bfbf,
-			     0xcc3300, 0xbfbfbf, 0xffffbf, 0xff3300};
+			     0xcc3300, 0x50040f, 0xffffbf, 0x193d55};
 #define SVG_COLORS_IDX_MASK	0x0f
 
 /*
@@ -64,15 +64,16 @@ unsigned int svg_colors[] = {0x00cc00, 0xff00bf, 0x00ffff, 0xff0000,
  * @cs		Pointer on current sample statistics structure.
  * @ps		Pointer on previous sample statistics structure (may be NULL).
  * @itv		Interval of time in jiffies.
- * @minv	Array containing min values already found for this activity.
- * @maxv	Array containing max values already found for this activity.
+ * @spmin	Array containing min values already found for this activity.
+ * @spmax	Array containing max values already found for this activity.
+ * @g_fields	Index in spmin/spmax arrays where extrema values for each
+ *		activity metric will be saved. As a consequence spmin/spmax
+ *		arrays mau contain values in a different order than that of
+ *		the fields in the statistics structure.
  *
  * OUT:
- * @minv	Array containg the possible new min values for current activity.
- * @maxv	Array containg the possible new max values for current activity.
- *
- * NB: @minv and @maxv arrays contain values in the same order as the fields
- * in the statistics structure.
+ * @spmin	Array containg the possible new min values for current activity.
+ * @spmax	Array containg the possible new max values for current activity.
  ***************************************************************************
  */
 void save_extrema(int llu_nr, int lu_nr, int u_nr, void *cs, void *ps,
@@ -159,13 +160,13 @@ void save_extrema(int llu_nr, int lu_nr, int u_nr, void *cs, void *ps,
  ***************************************************************************
  * Find the min and max values of all the graphs that will be drawn in the
  * same view. The graphs have their own min and max values in
- * minv[pos...pos+n-1] and maxv[pos...pos+n-1]. 
+ * spmin[pos...pos+n-1] and spmax[pos...pos+n-1]. 
  *
  * IN:
  * @pos		Position in array for the first graph extrema value.
  * @n		Number of graphs to scan.
- * @minv	Array containing min values for graphs.
- * @maxv	Array containing max values for graphs.
+ * @spmin	Array containing min values for graphs.
+ * @spmax	Array containing max values for graphs.
  *
  * OUT:
  * @gmin	Global min value found.
@@ -617,7 +618,7 @@ void display_vgrid(long int xpos, double xfactor, int v_gridnr, struct svg_parm 
 {
 	struct record_header stamp;
 	struct tm rectime;
-	char cur_time[32];
+	char cur_time[TIMESTAMP_LEN];
 	int j;
 
 	stamp.ust_time = svg_p->ust_time_ref; /* Only ust_time field needs to be set. TRUE_TIME not allowed */
@@ -626,7 +627,7 @@ void display_vgrid(long int xpos, double xfactor, int v_gridnr, struct svg_parm 
 
 		/* Display vertical lines */
 		sa_get_record_timestamp_struct(flags, &stamp, &rectime, NULL);
-		set_record_timestamp_string(flags, &stamp, NULL, cur_time, 32, &rectime);
+		set_record_timestamp_string(flags, &stamp, NULL, cur_time, TIMESTAMP_LEN, &rectime);
 		printf("<polyline points=\"%ld,0 %ld,%d\" style=\"vector-effect: non-scaling-stroke; "
 		       "stroke: #202020\" transform=\"scale(%f,1)\"/>\n",
 		       xpos * j, xpos * j, -SVG_G_YSIZE, xfactor);
@@ -1914,7 +1915,7 @@ __print_funct_t svg_print_queue_stats(struct activity *a, int curr, int action, 
 __print_funct_t svg_print_disk_stats(struct activity *a, int curr, int action, struct svg_parm *svg_p,
 				     unsigned long long itv, struct record_header *record_hdr)
 {
-	struct stats_disk *sdc, *sdp;
+	struct stats_disk *sdc, *sdp, sdpzero;
 	struct ext_disk_stats xds;
 	int group[] = {1, 2, 2, 2, 1};
 	int g_type[] = {SVG_LINE_GRAPH, SVG_LINE_GRAPH, SVG_LINE_GRAPH,
@@ -1949,6 +1950,7 @@ __print_funct_t svg_print_disk_stats(struct activity *a, int curr, int action, s
 	}
 
 	if (action & F_MAIN) {
+		memset(&sdpzero, 0, STATS_DISK_SIZE);
 		restart = svg_p->restart;
 		/*
 		 * Mark previously registered devices as now
@@ -1989,7 +1991,13 @@ __print_funct_t svg_print_disk_stats(struct activity *a, int curr, int action, s
 			unregistered = outsize + pos + 8;
 
 			j = check_disk_reg(a, curr, !curr, i);
-			sdp = (struct stats_disk *) ((char *) a->buf[!curr] + j * a->msize);
+			if (j < 0) {
+				/* This is a newly registered interface. Previous stats are zero */
+				sdp = &sdpzero;
+			}
+			else {
+				sdp = (struct stats_disk *) ((char *) a->buf[!curr] + j * a->msize);
+			}
 
 			/*
 			 * If current device was marked as previously unregistered,
@@ -2146,7 +2154,7 @@ __print_funct_t svg_print_disk_stats(struct activity *a, int curr, int action, s
 __print_funct_t svg_print_net_dev_stats(struct activity *a, int curr, int action, struct svg_parm *svg_p,
 					unsigned long long itv, struct record_header *record_hdr)
 {
-	struct stats_net_dev *sndc, *sndp;
+	struct stats_net_dev *sndc, *sndp, sndzero;
 	int group[] = {2, 2, 3, 1};
 	int g_type[] = {SVG_LINE_GRAPH, SVG_LINE_GRAPH, SVG_LINE_GRAPH,
 			SVG_BAR_GRAPH};
@@ -2177,6 +2185,7 @@ __print_funct_t svg_print_net_dev_stats(struct activity *a, int curr, int action
 	}
 
 	if (action & F_MAIN) {
+		memset(&sndzero, 0, STATS_NET_DEV_SIZE);
 		restart = svg_p->restart;
 		/*
 		 * Mark previously registered interfaces as now
@@ -2193,8 +2202,8 @@ __print_funct_t svg_print_net_dev_stats(struct activity *a, int curr, int action
 		for (i = 0; i < a->nr; i++) {
 			sndc = (struct stats_net_dev *) ((char *) a->buf[curr] + i * a->msize);
 			if (!strcmp(sndc->interface, ""))
-				/* Empty structure: Ignore it */
-				continue;
+				/* Empty structure: This is the end of the list */
+				break;
 
 			/* Look for corresponding graph */
 			for (k = 0; k < a->nr; k++) {
@@ -2219,7 +2228,13 @@ __print_funct_t svg_print_net_dev_stats(struct activity *a, int curr, int action
 			unregistered = outsize + pos + 8;
 
 			j = check_net_dev_reg(a, curr, !curr, i);
-			sndp = (struct stats_net_dev *) ((char *) a->buf[!curr] + j * a->msize);
+			if (j < 0) {
+				/* This is a newly registered interface. Previous stats are zero */
+				sndp = &sndzero;
+			}
+			else {
+				sndp = (struct stats_net_dev *) ((char *) a->buf[!curr] + j * a->msize);
+			}
 
 			/*
 			 * If current interface was marked as previously unregistered,
@@ -2342,7 +2357,7 @@ __print_funct_t svg_print_net_dev_stats(struct activity *a, int curr, int action
 __print_funct_t svg_print_net_edev_stats(struct activity *a, int curr, int action, struct svg_parm *svg_p,
 					 unsigned long long itv, struct record_header *record_hdr)
 {
-	struct stats_net_edev *snedc, *snedp;
+	struct stats_net_edev *snedc, *snedp, snedzero;
 	int group[] = {2, 2, 2, 3};
 	int g_type[] = {SVG_LINE_GRAPH, SVG_LINE_GRAPH, SVG_LINE_GRAPH,
 			SVG_LINE_GRAPH};
@@ -2372,6 +2387,7 @@ __print_funct_t svg_print_net_edev_stats(struct activity *a, int curr, int actio
 	}
 
 	if (action & F_MAIN) {
+		memset(&snedzero, 0, STATS_NET_EDEV_SIZE);
 		restart = svg_p->restart;
 		/*
 		 * Mark previously registered interfaces as now
@@ -2388,8 +2404,8 @@ __print_funct_t svg_print_net_edev_stats(struct activity *a, int curr, int actio
 		for (i = 0; i < a->nr; i++) {
 			snedc = (struct stats_net_edev *) ((char *) a->buf[curr] + i * a->msize);
 			if (!strcmp(snedc->interface, ""))
-				/* Empty structure: Ignore it */
-				continue;
+				/* Empty structure: This is the end of the list */
+				break;
 
 			/* Look for corresponding graph */
 			for (k = 0; k < a->nr; k++) {
@@ -2414,7 +2430,13 @@ __print_funct_t svg_print_net_edev_stats(struct activity *a, int curr, int actio
 			unregistered = outsize + pos + 9;
 
 			j = check_net_edev_reg(a, curr, !curr, i);
-			snedp = (struct stats_net_edev *) ((char *) a->buf[!curr] + j * a->msize);
+			if (j < 0) {
+				/* This is a newly registered interface. Previous stats are zero */
+				snedp = &snedzero;
+			}
+			else {
+				snedp = (struct stats_net_edev *) ((char *) a->buf[!curr] + j * a->msize);
+			}
 
 			/*
 			 * If current interface was marked as previously unregistered,
@@ -4444,7 +4466,7 @@ __print_funct_t svg_print_filesystem_stats(struct activity *a, int curr, int act
 	static double *spmin, *spmax;
 	static char **out;
 	static int *outsize;
-	char *item_name;
+	char *item_name = NULL;
 	double tval;
 	int i, k, pos, restart;
 

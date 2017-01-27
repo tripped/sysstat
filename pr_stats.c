@@ -94,115 +94,116 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 		 */
 
 		/* Should current CPU (including CPU "all") be displayed? */
-		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
+		if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
+			/* No */
+			continue;
 
-			/* Yes: Display it */
-			printf("%-11s", timestamp[curr]);
+		/* Yes: Display it */
+		printf("%-11s", timestamp[curr]);
 
-			if (!i) {
-				/* This is CPU "all" */
-				cprintf_in(IS_STR, " %s", "    all", 0);
-			}
-			else {
-				cprintf_in(IS_INT, " %7d", "", i - 1);
+		if (!i) {
+			/* This is CPU "all" */
+			cprintf_in(IS_STR, " %s", "    all", 0);
+		}
+		else {
+			cprintf_in(IS_INT, " %7d", "", i - 1);
 
+			/*
+			 * If the CPU is offline then it is omited from /proc/stat:
+			 * All the fields couldn't have been read and the sum of them is zero.
+			 * (Remember that guest/guest_nice times are already included in
+			 * user/nice modes.)
+			 */
+			if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
+			     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
+			     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
 				/*
-				 * If the CPU is offline then it is omited from /proc/stat:
-				 * All the fields couldn't have been read and the sum of them is zero.
-				 * (Remember that guest/guest_nice times are already included in
-				 * user/nice modes.)
+				 * Set current struct fields (which have been set to zero)
+				 * to values from previous iteration. Hence their values won't
+				 * jump from zero when the CPU comes back online.
 				 */
-				if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
-				     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
-				     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
-					/*
-					 * Set current struct fields (which have been set to zero)
-					 * to values from previous iteration. Hence their values won't
-					 * jump from zero when the CPU comes back online.
-					 */
-					*scc = *scp;
+				*scc = *scp;
 
-					/* %user, %nice, %system, %iowait, %steal, ..., %idle */
-					cprintf_pc(6, 9, 2,
-						   0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+				/* %user, %nice, %system, %iowait, %steal, ..., %idle */
+				cprintf_pc(6, 9, 2,
+					   0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
-					if (DISPLAY_CPU_ALL(a->opt_flags)) {
-						/*
-						 * Four additional fields to display:
-						 * %irq, %soft, %guest, %gnice.
-						 */
-						cprintf_pc(4, 9, 2,
-							   0.0, 0.0, 0.0, 0.0);
-					}
-					printf("\n");
-					continue;
-				}
-
-				/* Recalculate interval for current proc */
-				g_itv = get_per_cpu_interval(scc, scp);
-
-				if (!g_itv) {
-					/*
-					 * If the CPU is tickless then there is no change in CPU values
-					 * but the sum of values is not zero.
-					 * %user, %nice, %system, %iowait, %steal, ..., %idle
-					 */
-					cprintf_pc(5, 9, 2,
-						   0.0, 0.0, 0.0, 0.0, 0.0);
-
-					if (DISPLAY_CPU_DEF(a->opt_flags)) {
-						cprintf_pc(1, 9, 2, 100.0);
-						printf("\n");
-					}
+				if (DISPLAY_CPU_ALL(a->opt_flags)) {
 					/*
 					 * Four additional fields to display:
 					 * %irq, %soft, %guest, %gnice.
 					 */
-					else if (DISPLAY_CPU_ALL(a->opt_flags)) {
-						cprintf_pc(4, 9, 2,
-							   0.0, 0.0, 0.0, 100.0);
-						printf("\n");
-					}
-					continue;
+					cprintf_pc(4, 9, 2,
+						   0.0, 0.0, 0.0, 0.0);
 				}
+				printf("\n");
+				continue;
 			}
 
-			if (DISPLAY_CPU_DEF(a->opt_flags)) {
-				cprintf_pc(6, 9, 2,
-					   ll_sp_value(scp->cpu_user, scc->cpu_user, g_itv),
-					   ll_sp_value(scp->cpu_nice, scc->cpu_nice, g_itv),
-					   ll_sp_value(scp->cpu_sys + scp->cpu_hardirq + scp->cpu_softirq,
-						       scc->cpu_sys + scc->cpu_hardirq + scc->cpu_softirq,
-						       g_itv),
-					   ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, g_itv),
-					   ll_sp_value(scp->cpu_steal, scc->cpu_steal, g_itv),
-					   scc->cpu_idle < scp->cpu_idle ?
-					   0.0 :
-					   ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv));
-				printf("\n");
+			/* Recalculate interval for current proc */
+			g_itv = get_per_cpu_interval(scc, scp);
+
+			if (!g_itv) {
+				/*
+				 * If the CPU is tickless then there is no change in CPU values
+				 * but the sum of values is not zero.
+				 * %user, %nice, %system, %iowait, %steal, ..., %idle
+				 */
+				cprintf_pc(5, 9, 2,
+					   0.0, 0.0, 0.0, 0.0, 0.0);
+
+				if (DISPLAY_CPU_DEF(a->opt_flags)) {
+					cprintf_pc(1, 9, 2, 100.0);
+					printf("\n");
+				}
+				/*
+				 * Four additional fields to display:
+				 * %irq, %soft, %guest, %gnice.
+				 */
+				else if (DISPLAY_CPU_ALL(a->opt_flags)) {
+					cprintf_pc(4, 9, 2,
+						   0.0, 0.0, 0.0, 100.0);
+					printf("\n");
+				}
+				continue;
 			}
-			else if (DISPLAY_CPU_ALL(a->opt_flags)) {
-				cprintf_pc(10, 9, 2,
-					   (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
-					   0.0 :
-					   ll_sp_value(scp->cpu_user - scp->cpu_guest,
-						       scc->cpu_user - scc->cpu_guest, g_itv),
-						       (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
-					   0.0 :
-					   ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
-						       scc->cpu_nice - scc->cpu_guest_nice, g_itv),
-					   ll_sp_value(scp->cpu_sys, scc->cpu_sys, g_itv),
-					   ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, g_itv),
-					   ll_sp_value(scp->cpu_steal, scc->cpu_steal, g_itv),
-					   ll_sp_value(scp->cpu_hardirq, scc->cpu_hardirq, g_itv),
-					   ll_sp_value(scp->cpu_softirq, scc->cpu_softirq, g_itv),
-					   ll_sp_value(scp->cpu_guest, scc->cpu_guest, g_itv),
-					   ll_sp_value(scp->cpu_guest_nice, scc->cpu_guest_nice, g_itv),
-					   scc->cpu_idle < scp->cpu_idle ?
-					   0.0 :
-					   ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv));
-				printf("\n");
-			}
+		}
+
+		if (DISPLAY_CPU_DEF(a->opt_flags)) {
+			cprintf_pc(6, 9, 2,
+				   ll_sp_value(scp->cpu_user, scc->cpu_user, g_itv),
+				   ll_sp_value(scp->cpu_nice, scc->cpu_nice, g_itv),
+				   ll_sp_value(scp->cpu_sys + scp->cpu_hardirq + scp->cpu_softirq,
+					       scc->cpu_sys + scc->cpu_hardirq + scc->cpu_softirq,
+					       g_itv),
+				   ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, g_itv),
+				   ll_sp_value(scp->cpu_steal, scc->cpu_steal, g_itv),
+				   scc->cpu_idle < scp->cpu_idle ?
+				   0.0 :
+				   ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv));
+			printf("\n");
+		}
+		else if (DISPLAY_CPU_ALL(a->opt_flags)) {
+			cprintf_pc(10, 9, 2,
+				   (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
+				   0.0 :
+				   ll_sp_value(scp->cpu_user - scp->cpu_guest,
+					       scc->cpu_user - scc->cpu_guest, g_itv),
+					       (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
+				   0.0 :
+				   ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
+					       scc->cpu_nice - scc->cpu_guest_nice, g_itv),
+				   ll_sp_value(scp->cpu_sys, scc->cpu_sys, g_itv),
+				   ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, g_itv),
+				   ll_sp_value(scp->cpu_steal, scc->cpu_steal, g_itv),
+				   ll_sp_value(scp->cpu_hardirq, scc->cpu_hardirq, g_itv),
+				   ll_sp_value(scp->cpu_softirq, scc->cpu_softirq, g_itv),
+				   ll_sp_value(scp->cpu_guest, scc->cpu_guest, g_itv),
+				   ll_sp_value(scp->cpu_guest_nice, scc->cpu_guest_nice, g_itv),
+				   scc->cpu_idle < scp->cpu_idle ?
+				   0.0 :
+				   ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv));
+			printf("\n");
 		}
 	}
 }
@@ -923,9 +924,11 @@ __print_funct_t print_disk_stats(struct activity *a, int prev, int curr,
 				 unsigned long long itv)
 {
 	int i, j;
-	struct stats_disk *sdc,	*sdp;
+	struct stats_disk *sdc,	*sdp, sdpzero;
 	struct ext_disk_stats xds;
 	char *dev_name, *persist_dev_name;
+
+	memset(&sdpzero, 0, STATS_DISK_SIZE);
 
 	if (dis) {
 		printf("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz"
@@ -941,7 +944,13 @@ __print_funct_t print_disk_stats(struct activity *a, int prev, int curr,
 			continue;
 
 		j = check_disk_reg(a, curr, prev, i);
-		sdp = (struct stats_disk *) ((char *) a->buf[prev] + j * a->msize);
+		if (j < 0) {
+			/* This is a newly registered interface. Previous stats are zero */
+			sdp = &sdpzero;
+		}
+		else {
+			sdp = (struct stats_disk *) ((char *) a->buf[prev] + j * a->msize);
+		}
 
 		/* Compute service time, etc. */
 		compute_ext_disk_stats(sdc, sdp, itv, &xds);
@@ -1000,8 +1009,10 @@ __print_funct_t print_net_dev_stats(struct activity *a, int prev, int curr,
 				    unsigned long long itv)
 {
 	int i, j;
-	struct stats_net_dev *sndc, *sndp;
+	struct stats_net_dev *sndc, *sndp, sndzero;
 	double rxkb, txkb, ifutil;
+
+	memset(&sndzero, 0, STATS_NET_DEV_SIZE);
 
 	if (dis) {
 		printf("\n%-11s     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s"
@@ -1013,10 +1024,16 @@ __print_funct_t print_net_dev_stats(struct activity *a, int prev, int curr,
 		sndc = (struct stats_net_dev *) ((char *) a->buf[curr] + i * a->msize);
 
 		if (!strcmp(sndc->interface, ""))
-			continue;
+			break;
 
 		j = check_net_dev_reg(a, curr, prev, i);
-		sndp = (struct stats_net_dev *) ((char *) a->buf[prev] + j * a->msize);
+		if (j < 0) {
+			/* This is a newly registered interface. Previous stats are zero */
+			sndp = &sndzero;
+		}
+		else {
+			sndp = (struct stats_net_dev *) ((char *) a->buf[prev] + j * a->msize);
+		}
 
 		printf("%-11s", timestamp[curr]);
 		cprintf_in(IS_STR, " %9s", sndc->interface, 0);
@@ -1053,7 +1070,9 @@ __print_funct_t print_net_edev_stats(struct activity *a, int prev, int curr,
 				     unsigned long long itv)
 {
 	int i, j;
-	struct stats_net_edev *snedc, *snedp;
+	struct stats_net_edev *snedc, *snedp, snedzero;
+
+	memset(&snedzero, 0, STATS_NET_EDEV_SIZE);
 
 	if (dis) {
 		printf("\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s"
@@ -1066,10 +1085,16 @@ __print_funct_t print_net_edev_stats(struct activity *a, int prev, int curr,
 		snedc = (struct stats_net_edev *) ((char *) a->buf[curr] + i * a->msize);
 
 		if (!strcmp(snedc->interface, ""))
-			continue;
+			break;
 
 		j = check_net_edev_reg(a, curr, prev, i);
-		snedp = (struct stats_net_edev *) ((char *) a->buf[prev] + j * a->msize);
+		if (j < 0) {
+			/* This is a newly registered interface. Previous stats are zero */
+			snedp = &snedzero;
+		}
+		else {
+			snedp = (struct stats_net_edev *) ((char *) a->buf[prev] + j * a->msize);
+		}
 
 		printf("%-11s", timestamp[curr]);
 		cprintf_in(IS_STR, " %9s", snedc->interface, 0);

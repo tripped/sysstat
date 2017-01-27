@@ -541,12 +541,12 @@ void read_vmstat_paging(struct stats_paging *st_paging)
 			sscanf(strchr(line, ' '), "%lu", &pgtmp);
 			st_paging->pgsteal += pgtmp;
 		}
-		else if (!strncmp(line, "pgscan_kswapd_", 14)) {
+		else if (!strncmp(line, "pgscan_kswapd", 13)) {
 			/* Read number of pages scanned by the kswapd daemon */
 			sscanf(strchr(line, ' '), "%lu", &pgtmp);
 			st_paging->pgscan_kswapd += pgtmp;
 		}
-		else if (!strncmp(line, "pgscan_direct_", 14)) {
+		else if (!strncmp(line, "pgscan_direct", 13)) {
 			/* Read number of pages scanned directly */
 			sscanf(strchr(line, ' '), "%lu", &pgtmp);
 			st_paging->pgscan_direct += pgtmp;
@@ -1826,7 +1826,9 @@ void read_cpuinfo(struct stats_pwr_cpufreq *st_pwr_cpufreq, int nbr)
 			sscanf(strchr(line, ':') + 1, "%u", &proc_nb);
 		}
 
-		else if (!strncmp(line, "cpu MHz\t", 8)) {
+		/* Entry in /proc/cpuinfo is different between Intel and Power architectures */
+		else if (!strncmp(line, "cpu MHz\t", 8) ||
+			 !strncmp(line, "clock\t", 6)) {
 			sscanf(strchr(line, ':') + 1, "%u.%u", &ifreq, &dfreq);
 
 			if (proc_nb < (nbr - 1)) {

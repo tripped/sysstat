@@ -40,8 +40,8 @@
 #include "rd_stats.h"
 #include "count.h"
 
+#include <locale.h>	/* For setlocale() */
 #ifdef USE_NLS
-#include <locale.h>
 #include <libintl.h>
 #define _(string) gettext(string)
 #else
@@ -88,13 +88,13 @@ void usage(char *progname)
 #ifdef DEBUG
 	fprintf(stderr, _("Options are:\n"
 			  "[ -c ] [ -d ] [ -h ] [ -k | -m ] [ -N ] [ -t ] [ -V ] [ -x ] [ -y ] [ -z ]\n"
-			  "[ -j { ID | LABEL | PATH | UUID | ... } ]\n"
+			  "[ -j { ID | LABEL | PATH | UUID | ... } ] [ --human ] [ -o JSON ]\n"
 			  "[ [ -H ] -g <group_name> ] [ -p [ <device> [,...] | ALL ] ]\n"
 			  "[ <device> [...] | ALL ] [ --debuginfo ]\n"));
 #else
 	fprintf(stderr, _("Options are:\n"
 			  "[ -c ] [ -d ] [ -h ] [ -k | -m ] [ -N ] [ -t ] [ -V ] [ -x ] [ -y ] [ -z ]\n"
-			  "[ -j { ID | LABEL | PATH | UUID | ... } ]\n"
+			  "[ -j { ID | LABEL | PATH | UUID | ... } ] [ --human ] [ -o JSON ]\n"
 			  "[ [ -H ] -g <group_name> ] [ -p [ <device> [,...] | ALL ] ]\n"
 			  "[ <device> [...] | ALL ]\n"));
 #endif
@@ -817,14 +817,39 @@ void compute_device_groups_stats(int curr)
 
 /*
  ***************************************************************************
- * Display CPU utilization.
+ * Write current sample's timestamp, either in plain or JSON format.
+ *
+ * IN:
+ * @tab		Number of tabs to print.
+ * @rectime	Current date and time.
+ ***************************************************************************
+ */
+void write_sample_timestamp(int tab, struct tm *rectime)
+{
+	if (DISPLAY_ISO(flags)) {
+		strftime(timestamp, sizeof(timestamp), "%FT%T%z", rectime);
+	}
+	else {
+		strftime(timestamp, sizeof(timestamp), "%x %X", rectime);
+	}
+	if (DISPLAY_JSON_OUTPUT(flags)) {
+		xprintf(tab, "\"timestamp\": \"%s\",", timestamp);
+	}
+	else {
+		printf("%s\n", timestamp);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display CPU utilization in plain format.
  *
  * IN:
  * @curr	Index in array for current sample statistics.
  * @itv		Interval of time.
  ***************************************************************************
  */
-void write_cpu_stat(int curr, unsigned long long itv)
+void write_plain_cpu_stat(int curr, unsigned long long itv)
 {
 	printf("avg-cpu:  %%user   %%nice %%system %%iowait  %%steal   %%idle\n");
 
@@ -851,24 +876,86 @@ void write_cpu_stat(int curr, unsigned long long itv)
 
 /*
  ***************************************************************************
- * Display disk stats header.
+ * Display CPU utilization in JSON format.
+ *
+ * IN:
+ * @tab		Number of tabs to print.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time.
+ ***************************************************************************
+ */
+void write_json_cpu_stat(int tab, int curr, unsigned long long itv)
+{
+	xprintf0(tab, "\"avg-cpu\":  {\"user\": %.2f, \"nice\": %.2f, \"system\": %.2f,"
+		      " \"iowait\": %.2f, \"steal\": %.2f, \"idle\": %.2f}",
+		 ll_sp_value(st_cpu[!curr]->cpu_user,   st_cpu[curr]->cpu_user,   itv),
+		 ll_sp_value(st_cpu[!curr]->cpu_nice,   st_cpu[curr]->cpu_nice,   itv),
+		 /*
+		  * Time spent in system mode also includes time spent servicing
+		  * hard and soft interrupts.
+		  */
+		 ll_sp_value(st_cpu[!curr]->cpu_sys + st_cpu[!curr]->cpu_softirq +
+			     st_cpu[!curr]->cpu_hardirq,
+			     st_cpu[curr]->cpu_sys + st_cpu[curr]->cpu_softirq +
+			     st_cpu[curr]->cpu_hardirq, itv),
+		 ll_sp_value(st_cpu[!curr]->cpu_iowait, st_cpu[curr]->cpu_iowait, itv),
+		 ll_sp_value(st_cpu[!curr]->cpu_steal,  st_cpu[curr]->cpu_steal,  itv),
+		 (st_cpu[curr]->cpu_idle < st_cpu[!curr]->cpu_idle) ?
+		 0.0 :
+		 ll_sp_value(st_cpu[!curr]->cpu_idle,   st_cpu[curr]->cpu_idle,   itv));
+}
+
+/*
+ ***************************************************************************
+ * Display CPU utilization in plain or JSON format.
+ *
+ * IN:
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time.
+ * @tab		Number of tabs to print (JSON format only).
+ ***************************************************************************
+ */
+void write_cpu_stat(int curr, unsigned long long itv, int tab)
+{
+	if (DISPLAY_JSON_OUTPUT(flags)) {
+		write_json_cpu_stat(tab, curr, itv);
+	}
+	else {
+		write_plain_cpu_stat(curr, itv);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display disk stats header in plain or JSON format.
  *
  * OUT:
  * @fctr	Conversion factor.
+ * @tab		Number of tabs to print (JSON format only).
  ***************************************************************************
  */
-void write_disk_stat_header(int *fctr)
+void write_disk_stat_header(int *fctr, int *tab)
 {
+	if (DISPLAY_KILOBYTES(flags)) {
+		*fctr = 2;
+	}
+	else if (DISPLAY_MEGABYTES(flags)) {
+		*fctr = 2048;
+	}
+
+	if (DISPLAY_JSON_OUTPUT(flags)) {
+		xprintf((*tab)++, "\"disk\": [");
+		return;
+	}
+
 	if (DISPLAY_EXTENDED(flags)) {
 		/* Extended stats */
 		printf("Device:         rrqm/s   wrqm/s     r/s     w/s");
 		if (DISPLAY_MEGABYTES(flags)) {
 			printf("    rMB/s    wMB/s");
-			*fctr = 2048;
 		}
 		else if (DISPLAY_KILOBYTES(flags)) {
 			printf("    rkB/s    wkB/s");
-			*fctr = 2;
 		}
 		else {
 			printf("   rsec/s   wsec/s");
@@ -880,11 +967,9 @@ void write_disk_stat_header(int *fctr)
 		printf("Device:            tps");
 		if (DISPLAY_KILOBYTES(flags)) {
 			printf("    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn\n");
-			*fctr = 2;
 		}
 		else if (DISPLAY_MEGABYTES(flags)) {
 			printf("    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn\n");
-			*fctr = 2048;
 		}
 		else {
 			printf("   Blk_read/s   Blk_wrtn/s   Blk_read   Blk_wrtn\n");
@@ -894,20 +979,131 @@ void write_disk_stat_header(int *fctr)
 
 /*
  ***************************************************************************
- * Display extended stats, read from /proc/{diskstats,partitions} or /sys.
+ * Display extended stats, read from /proc/{diskstats,partitions} or /sys,
+ * in plain format.
  *
  * IN:
- * @curr	Index in array for current sample statistics.
  * @itv		Interval of time.
  * @fctr	Conversion factor.
  * @shi		Structures describing the devices and partitions.
  * @ioi		Current sample statistics.
  * @ioj		Previous sample statistics.
+ * @devname	Current device name.
+ * @xds		Extended stats for current device.
+ * @r_await	r_await metric value.
+ * @w_await	w_await metric value.
  ***************************************************************************
  */
-void write_ext_stat(int curr, unsigned long long itv, int fctr,
+void write_plain_ext_stat(unsigned long long itv, int fctr,
+			  struct io_hdr_stats *shi, struct io_stats *ioi,
+			  struct io_stats *ioj, char *devname, struct ext_disk_stats *xds,
+			  double r_await, double w_await)
+{
+	double rsectors, wsectors;
+
+	if (DISPLAY_HUMAN_READ(flags)) {
+		cprintf_in(IS_STR, "%s\n", devname, 0);
+		printf("%13s", "");
+	}
+	else {
+		cprintf_in(IS_STR, "%-13s", devname, 0);
+	}
+
+	/*       rrq/s wrq/s   r/s   w/s  rsec  wsec  rqsz  qusz await r_await w_await svctm %util */
+	cprintf_f(-1, 2, 8, 2,
+		  S_VALUE(ioj->rd_merges, ioi->rd_merges, itv),
+		  S_VALUE(ioj->wr_merges, ioi->wr_merges, itv));
+	cprintf_f(-1, 2, 7, 2,
+		  S_VALUE(ioj->rd_ios, ioi->rd_ios, itv),
+		  S_VALUE(ioj->wr_ios, ioi->wr_ios, itv));
+	rsectors = S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv);
+	wsectors = S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv);
+	if (!DISPLAY_UNIT(flags)) {
+		rsectors /= fctr;
+		wsectors /= fctr;
+	}
+	cprintf_f(DISPLAY_UNIT(flags) ? 0 : -1, 2, 8, 2,
+		  rsectors, wsectors);
+	cprintf_f(-1, 2, 8, 2,
+		  xds->arqsz,
+		  S_VALUE(ioj->rq_ticks, ioi->rq_ticks, itv) / 1000.0);
+	cprintf_f(-1, 3, 7, 2, xds->await, r_await, w_await);
+	/* The ticks output is biased to output 1000 ticks per second */
+	cprintf_f(-1, 1, 6, 2, xds->svctm);
+	/*
+	 * Again: Ticks in milliseconds.
+	 * In the case of a device group (option -g), shi->used is the number of
+	 * devices in the group. Else shi->used equals 1.
+	 */
+	cprintf_pc(1, 6, 2,
+		   shi->used ? xds->util / 10.0 / (double) shi->used
+		             : xds->util / 10.0);	/* shi->used should never be zero here */
+	printf("\n");
+}
+
+/*
+ ***************************************************************************
+ * Display extended stats, read from /proc/{diskstats,partitions} or /sys,
+ * in JSON format.
+ *
+ * IN:
+ * @tab		Number of tabs to print.
+ * @itv		Interval of time.
+ * @fctr	Conversion factor.
+ * @shi		Structures describing the devices and partitions.
+ * @ioi		Current sample statistics.
+ * @ioj		Previous sample statistics.
+ * @devname	Current device name.
+ * @xds		Extended stats for current device.
+ * @r_await	r_await metric value.
+ * @w_await	w_await metric value.
+ ***************************************************************************
+ */
+void write_json_ext_stat(int tab, unsigned long long itv, int fctr,
 		    struct io_hdr_stats *shi, struct io_stats *ioi,
-		    struct io_stats *ioj)
+		    struct io_stats *ioj, char *devname, struct ext_disk_stats *xds,
+		    double r_await, double w_await)
+{
+	xprintf0(tab,
+		 "{\"disk_device\": \"%s\", \"rrqm\": %.2f, \"wrqm\": %.2f, "
+		 "\"r\": %.2f, \"w\": %.2f, \"rkB\": %.2f, \"wkB\": %.2f, "
+		 "\"avgrq-sz\": %.2f, \"avgqu-sz\": %.2f, "
+		 "\"await\": %.2f, \"r_await\": %.2f, \"w_await\": %.2f, "
+		 "\"svctm\": %.2f, \"util\": %.2f}",
+		 devname,
+		 S_VALUE(ioj->rd_merges, ioi->rd_merges, itv),
+		 S_VALUE(ioj->wr_merges, ioi->wr_merges, itv),
+		 S_VALUE(ioj->rd_ios, ioi->rd_ios, itv),
+		 S_VALUE(ioj->wr_ios, ioi->wr_ios, itv),
+		 S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv) / fctr,
+		 S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv) / fctr,
+		 xds->arqsz,
+		 S_VALUE(ioj->rq_ticks, ioi->rq_ticks, itv) / 1000.0,
+		 xds->await,
+		 r_await,
+		 w_await,
+		 xds->svctm,
+		 shi->used ? xds->util / 10.0 / (double) shi->used
+			   : xds->util / 10.0);	/* shi->used should never be zero here */
+}
+
+/*
+ ***************************************************************************
+ * Display extended stats, read from /proc/{diskstats,partitions} or /sys,
+ * in plain or JSON format.
+ *
+ * IN:
+ * @itv		Interval of time.
+ * @fctr	Conversion factor.
+ * @shi		Structures describing the devices and partitions.
+ * @ioi		Current sample statistics.
+ * @ioj		Previous sample statistics.
+ * @tab		Number of tabs to print (JSON output only).
+ ***************************************************************************
+ */
+void write_ext_stat(unsigned long long itv, int fctr,
+		    struct io_hdr_stats *shi, struct io_stats *ioi,
+		    struct io_stats *ioj, int tab)
 {
 	char *devname = NULL;
 	struct stats_disk sdc, sdp;
@@ -948,13 +1144,46 @@ void write_ext_stat(int curr, unsigned long long itv, int fctr,
 		  (ioi->wr_ticks - ioj->wr_ticks) /
 		  ((double) (ioi->wr_ios - ioj->wr_ios)) : 0.0;
 
-	/* Print device name */
+	/* Get device name */
 	if (DISPLAY_PERSIST_NAME_I(flags)) {
 		devname = get_persistent_name_from_pretty(shi->name);
 	}
 	if (!devname) {
 		devname = shi->name;
 	}
+
+	if (DISPLAY_JSON_OUTPUT(flags)) {
+		write_json_ext_stat(tab, itv, fctr, shi, ioi, ioj, devname, &xds,
+				    r_await, w_await);
+	}
+	else {
+		write_plain_ext_stat(itv, fctr, shi, ioi, ioj, devname, &xds,
+				     r_await, w_await);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Write basic stats, read from /proc/diskstats or from sysfs, in plain
+ * format.
+ *
+ * IN:
+ * @itv		Interval of time.
+ * @fctr	Conversion factor.
+ * @ioi		Current sample statistics.
+ * @ioj		Previous sample statistics.
+ * @devname	Current device name.
+ * @rd_sec	Number of sectors read.
+ * @wr_sec	Number of sectors written.
+ ***************************************************************************
+ */
+void write_plain_basic_stat(unsigned long long itv, int fctr,
+			    struct io_stats *ioi, struct io_stats *ioj,
+			    char *devname, unsigned long long rd_sec,
+			    unsigned long long wr_sec)
+{
+	double rsectors, wsectors;
+
 	if (DISPLAY_HUMAN_READ(flags)) {
 		cprintf_in(IS_STR, "%s\n", devname, 0);
 		printf("%13s", "");
@@ -962,49 +1191,74 @@ void write_ext_stat(int curr, unsigned long long itv, int fctr,
 	else {
 		cprintf_in(IS_STR, "%-13s", devname, 0);
 	}
-
-	/*       rrq/s wrq/s   r/s   w/s  rsec  wsec  rqsz  qusz await r_await w_await svctm %util */
-	cprintf_f(2, 8, 2,
-		  S_VALUE(ioj->rd_merges, ioi->rd_merges, itv),
-		  S_VALUE(ioj->wr_merges, ioi->wr_merges, itv));
-	cprintf_f(2, 7, 2,
-		  S_VALUE(ioj->rd_ios, ioi->rd_ios, itv),
-		  S_VALUE(ioj->wr_ios, ioi->wr_ios, itv));
-	cprintf_f(4, 8, 2,
-		  S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv) / fctr,
-		  S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv) / fctr,
-		  xds.arqsz,
-		  S_VALUE(ioj->rq_ticks, ioi->rq_ticks, itv) / 1000.0);
-	cprintf_f(3, 7, 2, xds.await, r_await, w_await);
-	/* The ticks output is biased to output 1000 ticks per second */
-	cprintf_f(1, 6, 2, xds.svctm);
-	/*
-	 * Again: Ticks in milliseconds.
-	 * In the case of a device group (option -g), shi->used is the number of
-	 * devices in the group. Else shi->used equals 1.
-	 */
-	cprintf_pc(1, 6, 2,
-		   shi->used ? xds.util / 10.0 / (double) shi->used
-		             : xds.util / 10.0);	/* shi->used should never be zero here */
+	cprintf_f(-1, 1, 8, 2,
+		  S_VALUE(ioj->rd_ios + ioj->wr_ios, ioi->rd_ios + ioi->wr_ios, itv));
+	rsectors = S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv);
+	wsectors = S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv);
+	if (!DISPLAY_UNIT(flags)) {
+		rsectors /= fctr;
+		wsectors /= fctr;
+	}
+	cprintf_f(DISPLAY_UNIT(flags) ? 0 : -1, 2, 12, 2,
+		  rsectors, wsectors);
+	cprintf_u64(DISPLAY_UNIT(flags) ? 0 : -1, 2, 10,
+		    DISPLAY_UNIT(flags) ? (unsigned long long) rd_sec
+					: (unsigned long long) rd_sec / fctr,
+		    DISPLAY_UNIT(flags) ? (unsigned long long) wr_sec
+					: (unsigned long long) wr_sec / fctr);
 	printf("\n");
 }
 
 /*
  ***************************************************************************
- * Write basic stats, read from /proc/diskstats or from sysfs.
+ * Write basic stats, read from /proc/diskstats or from sysfs, in JSON
+ * format.
  *
  * IN:
- * @curr	Index in array for current sample statistics.
+ * @tab		Number of tabs to print.
+ * @itv		Interval of time.
+ * @fctr	Conversion factor.
+ * @ioi		Current sample statistics.
+ * @ioj		Previous sample statistics.
+ * @devname	Current device name.
+ * @rd_sec	Number of sectors read.
+ * @wr_sec	Number of sectors written.
+ ***************************************************************************
+ */
+void write_json_basic_stat(int tab, unsigned long long itv, int fctr,
+			   struct io_stats *ioi, struct io_stats *ioj,
+			   char *devname, unsigned long long rd_sec,
+			   unsigned long long wr_sec)
+{
+	xprintf0(tab,
+		 "{\"disk_device\": \"%s\", \"tps\": %.2f, "
+		 "\"kB_read_per_sec\": %.2f, \"kB_wrtn_per_sec\": %.2f, "
+		 "\"kB_read\": %llu, \"kB_wrtn\": %llu}",
+		 devname,
+		 S_VALUE(ioj->rd_ios + ioj->wr_ios, ioi->rd_ios + ioi->wr_ios, itv),
+		 S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv) / fctr,
+		 S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv) / fctr,
+		 (unsigned long long) rd_sec / fctr,
+		 (unsigned long long) wr_sec / fctr);
+}
+
+/*
+ ***************************************************************************
+ * Write basic stats, read from /proc/diskstats or from sysfs, in plain or
+ * JSON format.
+ *
+ * IN:
  * @itv		Interval of time.
  * @fctr	Conversion factor.
  * @shi		Structures describing the devices and partitions.
  * @ioi		Current sample statistics.
  * @ioj		Previous sample statistics.
+ * @tab		Number of tabs to print (JSON format only).
  ***************************************************************************
  */
-void write_basic_stat(int curr, unsigned long long itv, int fctr,
+void write_basic_stat(unsigned long long itv, int fctr,
 		      struct io_hdr_stats *shi, struct io_stats *ioi,
-		      struct io_stats *ioj)
+		      struct io_stats *ioj, int tab)
 {
 	char *devname = NULL;
 	unsigned long long rd_sec, wr_sec;
@@ -1015,13 +1269,6 @@ void write_basic_stat(int curr, unsigned long long itv, int fctr,
 	}
 	if (!devname) {
 		devname = shi->name;
-	}
-	if (DISPLAY_HUMAN_READ(flags)) {
-		cprintf_in(IS_STR, "%s\n", devname, 0);
-		printf("%13s", "");
-	}
-	else {
-		cprintf_in(IS_STR, "%-13s", devname, 0);
 	}
 
 	/* Print stats coming from /sys or /proc/diskstats */
@@ -1034,15 +1281,14 @@ void write_basic_stat(int curr, unsigned long long itv, int fctr,
 		wr_sec &= 0xffffffff;
 	}
 
-	cprintf_f(1, 8, 2,
-		  S_VALUE(ioj->rd_ios + ioj->wr_ios, ioi->rd_ios + ioi->wr_ios, itv));
-	cprintf_f(2, 12, 2,
-		  S_VALUE(ioj->rd_sectors, ioi->rd_sectors, itv) / fctr,
-		  S_VALUE(ioj->wr_sectors, ioi->wr_sectors, itv) / fctr);
-	cprintf_u64(2, 10,
-		    (unsigned long long) rd_sec / fctr,
-		    (unsigned long long) wr_sec / fctr);
-	printf("\n");
+	if (DISPLAY_JSON_OUTPUT(flags)) {
+		write_json_basic_stat(tab, itv, fctr, ioi, ioj, devname,
+				      rd_sec, wr_sec);
+	}
+	else {
+		write_plain_basic_stat(itv, fctr, ioi, ioj, devname,
+				       rd_sec, wr_sec);
+	}
 }
 
 /*
@@ -1056,7 +1302,7 @@ void write_basic_stat(int curr, unsigned long long itv, int fctr,
  */
 void write_stats(int curr, struct tm *rectime)
 {
-	int dev, i, fctr = 1;
+	int dev, i, fctr = 1, tab = 4, next = FALSE;
 	unsigned long long itv;
 	struct io_hdr_stats *shi;
 	struct io_dlist *st_dev_list_i;
@@ -1064,15 +1310,13 @@ void write_stats(int curr, struct tm *rectime)
 	/* Test stdout */
 	TEST_STDOUT(STDOUT_FILENO);
 
+	if (DISPLAY_JSON_OUTPUT(flags)) {
+		xprintf(tab++, "{");
+	}
+
 	/* Print time stamp */
 	if (DISPLAY_TIMESTAMP(flags)) {
-		if (DISPLAY_ISO(flags)) {
-			strftime(timestamp, sizeof(timestamp), "%FT%T%z", rectime);
-		}
-		else {
-			strftime(timestamp, sizeof(timestamp), "%x %X", rectime);
-		}
-		printf("%s\n", timestamp);
+		write_sample_timestamp(tab, rectime);
 #ifdef DEBUG
 		if (DISPLAY_DEBUG(flags)) {
 			fprintf(stderr, "%s\n", timestamp);
@@ -1106,7 +1350,14 @@ void write_stats(int curr, struct tm *rectime)
 #endif
 
 		/* Display CPU utilization */
-		write_cpu_stat(curr, itv);
+		write_cpu_stat(curr, itv, tab);
+
+		if (DISPLAY_JSON_OUTPUT(flags)) {
+			if (DISPLAY_DISK(flags)) {
+				printf(",");
+			}
+			printf("\n");
+		}
 	}
 
 	if (cpu_nr > 1) {
@@ -1120,7 +1371,7 @@ void write_stats(int curr, struct tm *rectime)
 		shi = st_hdr_iodev;
 
 		/* Display disk stats header */
-		write_disk_stat_header(&fctr);
+		write_disk_stat_header(&fctr, &tab);
 
 		for (i = 0; i < iodev_nr; i++, shi++) {
 			if (shi->used) {
@@ -1186,14 +1437,29 @@ void write_stats(int curr, struct tm *rectime)
 				}
 #endif
 
+				if (DISPLAY_JSON_OUTPUT(flags) && next) {
+					printf(",\n");
+				}
+				next = TRUE;
+
 				if (DISPLAY_EXTENDED(flags)) {
-					write_ext_stat(curr, itv, fctr, shi, ioi, ioj);
+					write_ext_stat(itv, fctr, shi, ioi, ioj, tab);
 				}
 				else {
-					write_basic_stat(curr, itv, fctr, shi, ioi, ioj);
+					write_basic_stat(itv, fctr, shi, ioi, ioj, tab);
 				}
 			}
 		}
+		if (DISPLAY_JSON_OUTPUT(flags)) {
+			printf("\n");
+			xprintf(--tab, "]");
+		}
+	}
+
+	if (DISPLAY_JSON_OUTPUT(flags)) {
+		xprintf0(--tab, "}");
+	}
+	else {
 		printf("\n");
 	}
 }
@@ -1285,12 +1551,22 @@ void rw_io_stat_loop(long int count, struct tm *rectime)
 			skip = 0;
 		}
 
+		if (DISPLAY_JSON_OUTPUT(flags)) {
+			if (count) {
+			printf(",");
+			}
+			printf("\n");
+		}
 		if (count) {
 			curr ^= 1;
 			pause();
 		}
 	}
 	while (count);
+
+	if (DISPLAY_JSON_OUTPUT(flags)) {
+		printf("\t\t\t]\n\t\t}\n\t]\n}}\n");
+	}
 }
 
 /*
@@ -1388,6 +1664,11 @@ int main(int argc, char **argv)
 			group_nr++;
 		}
 
+		else if (!strcmp(argv[opt], "--human")) {
+			flags |= I_D_UNIT;
+			opt++;
+		}
+
 		else if (!strcmp(argv[opt], "-j")) {
 			if (argv[++opt]) {
 				if (strnlen(argv[opt], MAX_FILE_LEN) >= MAX_FILE_LEN - 1) {
@@ -1406,6 +1687,17 @@ int main(int argc, char **argv)
 				 * them as human readable by default.
 				 */
 				flags |= I_D_PERSIST_NAME + I_D_HUMAN_READ;
+				opt++;
+			}
+			else {
+				usage(argv[0]);
+			}
+		}
+
+		else if (!strcmp(argv[opt], "-o")) {
+			/* Select output format */
+			if (argv[++opt] && !strcmp(argv[opt], K_JSON)) {
+				flags |= I_D_JSON_OUTPUT;
 				opt++;
 			}
 			else {
@@ -1445,9 +1737,9 @@ int main(int argc, char **argv)
 				case 'h':
 					/*
 					 * Display device utilization report
-					 * in a human readable format.
+					 * in a human readable format. Also imply --human.
 					 */
-					flags |= I_D_HUMAN_READ;
+					flags |= I_D_HUMAN_READ + I_D_UNIT;
 					break;
 
 				case 'k':
@@ -1587,6 +1879,11 @@ int main(int argc, char **argv)
 		dm_major = get_devmap_major();
 	}
 
+	if (DISPLAY_JSON_OUTPUT(flags)) {
+		/* Use a decimal point to make JSON code compliant with RFC7159 */
+		setlocale(LC_NUMERIC, "C");
+	}
+
 	/* Init structures according to machine architecture */
 	io_sys_init();
 	if (group_nr > 0) {
@@ -1602,10 +1899,13 @@ int main(int argc, char **argv)
 	/* Get system name, release number and hostname */
 	uname(&header);
 	if (print_gal_header(&rectime, header.sysname, header.release,
-			     header.nodename, header.machine, cpu_nr)) {
+			     header.nodename, header.machine, cpu_nr,
+			     DISPLAY_JSON_OUTPUT(flags))) {
 		flags |= I_D_ISO;
 	}
-	printf("\n");
+	if (!DISPLAY_JSON_OUTPUT(flags)) {
+		printf("\n");
+	}
 
 	/* Set a handler for SIGALRM */
 	memset(&alrm_act, 0, sizeof(alrm_act));

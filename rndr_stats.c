@@ -741,41 +741,20 @@ __print_funct_t render_memory_stats(struct activity *a, int isdb, char *pre,
 				    int curr, unsigned long long itv)
 {
 	struct stats_memory
-		*smc = (struct stats_memory *) a->buf[curr],
-		*smp = (struct stats_memory *) a->buf[!curr];
+		*smc = (struct stats_memory *) a->buf[curr];
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 	int ptn;
 
 	if (DISPLAY_MEMORY(a->opt_flags)) {
 
-		render(isdb, pre, PT_NOFLAG,
-		       "-\tfrmpg/s", NULL, NULL,
-		       NOVAL,
-		       S_VALUE((double) KB_TO_PG(smp->frmkb),
-			       (double) KB_TO_PG(smc->frmkb), itv),
-		       NULL);
-
-		render(isdb, pre, PT_NOFLAG,
-		       "-\tbufpg/s", NULL, NULL,
-		       NOVAL,
-		       S_VALUE((double) KB_TO_PG(smp->bufkb),
-			       (double) KB_TO_PG(smc->bufkb), itv),
-		       NULL);
-
-		render(isdb, pre, pt_newlin,
-		       "-\tcampg/s", NULL, NULL,
-		       NOVAL,
-		       S_VALUE((double) KB_TO_PG(smp->camkb),
-			       (double) KB_TO_PG(smc->camkb), itv),
-		       NULL);
-	}
-
-	if (DISPLAY_MEM_AMT(a->opt_flags)) {
-
 		render(isdb, pre, PT_USEINT,
 		       "-\tkbmemfree", NULL, NULL,
 		       smc->frmkb, DNOVAL, NULL);
+
+		render(isdb, pre, PT_USEINT,
+		       "-\tkbavail", NULL, NULL,
+		       smc->availablekb, DNOVAL, NULL);
 
 		render(isdb, pre, PT_USEINT,
 		       "-\tkbmemused", NULL, NULL,
@@ -3006,5 +2985,124 @@ __print_funct_t render_fchost_stats(struct activity *a, int isdb, char *pre,
 		       NOVAL,
 		       S_VALUE(sfcp->f_txwords, sfcc->f_txwords, itv),
 		       NULL);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display softnet statistics in selected format.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @isdb	Flag, true if db printing, false if ppc printing.
+ * @pre		Prefix string for output entries
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t render_softnet_stats(struct activity *a, int isdb, char *pre,
+				     int curr, unsigned long long itv)
+{
+	int i;
+	struct stats_softnet *ssnc, *ssnp;
+	int pt_newlin
+		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
+
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+
+		/*
+		 * The size of a->buf[...] CPU structure may be different from the default
+		 * sizeof(struct stats_pwr_cpufreq) value if data have been read from a file!
+		 * That's why we don't use a syntax like:
+		 * ssnc = (struct stats_softnet *) a->buf[...] + i;
+                 */
+                ssnc = (struct stats_softnet *) ((char *) a->buf[curr] + i * a->msize);
+                ssnp = (struct stats_softnet *) ((char *) a->buf[!curr] + i * a->msize);
+
+		/*
+		 * Note: a->nr is in [1, NR_CPUS + 1].
+		 * Bitmap size is provided for (NR_CPUS + 1) CPUs.
+		 * Anyway, NR_CPUS may vary between the version of sysstat
+		 * used by sadc to create a file, and the version of sysstat
+		 * used by sar to read it...
+		 */
+
+		/* Should current CPU (including CPU "all") be displayed? */
+		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
+
+			if (!i) {
+				/* This is CPU "all" */
+				render(isdb, pre, PT_NOFLAG,
+				       "all\ttotal/s",
+				       "-1", NULL,
+				       NOVAL,
+				       S_VALUE(ssnp->processed, ssnc->processed, itv),
+				       NULL);
+
+				render(isdb, pre, PT_NOFLAG,
+				       "all\tdropd/s",
+				       NULL, NULL,
+				       NOVAL,
+				       S_VALUE(ssnp->dropped, ssnc->dropped, itv),
+				       NULL);
+
+				render(isdb, pre, PT_NOFLAG,
+				       "all\tsqueezd/s",
+				       NULL, NULL,
+				       NOVAL,
+				       S_VALUE(ssnp->time_squeeze, ssnc->time_squeeze, itv),
+				       NULL);
+
+				render(isdb, pre, PT_NOFLAG,
+				       "all\trx_rps/s",
+				       NULL, NULL,
+				       NOVAL,
+				       S_VALUE(ssnp->received_rps, ssnc->received_rps, itv),
+				       NULL);
+
+				render(isdb, pre, pt_newlin,
+				       "all\tflw_lim/s",
+				       NULL, NULL,
+				       NOVAL,
+				       S_VALUE(ssnp->flow_limit, ssnc->flow_limit, itv),
+				       NULL);
+			}
+			else {
+				render(isdb, pre, PT_NOFLAG,
+				       "cpu%d\ttotal/s",
+				       "%d", cons(iv, i - 1, NOVAL),
+				       NOVAL,
+				       S_VALUE(ssnp->processed, ssnc->processed, itv),
+				       NULL);
+
+				render(isdb, pre, PT_NOFLAG,
+				       "cpu%d\tdropd/s",
+				       NULL, cons(iv, i - 1, NOVAL),
+				       NOVAL,
+				       S_VALUE(ssnp->dropped, ssnc->dropped, itv),
+				       NULL);
+
+				render(isdb, pre, PT_NOFLAG,
+				       "cpu%d\tsqueezd/s",
+				       NULL, cons(iv, i - 1, NOVAL),
+				       NOVAL,
+				       S_VALUE(ssnp->time_squeeze, ssnc->time_squeeze, itv),
+				       NULL);
+
+				render(isdb, pre, PT_NOFLAG,
+				       "cpu%d\trx_rps/s",
+				       NULL, cons(iv, i - 1, NOVAL),
+				       NOVAL,
+				       S_VALUE(ssnp->received_rps, ssnc->received_rps, itv),
+				       NULL);
+
+				render(isdb, pre, pt_newlin,
+				       "cpu%d\tflw_lim/s",
+				       NULL, cons(iv, i - 1, NOVAL),
+				       NOVAL,
+				       S_VALUE(ssnp->flow_limit, ssnc->flow_limit, itv),
+				       NULL);
+			}
+		}
 	}
 }

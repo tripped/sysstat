@@ -58,6 +58,7 @@
 #define NET_SOCKSTAT6	"/proc/net/sockstat6"
 #define NET_RPC_NFS	"/proc/net/rpc/nfs"
 #define NET_RPC_NFSD	"/proc/net/rpc/nfsd"
+#define NET_SOFTNET	"/proc/net/softnet_stat"
 #define LOADAVG		"/proc/loadavg"
 #define VMSTAT		"/proc/vmstat"
 #define NET_SNMP	"/proc/net/snmp"
@@ -162,22 +163,23 @@ struct stats_io {
 
 /* Structure for memory and swap space utilization statistics */
 struct stats_memory {
-	unsigned long frmkb	__attribute__ ((aligned (8)));
-	unsigned long bufkb	__attribute__ ((aligned (8)));
-	unsigned long camkb	__attribute__ ((aligned (8)));
-	unsigned long tlmkb	__attribute__ ((aligned (8)));
-	unsigned long frskb	__attribute__ ((aligned (8)));
-	unsigned long tlskb	__attribute__ ((aligned (8)));
-	unsigned long caskb	__attribute__ ((aligned (8)));
-	unsigned long comkb	__attribute__ ((aligned (8)));
-	unsigned long activekb	__attribute__ ((aligned (8)));
-	unsigned long inactkb	__attribute__ ((aligned (8)));
-	unsigned long dirtykb	__attribute__ ((aligned (8)));
-	unsigned long anonpgkb	__attribute__ ((aligned (8)));
-	unsigned long slabkb	__attribute__ ((aligned (8)));
-	unsigned long kstackkb	__attribute__ ((aligned (8)));
-	unsigned long pgtblkb	__attribute__ ((aligned (8)));
-	unsigned long vmusedkb	__attribute__ ((aligned (8)));
+	unsigned long frmkb		__attribute__ ((aligned (8)));
+	unsigned long bufkb		__attribute__ ((aligned (8)));
+	unsigned long camkb		__attribute__ ((aligned (8)));
+	unsigned long tlmkb		__attribute__ ((aligned (8)));
+	unsigned long frskb		__attribute__ ((aligned (8)));
+	unsigned long tlskb		__attribute__ ((aligned (8)));
+	unsigned long caskb		__attribute__ ((aligned (8)));
+	unsigned long comkb		__attribute__ ((aligned (8)));
+	unsigned long activekb		__attribute__ ((aligned (8)));
+	unsigned long inactkb		__attribute__ ((aligned (8)));
+	unsigned long dirtykb		__attribute__ ((aligned (8)));
+	unsigned long anonpgkb		__attribute__ ((aligned (8)));
+	unsigned long slabkb		__attribute__ ((aligned (8)));
+	unsigned long kstackkb		__attribute__ ((aligned (8)));
+	unsigned long pgtblkb		__attribute__ ((aligned (8)));
+	unsigned long vmusedkb		__attribute__ ((aligned (8)));
+	unsigned long availablekb	__attribute__ ((aligned (8)));
 };
 
 #define STATS_MEMORY_SIZE	(sizeof(struct stats_memory))
@@ -568,6 +570,17 @@ struct stats_fchost {
 
 #define STATS_FCHOST_SIZE	(sizeof(struct stats_fchost))
 
+/* Structure for softnet statistics */
+struct stats_softnet {
+	unsigned int processed		__attribute__ ((aligned (4)));
+	unsigned int dropped		__attribute__ ((packed));
+	unsigned int time_squeeze	__attribute__ ((packed));
+	unsigned int received_rps	__attribute__ ((packed));
+	unsigned int flow_limit		__attribute__ ((packed));
+};
+
+#define STATS_SOFTNET_SIZE	(sizeof(struct stats_softnet))
+
 /*
  ***************************************************************************
  * Prototypes for functions used to read system statistics
@@ -650,5 +663,7 @@ void read_filesystem
 	(struct stats_filesystem *, int);
 void read_fchost
 	(struct stats_fchost *, int);
+void read_softnet
+	(struct stats_softnet *, int);
 
 #endif /* _RD_STATS_H */

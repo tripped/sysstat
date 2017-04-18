@@ -468,17 +468,17 @@ __print_funct_t json_print_memory_stats(struct activity *a, int curr, int tab,
 					unsigned long long itv)
 {
 	struct stats_memory
-		*smc = (struct stats_memory *) a->buf[curr],
-		*smp = (struct stats_memory *) a->buf[!curr];
+		*smc = (struct stats_memory *) a->buf[curr];
 	int sep = FALSE;
 
 	xprintf0(tab, "\"memory\": {");
 
-	if (DISPLAY_MEM_AMT(a->opt_flags)) {
+	if (DISPLAY_MEMORY(a->opt_flags)) {
 
 		sep = TRUE;
 
 		printf("\"memfree\": %lu, "
+		       "\"avail\": %lu, "
 		       "\"memused\": %lu, "
 		       "\"memused-percent\": %.2f, "
 		       "\"buffers\": %lu, "
@@ -489,6 +489,7 @@ __print_funct_t json_print_memory_stats(struct activity *a, int curr, int tab,
 		       "\"inactive\": %lu, "
 		       "\"dirty\": %lu",
 		       smc->frmkb,
+		       smc->availablekb,
 		       smc->tlmkb - smc->frmkb,
 		       smc->tlmkb ?
 		       SP_VALUE(smc->frmkb, smc->tlmkb, smc->tlmkb) :
@@ -539,23 +540,6 @@ __print_funct_t json_print_memory_stats(struct activity *a, int curr, int tab,
 		       (smc->tlskb - smc->frskb) ?
 		       SP_VALUE(0, smc->caskb, smc->tlskb - smc->frskb) :
 		       0.0);
-	}
-
-	if (DISPLAY_MEMORY(a->opt_flags)) {
-
-		if (sep) {
-			printf(", ");
-		}
-
-		printf("\"frmpg\": %.2f, "
-		       "\"bufpg\": %.2f, "
-		       "\"campg\": %.2f",
-		       S_VALUE((double) KB_TO_PG(smp->frmkb),
-			       (double) KB_TO_PG(smc->frmkb), itv),
-		       S_VALUE((double) KB_TO_PG(smp->bufkb),
-			       (double) KB_TO_PG(smc->bufkb), itv),
-		       S_VALUE((double) KB_TO_PG(smp->camkb),
-			       (double) KB_TO_PG(smc->camkb), itv));
 	}
 
 	printf("}");
@@ -2245,6 +2229,97 @@ __print_funct_t json_print_fchost_stats(struct activity *a, int curr, int tab,
 			 S_VALUE(sfcp->f_txframes, sfcc->f_txframes, itv),
 			 S_VALUE(sfcp->f_rxwords,  sfcc->f_rxwords,  itv),
 			 S_VALUE(sfcp->f_txwords,  sfcc->f_txwords,  itv));
+	}
+
+	printf("\n");
+	xprintf0(--tab, "]");
+
+	tab --;
+
+close_json_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		json_markup_network(tab, CLOSE_JSON_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display softnet statistics in JSON.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t json_print_softnet_stats(struct activity *a, int curr, int tab,
+					 unsigned long long itv)
+{
+	int i;
+	struct stats_softnet *ssnc, *ssnp;
+	int sep = FALSE;
+	char cpuno[8];
+
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+		goto close_json_markup;
+
+	json_markup_network(tab, OPEN_JSON_MARKUP);
+	tab++;
+
+	xprintf(tab++, "\"softnet\": [");
+
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+
+		/*
+		 * The size of a->buf[...] CPU structure may be different from the default
+		 * sizeof(struct stats_pwr_cpufreq) value if data have been read from a file!
+		 * That's why we don't use a syntax like:
+		 * ssnc = (struct stats_softnet *) a->buf[...] + i;
+                 */
+                ssnc = (struct stats_softnet *) ((char *) a->buf[curr] + i * a->msize);
+                ssnp = (struct stats_softnet *) ((char *) a->buf[!curr] + i * a->msize);
+
+		/*
+		 * Note: a->nr is in [1, NR_CPUS + 1].
+		 * Bitmap size is provided for (NR_CPUS + 1) CPUs.
+		 * Anyway, NR_CPUS may vary between the version of sysstat
+		 * used by sadc to create a file, and the version of sysstat
+		 * used by sar to read it...
+		 */
+
+		/* Should current CPU (including CPU "all") be displayed? */
+		if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
+			/* No */
+			continue;
+
+		/* Yes: Display current CPU stats */
+
+		if (sep) {
+			printf(",\n");
+		}
+		sep = TRUE;
+
+		if (!i) {
+			/* This is CPU "all" */
+			strcpy(cpuno, "all");
+		}
+		else {
+			sprintf(cpuno, "%d", i - 1);
+		}
+
+		xprintf0(tab, "{\"cpu\": \"%s\", "
+			 "\"total\": %.2f, "
+			 "\"dropd\": %.2f, "
+			 "\"squeezd\": %.2f, "
+			 "\"rx_rps\": %.2f, "
+			 "\"flw_lim\": %.2f}",
+			 cpuno,
+			 S_VALUE(ssnp->processed,    ssnc->processed,    itv),
+			 S_VALUE(ssnp->dropped,      ssnc->dropped,      itv),
+			 S_VALUE(ssnp->time_squeeze, ssnc->time_squeeze, itv),
+			 S_VALUE(ssnp->received_rps, ssnc->received_rps, itv),
+			 S_VALUE(ssnp->flow_limit,   ssnc->flow_limit,   itv));
 	}
 
 	printf("\n");

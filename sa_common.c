@@ -51,27 +51,6 @@ extern struct act_bitmap cpu_bitmap;
 
 /*
  ***************************************************************************
- * Init a bitmap (CPU, IRQ, etc.).
- *
- * IN:
- * @value	Value used to init bitmap.
- * @sz		Size of the bitmap in bytes.
- *
- * OUT:
- * @bitmap	Bitmap initialized.
- ***************************************************************************
- */
-void set_bitmap(unsigned char bitmap[], unsigned char value, unsigned int sz)
-{
-	register int i;
-
-	for (i = 0; i < sz; i++) {
-		bitmap[i] = value;
-	}
-}
-
-/*
- ***************************************************************************
  * Allocate structures.
  *
  * IN:
@@ -611,7 +590,8 @@ void print_report_hdr(unsigned int flags, struct tm *rectime,
 	/* Display the header */
 	print_gal_header(rectime, file_hdr->sa_sysname, file_hdr->sa_release,
 			 file_hdr->sa_nodename, file_hdr->sa_machine,
-			 cpu_nr > 1 ? cpu_nr - 1 : 1);
+			 cpu_nr > 1 ? cpu_nr - 1 : 1,
+			 PLAIN_OUTPUT);
 }
 
 /*
@@ -1540,19 +1520,20 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 		case 'A':
 			select_all_activities(act);
 
-			/* Force '-P ALL -I XALL -r ALL -u ALL' */
-
+			/*
+			 * Force '-P ALL -I ALL -r ALL -u ALL -F'.
+			 * Setting -F is compulsory because corresponding activity
+			 * has AO_MULTIPLE_OUTPUTS flag set.
+			 */
 			p = get_activity_position(act, A_MEMORY, EXIT_IF_NOT_FOUND);
-			act[p]->opt_flags |= AO_F_MEM_AMT + AO_F_MEM_DIA +
-					     AO_F_MEM_SWAP + AO_F_MEM_ALL;
+			act[p]->opt_flags |= AO_F_MEMORY + AO_F_SWAP + AO_F_MEM_ALL;
 
 			p = get_activity_position(act, A_IRQ, EXIT_IF_NOT_FOUND);
-			set_bitmap(act[p]->bitmap->b_array, ~0,
-				   BITMAP_SIZE(act[p]->bitmap->b_size));
-
+			memset(act[p]->bitmap->b_array, ~0,
+			       BITMAP_SIZE(act[p]->bitmap->b_size));
 			p = get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND);
-			set_bitmap(act[p]->bitmap->b_array, ~0,
-				   BITMAP_SIZE(act[p]->bitmap->b_size));
+			memset(act[p]->bitmap->b_array, ~0,
+			       BITMAP_SIZE(act[p]->bitmap->b_size));
 			act[p]->opt_flags = AO_F_CPU_ALL;
 
 			p = get_activity_position(act, A_FILESYSTEM, EXIT_IF_NOT_FOUND);
@@ -1629,7 +1610,7 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 		case 'r':
 			p = get_activity_position(act, A_MEMORY, EXIT_IF_NOT_FOUND);
 			act[p]->options   |= AO_SELECTED;
-			act[p]->opt_flags |= AO_F_MEM_AMT;
+			act[p]->opt_flags |= AO_F_MEMORY;
 			if (!*(argv[*opt] + i + 1) && argv[*opt + 1] && !strcmp(argv[*opt + 1], K_ALL)) {
 				(*opt)++;
 				act[p]->opt_flags |= AO_F_MEM_ALL;
@@ -1637,16 +1618,10 @@ int parse_sar_opt(char *argv[], int *opt, struct activity *act[],
 			}
 			break;
 
-		case 'R':
-			p = get_activity_position(act, A_MEMORY, EXIT_IF_NOT_FOUND);
-			act[p]->options   |= AO_SELECTED;
-			act[p]->opt_flags |= AO_F_MEM_DIA;
-			break;
-
 		case 'S':
 			p = get_activity_position(act, A_MEMORY, EXIT_IF_NOT_FOUND);
 			act[p]->options   |= AO_SELECTED;
-			act[p]->opt_flags |= AO_F_MEM_SWAP;
+			act[p]->opt_flags |= AO_F_SWAP;
 			break;
 
 		case 't':
@@ -1834,6 +1809,9 @@ int parse_sar_n_opt(char *argv[], int *opt, struct activity *act[])
 		else if (!strcmp(t, K_FC)) {
 			SELECT_ACTIVITY(A_NET_FC);
 		}
+		else if (!strcmp(t, K_SOFT)) {
+			SELECT_ACTIVITY(A_NET_SOFT);
+		}
 		else if (!strcmp(t, K_ALL)) {
 			SELECT_ACTIVITY(A_NET_DEV);
 			SELECT_ACTIVITY(A_NET_EDEV);
@@ -1854,6 +1832,7 @@ int parse_sar_n_opt(char *argv[], int *opt, struct activity *act[])
 			SELECT_ACTIVITY(A_NET_EICMP6);
 			SELECT_ACTIVITY(A_NET_UDP6);
 			SELECT_ACTIVITY(A_NET_FC);
+			SELECT_ACTIVITY(A_NET_SOFT);
 		}
 		else
 			return 1;
@@ -1881,45 +1860,21 @@ int parse_sar_n_opt(char *argv[], int *opt, struct activity *act[])
  */
 int parse_sar_I_opt(char *argv[], int *opt, struct activity *act[])
 {
-	int i, p;
-	unsigned char c;
-	char *t;
+	int p;
 
 	/* Select interrupt activity */
 	p = get_activity_position(act, A_IRQ, EXIT_IF_NOT_FOUND);
 	act[p]->options |= AO_SELECTED;
 
-	for (t = strtok(argv[*opt], ","); t; t = strtok(NULL, ",")) {
-		if (!strcmp(t, K_SUM)) {
-			/* Select total number of interrupts */
-			act[p]->bitmap->b_array[0] |= 0x01;
-		}
-		else if (!strcmp(t, K_ALL)) {
-			/* Set bit for the first 16 individual interrupts */
-			act[p]->bitmap->b_array[0] |= 0xfe;
-			act[p]->bitmap->b_array[1] |= 0xff;
-			act[p]->bitmap->b_array[2] |= 0x01;
-		}
-		else if (!strcmp(t, K_XALL)) {
-			/* Set every bit except for total number of interrupts */
-			c = act[p]->bitmap->b_array[0];
-			set_bitmap(act[p]->bitmap->b_array, ~0,
-				   BITMAP_SIZE(act[p]->bitmap->b_size));
-			act[p]->bitmap->b_array[0] = 0xfe | c;
-		}
-		else {
-			/* Get irq number */
-			if (strspn(t, DIGITS) != strlen(t))
-				return 1;
-			i = atoi(t);
-			if ((i < 0) || (i >= act[p]->bitmap->b_size))
-				return 1;
-			act[p]->bitmap->b_array[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
-		}
+	if (argv[++(*opt)]) {
+		if (parse_values(argv[*opt], act[p]->bitmap->b_array,
+			     act[p]->bitmap->b_size, K_SUM))
+			return 1;
+		(*opt)++;
+		return 0;
 	}
 
-	(*opt)++;
-	return 0;
+	return 1;
 }
 
 /*
@@ -1941,39 +1896,19 @@ int parse_sar_I_opt(char *argv[], int *opt, struct activity *act[])
  */
 int parse_sa_P_opt(char *argv[], int *opt, unsigned int *flags, struct activity *act[])
 {
-	int i, p;
-	char *t;
+	int p;
 
 	p = get_activity_position(act, A_CPU, EXIT_IF_NOT_FOUND);
 
 	if (argv[++(*opt)]) {
-
-		for (t = strtok(argv[*opt], ","); t; t = strtok(NULL, ",")) {
-			if (!strcmp(t, K_ALL)) {
-				/*
-				 * Set bit for every processor.
-				 * We still don't know if we are going to read stats
-				 * from a file or not...
-				 */
-				set_bitmap(act[p]->bitmap->b_array, ~0,
-					   BITMAP_SIZE(act[p]->bitmap->b_size));
-			}
-			else {
-				/* Get cpu number */
-				if (strspn(t, DIGITS) != strlen(t))
-					return 1;
-				i = atoi(t);
-				if ((i < 0) || (i >= act[p]->bitmap->b_size))
-					return 1;
-				act[p]->bitmap->b_array[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
-			}
-		}
+		if (parse_values(argv[*opt], act[p]->bitmap->b_array,
+			     act[p]->bitmap->b_size, K_LOWERALL))
+			return 1;
 		(*opt)++;
+		return 0;
 	}
-	else
-		return 1;
 
-	return 0;
+	return 1;
 }
 
 /*

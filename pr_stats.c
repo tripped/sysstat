@@ -42,6 +42,70 @@ extern int  dis;
 extern char timestamp[][TIMESTAMP_LEN];
 extern unsigned long avg_count;
 
+
+/*
+ ***************************************************************************
+ * Display current activity header line.
+ *
+ * IN:
+ * @timestamp	Timestamp for previous stat sample.
+ * @a		Activity structure.
+ * @pos		Index in @.hdr_line string, 0 being the first one (header
+ * 		are delimited by the '|' character).
+ * @iwidth	First column width (generally this is the item name). A
+ * 		negative value means that the corresponding field shall be
+ * 		displayed at the end of the line, with no indication of width.
+ * @vwidth	Column width for stats values.
+ ***************************************************************************
+ */
+void print_hdr_line(char *timestamp, struct activity *a, int pos, int iwidth, int vwidth)
+{
+	char hline[HEADER_LINE_LEN] = "";
+	char *hl, *tk, *it = NULL;
+	int i = -1, j;
+	int p = pos;
+
+	strncpy(hline, a->hdr_line, HEADER_LINE_LEN - 1);
+	hline[HEADER_LINE_LEN - 1] = '\0';
+	for (hl = strtok(hline, "|"); hl && (pos > 0); hl = strtok(NULL, "|"), pos--);
+	if (!hl)
+		/* Bad @pos arg given to function */
+		return;
+
+	printf("\n%-11s", timestamp);
+
+	if (strchr(hl, '&')) {
+		j = strcspn(hl, "&");
+		if ((a->opt_flags & 0xff00) & (1 << (8 + p))) {
+			/* Display whole header line */
+			*(hl + j) = ';';
+		}
+		else {
+			/* Display only the first part of the header line */
+			*(hl + j) = '\0';
+		}
+	}
+	/* Display each field */
+	for (tk = strtok(hl, ";"); tk; tk = strtok(NULL, ";"), i--) {
+		if (iwidth > 0) {
+			printf(" %*s", iwidth, tk);
+			iwidth = 0;
+			continue;
+		}
+		if ((iwidth < 0) && (iwidth == i)) {
+			it = tk;
+			iwidth = 0;
+		}
+		else {
+			printf(" %*s", vwidth, tk);
+		}
+	}
+	if (it) {
+		printf(" %s", it);
+	}
+	printf("\n");
+}
+
 /*
  ***************************************************************************
  * Display CPU statistics.
@@ -61,17 +125,7 @@ __print_funct_t print_cpu_stats(struct activity *a, int prev, int curr,
 	struct stats_cpu *scc, *scp;
 
 	if (dis) {
-		if (DISPLAY_CPU_DEF(a->opt_flags)) {
-			printf("\n%-11s     CPU     %%user     %%nice   %%system"
-			       "   %%iowait    %%steal     %%idle\n",
-			       timestamp[!curr]);
-		}
-		else if (DISPLAY_CPU_ALL(a->opt_flags)) {
-			printf("\n%-11s     CPU      %%usr     %%nice      %%sys"
-			       "   %%iowait    %%steal      %%irq     %%soft"
-			       "    %%guest    %%gnice     %%idle\n",
-			       timestamp[!curr]);
-		}
+		print_hdr_line(timestamp[!curr], a, FIRST + DISPLAY_CPU_ALL(a->opt_flags), 7, 9);
 	}
 
 	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
@@ -227,11 +281,11 @@ __print_funct_t print_pcsw_stats(struct activity *a, int prev, int curr,
 		*spp = (struct stats_pcsw *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s    proc/s   cswch/s\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(2, 9, 2,
+	cprintf_f(-1, 2, 9, 2,
 		  S_VALUE(spp->processes,      spc->processes,      itv),
 		  S_VALUE(spp->context_switch, spc->context_switch, itv));
 	printf("\n");
@@ -255,7 +309,7 @@ __print_funct_t print_irq_stats(struct activity *a, int prev, int curr,
 	struct stats_irq *sic, *sip;
 
 	if (dis) {
-		printf("\n%-11s      INTR    intr/s\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
@@ -284,7 +338,7 @@ __print_funct_t print_irq_stats(struct activity *a, int prev, int curr,
 				cprintf_in(IS_INT, " %9d", "", i -1);
 			}
 
-			cprintf_f(1, 9, 2, S_VALUE(sip->irq_nr, sic->irq_nr, itv));
+			cprintf_f(-1, 1, 9, 2, S_VALUE(sip->irq_nr, sic->irq_nr, itv));
 			printf("\n");
 		}
 	}
@@ -309,11 +363,11 @@ __print_funct_t print_swap_stats(struct activity *a, int prev, int curr,
 		*ssp = (struct stats_swap *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s  pswpin/s pswpout/s\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(2, 9, 2,
+	cprintf_f(-1, 2, 9, 2,
 		  S_VALUE(ssp->pswpin,  ssc->pswpin,  itv),
 		  S_VALUE(ssp->pswpout, ssc->pswpout, itv));
 	printf("\n");
@@ -338,13 +392,11 @@ __print_funct_t print_paging_stats(struct activity *a, int prev, int curr,
 		*spp = (struct stats_paging *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s  pgpgin/s pgpgout/s   fault/s  majflt/s  pgfree/s"
-		       " pgscank/s pgscand/s pgsteal/s    %%vmeff\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(8, 9, 2,
+	cprintf_f(-1, 8, 9, 2,
 		  S_VALUE(spp->pgpgin,        spc->pgpgin,        itv),
 		  S_VALUE(spp->pgpgout,       spc->pgpgout,       itv),
 		  S_VALUE(spp->pgfault,       spc->pgfault,       itv),
@@ -382,8 +434,7 @@ __print_funct_t print_io_stats(struct activity *a, int prev, int curr,
 		*sip = (struct stats_io *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s       tps      rtps      wtps   bread/s   bwrtn/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
@@ -393,7 +444,7 @@ __print_funct_t print_io_stats(struct activity *a, int prev, int curr,
 	 * We display 0.0 in this case though we should rather tell
 	 * the user that the value cannot be calculated here.
 	 */
-	cprintf_f(5, 9, 2,
+	cprintf_f(-1, 5, 9, 2,
 		  sic->dk_drive < sip->dk_drive ? 0.0 :
 		  S_VALUE(sip->dk_drive, sic->dk_drive, itv),
 		  sic->dk_drive_rio < sip->dk_drive_rio ? 0.0 :
@@ -424,61 +475,49 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 			     unsigned long long itv, int dispavg)
 {
 	struct stats_memory
-		*smc = (struct stats_memory *) a->buf[curr],
-		*smp = (struct stats_memory *) a->buf[prev];
+		*smc = (struct stats_memory *) a->buf[curr];
 	static unsigned long long
-		avg_frmkb    = 0,
-		avg_bufkb    = 0,
-		avg_camkb    = 0,
-		avg_comkb    = 0,
-		avg_activekb = 0,
-		avg_inactkb  = 0,
-		avg_dirtykb  = 0,
-		avg_anonpgkb = 0,
-		avg_slabkb   = 0,
-		avg_kstackkb = 0,
-		avg_pgtblkb  = 0,
-		avg_vmusedkb = 0;
+		avg_frmkb       = 0,
+		avg_bufkb       = 0,
+		avg_camkb       = 0,
+		avg_comkb       = 0,
+		avg_activekb    = 0,
+		avg_inactkb     = 0,
+		avg_dirtykb     = 0,
+		avg_anonpgkb    = 0,
+		avg_slabkb      = 0,
+		avg_kstackkb    = 0,
+		avg_pgtblkb     = 0,
+		avg_vmusedkb    = 0,
+		avg_availablekb = 0;
 	static unsigned long long
 		avg_frskb = 0,
 		avg_tlskb = 0,
 		avg_caskb = 0;
+	int unit = -1;
+
+	if (DISPLAY_UNIT(flags)) {
+		/* Default values unit is kB */
+		unit = 2;
+	}
 
 	if (DISPLAY_MEMORY(a->opt_flags)) {
 		if (dis) {
-			printf("\n%-11s   frmpg/s   bufpg/s   campg/s\n",
-			       timestamp[!curr]);
-		}
-
-		printf("%-11s", timestamp[curr]);
-		cprintf_f(3, 9, 2,
-			  S_VALUE((double) KB_TO_PG(smp->frmkb), (double) KB_TO_PG(smc->frmkb), itv),
-			  S_VALUE((double) KB_TO_PG(smp->bufkb), (double) KB_TO_PG(smc->bufkb), itv),
-			  S_VALUE((double) KB_TO_PG(smp->camkb), (double) KB_TO_PG(smc->camkb), itv));
-		printf("\n");
-	}
-
-	if (DISPLAY_MEM_AMT(a->opt_flags)) {
-		if (dis) {
-			printf("\n%-11s kbmemfree kbmemused  %%memused kbbuffers  kbcached"
-			       "  kbcommit   %%commit  kbactive   kbinact   kbdirty", timestamp[!curr]);
-			if (DISPLAY_MEM_ALL(a->opt_flags)) {
-				printf("  kbanonpg    kbslab  kbkstack   kbpgtbl  kbvmused");
-			}
-			printf("\n");
+			print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 		}
 
 		if (!dispavg) {
 			/* Display instantaneous values */
 			printf("%-11s", timestamp[curr]);
-			cprintf_u64(2, 9,
+			cprintf_u64(unit, 3, 9,
 				    (unsigned long long) smc->frmkb,
+				    (unsigned long long) smc->availablekb,
 				    (unsigned long long) (smc->tlmkb - smc->frmkb));
 			cprintf_pc(1, 9, 2,
 				   smc->tlmkb ?
 				   SP_VALUE(smc->frmkb, smc->tlmkb, smc->tlmkb)
 				   : 0.0);
-			cprintf_u64(3, 9,
+			cprintf_u64(unit, 3, 9,
 				    (unsigned long long) smc->bufkb,
 				    (unsigned long long) smc->camkb,
 				    (unsigned long long) smc->comkb);
@@ -486,14 +525,14 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 				   (smc->tlmkb + smc->tlskb) ?
 				   SP_VALUE(0, smc->comkb, smc->tlmkb + smc->tlskb)
 				   : 0.0);
-			cprintf_u64(3, 9,
+			cprintf_u64(unit, 3, 9,
 				    (unsigned long long) smc->activekb,
 				    (unsigned long long) smc->inactkb,
 				    (unsigned long long) smc->dirtykb);
 
 			if (DISPLAY_MEM_ALL(a->opt_flags)) {
 				/* Display extended memory statistics */
-				cprintf_u64(5, 9,
+				cprintf_u64(unit, 5, 9,
 					    (unsigned long long) smc->anonpgkb,
 					    (unsigned long long) smc->slabkb,
 					    (unsigned long long) smc->kstackkb,
@@ -508,30 +547,32 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 			 * We assume that the total amount of memory installed can not vary
 			 * during the interval given on the command line.
 			 */
-			avg_frmkb    += smc->frmkb;
-			avg_bufkb    += smc->bufkb;
-			avg_camkb    += smc->camkb;
-			avg_comkb    += smc->comkb;
-			avg_activekb += smc->activekb;
-			avg_inactkb  += smc->inactkb;
-			avg_dirtykb  += smc->dirtykb;
-			avg_anonpgkb += smc->anonpgkb;
-			avg_slabkb   += smc->slabkb;
-			avg_kstackkb += smc->kstackkb;
-			avg_pgtblkb  += smc->pgtblkb;
-			avg_vmusedkb += smc->vmusedkb;
+			avg_frmkb       += smc->frmkb;
+			avg_bufkb       += smc->bufkb;
+			avg_camkb       += smc->camkb;
+			avg_comkb       += smc->comkb;
+			avg_activekb    += smc->activekb;
+			avg_inactkb     += smc->inactkb;
+			avg_dirtykb     += smc->dirtykb;
+			avg_anonpgkb    += smc->anonpgkb;
+			avg_slabkb      += smc->slabkb;
+			avg_kstackkb    += smc->kstackkb;
+			avg_pgtblkb     += smc->pgtblkb;
+			avg_vmusedkb    += smc->vmusedkb;
+			avg_availablekb += smc->availablekb;
 		}
 		else {
 			/* Display average values */
 			printf("%-11s", timestamp[curr]);
-			cprintf_f(2, 9, 0,
+			cprintf_f(unit, 3, 9, 0,
 				  (double) avg_frmkb / avg_count,
+				  (double) avg_availablekb / avg_count,
 				  (double) smc->tlmkb - ((double) avg_frmkb / avg_count));
 			cprintf_pc(1, 9, 2,
 				   smc->tlmkb ?
 				   SP_VALUE((double) (avg_frmkb / avg_count), smc->tlmkb, smc->tlmkb)
 				   : 0.0);
-			cprintf_f(3, 9, 0,
+			cprintf_f(unit, 3, 9, 0,
 				  (double) avg_bufkb / avg_count,
 				  (double) avg_camkb / avg_count,
 				  (double) avg_comkb / avg_count);
@@ -539,13 +580,13 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 				   (smc->tlmkb + smc->tlskb) ?
 				   SP_VALUE(0.0, (double) (avg_comkb / avg_count), smc->tlmkb + smc->tlskb)
 				   : 0.0);
-			cprintf_f(3, 9, 0,
+			cprintf_f(unit, 3, 9, 0,
 				  (double) avg_activekb / avg_count,
 				  (double) avg_inactkb / avg_count,
 				  (double) avg_dirtykb / avg_count);
 
 			if (DISPLAY_MEM_ALL(a->opt_flags)) {
-				cprintf_f(5, 9, 0,
+				cprintf_f(unit, 5, 9, 0,
 					  (double) avg_anonpgkb / avg_count,
 					  (double) avg_slabkb / avg_count,
 					  (double) avg_kstackkb / avg_count,
@@ -559,27 +600,26 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 			avg_frmkb = avg_bufkb = avg_camkb = avg_comkb = 0;
 			avg_activekb = avg_inactkb = avg_dirtykb = 0;
 			avg_anonpgkb = avg_slabkb = avg_kstackkb = 0;
-			avg_pgtblkb = avg_vmusedkb = 0;
+			avg_pgtblkb = avg_vmusedkb = avg_availablekb = 0;
 		}
 	}
 
 	if (DISPLAY_SWAP(a->opt_flags)) {
 		if (dis) {
-			printf("\n%-11s kbswpfree kbswpused  %%swpused  kbswpcad   %%swpcad\n",
-			       timestamp[!curr]);
+			print_hdr_line(timestamp[!curr], a, SECOND, 0, 9);
 		}
 
 		if (!dispavg) {
 			/* Display instantaneous values */
 			printf("%-11s", timestamp[curr]);
-			cprintf_u64(2, 9,
+			cprintf_u64(unit, 2, 9,
 				    (unsigned long long) smc->frskb,
 				    (unsigned long long) (smc->tlskb - smc->frskb));
 			cprintf_pc(1, 9, 2,
 				   smc->tlskb ?
 				   SP_VALUE(smc->frskb, smc->tlskb, smc->tlskb)
 				   : 0.0);
-			cprintf_u64(1, 9,
+			cprintf_u64(unit, 1, 9,
 				    (unsigned long long) smc->caskb);
 			cprintf_pc(1, 9, 2,
 				   (smc->tlskb - smc->frskb) ?
@@ -599,7 +639,7 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 		else {
 			/* Display average values */
 			printf("%-11s", timestamp[curr]);
-			cprintf_f(2, 9, 0,
+			cprintf_f(unit, 2, 9, 0,
 				  (double) avg_frskb / avg_count,
 				  ((double) avg_tlskb / avg_count) -
 				  ((double) avg_frskb / avg_count));
@@ -609,7 +649,7 @@ void stub_print_memory_stats(struct activity *a, int prev, int curr,
 					    (double) avg_tlskb / avg_count,
 					    (double) avg_tlskb / avg_count)
 				   : 0.0);
-			cprintf_f(1, 9, 0,
+			cprintf_f(unit, 1, 9, 0,
 				  (double) avg_caskb / avg_count);
 			cprintf_pc(1, 9, 2,
 				   (avg_tlskb != avg_frskb) ?
@@ -682,14 +722,13 @@ void stub_print_ktables_stats(struct activity *a, int curr, int dispavg)
 
 
 	if (dis) {
-		printf("\n%-11s dentunusd   file-nr  inode-nr    pty-nr\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	if (!dispavg) {
 		/* Display instantaneous values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_u64(4, 9,
+		cprintf_u64(-1, 4, 9,
 			    (unsigned long long) skc->dentry_stat,
 			    (unsigned long long) skc->file_used,
 			    (unsigned long long) skc->inode_used,
@@ -708,7 +747,7 @@ void stub_print_ktables_stats(struct activity *a, int curr, int dispavg)
 	else {
 		/* Display average values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_f(4, 9, 0,
+		cprintf_f(-1, 4, 9, 0,
 			  (double) avg_dentry_stat / avg_count,
 			  (double) avg_file_used   / avg_count,
 			  (double) avg_inode_used  / avg_count,
@@ -778,21 +817,20 @@ void stub_print_queue_stats(struct activity *a, int curr, int dispavg)
 		avg_procs_blocked = 0;
 
 	if (dis) {
-		printf("\n%-11s   runq-sz  plist-sz   ldavg-1   ldavg-5  ldavg-15   blocked\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	if (!dispavg) {
 		/* Display instantaneous values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_u64(2, 9,
+		cprintf_u64(-1, 2, 9,
 			    (unsigned long long) sqc->nr_running,
 			    (unsigned long long) sqc->nr_threads);
-		cprintf_f(3, 9, 2,
+		cprintf_f(-1, 3, 9, 2,
 			  (double) sqc->load_avg_1  / 100,
 			  (double) sqc->load_avg_5  / 100,
 			  (double) sqc->load_avg_15 / 100);
-		cprintf_u64(1, 9,
+		cprintf_u64(-1, 1, 9,
 			    (unsigned long long) sqc->procs_blocked);
 		printf("\n");
 
@@ -807,14 +845,14 @@ void stub_print_queue_stats(struct activity *a, int curr, int dispavg)
 	else {
 		/* Display average values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_f(2, 9, 0,
+		cprintf_f(-1, 2, 9, 0,
 			  (double) avg_nr_running / avg_count,
 			  (double) avg_nr_threads / avg_count);
-		cprintf_f(3, 9, 2,
+		cprintf_f(-1, 3, 9, 2,
 			  (double) avg_load_avg_1  / (avg_count * 100),
 			  (double) avg_load_avg_5  / (avg_count * 100),
 			  (double) avg_load_avg_15 / (avg_count * 100));
-		cprintf_f(1, 9, 0,
+		cprintf_f(-1, 1, 9, 0,
 			  (double) avg_procs_blocked / avg_count);
 		printf("\n");
 
@@ -877,8 +915,7 @@ __print_funct_t print_serial_stats(struct activity *a, int prev, int curr,
 	struct stats_serial *ssc, *ssp;
 
 	if (dis) {
-		printf("\n%-11s       TTY   rcvin/s   xmtin/s framerr/s prtyerr/s"
-		       "     brk/s   ovrun/s\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	for (i = 0; i < a->nr; i++) {
@@ -893,7 +930,7 @@ __print_funct_t print_serial_stats(struct activity *a, int prev, int curr,
 		cprintf_in(IS_INT, "       %3d", "", ssc->line - 1);
 
 		if ((ssc->line == ssp->line) || WANT_SINCE_BOOT(flags)) {
-			cprintf_f(6, 9, 2,
+			cprintf_f(-1, 6, 9, 2,
 				  S_VALUE(ssp->rx,      ssc->rx,      itv),
 				  S_VALUE(ssp->tx,      ssc->tx,      itv),
 				  S_VALUE(ssp->frame,   ssc->frame,   itv),
@@ -927,13 +964,17 @@ __print_funct_t print_disk_stats(struct activity *a, int prev, int curr,
 	struct stats_disk *sdc,	*sdp, sdpzero;
 	struct ext_disk_stats xds;
 	char *dev_name, *persist_dev_name;
+	int unit = -1;
 
 	memset(&sdpzero, 0, STATS_DISK_SIZE);
 
+	if (DISPLAY_UNIT(flags)) {
+		/* Default values unit is sectors */
+		unit = 0;
+	}
+
 	if (dis) {
-		printf("\n%-11s       DEV       tps  rd_sec/s  wr_sec/s  avgrq-sz"
-		       "  avgqu-sz     await     svctm     %%util\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	for (i = 0; i < a->nr; i++) {
@@ -979,10 +1020,12 @@ __print_funct_t print_disk_stats(struct activity *a, int prev, int curr,
 		printf("%-11s", timestamp[curr]);
 
 		cprintf_in(IS_STR, " %9s", dev_name, 0);
-		cprintf_f(7, 9, 2,
-			  S_VALUE(sdp->nr_ios, sdc->nr_ios,  itv),
+		cprintf_f(-1, 1, 9, 2,
+			  S_VALUE(sdp->nr_ios, sdc->nr_ios,  itv));
+		cprintf_f(unit, 2, 9, 2,
 			  S_VALUE(sdp->rd_sect, sdc->rd_sect, itv),
-			  S_VALUE(sdp->wr_sect, sdc->wr_sect, itv),
+			  S_VALUE(sdp->wr_sect, sdc->wr_sect, itv));
+		cprintf_f(-1, 4, 9, 2,
 			  /* See iostat for explanations */
 			  xds.arqsz,
 			  S_VALUE(sdp->rq_ticks, sdc->rq_ticks, itv) / 1000.0,
@@ -1011,12 +1054,17 @@ __print_funct_t print_net_dev_stats(struct activity *a, int prev, int curr,
 	int i, j;
 	struct stats_net_dev *sndc, *sndp, sndzero;
 	double rxkb, txkb, ifutil;
+	int unit = -1;
 
 	memset(&sndzero, 0, STATS_NET_DEV_SIZE);
 
+	if (DISPLAY_UNIT(flags)) {
+		/* Default values unit is bytes */
+		unit = 1;
+	}
+
 	if (dis) {
-		printf("\n%-11s     IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s"
-		       "   rxcmp/s   txcmp/s  rxmcst/s   %%ifutil\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	for (i = 0; i < a->nr; i++) {
@@ -1041,11 +1089,13 @@ __print_funct_t print_net_dev_stats(struct activity *a, int prev, int curr,
 		rxkb = S_VALUE(sndp->rx_bytes, sndc->rx_bytes, itv);
 		txkb = S_VALUE(sndp->tx_bytes, sndc->tx_bytes, itv);
 
-		cprintf_f(7, 9, 2,
-			  S_VALUE(sndp->rx_packets,    sndc->rx_packets,    itv),
-			  S_VALUE(sndp->tx_packets,    sndc->tx_packets,    itv),
-			  rxkb / 1024,
-			  txkb / 1024,
+		cprintf_f(-1, 2, 9, 2,
+			  S_VALUE(sndp->rx_packets, sndc->rx_packets, itv),
+			  S_VALUE(sndp->tx_packets, sndc->tx_packets, itv));
+		cprintf_f(unit, 2, 9, 2,
+			  unit < 0 ? rxkb / 1024 : rxkb,
+			  unit < 0 ? txkb / 1024 : txkb);
+		cprintf_f(-1, 3, 9, 2,
 			  S_VALUE(sndp->rx_compressed, sndc->rx_compressed, itv),
 			  S_VALUE(sndp->tx_compressed, sndc->tx_compressed, itv),
 			  S_VALUE(sndp->multicast,     sndc->multicast,     itv));
@@ -1075,9 +1125,7 @@ __print_funct_t print_net_edev_stats(struct activity *a, int prev, int curr,
 	memset(&snedzero, 0, STATS_NET_EDEV_SIZE);
 
 	if (dis) {
-		printf("\n%-11s     IFACE   rxerr/s   txerr/s    coll/s  rxdrop/s"
-		       "  txdrop/s  txcarr/s  rxfram/s  rxfifo/s  txfifo/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	for (i = 0; i < a->nr; i++) {
@@ -1099,7 +1147,7 @@ __print_funct_t print_net_edev_stats(struct activity *a, int prev, int curr,
 		printf("%-11s", timestamp[curr]);
 		cprintf_in(IS_STR, " %9s", snedc->interface, 0);
 
-		cprintf_f(9, 9, 2,
+		cprintf_f(-1, 9, 9, 2,
 			  S_VALUE(snedp->rx_errors,         snedc->rx_errors,         itv),
 			  S_VALUE(snedp->tx_errors,         snedc->tx_errors,         itv),
 			  S_VALUE(snedp->collisions,        snedc->collisions,        itv),
@@ -1132,12 +1180,11 @@ __print_funct_t print_net_nfs_stats(struct activity *a, int prev, int curr,
 		*snnp = (struct stats_net_nfs *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s    call/s retrans/s    read/s   write/s  access/s"
-		       "  getatt/s\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(6, 9, 2,
+	cprintf_f(-1, 6, 9, 2,
 		  S_VALUE(snnp->nfs_rpccnt,     snnc->nfs_rpccnt,     itv),
 		  S_VALUE(snnp->nfs_rpcretrans, snnc->nfs_rpcretrans, itv),
 		  S_VALUE(snnp->nfs_readcnt,    snnc->nfs_readcnt,    itv),
@@ -1166,13 +1213,11 @@ __print_funct_t print_net_nfsd_stats(struct activity *a, int prev, int curr,
 		*snndp = (struct stats_net_nfsd *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s   scall/s badcall/s  packet/s     udp/s     tcp/s     "
-		       "hit/s    miss/s   sread/s  swrite/s saccess/s sgetatt/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(11, 9, 2,
+	cprintf_f(-1, 11, 9, 2,
 		  S_VALUE(snndp->nfsd_rpccnt,    snndc->nfsd_rpccnt,    itv),
 		  S_VALUE(snndp->nfsd_rpcbad,    snndc->nfsd_rpcbad,    itv),
 		  S_VALUE(snndp->nfsd_netcnt,    snndc->nfsd_netcnt,    itv),
@@ -1211,14 +1256,13 @@ void stub_print_net_sock_stats(struct activity *a, int curr, int dispavg)
 		avg_tcp_tw     = 0;
 
 	if (dis) {
-		printf("\n%-11s    totsck    tcpsck    udpsck    rawsck   ip-frag    tcp-tw\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	if (!dispavg) {
 		/* Display instantaneous values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_u64(6, 9,
+		cprintf_u64(-1, 6, 9,
 			    (unsigned long long) snsc->sock_inuse,
 			    (unsigned long long) snsc->tcp_inuse,
 			    (unsigned long long) snsc->udp_inuse,
@@ -1238,7 +1282,7 @@ void stub_print_net_sock_stats(struct activity *a, int curr, int dispavg)
 	else {
 		/* Display average values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_f(6, 9, 0,
+		cprintf_f(-1, 6, 9, 0,
 			  (double) avg_sock_inuse / avg_count,
 			  (double) avg_tcp_inuse  / avg_count,
 			  (double) avg_udp_inuse  / avg_count,
@@ -1306,12 +1350,11 @@ __print_funct_t print_net_ip_stats(struct activity *a, int prev, int curr,
 		*snip = (struct stats_net_ip *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s    irec/s  fwddgm/s    idel/s     orq/s   asmrq/s"
-		       "   asmok/s  fragok/s fragcrt/s\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(8, 9, 2,
+	cprintf_f(-1, 8, 9, 2,
 		  S_VALUE(snip->InReceives,    snic->InReceives,    itv),
 		  S_VALUE(snip->ForwDatagrams, snic->ForwDatagrams, itv),
 		  S_VALUE(snip->InDelivers,    snic->InDelivers,    itv),
@@ -1342,12 +1385,11 @@ __print_funct_t print_net_eip_stats(struct activity *a, int prev, int curr,
 		*sneip = (struct stats_net_eip *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s ihdrerr/s iadrerr/s iukwnpr/s   idisc/s   odisc/s"
-		       "   onort/s    asmf/s   fragf/s\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(8, 9, 2,
+	cprintf_f(-1, 8, 9, 2,
 		  S_VALUE(sneip->InHdrErrors,     sneic->InHdrErrors,     itv),
 		  S_VALUE(sneip->InAddrErrors,    sneic->InAddrErrors,    itv),
 		  S_VALUE(sneip->InUnknownProtos, sneic->InUnknownProtos, itv),
@@ -1378,13 +1420,11 @@ __print_funct_t print_net_icmp_stats(struct activity *a, int prev, int curr,
 		*snip = (struct stats_net_icmp *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s    imsg/s    omsg/s    iech/s   iechr/s    oech/s"
-		       "   oechr/s     itm/s    itmr/s     otm/s    otmr/s"
-		       "  iadrmk/s iadrmkr/s  oadrmk/s oadrmkr/s\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(14, 9, 2,
+	cprintf_f(-1, 14, 9, 2,
 		  S_VALUE(snip->InMsgs,           snic->InMsgs,           itv),
 		  S_VALUE(snip->OutMsgs,          snic->OutMsgs,          itv),
 		  S_VALUE(snip->InEchos,          snic->InEchos,          itv),
@@ -1421,13 +1461,11 @@ __print_funct_t print_net_eicmp_stats(struct activity *a, int prev, int curr,
 		*sneip = (struct stats_net_eicmp *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s    ierr/s    oerr/s idstunr/s odstunr/s   itmex/s"
-		       "   otmex/s iparmpb/s oparmpb/s   isrcq/s   osrcq/s"
-		       "  iredir/s  oredir/s\n", timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(12, 9, 2,
+	cprintf_f(-1, 12, 9, 2,
 		  S_VALUE(sneip->InErrors,        sneic->InErrors,        itv),
 		  S_VALUE(sneip->OutErrors,       sneic->OutErrors,       itv),
 		  S_VALUE(sneip->InDestUnreachs,  sneic->InDestUnreachs,  itv),
@@ -1462,12 +1500,11 @@ __print_funct_t print_net_tcp_stats(struct activity *a, int prev, int curr,
 		*sntp = (struct stats_net_tcp *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s  active/s passive/s    iseg/s    oseg/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(4, 9, 2,
+	cprintf_f(-1, 4, 9, 2,
 		  S_VALUE(sntp->ActiveOpens,  sntc->ActiveOpens,  itv),
 		  S_VALUE(sntp->PassiveOpens, sntc->PassiveOpens, itv),
 		  S_VALUE(sntp->InSegs,       sntc->InSegs,       itv),
@@ -1494,12 +1531,11 @@ __print_funct_t print_net_etcp_stats(struct activity *a, int prev, int curr,
 		*snetp = (struct stats_net_etcp *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s  atmptf/s  estres/s retrans/s isegerr/s   orsts/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(5, 9, 2,
+	cprintf_f(-1, 5, 9, 2,
 		  S_VALUE(snetp->AttemptFails, snetc->AttemptFails, itv),
 		  S_VALUE(snetp->EstabResets,  snetc->EstabResets,  itv),
 		  S_VALUE(snetp->RetransSegs,  snetc->RetransSegs,  itv),
@@ -1527,12 +1563,11 @@ __print_funct_t print_net_udp_stats(struct activity *a, int prev, int curr,
 		*snup = (struct stats_net_udp *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s    idgm/s    odgm/s  noport/s idgmerr/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(4, 9, 2,
+	cprintf_f(-1, 4, 9, 2,
 		  S_VALUE(snup->InDatagrams,  snuc->InDatagrams,  itv),
 		  S_VALUE(snup->OutDatagrams, snuc->OutDatagrams, itv),
 		  S_VALUE(snup->NoPorts,      snuc->NoPorts,      itv),
@@ -1562,14 +1597,13 @@ void stub_print_net_sock6_stats(struct activity *a, int curr, int dispavg)
 		avg_frag6_inuse = 0;
 
 	if (dis) {
-		printf("\n%-11s   tcp6sck   udp6sck   raw6sck  ip6-frag\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	if (!dispavg) {
 		/* Display instantaneous values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_u64(4, 9,
+		cprintf_u64(-1, 4, 9,
 			    (unsigned long long) snsc->tcp6_inuse,
 			    (unsigned long long) snsc->udp6_inuse,
 			    (unsigned long long) snsc->raw6_inuse,
@@ -1585,7 +1619,7 @@ void stub_print_net_sock6_stats(struct activity *a, int curr, int dispavg)
 	else {
 		/* Display average values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_f(4, 9, 0,
+		cprintf_f(-1, 4, 9, 0,
 			  (double) avg_tcp6_inuse  / avg_count,
 			  (double) avg_udp6_inuse  / avg_count,
 			  (double) avg_raw6_inuse  / avg_count,
@@ -1650,13 +1684,11 @@ __print_funct_t print_net_ip6_stats(struct activity *a, int prev, int curr,
 		*snip = (struct stats_net_ip6 *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s   irec6/s fwddgm6/s   idel6/s    orq6/s  asmrq6/s"
-		       "  asmok6/s imcpck6/s omcpck6/s fragok6/s fragcr6/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(10, 9, 2,
+	cprintf_f(-1, 10, 9, 2,
 		  S_VALUE(snip->InReceives6,       snic->InReceives6,       itv),
 		  S_VALUE(snip->OutForwDatagrams6, snic->OutForwDatagrams6, itv),
 		  S_VALUE(snip->InDelivers6,       snic->InDelivers6,       itv),
@@ -1689,13 +1721,11 @@ __print_funct_t print_net_eip6_stats(struct activity *a, int prev, int curr,
 		*sneip = (struct stats_net_eip6 *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s ihdrer6/s iadrer6/s iukwnp6/s  i2big6/s  idisc6/s  odisc6/s"
-		       "  inort6/s  onort6/s   asmf6/s  fragf6/s itrpck6/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(11, 9, 2,
+	cprintf_f(-1, 11, 9, 2,
 		  S_VALUE(sneip->InHdrErrors6,     sneic->InHdrErrors6,     itv),
 		  S_VALUE(sneip->InAddrErrors6,    sneic->InAddrErrors6,    itv),
 		  S_VALUE(sneip->InUnknownProtos6, sneic->InUnknownProtos6, itv),
@@ -1729,14 +1759,11 @@ __print_funct_t print_net_icmp6_stats(struct activity *a, int prev, int curr,
 		*snip = (struct stats_net_icmp6 *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s   imsg6/s   omsg6/s   iech6/s  iechr6/s  oechr6/s"
-		       "  igmbq6/s  igmbr6/s  ogmbr6/s igmbrd6/s ogmbrd6/s irtsol6/s ortsol6/s"
-		       "  irtad6/s inbsol6/s onbsol6/s  inbad6/s  onbad6/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(17, 9, 2,
+	cprintf_f(-1, 17, 9, 2,
 		  S_VALUE(snip->InMsgs6,                    snic->InMsgs6,                    itv),
 		  S_VALUE(snip->OutMsgs6,                   snic->OutMsgs6,                   itv),
 		  S_VALUE(snip->InEchos6,                   snic->InEchos6,                   itv),
@@ -1776,13 +1803,11 @@ __print_funct_t print_net_eicmp6_stats(struct activity *a, int prev, int curr,
 		*sneip = (struct stats_net_eicmp6 *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s   ierr6/s idtunr6/s odtunr6/s  itmex6/s  otmex6/s"
-		       " iprmpb6/s oprmpb6/s iredir6/s oredir6/s ipck2b6/s opck2b6/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(11, 9, 2,
+	cprintf_f(-1, 11, 9, 2,
 		  S_VALUE(sneip->InErrors6,        sneic->InErrors6,        itv),
 		  S_VALUE(sneip->InDestUnreachs6,  sneic->InDestUnreachs6,  itv),
 		  S_VALUE(sneip->OutDestUnreachs6, sneic->OutDestUnreachs6, itv),
@@ -1816,12 +1841,11 @@ __print_funct_t print_net_udp6_stats(struct activity *a, int prev, int curr,
 		*snup = (struct stats_net_udp6 *) a->buf[prev];
 
 	if (dis) {
-		printf("\n%-11s   idgm6/s   odgm6/s noport6/s idgmer6/s\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	printf("%-11s", timestamp[curr]);
-	cprintf_f(4, 9, 2,
+	cprintf_f(-1, 4, 9, 2,
 		  S_VALUE(snup->InDatagrams6,  snuc->InDatagrams6,  itv),
 		  S_VALUE(snup->OutDatagrams6, snuc->OutDatagrams6, itv),
 		  S_VALUE(snup->NoPorts6,      snuc->NoPorts6,      itv),
@@ -1858,8 +1882,7 @@ void stub_print_pwr_cpufreq_stats(struct activity *a, int curr, int dispavg)
 	}
 
 	if (dis) {
-		printf("\n%-11s     CPU       MHz\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 7, 9);
 	}
 
 	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
@@ -1896,7 +1919,7 @@ void stub_print_pwr_cpufreq_stats(struct activity *a, int curr, int dispavg)
 
 			if (!dispavg) {
 				/* Display instantaneous values */
-				cprintf_f(1, 9, 2,
+				cprintf_f(-1, 1, 9, 2,
 					  ((double) spc->cpufreq) / 100);
 				printf("\n");
 				/*
@@ -1907,7 +1930,7 @@ void stub_print_pwr_cpufreq_stats(struct activity *a, int curr, int dispavg)
 			}
 			else {
 				/* Display average values */
-				cprintf_f(1, 9, 2,
+				cprintf_f(-1, 1, 9, 2,
 					  (double) avg_cpufreq[i] / (100 * avg_count));
 				printf("\n");
 			}
@@ -1971,7 +1994,6 @@ __print_funct_t print_avg_pwr_cpufreq_stats(struct activity *a, int prev, int cu
 void stub_print_pwr_fan_stats(struct activity *a, int curr, int dispavg)
 {
 	int i;
-	char fmt[16];
 	struct stats_pwr_fan *spc;
 	static double *avg_fan = NULL;
 	static double *avg_fan_min = NULL;
@@ -1993,33 +2015,31 @@ void stub_print_pwr_fan_stats(struct activity *a, int curr, int dispavg)
 	}
 
 	if (dis) {
-		printf("\n%-11s     FAN       rpm      drpm %*s\n",
-		       timestamp[!curr], MAX_SENSORS_DEV_LEN, "DEVICE");
+		print_hdr_line(timestamp[!curr], a, FIRST, -2, 9);
 	}
 
 	for (i = 0; i < a->nr; i++) {
 		spc = (struct stats_pwr_fan *) ((char *) a->buf[curr] + i * a->msize);
 
 		printf("%-11s", timestamp[curr]);
-		cprintf_in(IS_INT, "     %3d", "", i + 1);
+		cprintf_in(IS_INT, "     %5d", "", i + 1);
 
 		if (dispavg) {
 			/* Display average values */
-			cprintf_f(2, 9, 2,
+			cprintf_f(-1, 2, 9, 2,
 				  (double) avg_fan[i] / avg_count,
 				  (double) (avg_fan[i] - avg_fan_min[i]) / avg_count);
 		}
 		else {
 			/* Display instantaneous values */
-			cprintf_f(2, 9, 2,
+			cprintf_f(-1, 2, 9, 2,
 				  spc->rpm,
 				  spc->rpm - spc->rpm_min);
 			avg_fan[i]     += spc->rpm;
 			avg_fan_min[i] += spc->rpm_min;
 		}
 
-		snprintf(fmt, 16, " %%%ds\n", MAX_SENSORS_DEV_LEN);
-		cprintf_in(IS_STR, fmt, spc->device, 0);
+		cprintf_in(IS_STR, " %s\n", spc->device, 0);
 	}
 
 	if (dispavg) {
@@ -2082,7 +2102,6 @@ __print_funct_t print_avg_pwr_fan_stats(struct activity *a, int prev, int curr,
 void stub_print_pwr_temp_stats(struct activity *a, int curr, int dispavg)
 {
 	int i;
-	char fmt[16];
 	struct stats_pwr_temp *spc;
 	static double *avg_temp = NULL;
 	static double *avg_temp_min = NULL, *avg_temp_max = NULL;
@@ -2111,19 +2130,18 @@ void stub_print_pwr_temp_stats(struct activity *a, int curr, int dispavg)
 	}
 
 	if (dis) {
-		printf("\n%-11s    TEMP      degC     %%temp %*s\n",
-		       timestamp[!curr], MAX_SENSORS_DEV_LEN, "DEVICE");
+		print_hdr_line(timestamp[!curr], a, FIRST, -2, 9);
 	}
 
 	for (i = 0; i < a->nr; i++) {
 		spc = (struct stats_pwr_temp *) ((char *) a->buf[curr] + i * a->msize);
 
 		printf("%-11s", timestamp[curr]);
-		cprintf_in(IS_INT, "     %3d", "", i + 1);
+		cprintf_in(IS_INT, "     %5d", "", i + 1);
 
 		if (dispavg) {
 			/* Display average values */
-			cprintf_f(1, 9, 2, (double) avg_temp[i] / avg_count);
+			cprintf_f(-1, 1, 9, 2, (double) avg_temp[i] / avg_count);
 			cprintf_pc(1, 9, 2,
 				   (avg_temp_max[i] - avg_temp_min[i]) ?
 				   ((double) (avg_temp[i] / avg_count) - avg_temp_min[i]) / (avg_temp_max[i] - avg_temp_min[i]) * 100
@@ -2131,7 +2149,7 @@ void stub_print_pwr_temp_stats(struct activity *a, int curr, int dispavg)
 		}
 		else {
 			/* Display instantaneous values */
-			cprintf_f(1, 9, 2, spc->temp);
+			cprintf_f(-1, 1, 9, 2, spc->temp);
 			cprintf_pc(1, 9, 2,
 				   (spc->temp_max - spc->temp_min) ?
 				   (spc->temp - spc->temp_min) / (spc->temp_max - spc->temp_min) * 100
@@ -2142,8 +2160,7 @@ void stub_print_pwr_temp_stats(struct activity *a, int curr, int dispavg)
 			avg_temp_max[i] = spc->temp_max;
 		}
 
-		snprintf(fmt, 16, " %%%ds\n", MAX_SENSORS_DEV_LEN);
-		cprintf_in(IS_STR, fmt, spc->device, 0);
+		cprintf_in(IS_STR, " %s\n", spc->device, 0);
 	}
 
 	if (dispavg) {
@@ -2210,7 +2227,6 @@ __print_funct_t print_avg_pwr_temp_stats(struct activity *a, int prev, int curr,
 void stub_print_pwr_in_stats(struct activity *a, int curr, int dispavg)
 {
 	int i;
-	char fmt[16];
 	struct stats_pwr_in *spc;
 	static double *avg_in = NULL;
 	static double *avg_in_min = NULL, *avg_in_max = NULL;
@@ -2239,19 +2255,18 @@ void stub_print_pwr_in_stats(struct activity *a, int curr, int dispavg)
 	}
 
 	if (dis) {
-		printf("\n%-11s      IN       inV       %%in %*s\n",
-		       timestamp[!curr], MAX_SENSORS_DEV_LEN, "DEVICE");
+		print_hdr_line(timestamp[!curr], a, FIRST, -2, 9);
 	}
 
 	for (i = 0; i < a->nr; i++) {
 		spc = (struct stats_pwr_in *) ((char *) a->buf[curr] + i * a->msize);
 
 		printf("%-11s", timestamp[curr]);
-		cprintf_in(IS_INT, "     %3d", "", i);
+		cprintf_in(IS_INT, "     %5d", "", i);
 
 		if (dispavg) {
 			/* Display average values */
-			cprintf_f(1, 9, 2, (double) avg_in[i] / avg_count);
+			cprintf_f(-1, 1, 9, 2, (double) avg_in[i] / avg_count);
 			cprintf_pc(1, 9, 2,
 				   (avg_in_max[i] - avg_in_min[i]) ?
 				   ((double) (avg_in[i] / avg_count) - avg_in_min[i]) / (avg_in_max[i] - avg_in_min[i]) * 100
@@ -2259,7 +2274,7 @@ void stub_print_pwr_in_stats(struct activity *a, int curr, int dispavg)
 		}
 		else {
 			/* Display instantaneous values */
-			cprintf_f(1, 9, 2, spc->in);
+			cprintf_f(-1, 1, 9, 2, spc->in);
 			cprintf_pc(1, 9, 2,
 				   (spc->in_max - spc->in_min) ?
 				   (spc->in - spc->in_min) / (spc->in_max - spc->in_min) * 100
@@ -2270,8 +2285,7 @@ void stub_print_pwr_in_stats(struct activity *a, int curr, int dispavg)
 			avg_in_max[i] = spc->in_max;
 		}
 
-		snprintf(fmt, 16, " %%%ds\n", MAX_SENSORS_DEV_LEN);
-		cprintf_in(IS_STR, fmt, spc->device, 0);
+		cprintf_in(IS_STR, " %s\n", spc->device, 0);
 	}
 
 	if (dispavg) {
@@ -2342,16 +2356,21 @@ void stub_print_huge_stats(struct activity *a, int curr, int dispavg)
 	static unsigned long long
 		avg_frhkb = 0,
 		avg_tlhkb = 0;
+	int unit = -1;
+
+	if (DISPLAY_UNIT(flags)) {
+		/* Default values unit is kB */
+		unit = 2;
+	}
 
 	if (dis) {
-		printf("\n%-11s kbhugfree kbhugused  %%hugused\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 0, 9);
 	}
 
 	if (!dispavg) {
 		/* Display instantaneous values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_u64(2, 9,
+		cprintf_u64(unit, 2, 9,
 			    (unsigned long long) smc->frhkb,
 			    (unsigned long long) (smc->tlhkb - smc->frhkb));
 		cprintf_pc(1, 9, 2,
@@ -2366,7 +2385,7 @@ void stub_print_huge_stats(struct activity *a, int curr, int dispavg)
 	else {
 		/* Display average values */
 		printf("%-11s", timestamp[curr]);
-		cprintf_f(2, 9, 0,
+		cprintf_f(unit, 2, 9, 0,
 			  (double) avg_frhkb / avg_count,
 			  ((double) avg_tlhkb / avg_count) -
 			  ((double) avg_frhkb / avg_count));
@@ -2436,8 +2455,7 @@ void print_pwr_wghfreq_stats(struct activity *a, int prev, int curr,
 	unsigned long long tis, tisfreq;
 
 	if (dis) {
-		printf("\n%-11s     CPU    wghMHz\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, 7, 9);
 	}
 
 	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
@@ -2489,7 +2507,7 @@ void print_pwr_wghfreq_stats(struct activity *a, int prev, int curr,
 			}
 
 			/* Display weighted frequency for current CPU */
-			cprintf_f(1, 9, 2,
+			cprintf_f(-1, 1, 9, 2,
 				  tis ? ((double) tisfreq) / tis : 0.0);
 			printf("\n");
 		}
@@ -2517,8 +2535,7 @@ void stub_print_pwr_usb_stats(struct activity *a, int curr, int dispavg)
 	if (dis) {
 		printf("\n%-11s     BUS  idvendor    idprod  maxpower",
 		       (dispavg ? _("Summary:") : timestamp[!curr]));
-		printf(" %*s", MAX_MANUF_LEN - 1, "manufact");
-		printf(" %*s\n", MAX_PROD_LEN - 1, "product");
+		printf(" %-*s product\n", MAX_MANUF_LEN - 1, "manufact");
 	}
 
 	for (i = 0; i < a->nr; i++) {
@@ -2533,14 +2550,13 @@ void stub_print_pwr_usb_stats(struct activity *a, int curr, int dispavg)
 		cprintf_x(2, 9,
 			  suc->vendor_id,
 			  suc->product_id);
-		cprintf_u64(1, 9,
+		cprintf_u64(-1, 1, 9,
 			    /* bMaxPower is expressed in 2 mA units */
 			    (unsigned long long) (suc->bmaxpower << 1));
 
-		snprintf(fmt, 16, " %%%ds", MAX_MANUF_LEN - 1);
+		snprintf(fmt, 16, " %%-%ds", MAX_MANUF_LEN - 1);
 		cprintf_s(IS_STR, fmt, suc->manufacturer);
-		snprintf(fmt, 16, " %%%ds\n", MAX_PROD_LEN - 1);
-		cprintf_s(IS_STR, fmt, suc->product);
+		cprintf_s(IS_STR, " %s\n", suc->product);
 
 		if (!dispavg) {
 			/* Save current USB device in summary list */
@@ -2628,12 +2644,16 @@ __print_funct_t stub_print_filesystem_stats(struct activity *a, int curr, int di
 {
 	int i, j;
 	struct stats_filesystem *sfc, *sfm;
+	int unit = -1;
+
+	if (DISPLAY_UNIT(flags)) {
+		/* Default values unit is B */
+		unit = 1;
+	}
 
 	if (dis) {
-		printf("\n%-11s  MBfsfree  MBfsused   %%fsused  %%ufsused"
-		       "     Ifree     Iused    %%Iused %s\n",
-		       (dispavg ? _("Summary:") : timestamp[!curr]),
-		       DISPLAY_MOUNT(a->opt_flags) ? "MOUNTPOINT" : "FILESYSTEM");
+		print_hdr_line((dispavg ? _("Summary:") : timestamp[!curr]),
+			       a, FIRST + DISPLAY_MOUNT(a->opt_flags), -1, 9);
 	}
 
 	for (i = 0; i < a->nr; i++) {
@@ -2644,16 +2664,17 @@ __print_funct_t stub_print_filesystem_stats(struct activity *a, int curr, int di
 			break;
 
 		printf("%-11s", (dispavg ? _("Summary:") : timestamp[curr]));
-		cprintf_f(2, 9, 0,
-			  (double) sfc->f_bfree / 1024 / 1024,
-			  (double) (sfc->f_blocks - sfc->f_bfree) / 1024 / 1024);
+		cprintf_f(unit, 2, 9, 0,
+			  unit < 0 ? (double) sfc->f_bfree / 1024 / 1024 : (double) sfc->f_bfree,
+			  unit < 0 ? (double) (sfc->f_blocks - sfc->f_bfree) / 1024 / 1024 :
+				     (double) (sfc->f_blocks - sfc->f_bfree));
 		cprintf_pc(2, 9, 2,
 			   /* f_blocks is not zero. But test it anyway ;-) */
 			   sfc->f_blocks ? SP_VALUE(sfc->f_bfree, sfc->f_blocks, sfc->f_blocks)
 			   : 0.0,
 			   sfc->f_blocks ? SP_VALUE(sfc->f_bavail, sfc->f_blocks, sfc->f_blocks)
 			   : 0.0);
-		cprintf_u64(2, 9,
+		cprintf_u64(-1, 2, 9,
 			    (unsigned long long) sfc->f_ffree,
 			    (unsigned long long) (sfc->f_files - sfc->f_ffree));
 		cprintf_pc(1, 9, 2,
@@ -2733,8 +2754,7 @@ __print_funct_t print_fchost_stats(struct activity *a, int prev, int curr,
 	struct stats_fchost *sfcc,*sfcp;
 
 	if (dis) {
-		printf("\n%-11s fch_rxf/s fch_txf/s fch_rxw/s fch_txw/s FCHOST\n",
-		       timestamp[!curr]);
+		print_hdr_line(timestamp[!curr], a, FIRST, -1, 9);
 	}
 
 	for (i = 0; i < a->nr; i++) {
@@ -2747,11 +2767,78 @@ __print_funct_t print_fchost_stats(struct activity *a, int prev, int curr,
 			break;
 
 		printf("%-11s", timestamp[curr]);
-		cprintf_f(4, 9, 2,
+		cprintf_f(-1, 4, 9, 2,
 			  S_VALUE(sfcp->f_rxframes, sfcc->f_rxframes, itv),
 			  S_VALUE(sfcp->f_txframes, sfcc->f_txframes, itv),
 			  S_VALUE(sfcp->f_rxwords,  sfcc->f_rxwords,  itv),
 			  S_VALUE(sfcp->f_txwords,  sfcc->f_txwords,  itv));
 		cprintf_in(IS_STR, " %s\n", sfcc->fchost_name, 0);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display softnet statistics.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t print_softnet_stats(struct activity *a, int prev, int curr,
+				    unsigned long long itv)
+{
+	struct stats_softnet
+		*ssnc = (struct stats_softnet *) a->buf[curr],
+		*ssnp = (struct stats_softnet *) a->buf[prev];
+	int i;
+
+	if (dis) {
+		print_hdr_line(timestamp[!curr], a, FIRST, 7, 9);
+	}
+
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+
+		/*
+		 * The size of a->buf[...] CPU structure may be different from the default
+		 * sizeof(struct stats_pwr_cpufreq) value if data have been read from a file!
+		 * That's why we don't use a syntax like:
+		 * ssnc = (struct stats_softnet *) a->buf[...] + i;
+                 */
+                ssnc = (struct stats_softnet *) ((char *) a->buf[curr] + i * a->msize);
+                ssnp = (struct stats_softnet *) ((char *) a->buf[prev] + i * a->msize);
+
+		/*
+		 * Note: a->nr is in [1, NR_CPUS + 1].
+		 * Bitmap size is provided for (NR_CPUS + 1) CPUs.
+		 * Anyway, NR_CPUS may vary between the version of sysstat
+		 * used by sadc to create a file, and the version of sysstat
+		 * used by sar to read it...
+		 */
+
+		/* Should current CPU (including CPU "all") be displayed? */
+		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
+
+			/* Yes: Display it */
+			printf("%-11s", timestamp[curr]);
+
+			if (!i) {
+				/* This is CPU "all" */
+				cprintf_in(IS_STR, " %s", "    all", 0);
+			}
+			else {
+				cprintf_in(IS_INT, " %7d", "", i - 1);
+			}
+
+			cprintf_f(-1, 5, 9, 2,
+				  S_VALUE(ssnp->processed,    ssnc->processed,    itv),
+				  S_VALUE(ssnp->dropped,      ssnc->dropped,      itv),
+				  S_VALUE(ssnp->time_squeeze, ssnc->time_squeeze, itv),
+				  S_VALUE(ssnp->received_rps, ssnc->received_rps, itv),
+				  S_VALUE(ssnp->flow_limit,   ssnc->flow_limit,   itv));
+			printf("\n");
+		}
 	}
 }

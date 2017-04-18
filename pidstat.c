@@ -89,7 +89,7 @@ void usage(char *progname)
 
 	fprintf(stderr, _("Options are:\n"
 			  "[ -d ] [ -h ] [ -I ] [ -l ] [ -R ] [ -r ] [ -s ] [ -t ] [ -U [ <username> ] ]\n"
-			  "[ -u ] [ -V ] [ -v ] [ -w ] [ -C <command> ] [ -G <process_name> ]\n"
+			  "[ -u ] [ -V ] [ -v ] [ -w ] [ -C <command> ] [ -G <process_name> ] [ --human ]\n"
 			  "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"));
 	exit(1);
 }
@@ -412,6 +412,63 @@ int read_proc_pid_stat(unsigned int pid, struct pid_stats *pst,
 }
 
 /*
+ ***************************************************************************
+ * Read stats from /proc/#[/task/##]/schedstat.
+ *
+ * IN:
+ * @pid		Process whose stats are to be read.
+ * @pst		Pointer on structure where stats will be saved.
+ * @tgid	If != 0, thread whose stats are to be read.
+ *
+ * OUT:
+ * @pst		Pointer on structure where stats have been saved.
+ * @thread_nr	Number of threads of the process.
+ *
+ * RETURNS:
+ * 0 if stats have been successfully read, and 1 otherwise.
+ ***************************************************************************
+ */
+int read_proc_pid_sched(unsigned int pid, struct pid_stats *pst,
+		       unsigned int *thread_nr, unsigned int tgid)
+{
+	int fd, sz, rc;
+	char filename[128];
+	static char buffer[1024 + 1];
+	unsigned long long wtime;
+
+	if (tgid) {
+		sprintf(filename, TASK_SCHED, tgid, pid);
+	}
+	else {
+		sprintf(filename, PID_SCHED, pid);
+	}
+
+	if ((fd = open(filename, O_RDONLY)) < 0)
+		/* No such process */
+		return 1;
+
+	sz = read(fd, buffer, 1024);
+	close(fd);
+	if (sz <= 0)
+		return 1;
+	buffer[sz] = '\0';
+
+	rc = sscanf(buffer,
+		    "%*u %llu %*d\n",
+		    &wtime);
+
+	if (rc < 1)
+		return 1;
+
+	/* Convert ns to jiffies */
+	pst->wtime = wtime * HZ / 1000000000;
+
+	pst->pid = pid;
+	pst->tgid = tgid;
+	return 0;
+}
+
+/*
  *****************************************************************************
  * Read stats from /proc/#[/task/##]/status.
  *
@@ -726,6 +783,9 @@ int read_pid_stats(unsigned int pid, struct pid_stats *pst,
 		   unsigned int *thread_nr, unsigned int tgid)
 {
 	if (read_proc_pid_stat(pid, pst, thread_nr, tgid))
+		return 1;
+
+	if (read_proc_pid_sched(pid, pst, thread_nr, tgid))
 		return 1;
 
 	if (DISPLAY_CMDLINE(pidflag)) {
@@ -1342,7 +1402,7 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 	if (dis) {
 		PRINT_ID_HDR("#      Time", pidflag);
 		if (DISPLAY_CPU(actflag)) {
-			printf("    %%usr %%system  %%guest    %%CPU   CPU");
+			printf("    %%usr %%system  %%guest   %%wait    %%CPU   CPU");
 		}
 		if (DISPLAY_MEM(actflag)) {
 			printf("  minflt/s  majflt/s     VSZ     RSS   %%MEM");
@@ -1375,13 +1435,14 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 		__print_line_id(pstc, '0');
 
 		if (DISPLAY_CPU(actflag)) {
-			cprintf_pc(4, 7, 2,
+			cprintf_pc(5, 7, 2,
 				   (pstc->utime - pstc->gtime) < (pstp->utime - pstp->gtime) ?
 				   0.0 :
 				   SP_VALUE_100(pstp->utime - pstp->gtime,
 					    pstc->utime - pstc->gtime, itv),
 				   SP_VALUE_100(pstp->stime,  pstc->stime, itv),
 				   SP_VALUE_100(pstp->gtime,  pstc->gtime, itv),
+				   SP_VALUE_100(pstp->wtime, pstc->wtime, itv),
 				   /* User time already includes guest time */
 				   IRIX_MODE_OFF(pidflag) ?
 				   SP_VALUE_100(pstp->utime + pstp->stime,
@@ -1393,10 +1454,10 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 		}
 
 		if (DISPLAY_MEM(actflag)) {
-			cprintf_f(2, 9, 2,
+			cprintf_f(-1, 2, 9, 2,
 				  S_VALUE(pstp->minflt, pstc->minflt, itv),
 				  S_VALUE(pstp->majflt, pstc->majflt, itv));
-			cprintf_u64(2, 7,
+			cprintf_u64(DISPLAY_UNIT(pidflag) ? 2 : -1, 2, 7,
 				    (unsigned long long) pstc->vsz,
 				    (unsigned long long) pstc->rss);
 			cprintf_pc(1, 6, 2,
@@ -1404,7 +1465,7 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 		}
 
 		if (DISPLAY_STACK(actflag)) {
-			cprintf_u64(2, 7,
+			cprintf_u64(DISPLAY_UNIT(pidflag) ? 2 : -1, 2, 7,
 				    (unsigned long long) pstc->stack_size,
 				    (unsigned long long) pstc->stack_ref);
 		}
@@ -1412,11 +1473,19 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 		if (DISPLAY_IO(actflag)) {
 			if (!NO_PID_IO(pstc->flags))
 			{
-				cprintf_f(3, 9, 2,
-					  S_VALUE(pstp->read_bytes,  pstc->read_bytes, itv)  / 1024,
-					  S_VALUE(pstp->write_bytes, pstc->write_bytes, itv) / 1024,
-					  S_VALUE(pstp->cancelled_write_bytes,
-						  pstc->cancelled_write_bytes, itv) / 1024);
+				double rbytes, wbytes, cbytes;
+
+				rbytes = S_VALUE(pstp->read_bytes,  pstc->read_bytes, itv);
+				wbytes = S_VALUE(pstp->write_bytes, pstc->write_bytes, itv);
+				cbytes = S_VALUE(pstp->cancelled_write_bytes,
+						 pstc->cancelled_write_bytes, itv);
+				if (!DISPLAY_UNIT(pidflag)) {
+					rbytes /= 1024;
+					wbytes /= 1024;
+					cbytes /= 1024;
+				}
+				cprintf_f(DISPLAY_UNIT(pidflag) ? 1 : -1, 3, 9, 2,
+					  rbytes, wbytes, cbytes);
 			}
 			else {
 				/*
@@ -1427,30 +1496,30 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 				cprintf_s(IS_ZERO, "%s", dstr);
 			}
 			/* I/O delays come from another file (/proc/#/stat) */
-			cprintf_u64(1, 7,
+			cprintf_u64(-1, 1, 7,
 				    (unsigned long long) (pstc->blkio_swapin_delays - pstp->blkio_swapin_delays));
 		}
 
 		if (DISPLAY_CTXSW(actflag)) {
-			cprintf_f(2, 9, 2,
+			cprintf_f(-1, 2, 9, 2,
 				  S_VALUE(pstp->nvcsw, pstc->nvcsw, itv),
 				  S_VALUE(pstp->nivcsw, pstc->nivcsw, itv));
 		}
 
 		if (DISPLAY_KTAB(actflag)) {
-			cprintf_u64(1, 7,
+			cprintf_u64(-1, 1, 7,
 				    (unsigned long long) pstc->threads);
 			if (NO_PID_FD(pstc->flags)) {
 				/* /proc/#/fd directory not readable */
 				cprintf_s(IS_ZERO, " %7s", "-1");
 			}
 			else {
-				cprintf_u64(1, 7, (unsigned long long) pstc->fd_nr);
+				cprintf_u64(-1, 1, 7, (unsigned long long) pstc->fd_nr);
 			}
 		}
 
 		if (DISPLAY_RT(actflag)) {
-			cprintf_u64(1, 4,
+			cprintf_u64(-1, 1, 4,
 				    (unsigned long long) pstc->priority);
 			cprintf_s(IS_STR, " %6s",
 				  GET_POLICY(pstc->policy));
@@ -1504,7 +1573,7 @@ int write_pid_child_all_stats(int prev, int curr, int dis,
 		__print_line_id(pstc, '0');
 
 		if (DISPLAY_CPU(actflag)) {
-			cprintf_f(3, 9, 0,
+			cprintf_f(-1, 3, 9, 0,
 				  (pstc->utime + pstc->cutime - pstc->gtime - pstc->cgtime) <
 				  (pstp->utime + pstp->cutime - pstp->gtime - pstp->cgtime) ?
 				  0.0 :
@@ -1518,7 +1587,7 @@ int write_pid_child_all_stats(int prev, int curr, int dis,
 		}
 
 		if (DISPLAY_MEM(actflag)) {
-			cprintf_u64(2, 9,
+			cprintf_u64(-1, 2, 9,
 				    (unsigned long long) ((pstc->minflt + pstc->cminflt) - (pstp->minflt + pstp->cminflt)),
 				    (unsigned long long) ((pstc->majflt + pstc->cmajflt) - (pstp->majflt + pstp->cmajflt)));
 		}
@@ -1565,7 +1634,7 @@ int write_pid_task_cpu_stats(int prev, int curr, int dis, int disp_avg,
 
 	if (dis) {
 		PRINT_ID_HDR(prev_string, pidflag);
-		printf("    %%usr %%system  %%guest    %%CPU   CPU  Command\n");
+		printf("    %%usr %%system  %%guest   %%wait    %%CPU   CPU  Command\n");
 	}
 
 	for (p = 0; p < pid_nr; p++) {
@@ -1575,13 +1644,14 @@ int write_pid_task_cpu_stats(int prev, int curr, int dis, int disp_avg,
 			continue;
 
 		print_line_id(curr_string, pstc);
-		cprintf_pc(4, 7, 2,
+		cprintf_pc(5, 7, 2,
 			   (pstc->utime - pstc->gtime) < (pstp->utime - pstp->gtime) ?
 			   0.0 :
 			   SP_VALUE_100(pstp->utime - pstp->gtime,
 				    pstc->utime - pstc->gtime, itv),
 			   SP_VALUE_100(pstp->stime, pstc->stime, itv),
 			   SP_VALUE_100(pstp->gtime, pstc->gtime, itv),
+			   SP_VALUE_100(pstp->wtime, pstc->wtime, itv),
 			   /* User time already includes guest time */
 			   IRIX_MODE_OFF(pidflag) ?
 			   SP_VALUE_100(pstp->utime + pstp->stime,
@@ -1653,7 +1723,7 @@ int write_pid_child_cpu_stats(int prev, int curr, int dis, int disp_avg,
 
 		print_line_id(curr_string, pstc);
 		if (disp_avg) {
-			cprintf_f(3, 9, 0,
+			cprintf_f(-1, 3, 9, 0,
 				  (pstc->utime + pstc->cutime - pstc->gtime - pstc->cgtime) <
 				  (pstp->utime + pstp->cutime - pstp->gtime - pstp->cgtime) ?
 				  0.0 :
@@ -1668,7 +1738,7 @@ int write_pid_child_cpu_stats(int prev, int curr, int dis, int disp_avg,
 					    (HZ * pstc->uc_asum_count) * 1000);
 		}
 		else {
-			cprintf_f(3, 9, 0,
+			cprintf_f(-1, 3, 9, 0,
 				  (pstc->utime + pstc->cutime - pstc->gtime - pstc->cgtime) <
 				  (pstp->utime + pstp->cutime - pstp->gtime - pstp->cgtime) ?
 				  0.0 :
@@ -1742,12 +1812,12 @@ int write_pid_task_memory_stats(int prev, int curr, int dis, int disp_avg,
 
 		print_line_id(curr_string, pstc);
 
-		cprintf_f(2, 9, 2,
+		cprintf_f(-1, 2, 9, 2,
 			  S_VALUE(pstp->minflt, pstc->minflt, itv),
 			  S_VALUE(pstp->majflt, pstc->majflt, itv));
 
 		if (disp_avg) {
-			cprintf_f(2, 7, 0,
+			cprintf_f(DISPLAY_UNIT(pidflag) ? 2 : -1, 2, 7, 0,
 				  (double) pstc->total_vsz / pstc->rt_asum_count,
 				  (double) pstc->total_rss / pstc->rt_asum_count);
 
@@ -1757,7 +1827,7 @@ int write_pid_task_memory_stats(int prev, int curr, int dis, int disp_avg,
 				   : 0.0);
 		}
 		else {
-			cprintf_u64(2, 7,
+			cprintf_u64(DISPLAY_UNIT(pidflag) ? 2 : -1, 2, 7,
 				    (unsigned long long) pstc->vsz,
 				    (unsigned long long) pstc->rss);
 
@@ -1823,14 +1893,14 @@ int write_pid_child_memory_stats(int prev, int curr, int dis, int disp_avg,
 
 		print_line_id(curr_string, pstc);
 		if (disp_avg) {
-			cprintf_f(2, 9, 0,
+			cprintf_f(-1, 2, 9, 0,
 				  (double) ((pstc->minflt + pstc->cminflt) -
 					    (pstp->minflt + pstp->cminflt)) / pstc->rc_asum_count,
 				  (double) ((pstc->majflt + pstc->cmajflt) -
 					    (pstp->majflt + pstp->cmajflt)) / pstc->rc_asum_count);
 		}
 		else {
-			cprintf_u64(2, 9,
+			cprintf_u64(-1, 2, 9,
 				    (unsigned long long) ((pstc->minflt + pstc->cminflt) - (pstp->minflt + pstp->cminflt)),
                     (unsigned long long) ((pstc->majflt + pstc->cmajflt) - (pstp->majflt + pstp->cmajflt)));
 		}
@@ -1897,12 +1967,12 @@ int write_pid_stack_stats(int prev, int curr, int dis, int disp_avg,
 		print_line_id(curr_string, pstc);
 
 		if (disp_avg) {
-			cprintf_f(2, 7, 0,
+			cprintf_f(DISPLAY_UNIT(pidflag) ? 2 : -1, 2, 7, 0,
 				  (double) pstc->total_stack_size / pstc->sk_asum_count,
 				  (double) pstc->total_stack_ref  / pstc->sk_asum_count);
 		}
 		else {
-			cprintf_u64(2, 7,
+			cprintf_u64(DISPLAY_UNIT(pidflag) ? 2 : -1, 2, 7,
 				    (unsigned long long) pstc->stack_size,
 				    (unsigned long long) pstc->stack_ref);
 		}
@@ -1944,6 +2014,7 @@ int write_pid_io_stats(int prev, int curr, int dis, int disp_avg,
 	char dstr[32];
 	unsigned int p;
 	int rc, again = 0;
+	double rbytes, wbytes, cbytes;
 
 	if (dis) {
 		PRINT_ID_HDR(prev_string, pidflag);
@@ -1968,11 +2039,17 @@ int write_pid_io_stats(int prev, int curr, int dis, int disp_avg,
 
 		print_line_id(curr_string, pstc);
 		if (!NO_PID_IO(pstc->flags)) {
-			cprintf_f(3, 9, 2,
-				  S_VALUE(pstp->read_bytes,  pstc->read_bytes, itv)  / 1024,
-				  S_VALUE(pstp->write_bytes, pstc->write_bytes, itv) / 1024,
-				  S_VALUE(pstp->cancelled_write_bytes,
-					  pstc->cancelled_write_bytes, itv) / 1024);
+			rbytes = S_VALUE(pstp->read_bytes,  pstc->read_bytes, itv);
+			wbytes = S_VALUE(pstp->write_bytes, pstc->write_bytes, itv);
+			cbytes = S_VALUE(pstp->cancelled_write_bytes,
+					 pstc->cancelled_write_bytes, itv);
+			if (!DISPLAY_UNIT(pidflag)) {
+				rbytes /= 1024;
+				wbytes /= 1024;
+				cbytes /= 1024;
+			}
+			cprintf_f(DISPLAY_UNIT(pidflag) ? 1 : -1, 3, 9, 2,
+				  rbytes, wbytes, cbytes);
 		}
 		else {
 			/* I/O file not readable (permission denied or file non existent) */
@@ -1981,12 +2058,12 @@ int write_pid_io_stats(int prev, int curr, int dis, int disp_avg,
 		}
 		/* I/O delays come from another file (/proc/#/stat) */
 		if (disp_avg) {
-			cprintf_f(1, 7, 0,
+			cprintf_f(-1, 1, 7, 0,
 				  (double) (pstc->blkio_swapin_delays - pstp->blkio_swapin_delays) /
 					    pstc->delay_asum_count);
 		}
 		else {
-			cprintf_u64(1, 7,
+			cprintf_u64(-1, 1, 7,
 				    (unsigned long long) (pstc->blkio_swapin_delays - pstp->blkio_swapin_delays));
 		}
 
@@ -2038,7 +2115,7 @@ int write_pid_ctxswitch_stats(int prev, int curr, int dis,
 			continue;
 
 		print_line_id(curr_string, pstc);
-		cprintf_f(2, 9, 2,
+		cprintf_f(-1, 2, 9, 2,
 			  S_VALUE(pstp->nvcsw, pstc->nvcsw, itv),
 			  S_VALUE(pstp->nivcsw, pstc->nivcsw, itv));
 		print_comm(pstc);
@@ -2089,7 +2166,7 @@ int write_pid_rt_stats(int prev, int curr, int dis,
 			continue;
 
 		print_line_id(curr_string, pstc);
-		cprintf_u64(1, 4,
+		cprintf_u64(-1, 1, 4,
 			    (unsigned long long) pstc->priority);
 		cprintf_s(IS_STR, " %6s", GET_POLICY(pstc->policy));
 		print_comm(pstc);
@@ -2156,20 +2233,20 @@ int write_pid_ktab_stats(int prev, int curr, int dis, int disp_avg,
 		print_line_id(curr_string, pstc);
 
 		if (disp_avg) {
-			cprintf_f(2, 7, 0,
+			cprintf_f(-1, 2, 7, 0,
 				  (double) pstc->total_threads / pstc->tf_asum_count,
 				  NO_PID_FD(pstc->flags) ?
 				  -1.0 :
 				  (double) pstc->total_fd_nr / pstc->tf_asum_count);
 		}
 		else {
-			cprintf_u64(1, 7,
+			cprintf_u64(-1, 1, 7,
 				    (unsigned long long) pstc->threads);
 			if (NO_PID_FD(pstc->flags)) {
 				cprintf_s(IS_ZERO, " %7s", "-1");
 			}
 			else {
-				cprintf_u64(1, 7,
+				cprintf_u64(-1, 1, 7,
 					    (unsigned long long) pstc->fd_nr);
 			}
 		}
@@ -2579,6 +2656,11 @@ int main(int argc, char **argv)
 			}
 		}
 
+		else if (!strcmp(argv[opt], "--human")) {
+			pidflag |= P_D_UNIT;
+			opt++;
+		}
+
 		else if (!strcmp(argv[opt], "-T")) {
 			if (argv[++opt]) {
 				if (tskflag) {
@@ -2758,7 +2840,8 @@ int main(int argc, char **argv)
 	/* Get system name, release number and hostname */
 	uname(&header);
 	print_gal_header(&(ps_tstamp[0]), header.sysname, header.release,
-			 header.nodename, header.machine, cpu_nr);
+			 header.nodename, header.machine, cpu_nr,
+			 PLAIN_OUTPUT);
 
 	/* Main loop */
 	rw_pidstat_loop(dis_hdr, rows);

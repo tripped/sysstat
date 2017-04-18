@@ -20,7 +20,7 @@
  */
 
 /* Number of activities */
-#define NR_ACT		38
+#define NR_ACT		39
 /* The value below is used for sanity check */
 #define MAX_NR_ACT	256
 
@@ -66,6 +66,7 @@
 #define A_PWR_USB	36
 #define A_FILESYSTEM	37
 #define A_NET_FC	38
+#define A_NET_SOFT	39
 
 
 /* Macro used to flag an activity that should be collected */
@@ -98,8 +99,14 @@
 #define S_F_LOCAL_TIME		0x00004000
 #define S_F_PREFD_TIME_OUTPUT	0x00008000
 #define S_F_SVG_SKIP		0x00010000
+/* Same value as S_F_SVG_SKIP above. Used for a different output format */
+#define S_F_RAW_SHOW_HINTS	0x00010000
 #define S_F_SVG_AUTOSCALE	0x00020000
 #define S_F_SVG_ONE_DAY		0x00040000
+#define S_F_SVG_SHOW_IDLE	0x00080000
+#define S_F_UNIT		0x00100000
+#define S_F_SVG_HEIGHT		0x00200000
+#define S_F_SVG_PACKED		0x00400000
 
 #define WANT_SINCE_BOOT(m)		(((m) & S_F_SINCE_BOOT)   == S_F_SINCE_BOOT)
 #define WANT_SA_ROTAT(m)		(((m) & S_F_SA_ROTAT)     == S_F_SA_ROTAT)
@@ -118,22 +125,25 @@
 #define PRINT_LOCAL_TIME(m)		(((m) & S_F_LOCAL_TIME)   == S_F_LOCAL_TIME)
 #define USE_PREFD_TIME_OUTPUT(m)	(((m) & S_F_PREFD_TIME_OUTPUT)   == S_F_PREFD_TIME_OUTPUT)
 #define SKIP_EMPTY_VIEWS(m)		(((m) & S_F_SVG_SKIP)     == S_F_SVG_SKIP)
+#define DISPLAY_HINTS(m)		(((m) & S_F_RAW_SHOW_HINTS) == S_F_RAW_SHOW_HINTS)
 #define AUTOSCALE_ON(m)			(((m) & S_F_SVG_AUTOSCALE) == S_F_SVG_AUTOSCALE)
 #define DISPLAY_ONE_DAY(m)		(((m) & S_F_SVG_ONE_DAY)   == S_F_SVG_ONE_DAY)
+#define DISPLAY_IDLE(m)			(((m) & S_F_SVG_SHOW_IDLE) == S_F_SVG_SHOW_IDLE)
+#define DISPLAY_UNIT(m)			(((m) & S_F_UNIT) == S_F_UNIT)
+#define SET_CANVAS_HEIGHT(m)		(((m) & S_F_SVG_HEIGHT) == S_F_SVG_HEIGHT)
+#define PACK_VIEWS(m)			(((m) & S_F_SVG_PACKED) == S_F_SVG_PACKED)
 
 #define AO_F_NULL		0x00000000
 
-/* Output flags for options -R / -r / -S */
-#define AO_F_MEM_DIA		0x00000001
-#define AO_F_MEM_AMT		0x00000002
-#define AO_F_MEM_SWAP		0x00000004
+/* Output flags for options -r / -S */
+#define AO_F_MEMORY		0x00000001
+#define AO_F_SWAP		0x00000002
 /* AO_F_MEM_ALL: See opt_flags in struct activity below */
-#define AO_F_MEM_ALL		(AO_F_MEM_AMT << 8)
+#define AO_F_MEM_ALL		(AO_F_MEMORY << 8)
 
-#define DISPLAY_MEMORY(m)	(((m) & AO_F_MEM_DIA)     == AO_F_MEM_DIA)
-#define DISPLAY_MEM_AMT(m)	(((m) & AO_F_MEM_AMT)     == AO_F_MEM_AMT)
-#define DISPLAY_SWAP(m)		(((m) & AO_F_MEM_SWAP)    == AO_F_MEM_SWAP)
-#define DISPLAY_MEM_ALL(m)	(((m) & AO_F_MEM_ALL)     == AO_F_MEM_ALL)
+#define DISPLAY_MEMORY(m)	(((m) & AO_F_MEMORY)	== AO_F_MEMORY)
+#define DISPLAY_SWAP(m)		(((m) & AO_F_SWAP)	== AO_F_SWAP)
+#define DISPLAY_MEM_ALL(m)	(((m) & AO_F_MEM_ALL)	== AO_F_MEM_ALL)
 
 /* Output flags for option -u [ ALL ] */
 #define AO_F_CPU_DEF		0x00000001
@@ -187,6 +197,7 @@
 #define K_FREQ		"FREQ"
 #define K_MOUNT		"MOUNT"
 #define K_FC		"FC"
+#define K_SOFT		"SOFT"
 
 #define K_INT		"INT"
 #define K_DISK		"DISK"
@@ -199,6 +210,10 @@
 #define K_SKIP_EMPTY	"skipempty"
 #define K_AUTOSCALE	"autoscale"
 #define K_ONEDAY	"oneday"
+#define K_SHOWIDLE	"showidle"
+#define K_SHOWHINTS	"showhints"
+#define K_HEIGHT	"height="
+#define K_PACKED	"packed"
 
 /* Groups of activities */
 #define G_DEFAULT	0x00
@@ -215,13 +230,6 @@
 /* Time must have the format HH:MM:SS with HH in 24-hour format */
 #define DEF_TMSTART	"08:00:00"
 #define DEF_TMEND	"18:00:00"
-
-/*
- * Macro used to define activity bitmap size.
- * All those bitmaps have an additional bit used for global activity
- * (eg. CPU "all" or total number of interrupts). That's why we do "(m) + 1".
- */
-#define BITMAP_SIZE(m)	((((m) + 1) / 8) + 1)
 
 #define UTSNAME_LEN	65
 #define HEADER_LINE_LEN	512
@@ -266,6 +274,9 @@
 #define SOFT_SIZE	0
 #define HARD_SIZE	1
 
+#define FIRST	0
+#define SECOND	1
+
 #define CLOSE_XML_MARKUP	0
 #define OPEN_XML_MARKUP		1
 
@@ -292,6 +303,11 @@ struct svg_parm {
 	int restart;			/* TRUE if we have just met a RESTART record */
 };
 
+/* Structure used when displaying SVG header */
+struct svg_hdr_parm {
+	int graph_nr;	   /* Number of rows of views to display or canvas height entered on the command line */
+	int views_per_row; /* Maximum number of views on a single row */
+};
 
 /*
  ***************************************************************************
@@ -688,6 +704,10 @@ struct activity {
 	__print_funct_t (*f_svg_print) (struct activity *, int, int, struct svg_parm *,
 					unsigned long long, struct record_header *);
 	/*
+	 * This function is used by sadf to display activity statistics in raw format.
+	 */
+	__print_funct_t (*f_raw_print) (struct activity *, char *, int);
+	/*
 	 * Header string displayed by sadf -d.
 	 * Header lines for each output (for activities with multiple outputs) are
 	 * separated with a '|' character.
@@ -754,7 +774,7 @@ struct activity {
 	/*
 	 * Optional flags for activity. This is eg. used when AO_MULTIPLE_OUTPUTS
 	 * option is set.
-	 * 0x0001 - 0x0080 : Multiple outputs (eg. AO_F_MEM_AMT, AO_F_MEM_SWAP...)
+	 * 0x0001 - 0x0080 : Multiple outputs (eg. AO_F_MEMORY, AO_F_SWAP...)
 	 * 0x0100 - 0x8000 : If bit set then display complete header (hdr_line) for
 	 *                   corresponding output
 	 * 0x010000+       : Optional flags
@@ -886,8 +906,10 @@ struct report_format {
  *   |   v   <---><------------------------------>
  *   |         6                8
  *   | Gap
- *   v<--------------------------------------------------------------->
+ *   v<---------------------------------------------------------------> Gap
  *                                    7
+ *    <--------------------------------------------------------------------->
+ *                                      8
  */
 
 /* #8 */
@@ -896,6 +918,8 @@ struct report_format {
 #define SVG_M_XSIZE	70
 /* #7 */
 #define SVG_V_XSIZE	1050
+/* #8 */
+#define SVG_T_XSIZE	1060
 
 /* #5 */
 #define SVG_G_YSIZE	200
@@ -915,6 +939,9 @@ struct report_format {
 
 /* Block size used to allocate arrays for graphs data */
 #define CHUNKSIZE	4096
+
+/* Maximum number of views on a single row */
+#define MAX_VIEWS_ON_A_ROW	6
 
 #define SVG_LINE_GRAPH	1
 #define SVG_BAR_GRAPH	2
@@ -1063,6 +1090,8 @@ __read_funct_t wrap_read_bus_usb_dev
 __read_funct_t wrap_read_filesystem
 	(struct activity *);
 __read_funct_t wrap_read_fchost
+	(struct activity *);
+__read_funct_t wrap_read_softnet
 	(struct activity *);
 
 /* Other functions */

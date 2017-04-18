@@ -193,6 +193,34 @@ __printf_funct_t print_json_restart(int *tab, int action, char *cur_date,
 
 /*
  ***************************************************************************
+ * Display restart messages (raw format).
+ *
+ * IN:
+ * @tab		Number of tabulations (unused here).
+ * @action	Action expected from current function.
+ * @cur_date	Date string of current restart message.
+ * @cur_time	Time string of current restart message.
+ * @utc		True if @cur_time is expressed in UTC.
+ * @file_hdr	System activity file standard header (unused here).
+ * @cpu_nr	CPU count associated with restart mark.
+ ***************************************************************************
+ */
+__printf_funct_t print_raw_restart(int *tab, int action, char *cur_date,
+				   char *cur_time, int utc, struct file_header *file_hdr,
+				   unsigned int cpu_nr)
+{
+	/* Actions F_BEGIN and F_END ignored */
+	if (action == F_MAIN) {
+		printf("%s", cur_time);
+		if (strlen(cur_date) && utc) {
+			printf(" UTC");
+		}
+		printf("\tLINUX-RESTART\t(%d CPU)\n", cpu_nr > 1 ? cpu_nr - 1 : 1);
+	}
+}
+
+/*
+ ***************************************************************************
  * Display comments (database and ppc formats).
  *
  * IN:
@@ -346,6 +374,34 @@ __printf_funct_t print_json_comment(int *tab, int action, char *cur_date,
 			sep = FALSE;
 		}
 		xprintf0(--(*tab), "]");
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display comments (raw format).
+ *
+ * IN:
+ * @tab		Number of tabulations (unused here).
+ * @action	Action expected from current function.
+ * @cur_date	Date string of current restart message.
+ * @cur_time	Time string of current restart message.
+ * @utc		True if @cur_time is expressed in UTC.
+ * @comment	Comment to display.
+ * @file_hdr	System activity file standard header (unused here).
+ ***************************************************************************
+ */
+__printf_funct_t print_raw_comment(int *tab, int action, char *cur_date,
+				   char *cur_time, int utc, char *comment,
+				   struct file_header *file_hdr)
+{
+	/* Actions F_BEGIN and F_END ignored */
+	if (action & F_MAIN) {
+		printf("%s", cur_time);
+		if (strlen(cur_date) && utc) {
+			printf(" UTC");
+		}
+		printf("\tCOM %s\n", comment);
 	}
 }
 
@@ -591,6 +647,39 @@ __tm_funct_t print_json_timestamp(void *parm, int action, char *cur_date,
 
 /*
  ***************************************************************************
+ * Display the "timestamp" part of the report (raw format).
+ *
+ * IN:
+ * @parm	Pointer on specific parameters (unused here).
+ * @action	Action expected from current function.
+ * @cur_date	Date string of current record.
+ * @cur_time	Time string of current record.
+ * @itv		Interval of time with preceding record (unused here).
+ * @file_hdr	System activity file standard header (unused here).
+ * @flags	Flags for common options.
+ *
+ * RETURNS:
+ * Pointer on the "timestamp" string.
+ ***************************************************************************
+ */
+__tm_funct_t print_raw_timestamp(void *parm, int action, char *cur_date,
+				char *cur_time, unsigned long long itv,
+				struct file_header *file_hdr, unsigned int flags)
+{
+	int utc = !PRINT_LOCAL_TIME(flags) && !PRINT_TRUE_TIME(flags);
+	static char pre[80];
+
+	if (action & F_BEGIN) {
+		snprintf(pre, 80, "%s%s", cur_time, strlen(cur_date) && utc ? " UTC" : "");
+		pre[79] = '\0';
+		return pre;
+	}
+
+	return NULL;
+}
+
+/*
+ ***************************************************************************
  * Display the header of the report (XML format).
  *
  * IN:
@@ -686,10 +775,7 @@ __printf_funct_t print_json_header(void *parm, int action, char *dfile,
 	if (action & F_BEGIN) {
 		xprintf(*tab, "{\"sysstat\": {");
 
-		xprintf(++(*tab), "\"sysdata-version\": %s,",
-			XML_DTD_VERSION);
-
-		xprintf(*tab, "\"hosts\": [");
+		xprintf(++(*tab), "\"hosts\": [");
 		xprintf(++(*tab), "{");
 		xprintf(++(*tab), "\"nodename\": \"%s\",", file_hdr->sa_nodename);
 		xprintf(*tab, "\"sysname\": \"%s\",", file_hdr->sa_sysname);
@@ -762,7 +848,8 @@ __printf_funct_t print_hdr_header(void *parm, int action, char *dfile,
 		print_gal_header(localtime((const time_t *) &(file_hdr->sa_ust_time)),
 				 file_hdr->sa_sysname, file_hdr->sa_release,
 				 file_hdr->sa_nodename, file_hdr->sa_machine,
-				 cpu_nr > 1 ? cpu_nr - 1 : 1);
+				 cpu_nr > 1 ? cpu_nr - 1 : 1,
+				 PLAIN_OUTPUT);
 
 		printf(_("Number of CPU for last samples in file: %u\n"),
 		       file_hdr->sa_last_cpu_nr > 1 ? file_hdr->sa_last_cpu_nr - 1 : 1);
@@ -809,7 +896,9 @@ __printf_funct_t print_hdr_header(void *parm, int action, char *dfile,
  * Display the header of the report (SVG format).
  *
  * IN:
- * @parm	Specific parameter. Here: number of graphs to display.
+ * @parm	Specific parameters. Here: number of rows of views to display
+ *		or canvas height entered on the command line (@graph_nr), and
+ *		max number of views on a single row (@views_per_row).
  * @action	Action expected from current function.
  * @dfile	Name of system activity data file (unused here).
  * @file_magic	System activity file magic header (unused here).
@@ -824,7 +913,7 @@ __printf_funct_t print_svg_header(void *parm, int action, char *dfile,
 				  struct file_header *file_hdr, __nr_t cpu_nr,
 				  struct activity *act[], unsigned int id_seq[])
 {
-	int *graph_nr = (int *) parm;
+	struct svg_hdr_parm *hdr_parm = (struct svg_hdr_parm *) parm;
 
 	if (action & F_BEGIN) {
 		printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
@@ -839,16 +928,29 @@ __printf_funct_t print_svg_header(void *parm, int action, char *dfile,
 	if (action & F_MAIN) {
 		printf(" width=\"%d\" height=\"%d\""
 		       " fill=\"black\" stroke=\"gray\" stroke-width=\"1\">\n",
-		       SVG_V_XSIZE, SVG_H_YSIZE + SVG_T_YSIZE * (*graph_nr));
+		       SVG_T_XSIZE * (hdr_parm->views_per_row),
+		       SET_CANVAS_HEIGHT(flags) ? hdr_parm->graph_nr
+						: SVG_H_YSIZE + SVG_T_YSIZE * (hdr_parm->graph_nr));
 		printf("<text x= \"0\" y=\"30\" text-anchor=\"start\" stroke=\"brown\">");
 		print_gal_header(localtime((const time_t *) &(file_hdr->sa_ust_time)),
 				 file_hdr->sa_sysname, file_hdr->sa_release,
 				 file_hdr->sa_nodename, file_hdr->sa_machine,
-				 cpu_nr > 1 ? cpu_nr - 1 : 1);
+				 cpu_nr > 1 ? cpu_nr - 1 : 1,
+				 PLAIN_OUTPUT);
 		printf("</text>\n");
 	}
 
 	if (action & F_END) {
+		if (!(action & F_BEGIN)) {
+			if (!hdr_parm->graph_nr) {
+				/* No views displayed */
+				printf("<text x= \"0\" y=\"60\" text-anchor=\"start\" stroke=\"red\">");
+				printf("No data!</text>\n");
+			}
+			/* Give actual SVG height */
+			printf("<!-- Actual canvas height: %d -->\n",
+			       SVG_H_YSIZE + SVG_T_YSIZE * (hdr_parm->graph_nr));
+		}
 		printf("</svg>\n");
 	}
 }

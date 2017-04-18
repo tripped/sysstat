@@ -6,4 +6,4 @@ Abstract: Frequently Asked Questions about sysstat.
 Section: System/Monitoring
 
 Format: Text
-Files: /usr/share/doc/sysstat/FAQ.gz
+Files: /usr/share/doc/sysstat/FAQ.md.gz

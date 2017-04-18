@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-export DEB_BUILD_MAINT_OPTIONS=hardening=+pie,+bindnow
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 DH_AUTO_OPTIONS := -v -Sautoconf --parallel
 DESTDIR         := $(CURDIR)/debian/tmp
 CFLAGS          := $(shell dpkg-buildflags --get CPPFLAGS) $(shell dpkg-buildflags --get CFLAGS) $(shell getconf LFS_CFLAGS)
@@ -12,65 +12,61 @@ else
   CC  := gcc
 endif
 
-binary binary-arch binary-indep build build-arch build-indep clean:
+%:
 	dh ${@}
 
-override_dh_auto_configure: debian/configure.stamp
-
-override_dh_auto_clean:
-	rm -f debian/*.stamp config.log
-	[ ! -f Makefile ] || dh_auto_clean $(DH_AUTO_OPTIONS)
-
-override_dh_installchangelogs-arch:
-	dh_installchangelogs -a CHANGES
-
-override_dh_installchangelogs-indep:
-	dh_installchangelogs -i
-
-override_dh_installinit:
-	dh_installinit --no-start
-
-override_dh_installexamples-arch:
-	dh_installexamples -a
-	cd debian/sysstat/usr/share/doc/sysstat/examples && mv README.md README.irqstat
-
-override_dh_compress:
-	set -ex; for p in $(shell dh_listpackages) ; do sh debian/fix.sh $$p; done
-	dh_compress
-
-debian/configure.stamp:
+### Common for sysstat and isag: ###
+override_dh_auto_configure:
 	dh_auto_configure $(DH_AUTO_OPTIONS) --         \
 	            --disable-stripping                 \
 	            --disable-file-attr                 \
 	            --disable-compress-manpg            \
 	            --enable-copy-only                  \
+		    --docdir=/usr/share/doc/sysstat     \
 	            sa_lib_dir=/usr/lib/sysstat         \
 	            sa_dir=/var/log/sysstat             \
 	            conf_dir=/etc/sysstat               \
 	            CC="$(CC)"                          \
 	            CFLAGS="$(CFLAGS)"                  \
 	            LDFLAGS="$(LDFLAGS)"
-	touch "$@"
 
+override_dh_auto_clean:
+	rm -f debian/*.stamp config.log
+	[ ! -f Makefile ] || dh_auto_clean $(DH_AUTO_OPTIONS)
+
+override_dh_compress:
+	set -ex; for p in $(shell dh_listpackages) ; do sh debian/fix.sh $$p; done
+	dh_compress
+
+### sysstat: ###
 override_dh_auto_build-arch:
 	dh_auto_build $(DH_AUTO_OPTIONS)
 
-override_dh_auto_build-indep:
-	dh_auto_build $(DH_AUTO_OPTIONS) -- contrib/isag/isag
+override_dh_auto_test-arch:
+	dh_auto_test $(DH_AUTO_OPTIONS)
 
 override_dh_auto_install-arch:
 	dh_auto_install $(DH_AUTO_OPTIONS) --destdir="$(DESTDIR)"
-	
 	mv $(DESTDIR)/usr/bin/sar $(DESTDIR)/usr/bin/sar.sysstat
 	mv $(DESTDIR)/usr/share/man/man1/sar.1 $(DESTDIR)/usr/share/man/man1/sar.sysstat.1
 	rm -rf $(DESTDIR)/usr/doc
 
-override_dh_auto_install-indep:
-	$(MAKE) DESTDIR="$(DESTDIR)" install_isag
+override_dh_installchangelogs-arch:
+	dh_installchangelogs -a CHANGES
 
-.PHONY: binary binary-arch binary-indep build build-arch build-indep clean     \
-        override_dh_auto_configure override_dh_auto_clean override_dh_compress \
-        override_dh_installchangelogs-arch override_dh_installchangelogs-indep \
-        override_dh_installinit override_dh_installexamples-arch               \
-        override_dh_auto_build-arch override_dh_auto_build-indep               \
-        override_dh_auto_install-arch override_dh_auto_install-indep
+override_dh_installexamples-arch:
+	dh_installexamples -a
+	cd debian/sysstat/usr/share/doc/sysstat/examples && mv README.md README.irqstat
+
+override_dh_installinit-arch:
+	dh_installinit --no-start
+
+### isag: ###
+override_dh_auto_build-indep:
+
+override_dh_auto_test-indep:
+
+override_dh_auto_install-indep:
+
+override_dh_installchangelogs-indep:
+	dh_installchangelogs -i

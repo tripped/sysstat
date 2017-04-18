@@ -3,6 +3,7 @@ sysstat (11.5.5-1~) UNRELEASED; urgency=low
   * New upstream (development) version.
   * Simplify 00-Makefile.patch and update it to restore generation of isag
     script. Refresh other patches for new upstream version.
+  * Bump debhelper's compat version to 10.
 
  -- Robert Luberda <robert@debian.org>  Tue, 18 Apr 2017 21:42:46 +0200
 

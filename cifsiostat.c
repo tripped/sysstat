@@ -72,10 +72,10 @@ void usage(char *progname)
 
 #ifdef DEBUG
 	fprintf(stderr, _("Options are:\n"
-			  "[ -h ] [ -k | -m ] [ -t ] [ -V ] [ --debuginfo ]\n"));
+			  "[ --human ] [ -h ] [ -k | -m ] [ -t ] [ -V ] [ --debuginfo ]\n"));
 #else
 	fprintf(stderr, _("Options are:\n"
-			  "[ -h ] [ -k | -m ] [ -t ] [ -V ]\n"));
+			  "[ --human ] [ -h ] [ -k | -m ] [ -t ] [ -V ]\n"));
 #endif
 	exit(1);
 }
@@ -429,6 +429,8 @@ void write_cifs_stat(int curr, unsigned long long itv, int fctr,
 		     struct io_hdr_stats *shi, struct cifs_stats *ioni,
 		     struct cifs_stats *ionj)
 {
+	double rbytes, wbytes;
+
 	if (DISPLAY_HUMAN_READ(flags)) {
 		cprintf_in(IS_STR, "%-22s\n", shi->name, 0);
 		printf("%22s", "");
@@ -438,13 +440,18 @@ void write_cifs_stat(int curr, unsigned long long itv, int fctr,
 	}
 
 	/*       rB/s   wB/s   fo/s   fc/s   fd/s*/
-	cprintf_f(2, 12, 2,
-		  S_VALUE(ionj->rd_bytes, ioni->rd_bytes, itv) / fctr,
-		  S_VALUE(ionj->wr_bytes, ioni->wr_bytes, itv) / fctr);
-	cprintf_f(2, 9, 2,
+	rbytes = S_VALUE(ionj->rd_bytes, ioni->rd_bytes, itv);
+	wbytes = S_VALUE(ionj->wr_bytes, ioni->wr_bytes, itv);
+	if (!DISPLAY_UNIT(flags)) {
+		rbytes /= fctr;
+		wbytes /= fctr;
+	}
+	cprintf_f(DISPLAY_UNIT(flags) ? 1 : -1, 2, 12, 2,
+		  rbytes, wbytes);
+	cprintf_f(-1, 2, 9, 2,
 		  S_VALUE(ionj->rd_ops, ioni->rd_ops, itv),
 		  S_VALUE(ionj->wr_ops, ioni->wr_ops, itv));
-	cprintf_f(3, 12, 2,
+	cprintf_f(-1, 3, 12, 2,
 		  S_VALUE(ionj->fopens, ioni->fopens, itv),
 		  S_VALUE(ionj->fcloses, ioni->fcloses, itv),
 		  S_VALUE(ionj->fdeletes, ioni->fdeletes, itv));
@@ -596,14 +603,20 @@ int main(int argc, char **argv)
 			opt++;
 		} else
 #endif
-		if (!strncmp(argv[opt], "-", 1)) {
+
+		if (!strcmp(argv[opt], "--human")) {
+			flags |= I_D_UNIT;
+			opt++;
+		}
+
+		else if (!strncmp(argv[opt], "-", 1)) {
 			for (i = 1; *(argv[opt] + i); i++) {
 
 				switch (*(argv[opt] + i)) {
 
 				case 'h':
-					/* Display an easy-to-read CIFS report */
-					flags |= I_D_HUMAN_READ;
+					/* Display an easy-to-read CIFS report. Also imply --human */
+					flags |= I_D_HUMAN_READ + I_D_UNIT;
 					break;
 
 				case 'k':
@@ -672,7 +685,8 @@ int main(int argc, char **argv)
 	/* Get system name, release number and hostname */
 	uname(&header);
 	if (print_gal_header(&rectime, header.sysname, header.release,
-			     header.nodename, header.machine, cpu_nr)) {
+			     header.nodename, header.machine, cpu_nr,
+			     PLAIN_OUTPUT)) {
 		flags |= I_D_ISO;
 	}
 	printf("\n");

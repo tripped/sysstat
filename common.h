@@ -29,6 +29,8 @@
 #define FALSE	0
 #define TRUE	1
 
+#define PLAIN_OUTPUT	0
+
 #define DISP_HDR	1
 
 /* Timestamp buffer length */
@@ -51,9 +53,11 @@
 #define INTERRUPTS_LINE	128
 
 /* Keywords */
-#define K_ISO	"ISO"
-#define K_ALL	"ALL"
-#define K_UTC	"UTC"
+#define K_ISO		"ISO"
+#define K_ALL		"ALL"
+#define K_LOWERALL	"all"
+#define K_UTC		"UTC"
+#define K_JSON		"JSON"
 
 /* Files */
 #define STAT			"/proc/stat"
@@ -100,6 +104,13 @@
  * Macro functions definitions.
  ***************************************************************************
  */
+
+/*
+ * Macro used to define activity bitmap size.
+ * All those bitmaps have an additional bit used for global activity
+ * (eg. CPU "all" or total number of interrupts). That's why we do "(m) + 1".
+ */
+#define BITMAP_SIZE(m)	((((m) + 1) >> 3) + 1)
 
 /* Allocate and init structure */
 #define SREALLOC(S, TYPE, SIZE)	do {								 \
@@ -220,7 +231,7 @@ int count_bits
 int count_csvalues
 	(int, char **);
 void cprintf_f
-	(int, int, int, ...);
+	(int, int, int, int, ...);
 void cprintf_in
 	(int, char *, char *, int);
 void cprintf_pc
@@ -228,7 +239,7 @@ void cprintf_pc
 void cprintf_s
 	(int, char *, char *);
 void cprintf_u64
-	(int, int, ...);
+	(int, int, int, ...);
 void cprintf_x
 	(int, int, ...);
 char *device_name
@@ -267,13 +278,19 @@ double ll_sp_value
 	(unsigned long long, unsigned long long, unsigned long long);
 int is_iso_time_fmt
 	(void);
+int parse_values
+	(char *, unsigned char[], int, const char *);
 int print_gal_header
-	(struct tm *, char *, char *, char *, char *, int);
+	(struct tm *, char *, char *, char *, char *, int, int);
 void print_version
 	(void);
 char *strtolower
 	(char *);
 void sysstat_panic
 	(const char *, int);
+void xprintf
+	(int, const char *, ...);
+void xprintf0
+	(int, const char *, ...);
 
 #endif  /* _COMMON_H */

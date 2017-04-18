@@ -2,10 +2,14 @@
  * pidstat: Display per-process statistics.
  * (C) 2007-2016 by Sebastien Godard (sysstat <at> orange.fr)
  */
-
 #ifndef _PIDSTAT_H
 #define _PIDSTAT_H
 
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+/* sys/param.h defines HZ but needed for _POSIX_ARG_MAX and LOGIN_NAME_MAX */
+#undef HZ
+#endif
 
 #define K_SELF		"SELF"
 
@@ -15,9 +19,19 @@
 
 #define NR_PID_PREALLOC	100
 
-#define MAX_COMM_LEN	128
-#define MAX_CMDLINE_LEN	128
-#define MAX_USER_LEN	32
+#ifdef _POSIX_ARG_MAX
+#define MAX_COMM_LEN    _POSIX_ARG_MAX
+#define MAX_CMDLINE_LEN _POSIX_ARG_MAX
+#else
+#define MAX_COMM_LEN    128
+#define MAX_CMDLINE_LEN 128
+#endif
+
+#ifdef LOGIN_NAME_MAX
+#define MAX_USER_LEN    LOGIN_NAME_MAX
+#else
+#define MAX_USER_LEN    32
+#endif
 
 /* Activities */
 #define P_A_CPU		0x01
@@ -55,6 +69,7 @@
 #define P_D_USERNAME	0x100
 #define P_F_USERSTR	0x200
 #define P_F_PROCSTR	0x400
+#define P_D_UNIT	0x800
 
 #define DISPLAY_PID(m)		(((m) & P_D_PID) == P_D_PID)
 #define DISPLAY_ALL_PID(m)	(((m) & P_D_ALL_PID) == P_D_ALL_PID)
@@ -67,6 +82,7 @@
 #define DISPLAY_USERNAME(m)	(((m) & P_D_USERNAME) == P_D_USERNAME)
 #define USER_STRING(m)		(((m) & P_F_USERSTR) == P_F_USERSTR)
 #define PROCESS_STRING(m)	(((m) & P_F_PROCSTR) == P_F_PROCSTR)
+#define DISPLAY_UNIT(m)		(((m) & P_D_UNIT) == P_D_UNIT)
 
 /* Per-process flags */
 #define F_NO_PID_IO	0x01
@@ -84,9 +100,11 @@
 #define PID_CMDLINE	"/proc/%u/cmdline"
 #define PID_SMAP	"/proc/%u/smaps"
 #define PID_FD		"/proc/%u/fd"
+#define PID_SCHED	"/proc/%u/schedstat"
 
 #define PROC_TASK	"/proc/%u/task"
 #define TASK_STAT	"/proc/%u/task/%u/stat"
+#define TASK_SCHED	"/proc/%u/task/%u/schedstat"
 #define TASK_STATUS	"/proc/%u/task/%u/status"
 #define TASK_IO		"/proc/%u/task/%u/io"
 #define TASK_CMDLINE	"/proc/%u/task/%u/cmdline"
@@ -160,6 +178,7 @@ struct pid_stats {
 	long long          cstime			__attribute__ ((packed));
 	unsigned long long gtime			__attribute__ ((packed));
 	long long          cgtime			__attribute__ ((packed));
+	unsigned long long wtime			__attribute__ ((packed));
 	unsigned long long vsz				__attribute__ ((packed));
 	unsigned long long rss				__attribute__ ((packed));
 	unsigned long      nvcsw			__attribute__ ((packed));

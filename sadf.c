@@ -50,6 +50,7 @@ unsigned int flags = 0;
 unsigned int dm_major;		/* Device-mapper major number */
 unsigned int format = 0;	/* Output format */
 unsigned int f_position = 0;	/* Output format position in array */
+unsigned int canvas_height = 0; /* SVG canvas height value set with option -O */
 
 /* File header */
 struct file_header file_hdr;
@@ -87,7 +88,7 @@ void usage(char *progname)
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -C ] [ -c | -d | -g | -j | -p | -x ] [ -H ] [ -h ] [ -T | -t | -U ] [ -V ]\n"
+			  "[ -C ] [ -c | -d | -g | -j | -p | -r | -x ] [ -H ] [ -h ] [ -T | -t | -U ] [ -V ]\n"
 			  "[ -O <opts> [,...] ] [ -P { <cpu> [,...] | ALL } ]\n"
 			  "[ -s [ <hh:mm[:ss]> ] ] [ -e [ <hh:mm[:ss]> ] ]\n"
 			  "[ -- <sar_options> ]\n"));
@@ -179,69 +180,6 @@ void check_format_options(void)
 		/* Remove option -t */
 		flags &= ~S_F_TRUE_TIME;
 	}
-}
-
-/*
- ***************************************************************************
- * Print tabulations
- *
- * IN:
- * @nr_tab	Number of tabs to print.
- ***************************************************************************
- */
-void prtab(int nr_tab)
-{
-	int i;
-
-	for (i = 0; i < nr_tab; i++) {
-		printf("\t");
-	}
-}
-
-/*
- ***************************************************************************
- * printf() function modified for logic #1 (XML-like) display. Don't print a
- * CR at the end of the line.
- *
- * IN:
- * @nr_tab	Number of tabs to print.
- * @fmtf	printf() format.
- ***************************************************************************
- */
-void xprintf0(int nr_tab, const char *fmtf, ...)
-{
-	static char buf[1024];
-	va_list args;
-
-	va_start(args, fmtf);
-	vsnprintf(buf, sizeof(buf), fmtf, args);
-	va_end(args);
-
-	prtab(nr_tab);
-	printf("%s", buf);
-}
-
-/*
- ***************************************************************************
- * printf() function modified for logic #1 (XML-like) display. Print a CR
- * at the end of the line.
- *
- * IN:
- * @nr_tab	Number of tabs to print.
- * @fmtf	printf() format.
- ***************************************************************************
- */
-void xprintf(int nr_tab, const char *fmtf, ...)
-{
-	static char buf[1024];
-	va_list args;
-
-	va_start(args, fmtf);
-	vsnprintf(buf, sizeof(buf), fmtf, args);
-	va_end(args);
-
-	prtab(nr_tab);
-	printf("%s\n", buf);
 }
 
 /*
@@ -480,32 +418,37 @@ time_t get_time_ref(void)
 
 /*
  ***************************************************************************
- * Compute the number of SVG graphs to display. Each activity selected may
- * have several graphs. Moreover we have to take into account volatile
- * activities (eg. CPU) for which the number of graphs will depend on the
- * highest number of items (eg. maximum number of CPU) saved in the file.
- * This number may be higher than the real number of graphs that will be
- * displayed since some items have a preallocation constant.
+ * Compute the number of rows that will contain SVG views. Usually only one
+ * view is displayed on a row, unless the "packed" option has been entered.
+ * Each activity selected may have several views. Moreover we have to take
+ * into account volatile activities (eg. CPU) for which the number of views
+ * will depend on the highest number of items (eg. maximum number of CPU)
+ * saved in the file. This number may be higher than the real number of views
+ * that will be displayed since some items have a preallocation constant.
  *
  * IN:
- * @ifd		File descriptor of input file.
- * @file	Name of file being read.
- * @file_magic	file_magic structure filled with file magic header data.
- * @file_actlst	List of (known or unknown) activities in file.
- * @rectime	Structure where timestamp (expressed in local time or in UTC
- *		depending on whether options -T/-t have been used or not) can
- *		be saved for current record.
- * @loctime	Structure where timestamp (expressed in local time) can be
- *		saved for current record.
+ * @ifd			File descriptor of input file.
+ * @file		Name of file being read.
+ * @file_magic		file_magic structure filled with file magic header data.
+ * @file_actlst		List of (known or unknown) activities in file.
+ * @rectime		Structure where timestamp (expressed in local time or
+ *			in UTC depending on whether options -T/-t have been
+ *			used or not) can be saved for current record.
+ * @loctime		Structure where timestamp (expressed in local time)
+ *			can be saved for current record.
+ *
+ * OUT:
+ * @views_per_row	Maximum number of views that will be displayed on a
+ *			single row (useful only if "packed" option entered).
  *
  * RETURNS:
- * Total number of graphs to display, taking into account only activities
+ * Number of rows containing views, taking into account only activities
  * to be displayed, and selected period of time (options -s/-e).
  ***************************************************************************
  */
 int get_svg_graph_nr(int ifd, char *file, struct file_magic *file_magic,
 		     struct file_activity *file_actlst, struct tm *rectime,
-		     struct tm *loctime)
+		     struct tm *loctime, int *views_per_row)
 {
 	int i, n, p, eosaf;
 	int rtype, new_tot_g_nr, tot_g_nr = 0;
@@ -519,7 +462,7 @@ int get_svg_graph_nr(int ifd, char *file, struct file_magic *file_magic,
 	}
 	sr_act_nr(save_act_nr, DO_SAVE);
 
-	/* Init total number of graphs for each activity */
+	/* Init total number of views for each activity */
 	for (i = 0; i < NR_ACT; i++) {
 		id_g_nr[i] = 0;
 	}
@@ -547,11 +490,19 @@ int get_svg_graph_nr(int ifd, char *file, struct file_magic *file_magic,
 			if (!IS_SELECTED(act[p]->options))
 				continue;
 
-			if (ONE_GRAPH_PER_ITEM(act[p]->options)) {
-				 n = act[p]->g_nr * act[p]->nr;
+			if (PACK_VIEWS(flags)) {
+				/* One activity = one row with multiple views */
+				n = 1;
 			}
 			else {
+				/* One activity = multiple rows with only one view */
 				n = act[p]->g_nr;
+			}
+			if (ONE_GRAPH_PER_ITEM(act[p]->options)) {
+				 n = n * act[p]->nr;
+			}
+			if (act[p]->g_nr > *views_per_row) {
+				*views_per_row = act[p]->g_nr;
 			}
 
 			if (n > id_g_nr[i]) {
@@ -598,6 +549,10 @@ int get_svg_graph_nr(int ifd, char *file, struct file_magic *file_magic,
 		exit(2);
 	}
 	sr_act_nr(save_act_nr, DO_RESTORE);
+
+	if (*views_per_row > MAX_VIEWS_ON_A_ROW) {
+		*views_per_row = MAX_VIEWS_ON_A_ROW;
+	}
 
 	return tot_g_nr;
 }
@@ -752,6 +707,11 @@ int generic_write_stats(int curr, int use_tm_start, int use_tm_end, int reset,
 				(*act[i]->f_svg_print)(act[i], curr, F_MAIN, svg_p,
 						       NEED_GLOBAL_ITV(act[i]->options) ? g_itv : itv,
 						       &record_hdr[curr]);
+			}
+
+			else if (format == F_RAW_OUTPUT) {
+				/* Raw output */
+				(*act[i]->f_raw_print)(act[i], pre, curr);
 			}
 
 			else {
@@ -942,6 +902,7 @@ void display_curr_act_graphs(int ifd, off_t fpos, int *curr, long *cnt, int *eos
 				 * displayed a line of stats.
 				 */
 				parm.restart = FALSE;
+				parm.ust_time_end = record_hdr[*curr].ust_time;
 				*curr ^= 1;
 				if (*cnt > 0) {
 					(*cnt)--;
@@ -959,9 +920,9 @@ void display_curr_act_graphs(int ifd, off_t fpos, int *curr, long *cnt, int *eos
 							  file_actlst, rectime, loctime);
 			}
 			while (!*eosaf && ((rtype == R_RESTART) || (rtype == R_COMMENT)));
+
 			*curr ^= 1;
 		}
-		
 	}
 	while (!*eosaf);
 
@@ -969,11 +930,8 @@ void display_curr_act_graphs(int ifd, off_t fpos, int *curr, long *cnt, int *eos
 
 	/* Determine X axis end value */
 	if (DISPLAY_ONE_DAY(flags) &&
-	    (parm.ust_time_ref + (3600 * 24) > record_hdr[!*curr].ust_time)) {
+	    (parm.ust_time_ref + (3600 * 24) > parm.ust_time_end)) {
 		parm.ust_time_end = parm.ust_time_ref + (3600 * 24);
-	}
-	else {
-		parm.ust_time_end = record_hdr[!*curr].ust_time;
 	}
 
 	/* Actually display graphs for current activity */
@@ -1172,7 +1130,7 @@ void logic1_display_loop(int ifd, struct file_activity *file_actlst, char *file,
  * Display file contents in selected format (logic #2).
  * Logic #2:	Grouped by activity. Sorted by timestamp. Stop on RESTART
  * 		records.
- * Formats:	ppc, CSV
+ * Formats:	ppc, CSV, raw
  *
  * IN:
  * @ifd		File descriptor of input file.
@@ -1321,8 +1279,9 @@ void logic3_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_
 			 struct tm *rectime, struct tm *loctime, char *file,
 			 struct file_magic *file_magic)
 {
+	struct svg_hdr_parm parm;
 	int i, p;
-	int curr = 1, rtype, g_nr = 0;
+	int curr = 1, rtype, g_nr = 0, views_per_row = 1;
 	int eosaf = TRUE, reset = TRUE;
 	long cnt = 1;
 	off_t fpos;
@@ -1332,16 +1291,28 @@ void logic3_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_
 	/* Use a decimal point to make SVG code locale independent */
 	setlocale(LC_NUMERIC, "C");
 
-	/* Calculate the number of graphs to display */
+	/* Calculate the number of rows and the max number of views per row to display */
 	graph_nr = get_svg_graph_nr(ifd, file, file_magic,
-				    file_actlst, rectime, loctime);
+				    file_actlst, rectime, loctime, &views_per_row);
+
+	if (SET_CANVAS_HEIGHT(flags)) {
+		/*
+		 * Option "-O height=..." used: This is not a number
+		 * of graphs but the SVG canvas height set on the command line.
+		 */
+		graph_nr = canvas_height;
+	}
+
 	if (!graph_nr)
 		/* No graph to display */
 		return;
 
+	parm.graph_nr = graph_nr;
+	parm.views_per_row = PACK_VIEWS(flags) ? views_per_row : 1;
+
 	/* Print SVG header */
 	if (*fmt[f_position]->f_header) {
-		(*fmt[f_position]->f_header)(&graph_nr, F_BEGIN + F_MAIN, file, file_magic,
+		(*fmt[f_position]->f_header)(&parm, F_BEGIN + F_MAIN, file, file_magic,
 					     &file_hdr, cpu_nr, act, id_seq);
 	}
 
@@ -1353,8 +1324,11 @@ void logic3_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_
 		if (read_next_sample(ifd, IGNORE_RESTART | IGNORE_COMMENT, 0,
 				     file, &rtype, 0, file_magic, file_actlst,
 				     rectime, loctime))
-			/* End of sa data file */
-			return;
+		{
+			/* End of sa data file: No views displayed */
+			parm.graph_nr = 0;
+			goto close_svg;
+		}
 	}
 	while ((rtype == R_RESTART) || (rtype == R_COMMENT) ||
 	       (tm_start.use && (datecmp(loctime, &tm_start) < 0)) ||
@@ -1405,9 +1379,13 @@ void logic3_display_loop(int ifd, struct file_activity *file_actlst, __nr_t cpu_
 		}
 	}
 
+	/* Real number of graphs that have been displayed */
+	parm.graph_nr = g_nr;
+
+close_svg:
 	/* Print SVG trailer */
 	if (*fmt[f_position]->f_header) {
-		(*fmt[f_position]->f_header)(&graph_nr, F_END, file, file_magic,
+		(*fmt[f_position]->f_header)(&parm, F_END, file, file_magic,
 					     &file_hdr, cpu_nr, act, id_seq);
 	}
 }
@@ -1481,7 +1459,7 @@ int main(int argc, char **argv)
 	int day_offset = 0;
 	int i, rc;
 	char dfile[MAX_FILE_LEN];
-	char *t;
+	char *t, *v;
 
 	/* Get HZ */
 	get_HZ();
@@ -1508,7 +1486,7 @@ int main(int argc, char **argv)
 	while (opt < argc) {
 
 		if (!strcmp(argv[opt], "-I")) {
-			if (argv[++opt] && sar_options) {
+			if (sar_options) {
 				if (parse_sar_I_opt(argv, &opt, act)) {
 					usage(argv[0]);
 				}
@@ -1539,7 +1517,7 @@ int main(int argc, char **argv)
 		}
 
 		else if (!strcmp(argv[opt], "-O")) {
-			/* Parse SVG options */
+			/* Parse output options */
 			if (!argv[++opt] || sar_options) {
 				usage(argv[0]);
 			}
@@ -1552,6 +1530,23 @@ int main(int argc, char **argv)
 				}
 				else if (!strcmp(t, K_ONEDAY)) {
 					flags |= S_F_SVG_ONE_DAY;
+				}
+				else if (!strcmp(t, K_SHOWIDLE)) {
+					flags |= S_F_SVG_SHOW_IDLE;
+				}
+				else if (!strcmp(t, K_SHOWHINTS)) {
+					flags |= S_F_RAW_SHOW_HINTS;
+				}
+				else if (!strncmp(t, K_HEIGHT, strlen(K_HEIGHT))) {
+					v = t + strlen(K_HEIGHT);
+					if (!strlen(v) || (strspn(v, DIGITS) != strlen(v))) {
+						usage(argv[0]);
+					}
+					canvas_height = atoi(v);
+					flags |= S_F_SVG_HEIGHT;
+				}
+				else if (!strcmp(t, K_PACKED)) {
+					flags |= S_F_SVG_PACKED;
 				}
 				else {
 					usage(argv[0]);
@@ -1663,6 +1658,13 @@ int main(int argc, char **argv)
 						format = F_PPC_OUTPUT;
 						break;
 
+					case 'r':
+						if (format) {
+							usage(argv[0]);
+						}
+						format = F_RAW_OUTPUT;
+						break;
+
 					case 'T':
 						flags |= S_F_LOCAL_TIME;
 						break;
@@ -1700,22 +1702,11 @@ int main(int argc, char **argv)
 				/* File already specified */
 				usage(argv[0]);
 			}
-			if (!strcmp(argv[opt], "-")) {
-				/* File name set to '-' */
-				set_default_file(dfile, 0, -1);
-				opt++;
-			}
-			else if (!strncmp(argv[opt], "-", 1)) {
-				/* Bad option */
-				usage(argv[0]);
-			}
-			else {
-				/* Write data to file */
-				strncpy(dfile, argv[opt++], MAX_FILE_LEN);
-				dfile[MAX_FILE_LEN - 1] = '\0';
-				/* Check if this is an alternate directory for sa files */
-				check_alt_sa_dir(dfile, 0, -1);
-			}
+			/* Write data to file */
+			strncpy(dfile, argv[opt++], MAX_FILE_LEN);
+			dfile[MAX_FILE_LEN - 1] = '\0';
+			/* Check if this is an alternate directory for sa files */
+			check_alt_sa_dir(dfile, 0, -1);
 		}
 
 		else if (interval < 0) {

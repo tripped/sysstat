@@ -94,6 +94,10 @@ SYSMACROS = @SYSMACROS@
 ifeq ($(SYSMACROS),y)
 	DFLAGS += -DHAVE_SYS_SYSMACROS_H
 endif
+SYSPARAM = @SYSPARAM@
+ifeq ($(SYSPARAM),y)
+	DFLAGS += -DHAVE_SYS_PARAM_H
+endif
 NLS = @NLS@
 ifeq ($(NLS),y)
 REQUIRE_NLS = -DUSE_NLS -DPACKAGE=\"$(PACKAGE)\" -DLOCALEDIR=\"$(NLS_DIR)\"
@@ -118,9 +122,6 @@ CLEAN_SA_DIR = @CLEAN_SA_DIR@
 endif
 ifndef COMPRESS_MANPG
 COMPRESS_MANPG = @COMPRESS_MANPG@
-endif
-ifndef INSTALL_ISAG
-INSTALL_ISAG = @INSTALL_ISAG@
 endif
 ifndef INSTALL_DOC
 INSTALL_DOC = @INSTALL_DOC@
@@ -183,7 +184,7 @@ act_sadc.o: activity.c sa.h rd_stats.h rd_sensors.h
 act_sar.o: activity.c sa.h pr_stats.h
 	$(CC) -o $@ -c $(CFLAGS) -DSOURCE_SAR $(DFLAGS) $<
 
-act_sadf.o: activity.c sa.h rndr_stats.h xml_stats.h json_stats.h svg_stats.h
+act_sadf.o: activity.c sa.h rndr_stats.h xml_stats.h json_stats.h svg_stats.h raw_stats.h
 	$(CC) -o $@ -c $(CFLAGS) -DSOURCE_SADF $(DFLAGS) $<
 
 rd_stats.o: rd_stats.c common.h rd_stats.h ioconf.h sysconfig.h
@@ -209,6 +210,8 @@ xml_stats.o: xml_stats.c sa.h sadf.h ioconf.h sysconfig.h xml_stats.h
 json_stats.o: json_stats.c sa.h sadf.h ioconf.h sysconfig.h json_stats.h
 
 svg_stats.o: svg_stats.c sa.h sadf.h ioconf.h sysconfig.h svg_stats.h
+
+raw_stats.o: raw_stats.c sa.h sadf.h ioconf.h sysconfig.h raw_stats.h
 
 sa_wrap.o: sa_wrap.c sa.h rd_stats.h count.h rd_sensors.h prealloc.h
 
@@ -249,7 +252,7 @@ sar: sar.o act_sar.o format_sar.o sa_common.o pr_stats.o libsyscom.a
 
 sadf.o: sadf.c sadf.h version.h sa.h common.h ioconf.h sysconfig.h
 
-sadf: sadf.o act_sadf.o format_sadf.o sadf_misc.o sa_conv.o rndr_stats.o xml_stats.o json_stats.o svg_stats.o sa_common.o libsyscom.a
+sadf: sadf.o act_sadf.o format_sadf.o sadf_misc.o sa_conv.o rndr_stats.o xml_stats.o json_stats.o svg_stats.o raw_stats.o sa_common.o libsyscom.a
 
 iostat.o: iostat.c iostat.h version.h common.h ioconf.h sysconfig.h rd_stats.h count.h
 
@@ -282,7 +285,7 @@ nls/sysstat.pot: $(wildcard *.c)
 
 # Phony targets
 .PHONY: clean distclean install install_base install_all uninstall \
-	uninstall_base uninstall_all dist bdist xdist gitdist squeeze
+	uninstall_base uninstall_all dist bdist xdist gitdist squeeze test
 
 install_man: man/sadc.8 man/sar.1 man/sadf.1 man/sa1.8 man/sa2.8 man/sysstat.5
 ifeq ($(INSTALL_DOC),y)
@@ -311,9 +314,6 @@ ifeq ($(INSTALL_DOC),y)
 	$(INSTALL_DATA) $(MANGRPARG) man/pidstat.1 $(DESTDIR)$(MAN1_DIR)
 	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
 	$(INSTALL_DATA) $(MANGRPARG) man/cifsiostat.1 $(DESTDIR)$(MAN1_DIR)
-ifeq ($(INSTALL_ISAG),y)
-	$(INSTALL_DATA) $(MANGRPARG) contrib/isag/isag.1 $(DESTDIR)$(MAN1_DIR)
-endif
 ifeq ($(COMPRESS_MANPG),y)
 	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa1.8
 	$(ZIP) $(DESTDIR)$(MAN8_DIR)/sa2.8
@@ -326,9 +326,6 @@ ifeq ($(COMPRESS_MANPG),y)
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/mpstat.1
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/pidstat.1
 	$(ZIP) $(DESTDIR)$(MAN1_DIR)/cifsiostat.1
-ifeq ($(INSTALL_ISAG),y)
-	$(ZIP) $(DESTDIR)$(MAN1_DIR)/isag.1
-endif
 endif
 endif
 
@@ -352,8 +349,7 @@ ifdef REQUIRE_NLS
 	done
 endif
 
-install_base: all sa1 sa2 sysstat.sysconfig install_man install_nls \
-	contrib/isag/isag
+install_base: all sa1 sa2 sysstat.sysconfig install_man install_nls
 	mkdir -p $(DESTDIR)$(SA_LIB_DIR)
 	mkdir -p $(DESTDIR)$(SA_DIR)
 ifeq ($(CLEAN_SA_DIR),y)
@@ -374,9 +370,6 @@ endif
 	$(INSTALL_BIN) mpstat $(DESTDIR)$(BIN_DIR)
 	$(INSTALL_BIN) pidstat $(DESTDIR)$(BIN_DIR)
 	$(INSTALL_BIN) cifsiostat $(DESTDIR)$(BIN_DIR)
-ifeq ($(INSTALL_ISAG),y)
-	$(INSTALL_BIN) contrib/isag/isag $(DESTDIR)$(BIN_DIR)
-endif
 	$(INSTALL_DATA) sysstat.ioconf $(DESTDIR)$(SYSCONFIG_DIR)
 	$(INSTALL_DATA) sysstat.sysconfig $(DESTDIR)$(SYSCONFIG_DIR)/sysstat
 ifeq ($(INSTALL_DOC),y)
@@ -384,7 +377,7 @@ ifeq ($(INSTALL_DOC),y)
 	$(INSTALL_DATA) COPYING $(DESTDIR)$(DOC_DIR)
 	$(INSTALL_DATA) CREDITS $(DESTDIR)$(DOC_DIR)
 	$(INSTALL_DATA) README.md $(DESTDIR)$(DOC_DIR)
-	$(INSTALL_DATA) FAQ $(DESTDIR)$(DOC_DIR)
+	$(INSTALL_DATA) FAQ.md $(DESTDIR)$(DOC_DIR)
 	$(INSTALL_DATA) *.lsm $(DESTDIR)$(DOC_DIR)
 endif
 
@@ -479,9 +472,6 @@ ifeq ($(INSTALL_DOC),y)
 	rm -f $(DESTDIR)$(MAN1_DIR)/mpstat.1*
 	rm -f $(DESTDIR)$(MAN1_DIR)/pidstat.1*
 	rm -f $(DESTDIR)$(MAN1_DIR)/cifsiostat.1*
-ifeq ($(INSTALL_ISAG),y)
-	rm -f $(DESTDIR)$(MAN1_DIR)/isag.1
-endif
 endif
 
 uninstall_nls:
@@ -507,9 +497,6 @@ uninstall_base: uninstall_man uninstall_nls
 	rm -f $(DESTDIR)$(BIN_DIR)/mpstat
 	rm -f $(DESTDIR)$(BIN_DIR)/pidstat
 	rm -f $(DESTDIR)$(BIN_DIR)/cifsiostat
-ifeq ($(INSTALL_ISAG),y)
-	rm -f $(DESTDIR)$(BIN_DIR)/isag
-endif
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_LIB_DIR)
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)/[0-9]?????
 	-rmdir --ignore-fail-on-non-empty $(DESTDIR)$(SA_DIR)
@@ -583,8 +570,19 @@ else
 po-files:
 endif
 
+TESTDIR="tests"
+TESTRUN="/bin/sh"
+TESTLIST:=$(shell ls $(TESTDIR) | egrep '^[0-9]+$$' | sort -n)
+
+unit:
+	@echo $(X) 2>&1
+	@cat $(TESTDIR)/$(X) | $(TESTRUN)
+
+test: all
+	@$(foreach x, $(TESTLIST), $(MAKE) X=$x unit || exit;)
+
 clean:
-	rm -f sadc sar sadf iostat tapestat mpstat pidstat cifsiostat *.o *.a core TAGS
+	rm -f sadc sar sadf iostat tapestat mpstat pidstat cifsiostat *.o *.a core TAGS tests/*.tmp
 	find nls -name "*.gmo" -exec rm -f {} \;
 
 almost-distclean: clean nls/sysstat.pot
@@ -592,7 +590,6 @@ almost-distclean: clean nls/sysstat.pot
 	rm -f sysstat.sysconfig cron/sysstat.crond cron/sysstat.cron.daily sysstat.service
 	rm -f cron/sysstat-collect.service cron/sysstat-collect.timer cron/sysstat-summary.service cron/sysstat-summary.timer
 	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in
-	rm -f contrib/isag/isag
 	rm -f man/sa1.8 man/sa2.8 man/sadc.8 man/sadf.1 man/sar.1 man/iostat.1 man/sysstat.5
 	rm -f man/cifsiostat.1
 	rm -f *.log config.status

@@ -46,6 +46,10 @@
 #define _(string) (string)
 #endif
 
+/* Units (sectors, Bytes, kilobytes, etc.) */
+char units[] = {'s', 'B', 'k', 'M', 'G', 'T', 'P', '?'};
+#define NR_UNITS	8
+
 /* Number of ticks per second */
 unsigned int hz;
 /* Number of bit shifts to convert pages to kB */
@@ -350,6 +354,69 @@ int is_iso_time_fmt(void)
 
 /*
  ***************************************************************************
+ * Print tabulations
+ *
+ * IN:
+ * @nr_tab	Number of tabs to print.
+ ***************************************************************************
+ */
+void prtab(int nr_tab)
+{
+	int i;
+
+	for (i = 0; i < nr_tab; i++) {
+		printf("\t");
+	}
+}
+
+/*
+ ***************************************************************************
+ * printf() function modified for XML-like output. Don't print a CR at the
+ * end of the line.
+ *
+ * IN:
+ * @nr_tab	Number of tabs to print.
+ * @fmtf	printf() format.
+ ***************************************************************************
+ */
+void xprintf0(int nr_tab, const char *fmtf, ...)
+{
+	static char buf[1024];
+	va_list args;
+
+	va_start(args, fmtf);
+	vsnprintf(buf, sizeof(buf), fmtf, args);
+	va_end(args);
+
+	prtab(nr_tab);
+	printf("%s", buf);
+}
+
+/*
+ ***************************************************************************
+ * printf() function modified for XML-like output. Print a CR at the end of
+ * the line.
+ *
+ * IN:
+ * @nr_tab	Number of tabs to print.
+ * @fmtf	printf() format.
+ ***************************************************************************
+ */
+void xprintf(int nr_tab, const char *fmtf, ...)
+{
+	static char buf[1024];
+	va_list args;
+
+	va_start(args, fmtf);
+	vsnprintf(buf, sizeof(buf), fmtf, args);
+	va_end(args);
+
+	prtab(nr_tab);
+	printf("%s\n", buf);
+}
+
+/*
+ ***************************************************************************
  * Print banner.
  *
  * IN:
@@ -359,13 +426,15 @@ int is_iso_time_fmt(void)
  * @nodename	Hostname to display.
  * @machine	Machine architecture to display.
  * @cpu_nr	Number of CPU.
+ * @format	Set to FALSE for (default) plain output, and to TRUE for
+ * 		JSON format output.
  *
  * RETURNS:
  * TRUE if S_TIME_FORMAT is set to ISO, or FALSE otherwise.
  ***************************************************************************
  */
 int print_gal_header(struct tm *rectime, char *sysname, char *release,
-		     char *nodename, char *machine, int cpu_nr)
+		     char *nodename, char *machine, int cpu_nr, int format)
 {
 	char cur_date[TIMESTAMP_LEN];
 	int rc = 0;
@@ -381,8 +450,24 @@ int print_gal_header(struct tm *rectime, char *sysname, char *release,
 		strftime(cur_date, sizeof(cur_date), "%x", rectime);
 	}
 
-	printf("%s %s (%s) \t%s \t_%s_\t(%d CPU)\n", sysname, release, nodename,
-	       cur_date, machine, cpu_nr);
+	if (format == PLAIN_OUTPUT) {
+		/* Plain output */
+		printf("%s %s (%s) \t%s \t_%s_\t(%d CPU)\n", sysname, release, nodename,
+		       cur_date, machine, cpu_nr);
+	}
+	else {
+		/* JSON output */
+		xprintf(0, "{\"sysstat\": {");
+		xprintf(1, "\"hosts\": [");
+		xprintf(2, "{");
+		xprintf(3, "\"nodename\": \"%s\",", nodename);
+		xprintf(3, "\"sysname\": \"%s\",", sysname);
+		xprintf(3, "\"release\": \"%s\",", release);
+		xprintf(3, "\"machine\": \"%s\",", machine);
+		xprintf(3, "\"number-of-cpus\": %d,", cpu_nr);
+		xprintf(3, "\"date\": \"%s\",", cur_date);
+		xprintf(3, "\"statistics\": [");
+	}
 
 	return rc;
 }
@@ -1022,14 +1107,51 @@ void init_colors(void)
 
 /*
  ***************************************************************************
- * Print 64 bit unsigned values using colors.
+ * Print a value in human readable format. Such a value is a decimal number
+ * followed by a unit (B, k, M, etc.)
  *
  * IN:
+ * @unit	Default value unit.
+ * @dval	Value to print.
+ * @wi		Output width.
+ ***************************************************************************
+*/
+void cprintf_unit(int unit, int wi, double dval)
+{
+	if (wi < 4) {
+		/* E.g. 1.3M */
+		wi = 4;
+	}
+	if (!unit) {
+		/* Value is a number of sectors. Convert it to kB */
+		dval /= 2;
+		unit = 2;
+	}
+	while (dval >= 1024) {
+		dval /= 1024;
+		unit++;
+	}
+	printf(" %*.*f", wi - 1, 1, dval);
+	printf("%s", sc_normal);
+
+	/* Display unit */
+	if (unit >= NR_UNITS) {
+		unit = NR_UNITS - 1;
+	}
+	printf("%c", units[unit]);
+}
+
+/*
+ ***************************************************************************
+ * Print 64 bit unsigned values using colors, possibly followed by a unit.
+ *
+ * IN:
+ * @unit	Default values unit. -1 if no unit should be displayed.
  * @num		Number of values to print.
  * @wi		Output width.
  ***************************************************************************
 */
-void cprintf_u64(int num, int wi, ...)
+void cprintf_u64(int unit, int num, int wi, ...)
 {
 	int i;
 	uint64_t val;
@@ -1045,8 +1167,13 @@ void cprintf_u64(int num, int wi, ...)
 		else {
 			printf("%s", sc_int_stat);
 		}
-		printf(" %*"PRIu64, wi, val);
-		printf("%s", sc_normal);
+		if (unit < 0) {
+			printf(" %*"PRIu64, wi, val);
+			printf("%s", sc_normal);
+		}
+		else {
+			cprintf_unit(unit, wi, (double) val);
+		}
 	}
 
 	va_end(args);
@@ -1081,15 +1208,17 @@ void cprintf_x(int num, int wi, ...)
 
 /*
  ***************************************************************************
- * Print "double" statistics values using colors.
+ * Print "double" statistics values using colors, possibly followed by a
+ * unit.
  *
  * IN:
+ * @unit	Default values unit. -1 if no unit should be displayed.
  * @num		Number of values to print.
  * @wi		Output width.
  * @wd		Number of decimal places.
  ***************************************************************************
 */
-void cprintf_f(int num, int wi, int wd, ...)
+void cprintf_f(int unit, int num, int wi, int wd, ...)
 {
 	int i;
 	double val;
@@ -1106,8 +1235,14 @@ void cprintf_f(int num, int wi, int wd, ...)
 		else {
 			printf("%s", sc_int_stat);
 		}
-		printf(" %*.*f", wi, wd, val);
-		printf("%s", sc_normal);
+
+		if (unit < 0) {
+			printf(" %*.*f", wi, wd, val);
+			printf("%s", sc_normal);
+		}
+		else {
+			cprintf_unit(unit, wi, val);
+		}
 	}
 
 	va_end(args);
@@ -1203,4 +1338,113 @@ void cprintf_s(int type, char *format, char *string)
 	}
 	printf(format, string);
 	printf("%s", sc_normal);
+}
+
+/*
+ ***************************************************************************
+ * Parse a string containing a numerical value (e.g. CPU or IRQ number).
+ * The string should contain only one value, not a range of values.
+ *
+ * IN:
+ * @s		String to parse.
+ * @max_val	Upper limit that value should not reach.
+ *
+ * OUT:
+ * @val		Value, or -1 if the string @s was empty.
+ *
+ * RETURNS:
+ * 0 if the value has been properly read, 1 otherwise.
+ ***************************************************************************
+ */
+int parse_valstr(char *s, int max_val, int *val)
+{
+	if (!strlen(s)) {
+		*val = -1;
+		return 0;
+	}
+	if (strspn(s, DIGITS) != strlen(s))
+		return 1;
+
+	*val = atoi(s);
+	if ((*val < 0) || (*val >= max_val))
+		return 1;
+
+	return 0;
+}
+
+/*
+ ***************************************************************************
+ * Parse string containing a set of coma-separated values or ranges of
+ * values (e.g. "0,2-5,10-"). The ALL keyword is allowed and indicate that
+ * all possible values are selected.
+ *
+ * IN:
+ * @strargv	Current argument in list to parse.
+ * @bitmap	Bitmap whose contents will indicate which values have been
+ *		selected.
+ * @max_val	Upper limit that value should not reach.
+ * @__K_VALUE0	Keyword corresponding to the first bit in bitmap (e.g "all",
+ *		"SUM"...)
+ *
+ * OUT:
+ * @bitmap	Bitmap updated with selected values.
+ *
+ * RETURNS:
+ * 0 on success, 1 otherwise.
+ ***************************************************************************
+ */
+int parse_values(char *strargv, unsigned char bitmap[], int max_val, const char *__K_VALUE0)
+{
+	int i, val_low, val;
+	char *t, *s, *valstr, range[16];
+
+	if (!strcmp(strargv, K_ALL)) {
+		/* Set bit for every possible values (CPU, IRQ, etc.) */
+		memset(bitmap, ~0, BITMAP_SIZE(max_val));
+		return 0;
+	}
+
+	for (t = strtok(strargv, ","); t; t = strtok(NULL, ",")) {
+		if (!strcmp(t, __K_VALUE0)) {
+			/*
+			 * Set bit 0 in bitmap. This may correspond
+			 * to CPU "all" or IRQ "SUM" for example.
+			 */
+			bitmap[0] |= 1;
+		}
+		else {
+			/* Parse value or range of values */
+			strncpy(range, t, 16);
+			range[15] = '\0';
+			valstr = t;
+			if ((s = index(range, '-')) != NULL) {
+				/* Possible range of values */
+				*s = '\0';
+				if (parse_valstr(range, max_val, &val_low) || (val_low < 0))
+					return 1;
+				valstr = s + 1;
+			}
+			if (parse_valstr(valstr, max_val, &val))
+				return 1;
+			if (s && val < 0) {
+				/* Range of values with no upper limit (e.g. "3-") */
+				val = max_val - 1;
+			}
+			if ((!s && (val < 0)) || (s && (val < val_low)))
+				/*
+				 * Individual value: string cannot be empty.
+				 * Range of values: n-m: m can be empty (e.g. "3-") but
+				 * cannot be lower than n.
+				 */
+				return 1;
+			if (!s) {
+				val_low = val;
+			}
+			for (i = val_low; i <= val; i++) {
+				bitmap[(i + 1) >> 3] |= 1 << ((i + 1) & 0x07);
+			}
+		}
+	}
+
+	return 0;
 }

@@ -110,9 +110,9 @@ void usage(char *progname)
 	print_usage_title(stderr, progname);
 	fprintf(stderr, _("Options are:\n"
 			  "[ -A ] [ -B ] [ -b ] [ -C ] [ -D ] [ -d ] [ -F [ MOUNT ] ] [ -H ] [ -h ]\n"
-			  "[ -p ] [ -q ] [ -R ] [ -r [ ALL ] ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -V ]\n"
-			  "[ -v ] [ -W ] [ -w ] [ -y ] [ --sadc ]\n"
-			  "[ -I { <int> [,...] | SUM | ALL | XALL } ] [ -P { <cpu> [,...] | ALL } ]\n"
+			  "[ -p ] [ -q ] [ -r [ ALL ] ] [ -S ] [ -t ] [ -u [ ALL ] ] [ -V ]\n"
+			  "[ -v ] [ -W ] [ -w ] [ -y ] [ --human ] [ --sadc ]\n"
+			  "[ -I { <int_list> | SUM | ALL } ] [ -P { <cpu_list> | ALL } ]\n"
 			  "[ -m { <keyword> [,...] | ALL } ] [ -n { <keyword> [,...] | ALL } ]\n"
 			  "[ -j { ID | LABEL | PATH | UUID | ... } ]\n"
 			  "[ -f [ <filename> ] | -o [ <filename> ] | -[0-9]+ ]\n"
@@ -138,7 +138,7 @@ void display_help(char *progname)
 	printf(_("\t-F [ MOUNT ]\n"));
 	printf(_("\t\tFilesystems statistics\n"));
 	printf(_("\t-H\tHugepages utilization statistics\n"));
-	printf(_("\t-I { <int> | SUM | ALL | XALL }\n"
+	printf(_("\t-I { <int_list> | SUM | ALL }\n"
 		 "\t\tInterrupts statistics\n"));
 	printf(_("\t-m { <keyword> [,...] | ALL }\n"
 		 "\t\tPower management statistics\n"
@@ -170,9 +170,9 @@ void display_help(char *progname)
 		 "\t\tICMP6\tICMP traffic\t(v6)\n"
 		 "\t\tEICMP6\tICMP traffic\t(v6) (errors)\n"
 		 "\t\tUDP6\tUDP traffic\t(v6)\n"
-		 "\t\tFC\tFibre channel HBAs\n"));
+		 "\t\tFC\tFibre channel HBAs\n"
+		 "\t\tSOFT\tSoftware-based network processing\n"));
 	printf(_("\t-q\tQueue length and load average statistics\n"));
-	printf(_("\t-R\tMemory statistics\n"));
 	printf(_("\t-r [ ALL ]\n"
 		 "\t\tMemory utilization statistics\n"));
 	printf(_("\t-S\tSwap space utilization statistics\n"));
@@ -1169,14 +1169,15 @@ int main(int argc, char **argv)
 			which_sadc();
 		}
 
+		else if (!strcmp(argv[opt], "--human")) {
+			/* Display sizes in a human readable format */
+			flags |= S_F_UNIT;
+			opt++;
+		}
+
 		else if (!strcmp(argv[opt], "-I")) {
-			if (argv[++opt]) {
-				/* Parse -I option */
-				if (parse_sar_I_opt(argv, &opt, act)) {
-					usage(argv[0]);
-				}
-			}
-			else {
+			/* Parse -I option */
+			if (parse_sar_I_opt(argv, &opt, act)) {
 				usage(argv[0]);
 			}
 		}

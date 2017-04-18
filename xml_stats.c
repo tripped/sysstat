@@ -451,15 +451,17 @@ __print_funct_t xml_print_memory_stats(struct activity *a, int curr, int tab,
 				       unsigned long long itv)
 {
 	struct stats_memory
-		*smc = (struct stats_memory *) a->buf[curr],
-		*smp = (struct stats_memory *) a->buf[!curr];
+		*smc = (struct stats_memory *) a->buf[curr];
 
 	xprintf(tab, "<memory per=\"second\" unit=\"kB\">");
 
-	if (DISPLAY_MEM_AMT(a->opt_flags)) {
+	if (DISPLAY_MEMORY(a->opt_flags)) {
 
 		xprintf(++tab, "<memfree>%lu</memfree>",
 			smc->frmkb);
+
+		xprintf(tab, "<avail>%lu</avail>",
+			smc->availablekb);
 
 		xprintf(tab, "<memused>%lu</memused>",
 			smc->tlmkb - smc->frmkb);
@@ -530,21 +532,6 @@ __print_funct_t xml_print_memory_stats(struct activity *a, int curr, int tab,
 			(smc->tlskb - smc->frskb) ?
 			SP_VALUE(0, smc->caskb, smc->tlskb - smc->frskb) :
 			0.0);
-	}
-
-	if (DISPLAY_MEMORY(a->opt_flags)) {
-
-		xprintf(++tab, "<frmpg>%.2f</frmpg>",
-			S_VALUE((double) KB_TO_PG(smp->frmkb),
-				(double) KB_TO_PG(smc->frmkb), itv));
-
-		xprintf(tab, "<bufpg>%.2f</bufpg>",
-			S_VALUE((double) KB_TO_PG(smp->bufkb),
-				(double) KB_TO_PG(smc->bufkb), itv));
-
-		xprintf(tab--, "<campg>%.2f</campg>",
-			S_VALUE((double) KB_TO_PG(smp->camkb),
-				(double) KB_TO_PG(smc->camkb), itv));
 	}
 
 	xprintf(tab, "</memory>");
@@ -2134,6 +2121,70 @@ __print_funct_t xml_print_fchost_stats(struct activity *a, int curr, int tab,
 			S_VALUE(sfcp->f_txframes, sfcc->f_txframes, itv),
 			S_VALUE(sfcp->f_rxwords,  sfcc->f_rxwords,  itv),
 			S_VALUE(sfcp->f_txwords,  sfcc->f_rxwords,  itv));
+	}
+	tab--;
+
+close_xml_markup:
+	if (CLOSE_MARKUP(a->options)) {
+		xml_markup_network(tab, CLOSE_XML_MARKUP);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Display softnet statistics in XML.
+ *
+ * IN:
+ * @a		Activity structure with statistics.
+ * @curr	Index in array for current sample statistics.
+ * @tab		Indentation in XML output.
+ * @itv		Interval of time in jiffies.
+ ***************************************************************************
+ */
+__print_funct_t xml_print_softnet_stats(struct activity *a, int curr, int tab,
+					unsigned long long itv)
+{
+	int i;
+	struct stats_softnet *ssnc, *ssnp;
+	char cpuno[8];
+
+	if (!IS_SELECTED(a->options) || (a->nr <= 0))
+		goto close_xml_markup;
+
+	xml_markup_network(tab, OPEN_XML_MARKUP);
+	tab++;
+
+	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+
+		ssnc = (struct stats_softnet *) ((char *) a->buf[curr]  + i * a->msize);
+		ssnp = (struct stats_softnet *) ((char *) a->buf[!curr] + i * a->msize);
+
+		/* Should current CPU (including CPU "all") be displayed? */
+		if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
+			/* No */
+			continue;
+
+		/* Yes: Display it */
+		if (!i) {
+			/* This is CPU "all" */
+			strcpy(cpuno, "all");
+		}
+		else {
+			sprintf(cpuno, "%d", i - 1);
+		}
+
+		xprintf(tab, "<softnet cpu=\"%s\" "
+			"total=\"%.2f\" "
+			"dropd=\"%.2f\" "
+			"squeezd=\"%.2f\" "
+			"rx_rps=\"%.2f\" "
+			"flw_lim=\"%.2f\"/>",
+			 cpuno,
+			 S_VALUE(ssnp->processed,    ssnc->processed,    itv),
+			 S_VALUE(ssnp->dropped,      ssnc->dropped,      itv),
+			 S_VALUE(ssnp->time_squeeze, ssnc->time_squeeze, itv),
+			 S_VALUE(ssnp->received_rps, ssnc->received_rps, itv),
+			 S_VALUE(ssnp->flow_limit,   ssnc->flow_limit,   itv));
 	}
 	tab--;
 

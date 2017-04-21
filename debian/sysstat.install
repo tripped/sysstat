@@ -1,4 +1,5 @@
 debian/debian-sa1 usr/lib/sysstat
+debian/profile.d/sysstat.sh etc/profile.d
 debian/tmp/etc/
 debian/tmp/usr/
 debian/tmp/var/

@@ -20,16 +20,6 @@ DESC="the system activity data collector"
 test -f "$DAEMON" || exit 0
 umask 022
 
-# our configuration file
-DEFAULT=/etc/default/sysstat
-
-# default settings...
-ENABLED="false"
-SA1_OPTIONS=""
-
-# ...overriden in the configuration file
-test -r "$DEFAULT" && . "$DEFAULT"
-
 set -e 
 status=0
 

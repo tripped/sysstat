@@ -1,4 +1,4 @@
-sysstat (11.5.5-1~) UNRELEASED; urgency=low
+sysstat (11.5.5-1) experimental; urgency=low
 
   * New upstream (development) version.
   * Simplify 00-Makefile.patch and update it to restore generation of isag
@@ -8,8 +8,9 @@ sysstat (11.5.5-1~) UNRELEASED; urgency=low
     options.
   * Install /etc/profile.d script to enable color output of sar(1).
   * Install systemd start unit, based on the one provided by upstream.
+  * Remove unused parts of init.d file.
 
- -- Robert Luberda <robert@debian.org>  Tue, 18 Apr 2017 21:42:46 +0200
+ -- Robert Luberda <robert@debian.org>  Sun, 23 Apr 2017 21:49:08 +0200
 
 sysstat (11.4.3-1) unstable; urgency=medium
 

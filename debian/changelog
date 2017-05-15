@@ -1,3 +1,9 @@
+sysstat (11.5.6-1~) UNRELEASED; urgency=low
+
+  * New upstream version.
+
+ -- Robert Luberda <robert@debian.org>  Mon, 15 May 2017 23:17:27 +0200
+
 sysstat (11.5.5-1) experimental; urgency=low
 
   * New upstream (development) version.

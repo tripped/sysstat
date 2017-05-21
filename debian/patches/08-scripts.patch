@@ -1,8 +1,7 @@
 From: Robert Luberda <robert@debian.org>
 Date: Tue, 23 Mar 2010 22:04:47 +0100
-Subject: 08-scripts
+Subject: Fix paths in sa2 script
 
-Minor sa2 script fixes.
 ---
  sa2.in | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

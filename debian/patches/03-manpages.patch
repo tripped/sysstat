@@ -1,6 +1,6 @@
 From: Robert Luberda <robert@debian.org>
 Date: Tue, 23 Mar 2010 22:04:47 +0100
-Subject: 03-manpages
+Subject: Debian note in man pages
 
 Added README.Debian file and the 'Debian note' to sa1 and sa2 man pages
 to explain source of common problems (closes: #279049, #269712).

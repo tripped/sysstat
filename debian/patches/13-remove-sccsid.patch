@@ -1,6 +1,6 @@
 From: Robert Luberda <robert@debian.org>
 Date: Wed, 9 Sep 2015 21:37:37 +0200
-Subject: 13-remove-sccsid
+Subject: Remove scscid()
 
 Remove sccsid() function togethwe with SCCSID string that
 contained __DATE__ and __TIME__ macros. This should cause
@@ -46,10 +46,10 @@ index e7828a3..86b7374 100644
  unsigned long long uptime[2]  = {0, 0};
  unsigned long long uptime0[2] = {0, 0};
 diff --git a/mpstat.c b/mpstat.c
-index 80a390c..ebb93d9 100644
+index 2cadc72..d7ad795 100644
 --- a/mpstat.c
 +++ b/mpstat.c
-@@ -42,9 +42,6 @@
+@@ -43,9 +43,6 @@
  #define _(string) (string)
  #endif
  
@@ -88,7 +88,7 @@ index 016d8f2..aaf219f 100644
  unsigned int flags = 0;
  
 diff --git a/sadf.c b/sadf.c
-index 063293a..c1301e1 100644
+index 781d4cb..82b77a9 100644
 --- a/sadf.c
 +++ b/sadf.c
 @@ -41,9 +41,6 @@

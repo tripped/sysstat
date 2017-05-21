@@ -5,9 +5,4 @@
 04-configs.patch
 06-exec.patch
 08-scripts.patch
-09-format-warning.patch
-10-isag-menu-refresh.patch
-12-isag-new-format-support.patch
 13-remove-sccsid.patch
-14-spelling-typo.patch
-15-isag-xz.patch

@@ -6,12 +6,11 @@ Don't regenerate pot file to prevent from unwanted changes in upstream sources.
 Don't install unneeded documentation files.
 Restore generation of isag.
 ---
- Makefile.in  | 9 +++++----
- configure.in | 1 +
- 2 files changed, 6 insertions(+), 4 deletions(-)
+ Makefile.in | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index af65c07..b5e9563 100644
+index af65c07..a14352b 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -281,7 +281,7 @@ locales:
@@ -39,23 +38,3 @@ index af65c07..b5e9563 100644
  endif
  
  install_all: install_base cron/crontab sysstat \
-@@ -591,6 +591,7 @@ almost-distclean: clean nls/sysstat.pot
- 	rm -f cron/sysstat-collect.service cron/sysstat-collect.timer cron/sysstat-summary.service cron/sysstat-summary.timer
- 	rm -f cron/sysstat.cron.hourly cron/sysstat.crond.sample cron/sysstat.crond.sample.in
- 	rm -f man/sa1.8 man/sa2.8 man/sadc.8 man/sadf.1 man/sar.1 man/iostat.1 man/sysstat.5
-+	rm -f contrib/isag/isag
- 	rm -f man/cifsiostat.1
- 	rm -f *.log config.status
- 	rm -rf autom4te.cache
-diff --git a/configure.in b/configure.in
-index 082ade5..1d52a4a 100644
---- a/configure.in
-+++ b/configure.in
-@@ -610,6 +610,7 @@ AC_CONFIG_FILES([man/sar.1:man/sar.in])		# File must be renamed
- AC_CONFIG_FILES([man/sysstat.5:man/sysstat.in])	# File must be renamed
- AC_CONFIG_FILES([man/iostat.1:man/iostat.in])	# File must be renamed
- AC_CONFIG_FILES([man/cifsiostat.1:man/cifsiostat.in])	# File must be renamed
-+AC_CONFIG_FILES([contrib/isag/isag], [chmod +x contrib/isag/isag]) # Permissions must be changed
- 
- AC_OUTPUT(Makefile)
- 

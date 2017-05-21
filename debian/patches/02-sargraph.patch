@@ -1,8 +1,7 @@
 From: Robert Luberda <robert@debian.org>
 Date: Tue, 23 Mar 2010 22:04:47 +0100
-Subject: 02-sargraph
+Subject: Fix paths in sargraph script
 
-Fix paths in sargraph script
 ---
  contrib/sargraph/sargraph  | 2 +-
  contrib/sargraph/sargraph2 | 2 +-

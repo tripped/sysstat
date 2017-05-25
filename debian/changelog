@@ -1,3 +1,10 @@
+sysstat (11.4.3-2) unstable; urgency=medium
+
+  * Add 16-buffer-overflow.patch from Bernhard Übelacker to fix crash
+    of `sar -s 04:00' command (closes: #863197).
+
+ -- Robert Luberda <robert@debian.org>  Thu, 25 May 2017 22:26:05 +0200
+
 sysstat (11.4.3-1) unstable; urgency=medium
 
   * New upstream (stable) version.

@@ -1,0 +1,26 @@
+From: =?utf-8?q?Bernhard_=C3=83=C2=9Cbelacker?= <bernhardu@mailbox.org>
+Date: Tue, 23 May 2017 20:31:56 +0200
+Subject: Avoid buffer overflow in parse_timestamp by explicit termination.
+
+In case of short time format 5 characters were copied by strncpy in parse_timestamp
+to timestamp variable. Unfortunately these 5 characters did not contain
+the termination, therefore the following strcat appended after the
+next "random" null byte. Therefore writing beyond the end of timestamp.
+
+Bugs-Debian: https://bugs.debian.org/863197
+---
+ sa_common.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sa_common.c b/sa_common.c
+index d3ab242..4c35bff 100644
+--- a/sa_common.c
++++ b/sa_common.c
+@@ -339,6 +339,7 @@ int parse_timestamp(char *argv[], int *opt, struct tstamp *tse,
+ 
+ 			case 5:
+ 				strncpy(timestamp, argv[(*opt)++], 5);
++				timestamp[5] = '\0';
+ 				strcat(timestamp,":00");
+ 				break;
+ 

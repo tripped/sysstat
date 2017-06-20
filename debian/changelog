@@ -1,8 +1,10 @@
-sysstat (11.5.6-2~) UNRELEASED; urgency=low
+sysstat (11.5.6-2) unstable; urgency=low
 
+  * Upload to unstable.
   * Merge changes from 11.4.3-2.
+  * Standards-Version: 4.0.0 (no changes).
 
- -- Robert Luberda <robert@debian.org>  Thu, 25 May 2017 22:48:30 +0200
+ -- Robert Luberda <robert@debian.org>  Tue, 20 Jun 2017 21:21:11 +0200
 
 sysstat (11.5.6-1) experimental; urgency=low
 

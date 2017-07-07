@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2016 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2017 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -48,7 +48,6 @@
 
 /* Units (sectors, Bytes, kilobytes, etc.) */
 char units[] = {'s', 'B', 'k', 'M', 'G', 'T', 'P', '?'};
-#define NR_UNITS	8
 
 /* Number of ticks per second */
 unsigned int hz;
@@ -57,12 +56,12 @@ unsigned int kb_shift;
 
 /* Colors strings */
 char sc_percent_high[MAX_SGR_LEN] = C_BOLD_RED;
-char sc_percent_low[MAX_SGR_LEN] = C_BOLD_BLUE;
-char sc_zero_int_stat[MAX_SGR_LEN] = C_LIGHT_YELLOW;
-char sc_int_stat[MAX_SGR_LEN] = C_BOLD_YELLOW;
+char sc_percent_low[MAX_SGR_LEN] = C_BOLD_MAGENTA;
+char sc_zero_int_stat[MAX_SGR_LEN] = C_LIGHT_BLUE;
+char sc_int_stat[MAX_SGR_LEN] = C_BOLD_BLUE;
 char sc_item_name[MAX_SGR_LEN] = C_LIGHT_GREEN;
 char sc_sa_restart[MAX_SGR_LEN] = C_LIGHT_RED;
-char sc_sa_comment[MAX_SGR_LEN] = C_LIGHT_CYAN;
+char sc_sa_comment[MAX_SGR_LEN] = C_LIGHT_YELLOW;
 char sc_normal[MAX_SGR_LEN] = C_NORMAL;
 
 /* Type of persistent device names used in sar and iostat */
@@ -1277,16 +1276,37 @@ void cprintf_f(int unit, int num, int wi, int wd, ...)
  * Print "percent" statistics values using colors.
  *
  * IN:
+ * @human	Set to > 0 if a percent sign (%) shall be displayed after
+ *		the value.
  * @num		Number of values to print.
  * @wi		Output width.
  * @wd		Number of decimal places.
  ***************************************************************************
 */
-void cprintf_pc(int num, int wi, int wd, ...)
+void cprintf_pc(int human, int num, int wi, int wd, ...)
 {
 	int i;
-	double val;
+	double val, lim = 0.005;
+	char u = '\0';
 	va_list args;
+
+	/*
+	 * If a percent sign is to be displayed, then there will be only one decimal place.
+	 * In this case, a value smaller than 0.05 shall be considered as 0.
+	 */
+	if (human > 0) {
+		lim = 0.05;
+		u = '%';
+		if (wi < 4) {
+			/* E.g., 100% */
+			wi = 4;
+		}
+		/* Keep one place for the percent sign */
+		wi -= 1;
+		if (wd > 0) {
+			wd -= 1;
+		}
+	}
 
 	va_start(args, wd);
 
@@ -1298,7 +1318,7 @@ void cprintf_pc(int num, int wi, int wd, ...)
 		else if (val >= PERCENT_LIMIT_LOW) {
 			printf("%s", sc_percent_low);
 		}
-		else if (val < 0.005) {
+		else if (val < lim) {
 			printf("%s", sc_zero_int_stat);
 		}
 		else {
@@ -1306,6 +1326,7 @@ void cprintf_pc(int num, int wi, int wd, ...)
 		}
 		printf(" %*.*f", wi, wd, val);
 		printf("%s", sc_normal);
+		printf("%c", u);
 	}
 
 	va_end(args);

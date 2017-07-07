@@ -1,6 +1,6 @@
 /*
  * sar/sadc: Report system activity
- * (C) 1999-2016 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2017 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _SA_H
@@ -949,6 +949,9 @@ struct report_format {
 
 #define SVG_LINE_GRAPH	1
 #define SVG_BAR_GRAPH	2
+
+/* Maximum number of horizontal lines for the background grid */
+#define MAX_HLINES_NR	10
 
 #define MAYBE	0x80
 

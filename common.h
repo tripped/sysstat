@@ -1,6 +1,6 @@
 /*
  * sysstat: System performance tools for Linux
- * (C) 1999-2016 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2017 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _COMMON_H
@@ -33,6 +33,14 @@
 #define PLAIN_OUTPUT	0
 
 #define DISP_HDR	1
+
+/* Index in units array (see common.c) */
+#define NO_UNIT		-1
+#define UNIT_SECTOR	0
+#define UNIT_BYTE	1
+#define UNIT_KILOBYTE	2
+
+#define NR_UNITS	8
 
 /* Timestamp buffer length */
 #define TIMESTAMP_LEN	64
@@ -130,6 +138,7 @@
 						}						 \
 						else {						 \
 							memcpy(S, _p_, (SIZE));			 \
+							free(_p_);				 \
 						}						 \
 				   	}							 \
 					if (!S) {						 \
@@ -193,9 +202,9 @@ extern char persistent_name_type[MAX_FILE_LEN];
 #define C_BOLD_RED	"\e[31;1m"
 #define C_LIGHT_GREEN	"\e[32;22m"
 #define C_LIGHT_YELLOW	"\e[33;22m"
-#define C_BOLD_YELLOW	"\e[33;1m"
+#define C_BOLD_MAGENTA	"\e[35;1m"
 #define C_BOLD_BLUE	"\e[34;1m"
-#define C_LIGHT_CYAN	"\e[36;22m"
+#define C_LIGHT_BLUE	"\e[34;22m"
 #define C_NORMAL	"\e[0m"
 
 #define PERCENT_LIMIT_HIGH	75.0
@@ -241,7 +250,7 @@ void cprintf_f
 void cprintf_in
 	(int, char *, char *, int);
 void cprintf_pc
-	(int, int, int, ...);
+	(int, int, int, int, ...);
 void cprintf_s
 	(int, char *, char *);
 void cprintf_u64

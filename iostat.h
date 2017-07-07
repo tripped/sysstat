@@ -1,6 +1,6 @@
 /*
  * iostat: report CPU and I/O statistics
- * (C) 1999-2016 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2017 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _IOSTAT_H
@@ -30,6 +30,7 @@
 #define I_D_GROUP_TOTAL_ONLY	0x040000
 #define I_D_ZERO_OMIT		0x080000
 #define I_D_UNIT		0x100000
+#define I_D_SHORT_OUTPUT	0x200000
 
 #define DISPLAY_CPU(m)			(((m) & I_D_CPU)              == I_D_CPU)
 #define DISPLAY_DISK(m)			(((m) & I_D_DISK)             == I_D_DISK)
@@ -52,6 +53,7 @@
 #define DISPLAY_ZERO_OMIT(m)		(((m) & I_D_ZERO_OMIT)        == I_D_ZERO_OMIT)
 #define DISPLAY_JSON_OUTPUT(m)		(((m) & I_D_JSON_OUTPUT)      == I_D_JSON_OUTPUT)
 #define DISPLAY_UNIT(m)			(((m) & I_D_UNIT)	      == I_D_UNIT)
+#define DISPLAY_SHORT_OUTPUT(m)		(((m) & I_D_SHORT_OUTPUT)     == I_D_SHORT_OUTPUT)
 
 /* Preallocation constants */
 #define NR_DEV_PREALLOC		4
@@ -96,6 +98,27 @@ struct io_stats {
 };
 
 #define IO_STATS_SIZE	(sizeof(struct io_stats))
+
+struct ext_io_stats {
+	/* r_await */
+	double r_await;
+	/* w_await */
+	double w_await;
+	/* rsec/s */
+	double rsectors;
+	/* wsec/s */
+	double wsectors;
+	/* sec/s */
+	double sectors;
+	/* %rrqm */
+	double rrqm_pc;
+	/* %wrqm */
+	double wrqm_pc;
+	/* rareq-sz */
+	double rarqsz;
+	/* wareq-sz */
+	double warqsz;
+};
 
 /* Possible values for field "status" in io_hdr_stats structure */
 #define DISK_UNREGISTERED	0

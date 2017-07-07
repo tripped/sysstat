@@ -1,6 +1,6 @@
 /*
  * rndr_stats.c: Funtions used by sadf to display statistics in selected format.
- * (C) 1999-2016 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2017 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -1078,28 +1078,28 @@ __print_funct_t render_disk_stats(struct activity *a, int isdb, char *pre,
 		       NULL);
 
 		render(isdb, pre, PT_NOFLAG,
-		       "%s\trd_sec/s", NULL,
+		       "%s\trkB/s", NULL,
 		       cons(sv, dev_name, NULL),
 		       NOVAL,
-		       S_VALUE(sdp->rd_sect, sdc->rd_sect, itv),
+		       S_VALUE(sdp->rd_sect, sdc->rd_sect, itv) / 2,
 		       NULL);
 
 		render(isdb, pre, PT_NOFLAG,
-		       "%s\twr_sec/s", NULL,
+		       "%s\twkB/s", NULL,
 		       cons(sv, dev_name, NULL),
 		       NOVAL,
-		       S_VALUE(sdp->wr_sect, sdc->wr_sect, itv),
+		       S_VALUE(sdp->wr_sect, sdc->wr_sect, itv) / 2,
 		       NULL);
 
 		render(isdb, pre, PT_NOFLAG,
-		       "%s\tavgrq-sz", NULL,
+		       "%s\tareq-sz", NULL,
 		       cons(sv, dev_name, NULL),
 		       NOVAL,
-		       xds.arqsz,
+		       xds.arqsz / 2,
 		       NULL);
 
 		render(isdb, pre, PT_NOFLAG,
-		       "%s\tavgqu-sz", NULL,
+		       "%s\taqu-sz", NULL,
 		       cons(sv, dev_name, NULL),
 		       NOVAL,
 		       S_VALUE(sdp->rq_ticks, sdc->rq_ticks, itv) / 1000.0,

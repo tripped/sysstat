@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2016 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 2000-2017 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -394,7 +394,7 @@ void write_plain_cpu_stats(int dis, unsigned long long g_itv, int prev, int curr
 		printf("%-11s", curr_string);
 		cprintf_in(IS_STR, " %s", " all", 0);
 
-		cprintf_pc(10, 7, 2,
+		cprintf_pc(NO_UNIT, 10, 7, 2,
 			   (st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest) <
 			   (st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest) ?
 			   0.0 :
@@ -458,7 +458,7 @@ void write_plain_cpu_stats(int dis, unsigned long long g_itv, int prev, int curr
 			if (!DISPLAY_ONLINE_CPU(flags)) {
 				printf("%-11s", curr_string);
 				cprintf_in(IS_INT, " %4d", "", cpu - 1);
-				cprintf_pc(10, 7, 2,
+				cprintf_pc(NO_UNIT, 10, 7, 2,
 					   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 				printf("\n");
 			}
@@ -476,13 +476,13 @@ void write_plain_cpu_stats(int dis, unsigned long long g_itv, int prev, int curr
 			 * If the CPU is tickless then there is no change in CPU values
 			 * but the sum of values is not zero.
 			 */
-			cprintf_pc(10, 7, 2,
+			cprintf_pc(NO_UNIT, 10, 7, 2,
 				   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0);
 			printf("\n");
 		}
 
 		else {
-			cprintf_pc(10, 7, 2,
+			cprintf_pc(NO_UNIT, 10, 7, 2,
 				   (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
 				   0.0 :
 				   ll_sp_value(scp->cpu_user - scp->cpu_guest,
@@ -763,7 +763,7 @@ void write_plain_node_stats(int dis, unsigned long long g_itv, unsigned long lon
 		printf("%-11s", curr_string);
 		cprintf_in(IS_STR, " %s", " all", 0);
 
-		cprintf_pc(10, 7, 2,
+		cprintf_pc(NO_UNIT, 10, 7, 2,
 			   (st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest) <
 			   (st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest) ?
 			   0.0 :
@@ -821,7 +821,7 @@ void write_plain_node_stats(int dis, unsigned long long g_itv, unsigned long lon
 		printf("%-11s", curr_string);
 		cprintf_in(IS_INT, " %4d", "", node);
 
-		cprintf_pc(10, 7, 2,
+		cprintf_pc(NO_UNIT, 10, 7, 2,
 			   (snc->cpu_user - snc->cpu_guest) < (snp->cpu_user - snp->cpu_guest) ?
 			   0.0 :
 			   ll_sp_value(snp->cpu_user - snp->cpu_guest,
@@ -1067,7 +1067,7 @@ void write_plain_isumcpu_stats(int dis, unsigned long long itv, int prev, int cu
 		printf("%-11s", curr_string);
 		cprintf_in(IS_STR, " %s", " all", 0);
 		/* Print total number of interrupts among all cpu */
-		cprintf_f(-1, 1, 9, 2,
+		cprintf_f(NO_UNIT, 1, 9, 2,
 			  S_VALUE(st_irq[prev]->irq_nr, st_irq[curr]->irq_nr, itv));
 		printf("\n");
 	}
@@ -1097,7 +1097,7 @@ void write_plain_isumcpu_stats(int dis, unsigned long long itv, int prev, int cu
 				 */
 				printf("%-11s", curr_string);
 				cprintf_in(IS_INT, " %4d", "", cpu - 1);
-				cprintf_f(-1, 1, 9, 2, 0.0);
+				cprintf_f(NO_UNIT, 1, 9, 2, 0.0);
 				printf("\n");
 			}
 			continue;
@@ -1111,12 +1111,12 @@ void write_plain_isumcpu_stats(int dis, unsigned long long itv, int prev, int cu
 
 		if (!pc_itv) {
 			/* This is a tickless CPU: Value displayed is 0.00 */
-			cprintf_f(-1, 1, 9, 2, 0.0);
+			cprintf_f(NO_UNIT, 1, 9, 2, 0.0);
 			printf("\n");
 		}
 		else {
 			/* Display total number of interrupts for current CPU */
-			cprintf_f(-1, 1, 9, 2,
+			cprintf_f(NO_UNIT, 1, 9, 2,
 				  S_VALUE(sip->irq_nr, sic->irq_nr, itv));
 			printf("\n");
 		}
@@ -1381,7 +1381,7 @@ void write_plain_irqcpu_stats(struct stats_irqcpu *st_ic[], int ic_nr, int dis,
 
 			if (!strcmp(p0->irq_name, q0->irq_name) || !interval) {
 				q = st_ic[prev] + (cpu - 1) * ic_nr + offset;
-				cprintf_f(-1, 1, colwidth[j], 2,
+				cprintf_f(NO_UNIT, 1, colwidth[j], 2,
 					  S_VALUE(q->interrupt, p->interrupt, itv));
 			}
 			else {
@@ -1389,7 +1389,7 @@ void write_plain_irqcpu_stats(struct stats_irqcpu *st_ic[], int ic_nr, int dis,
 				 * Instead of printing "N/A", assume that previous value
 				 * for this new interrupt was zero.
 				 */
-				cprintf_f(-1, 1, colwidth[j], 2,
+				cprintf_f(NO_UNIT, 1, colwidth[j], 2,
 					  S_VALUE(0, p->interrupt, itv));
 			}
 		}

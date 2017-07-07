@@ -6,4 +6,3 @@
 06-exec.patch
 08-scripts.patch
 13-remove-sccsid.patch
-16-buffer-overflow.patch

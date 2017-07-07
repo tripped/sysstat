@@ -10,7 +10,7 @@ Restore generation of isag.
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index af65c07..a14352b 100644
+index 68b2ff3..1705594 100644
 --- a/Makefile.in
 +++ b/Makefile.in
 @@ -281,7 +281,7 @@ locales:

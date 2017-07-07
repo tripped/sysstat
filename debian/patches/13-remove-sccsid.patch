@@ -18,7 +18,7 @@ https://wiki.debian.org/ReproducibleBuilds/TimestampsFromCPPMacros
  8 files changed, 24 deletions(-)
 
 diff --git a/cifsiostat.c b/cifsiostat.c
-index 86d9ec3..dc929e5 100644
+index a3c81d0..4668a7c 100644
 --- a/cifsiostat.c
 +++ b/cifsiostat.c
 @@ -41,9 +41,6 @@
@@ -32,7 +32,7 @@ index 86d9ec3..dc929e5 100644
  struct cifs_stats *st_cifs[2];
  struct io_hdr_stats *st_hdr_cifs;
 diff --git a/iostat.c b/iostat.c
-index e7828a3..86b7374 100644
+index 7b346e2..a0199d2 100644
 --- a/iostat.c
 +++ b/iostat.c
 @@ -48,9 +48,6 @@
@@ -46,7 +46,7 @@ index e7828a3..86b7374 100644
  unsigned long long uptime[2]  = {0, 0};
  unsigned long long uptime0[2] = {0, 0};
 diff --git a/mpstat.c b/mpstat.c
-index 2cadc72..d7ad795 100644
+index 1c83ea2..e4a040b 100644
 --- a/mpstat.c
 +++ b/mpstat.c
 @@ -43,9 +43,6 @@
@@ -60,7 +60,7 @@ index 2cadc72..d7ad795 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  
 diff --git a/pidstat.c b/pidstat.c
-index 9165bdd..c0044ee 100644
+index 876635c..5372176 100644
 --- a/pidstat.c
 +++ b/pidstat.c
 @@ -47,9 +47,6 @@
@@ -74,7 +74,7 @@ index 9165bdd..c0044ee 100644
  unsigned long long uptime0[3] = {0, 0, 0};
  struct pid_stats *st_pid_list[3] = {NULL, NULL, NULL};
 diff --git a/sadc.c b/sadc.c
-index 016d8f2..aaf219f 100644
+index 7cdbc38..bfb4dac 100644
 --- a/sadc.c
 +++ b/sadc.c
 @@ -52,9 +52,6 @@
@@ -88,7 +88,7 @@ index 016d8f2..aaf219f 100644
  unsigned int flags = 0;
  
 diff --git a/sadf.c b/sadf.c
-index 781d4cb..82b77a9 100644
+index 160b485..0c0017c 100644
 --- a/sadf.c
 +++ b/sadf.c
 @@ -41,9 +41,6 @@
@@ -102,7 +102,7 @@ index 781d4cb..82b77a9 100644
  
  unsigned int flags = 0;
 diff --git a/sar.c b/sar.c
-index 1421821..3c7a8f5 100644
+index ccf426e..07a9b4a 100644
 --- a/sar.c
 +++ b/sar.c
 @@ -42,9 +42,6 @@
@@ -116,7 +116,7 @@ index 1421821..3c7a8f5 100644
  long interval = -1, count = 0;
  
 diff --git a/tapestat.c b/tapestat.c
-index c1698f1..5d94127 100644
+index 268e4a5..df0a01b 100644
 --- a/tapestat.c
 +++ b/tapestat.c
 @@ -58,9 +58,6 @@

@@ -1,6 +1,7 @@
 sysstat (11.5.7-1~) UNRELEASED; urgency=medium
 
   * New upstream version.
+  * Drop 16-buffer-overflow.patch, applied upstream.
 
  -- Robert Luberda <robert@debian.org>  Fri, 07 Jul 2017 20:31:11 +0200
 

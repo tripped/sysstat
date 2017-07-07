@@ -7,7 +7,7 @@ Subject: Fix paths in sa2 script
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/sa2.in b/sa2.in
-index a93beaa..cd67015 100644
+index 69e5021..f39e508 100644
 --- a/sa2.in
 +++ b/sa2.in
 @@ -45,7 +45,7 @@ ENDIR=@bindir@

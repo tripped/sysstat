@@ -1,9 +1,11 @@
-sysstat (11.5.7-1~) UNRELEASED; urgency=medium
+sysstat (11.5.7-1) unstable; urgency=medium
 
   * New upstream version.
   * Drop 16-buffer-overflow.patch, applied upstream.
+  * Update 00-Makefile.patch and debian/rules to support the standard
+    build flags like CPPFLAGS or LDFLAGS.
 
- -- Robert Luberda <robert@debian.org>  Fri, 07 Jul 2017 20:31:11 +0200
+ -- Robert Luberda <robert@debian.org>  Sat, 08 Jul 2017 12:03:13 +0200
 
 sysstat (11.5.6-2) unstable; urgency=low
 

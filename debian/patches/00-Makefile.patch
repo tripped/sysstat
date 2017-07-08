@@ -5,14 +5,26 @@ Subject: Makefile and configure fixes
 Don't regenerate pot file to prevent from unwanted changes in upstream sources.
 Don't install unneeded documentation files.
 Restore generation of isag.
+Support standard compiler flags like CPPFLAGS or LDFALGS.
 ---
- Makefile.in | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ Makefile.in | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index 68b2ff3..1705594 100644
+index 68b2ff3..a3b4538 100644
 --- a/Makefile.in
 +++ b/Makefile.in
+@@ -70,8 +70,8 @@ SYSCONFIG_DIR = @SYSCONFIG_DIR@
+ 
+ # Compiler flags
+ CFLAGS = @CFLAGS@ -Wall -Wstrict-prototypes -pipe -O2
+-DFLAGS = @DFLAGS@
+-LFLAGS = @STRIP@
++DFLAGS = @DFLAGS@ @CPPFLAGS@
++LFLAGS = @STRIP@ @LDFLAGS@
+ DFLAGS += -DSA_DIR=\"$(SA_DIR)\" -DSADC_PATH=\"$(SADC_PATH)\"
+ DFLAGS += $(DFSENSORS)
+ 
 @@ -281,7 +281,7 @@ locales:
  endif
  

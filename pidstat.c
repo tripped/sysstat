@@ -71,8 +71,8 @@ unsigned int pidflag = 0;	/* General flags */
 unsigned int tskflag = 0;	/* TASK/CHILD stats */
 unsigned int actflag = 0;	/* Activity flag */
 
-struct sigaction alrm_act, int_act;
-int sigint_caught = 0;
+struct sigaction alrm_act, int_act, chld_act;
+int signal_caught = 0;
 
 /*
  ***************************************************************************
@@ -84,11 +84,11 @@ int sigint_caught = 0;
  */
 void usage(char *progname)
 {
-	fprintf(stderr, _("Usage: %s [ options ] [ <interval> [ <count> ] ]\n"),
+	fprintf(stderr, _("Usage: %s [ options ] [ <interval> [ <count> ] ] [ -e <program> <args> ]\n"),
 		progname);
 
 	fprintf(stderr, _("Options are:\n"
-			  "[ -d ] [ -h ] [ -I ] [ -l ] [ -R ] [ -r ] [ -s ] [ -t ] [ -U [ <username> ] ]\n"
+			  "[ -d ] [ -H ] [ -h ] [ -I ] [ -l ] [ -R ] [ -r ] [ -s ] [ -t ] [ -U [ <username> ] ]\n"
 			  "[ -u ] [ -V ] [ -v ] [ -w ] [ -C <command> ] [ -G <process_name> ] [ --human ]\n"
 			  "[ -p { <pid> [,...] | SELF | ALL } ] [ -T { TASK | CHILD | ALL } ]\n"));
 	exit(1);
@@ -109,15 +109,15 @@ void alarm_handler(int sig)
 
 /*
  ***************************************************************************
- * SIGINT signal handler.
+ * SIGINT and SIGCHLD signals handler.
  *
  * IN:
  * @sig	Signal number.
  ***************************************************************************
  */
-void int_handler(int sig)
+void sig_handler(int sig)
 {
-	sigint_caught = 1;
+	signal_caught = 1;
 }
 
 /*
@@ -1382,6 +1382,10 @@ void print_line_id(char *timestamp, struct pid_stats *pst)
  * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
  * @dis		TRUE if a header line must be printed.
+ * @prev_string	String displayed at the beginning of a header line. This is
+ * 		the timestamp of the previous sample.
+ * @curr_string	String displayed at the beginning of current sample stats.
+ * 		This is the timestamp of the current sample.
  * @itv		Interval of time in jiffies.
  * @g_itv	Interval of time in jiffies multiplied by the number of
  * 		processors.
@@ -1392,6 +1396,7 @@ void print_line_id(char *timestamp, struct pid_stats *pst)
  ***************************************************************************
  */
 int write_pid_task_all_stats(int prev, int curr, int dis,
+			     char *prev_string, char *curr_string,
 			     unsigned long long itv,
 			     unsigned long long g_itv)
 {
@@ -1401,7 +1406,7 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 	int again = 0;
 
 	if (dis) {
-		PRINT_ID_HDR("#      Time", pidflag);
+		PRINT_ID_HDR(prev_string, pidflag);
 		if (DISPLAY_CPU(actflag)) {
 			printf("    %%usr %%system  %%guest   %%wait    %%CPU   CPU");
 		}
@@ -1432,8 +1437,7 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
 				       &pstc, &pstp) <= 0)
 			continue;
 
-		printf("%11ld", (long) time(NULL));
-		__print_line_id(pstc, '0');
+		print_line_id(curr_string, pstc);
 
 		if (DISPLAY_CPU(actflag)) {
 			cprintf_pc(DISPLAY_UNIT(pidflag), 5, 7, 2,
@@ -1541,6 +1545,10 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
  * @prev	Index in array where stats used as reference are.
  * @curr	Index in array for current sample statistics.
  * @dis		TRUE if a header line must be printed.
+ * @prev_string	String displayed at the beginning of a header line. This is
+ * 		the timestamp of the previous sample.
+ * @curr_string	String displayed at the beginning of current sample stats.
+ * 		This is the timestamp of the current sample.
  * @itv		Interval of time in jiffies.
  *
  * RETURNS:
@@ -1549,6 +1557,7 @@ int write_pid_task_all_stats(int prev, int curr, int dis,
  ***************************************************************************
  */
 int write_pid_child_all_stats(int prev, int curr, int dis,
+			      char *prev_string, char *curr_string,
 			      unsigned long long itv)
 {
 	struct pid_stats *pstc, *pstp;
@@ -1556,7 +1565,7 @@ int write_pid_child_all_stats(int prev, int curr, int dis,
 	int again = 0;
 
 	if (dis) {
-		PRINT_ID_HDR("#      Time", pidflag);
+		PRINT_ID_HDR(prev_string, pidflag);
 		if (DISPLAY_CPU(actflag))
 			printf("    usr-ms system-ms  guest-ms");
 		if (DISPLAY_MEM(actflag))
@@ -1570,8 +1579,7 @@ int write_pid_child_all_stats(int prev, int curr, int dis,
 				       &pstc, &pstp) <= 0)
 			continue;
 
-		printf("%11ld", (long) time(NULL));
-		__print_line_id(pstc, '0');
+		print_line_id(curr_string, pstc);
 
 		if (DISPLAY_CPU(actflag)) {
 			cprintf_f(NO_UNIT, 3, 9, 0,
@@ -2308,11 +2316,12 @@ int write_stats_core(int prev, int curr, int dis, int disp_avg,
 
 	if (DISPLAY_ONELINE(pidflag)) {
 		if (DISPLAY_TASK_STATS(tskflag)) {
-			again += write_pid_task_all_stats(prev, curr, dis,
-						  	 itv, g_itv);
+			again += write_pid_task_all_stats(prev, curr, dis, prev_string, curr_string,
+							  itv, g_itv);
 		}
 		if (DISPLAY_CHILD_STATS(tskflag)) {
-			again += write_pid_child_all_stats(prev, curr, dis, itv);
+			again += write_pid_child_all_stats(prev, curr, dis, prev_string, curr_string,
+							   itv);
 		}
 	}
 	else {
@@ -2417,7 +2426,14 @@ int write_stats(int curr, int dis)
 	char cur_time[2][TIMESTAMP_LEN];
 
 	/* Get previous timestamp */
-	if (is_iso_time_fmt()) {
+	if (DISPLAY_ONELINE(pidflag)) {
+		strcpy(cur_time[!curr], "# Time     ");
+	}
+	else if (PRINT_SEC_EPOCH(pidflag)) {
+		snprintf(cur_time[!curr], TIMESTAMP_LEN, "%-11ld", mktime(&ps_tstamp[!curr]));
+		cur_time[!curr][TIMESTAMP_LEN - 1] = '\0';
+	}
+	else if (is_iso_time_fmt()) {
 		strftime(cur_time[!curr], sizeof(cur_time[!curr]), "%H:%M:%S", &ps_tstamp[!curr]);
 	}
 	else {
@@ -2425,7 +2441,11 @@ int write_stats(int curr, int dis)
 	}
 
 	/* Get current timestamp */
-	if (is_iso_time_fmt()) {
+	if (PRINT_SEC_EPOCH(pidflag)) {
+		snprintf(cur_time[curr], TIMESTAMP_LEN, "%-11ld", mktime(&ps_tstamp[curr]));
+		cur_time[curr][TIMESTAMP_LEN - 1] = '\0';
+	}
+	else if (is_iso_time_fmt()) {
 		strftime(cur_time[curr], sizeof(cur_time[curr]), "%H:%M:%S", &ps_tstamp[curr]);
 	}
 	else {
@@ -2492,14 +2512,14 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 
 	/* Set a handler for SIGINT */
 	memset(&int_act, 0, sizeof(int_act));
-	int_act.sa_handler = int_handler;
+	int_act.sa_handler = sig_handler;
 	sigaction(SIGINT, &int_act, NULL);
 
 	/* Wait for SIGALRM (or possibly SIGINT) signal */
 	pause();
 
-	if (sigint_caught)
-		/* SIGINT signal caught during first interval: Exit immediately */
+	if (signal_caught)
+		/* SIGINT/SIGCHLD signals caught during first interval: Exit immediately */
 		return;
 
 	do {
@@ -2541,8 +2561,8 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 
 			pause();
 
-			if (sigint_caught) {
-				/* SIGINT signal caught => Display average stats */
+			if (signal_caught) {
+				/* SIGINT/SIGCHLD signals caught => Display average stats */
 				count = 0;
 				printf("\n");	/* Skip "^C" displayed on screen */
 			}
@@ -2561,6 +2581,61 @@ void rw_pidstat_loop(int dis_hdr, int rows)
 	{
 		/* Write stats average */
 		write_stats_avg(curr, dis_hdr);
+	}
+}
+
+/*
+ ***************************************************************************
+ * Start a program that will be monitored by pidstat.
+ *
+ * IN:
+ * @argc	Number of arguments.
+ * @argv	Arguments values.
+ *
+ * RETURNS:
+ * The PID of the program executed.
+ ***************************************************************************
+ */
+pid_t exec_pgm(int argc, char **argv)
+{
+	pid_t child;
+	char *args[argc + 1];
+	int i;
+
+	child = fork();
+
+	switch(child) {
+
+		case -1:
+			perror("fork");
+			exit(4);
+			break;
+
+		case 0:
+			/* Child */
+			for (i = 0; i < argc; i++) {
+				args[i] = argv[i];
+			}
+			args[argc] = NULL;
+
+			execvp(args[0], args);
+			perror("exec");
+			exit(4);
+			break;
+
+		default:
+			/*
+			 * Parent.
+			 * Set a handler for SIGCHLD (signal that will be received
+			 * by pidstat when the child program terminates).
+			 * The handler is the same as for SIGINT: Stop and display
+			 * average statistics.
+			 */
+			memset(&chld_act, 0, sizeof(chld_act));
+			chld_act.sa_handler = sig_handler;
+			sigaction(SIGCHLD, &chld_act, NULL);
+
+			return child;
 	}
 }
 
@@ -2600,59 +2675,62 @@ int main(int argc, char **argv)
 	/* Process args... */
 	while (opt < argc) {
 
-		if (!strcmp(argv[opt], "-p")) {
-			pidflag |= P_D_PID;
-			if (argv[++opt]) {
-
-				for (t = strtok(argv[opt], ","); t; t = strtok(NULL, ",")) {
-					if (!strcmp(t, K_ALL)) {
-						pidflag |= P_D_ALL_PID;
-					}
-					else if (!strcmp(t, K_SELF)) {
-						update_pid_array(&pid_array_nr, getpid());
-					}
-					else {
-						if (strspn(t, DIGITS) != strlen(t)) {
-							usage(argv[0]);
-						}
-						pid = atoi(t);
-						if (pid < 1) {
-							usage(argv[0]);
-						}
-						update_pid_array(&pid_array_nr, pid);
-					}
-				}
-				opt++;
-			}
-			else {
+		if (!strcmp(argv[opt], "-e")) {
+			if (!argv[++opt]) {
 				usage(argv[0]);
 			}
+			pidflag |= P_D_PID;
+			update_pid_array(&pid_array_nr, exec_pgm(argc - opt, argv + opt));
+			break;
+		}
+
+		else if (!strcmp(argv[opt], "-p")) {
+			pidflag |= P_D_PID;
+			if (!argv[++opt]) {
+				usage(argv[0]);
+			}
+
+			for (t = strtok(argv[opt], ","); t; t = strtok(NULL, ",")) {
+				if (!strcmp(t, K_ALL)) {
+					pidflag |= P_D_ALL_PID;
+				}
+				else if (!strcmp(t, K_SELF)) {
+					update_pid_array(&pid_array_nr, getpid());
+				}
+				else {
+					if (strspn(t, DIGITS) != strlen(t)) {
+						usage(argv[0]);
+					}
+					pid = atoi(t);
+					if (pid < 1) {
+						usage(argv[0]);
+					}
+					update_pid_array(&pid_array_nr, pid);
+				}
+			}
+			opt++;
 		}
 
 		else if (!strcmp(argv[opt], "-C")) {
-			if (argv[++opt]) {
-				strncpy(commstr, argv[opt++], MAX_COMM_LEN);
-				commstr[MAX_COMM_LEN - 1] = '\0';
-				pidflag |= P_F_COMMSTR;
-				if (!strlen(commstr)) {
-					usage(argv[0]);
-				}
+			if (!argv[++opt]) {
+				usage(argv[0]);
 			}
-			else {
+			strncpy(commstr, argv[opt++], MAX_COMM_LEN);
+			commstr[MAX_COMM_LEN - 1] = '\0';
+			pidflag |= P_F_COMMSTR;
+			if (!strlen(commstr)) {
 				usage(argv[0]);
 			}
 		}
 
 		else if (!strcmp(argv[opt], "-G")) {
-			if (argv[++opt]) {
-				strncpy(procstr, argv[opt++], MAX_COMM_LEN);
-				procstr[MAX_COMM_LEN - 1] = '\0';
-				pidflag |= P_F_PROCSTR;
-				if (!strlen(procstr)) {
-					usage(argv[0]);
-				}
+			if (!argv[++opt]) {
+				usage(argv[0]);
 			}
-			else {
+			strncpy(procstr, argv[opt++], MAX_COMM_LEN);
+			procstr[MAX_COMM_LEN - 1] = '\0';
+			pidflag |= P_F_PROCSTR;
+			if (!strlen(procstr)) {
 				usage(argv[0]);
 			}
 		}
@@ -2663,28 +2741,26 @@ int main(int argc, char **argv)
 		}
 
 		else if (!strcmp(argv[opt], "-T")) {
-			if (argv[++opt]) {
-				if (tskflag) {
-					dis_hdr++;
-				}
-				if (!strcmp(argv[opt], K_P_TASK)) {
-					tskflag |= P_TASK;
-				}
-				else if (!strcmp(argv[opt], K_P_CHILD)) {
-					tskflag |= P_CHILD;
-				}
-				else if (!strcmp(argv[opt], K_P_ALL)) {
-					tskflag |= P_TASK + P_CHILD;
-					dis_hdr++;
-				}
-				else {
-					usage(argv[0]);
-				}
-				opt++;
+			if (!argv[++opt]) {
+				usage(argv[0]);
+			}
+			if (tskflag) {
+				dis_hdr++;
+			}
+			if (!strcmp(argv[opt], K_P_TASK)) {
+				tskflag |= P_TASK;
+			}
+			else if (!strcmp(argv[opt], K_P_CHILD)) {
+				tskflag |= P_CHILD;
+			}
+			else if (!strcmp(argv[opt], K_P_ALL)) {
+				tskflag |= P_TASK + P_CHILD;
+				dis_hdr++;
 			}
 			else {
 				usage(argv[0]);
 			}
+			opt++;
 		}
 
 		/* Option used individually. See below for grouped option */
@@ -2711,6 +2787,11 @@ int main(int argc, char **argv)
 					/* Display I/O usage */
 					actflag |= P_A_IO;
 					dis_hdr++;
+					break;
+
+				case 'H':
+					/* Display timestamps in sec since the epoch */
+					pidflag |= P_D_SEC_EPOCH;
 					break;
 
 				case 'h':

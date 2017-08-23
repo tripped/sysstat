@@ -1,6 +1,8 @@
 sysstat (11.6.0-1~) UNRELEASED; urgency=medium
 
   * New upstream version.
+  * Add 14-fix-mtab-reading.patch to fix a crash occurring in sadc while
+    reading really long lines in /etc/mtab (closes: #872926).
 
  -- Robert Luberda <robert@debian.org>  Wed, 23 Aug 2017 22:16:21 +0200
 

@@ -1,0 +1,68 @@
+From: Robert Luberda <robert@debian.org>
+Date: Wed, 23 Aug 2017 22:14:39 +0200
+Subject: Fix reading /etc/mtab file
+
+Fix a crash occurring in sadc while reading really long
+lines in /etc/mtab.
+
+Such lines are possible for instance when overlay2 filesystem
+with docker is used. In such a case a single mtab entry can look
+like this (note that new line characters were added for readability,
+the original entry contained only one '\n' at the end):
+
+overlay /var/lib/docker/overlay2/f23d2377a67b9ab1b49555ecd09b2ccdc037e0ee5d9e54f87e59f07f4398e71f/merged overl
+ay rw,relatime,lowerdir=/var/lib/docker/overlay2/l/L6VKIYXWBQSJ5R7V35SS43R6Y6:/var/lib/docker/overlay2/l/UCCHK
+GXUJPWCMLHR36IZJNNIQP:/var/lib/docker/overlay2/l/RKVYEXD2FH65FTMK76RDWPLESX:/var/lib/docker/overlay2/l/DX4JZRK
+TFP2GOO4V6OWQ6CPJFY:/var/lib/docker/overlay2/l/6CYNWDKADUPPDZJ5IHOH2R7Y5S:/var/lib/docker/overlay2/l/JTPINUZIA
+TXADL6XWFHG2OYGSF:/var/lib/docker/overlay2/l/OTSTIV5TTRHF4IUD7BODQ2FUON:/var/lib/docker/overlay2/l/QFNH3EFS5EZ
+GRTC4DPHU3PJ4TU:/var/lib/docker/overlay2/l/ZOOUKT2E5U4CSLP57Z7MXYX5CD:/var/lib/docker/overlay2/l/3LUU6IDR2HWPT
+VBARC5K6XSMRC:/var/lib/docker/overlay2/l/XOHYBP4RWXQKQZ43I7JKG24KE4:/var/lib/docker/overlay2/l/MN5M5B7AY5LPXQQ
+C6V2MBJWWBF:/var/lib/docker/overlay2/l/3DRMKQ34AIZD2AROU3TVK3OCUT:/var/lib/docker/overlay2/l/73ZXDHBV6C53Q3SPX
+A57EOLGHU:/var/lib/docker/overlay2/l/C2IZBQ55EUTGEAAORSLE73ZPNM:/var/lib/docker/overlay2/l/ITHARNV7RPWN5S3BCZ2
+QDMZIMJ:/var/lib/docker/overlay2/l/TQKUV4LEG4AFUUCMFHHRLDBHAH:/var/lib/docker/overlay2/l/N75JZWPPDEKJ4DTN4GMEG
+TDIZL:/var/lib/docker/overlay2/l/QGUUYAETPMK643DG3AKWJAIIZA,upperdir=/var/lib/docker/overlay2/f23d2377a67b9ab1
+b49555ecd09b2ccdc037e0ee5d9e54f87e59f07f4398e71f/diff,workdir=/var/lib/docker/overlay2/f23d2377a67b9ab1b49555e
+cd09b2ccdc037e0ee5d9e54f87e59f07f4398e71f/work 0 0
+
+Bugs-Debian: https://bugs.debian.org/872926
+---
+ count.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/count.c b/count.c
+index 176a4d3..6ba844d 100644
+--- a/count.c
++++ b/count.c
+@@ -463,7 +463,8 @@ int get_filesystem_nr(void)
+ {
+ 	FILE *fp;
+ 	char line[512], fs_name[MAX_FS_LEN], mountp[256];
+-	int fs = 0;
++	int fs = 0, skip = 0, skip_next = 0;
++	char *pos = 0;
+ 	struct statvfs buf;
+ 
+ 	if ((fp = fopen(MTAB, "r")) == NULL)
+@@ -472,11 +473,21 @@ int get_filesystem_nr(void)
+ 
+ 	/* Get current filesystem */
+ 	while (fgets(line, sizeof(line), fp) != NULL) {
++		/* Ignore line if the preceding line did not contain '\n' */
++		skip = skip_next;
++		skip_next = strchr(line, '\n') == NULL;
++		if (skip)
++			continue;
++
+ 		if (line[0] == '/') {
++			/* Find field separator position */
++			pos = strchr(line, ' ');
++			if (pos == NULL)
++				continue;
+ 
+ 			/* Read filesystem name and mount point */
+ 			sscanf(line, "%127s", fs_name);
+-			sscanf(strchr(line, ' ') + 1, "%255s", mountp);
++			sscanf(pos + 1, "%255s", mountp);
+ 
+ 			/* Replace octal codes */
+ 			oct2chr(mountp);

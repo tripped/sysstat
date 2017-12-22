@@ -48,8 +48,10 @@
 #define _(string) (string)
 #endif
 
+#ifdef USE_SCCSID
 #define SCCSID "@(#)sysstat-" VERSION ": " __FILE__ " compiled " __DATE__ " " __TIME__
 char *sccsid(void) { return (SCCSID); }
+#endif
 
 struct stats_cpu *st_cpu[2];
 unsigned long long uptime[2]  = {0, 0};
@@ -1676,17 +1678,17 @@ void rw_io_stat_loop(long int count, struct tm *rectime)
 			if (count > 0) {
 				count--;
 			}
+			if (DISPLAY_JSON_OUTPUT(flags)) {
+				if (count) {
+				printf(",");
+				}
+				printf("\n");
+			}
 		}
 		else {
 			skip = 0;
 		}
 
-		if (DISPLAY_JSON_OUTPUT(flags)) {
-			if (count) {
-			printf(",");
-			}
-			printf("\n");
-		}
 		if (count) {
 			curr ^= 1;
 			pause();

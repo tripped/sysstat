@@ -1,10 +1,13 @@
-sysstat (11.6.1-1~) UNRELEASED; urgency=medium
+sysstat (11.6.1-1) unstable; urgency=medium
 
-  * New upstream version.
+  * New upstream version (closes: #875656, #883863).
   * Remove no longer needed patches 13-remove-sccsid.patch, and
     14-fix-mtab-reading.patch.
+  * debian/control:
+    + set Rules-Requires-Root to "no";
+    + Standards-Version: 4.1.2 (no changes).
 
- -- Robert Luberda <robert@debian.org>  Sat, 23 Dec 2017 00:47:26 +0100
+ -- Robert Luberda <robert@debian.org>  Sat, 23 Dec 2017 09:17:46 +0100
 
 sysstat (11.6.0-1) unstable; urgency=medium
 

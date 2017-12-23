@@ -5,5 +5,3 @@
 04-configs.patch
 06-exec.patch
 08-scripts.patch
-13-remove-sccsid.patch
-14-fix-mtab-reading.patch

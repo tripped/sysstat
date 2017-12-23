@@ -20,7 +20,7 @@ index 7cc3b44..40c5025 100644
  # 8am-7pm activity reports every 20 minutes during weekdays.
  # 0 8-18 * * 1-5 @SA_LIB_DIR@/sa1 1200 3 &
 diff --git a/sysstat.sysconfig.in b/sysstat.sysconfig.in
-index 3d96420..590a3a2 100644
+index 796da1f..7d20252 100644
 --- a/sysstat.sysconfig.in
 +++ b/sysstat.sysconfig.in
 @@ -1,6 +1,7 @@
@@ -44,5 +44,5 @@ index 3d96420..590a3a2 100644
 +# statisitcs. Use `-S XALL' to collect all available statistics.
 +SADC_OPTIONS="-S DISK"
  
- # Directory where sa and sar files are saved.
+ # Directory where sa and sar files are saved. The directory must exist.
  SA_DIR=@SA_DIR@

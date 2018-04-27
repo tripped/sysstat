@@ -1,12 +1,10 @@
 /*
  * rd_sensors.h: Include file used to read sensors statistics
- * (C) 1999-2017 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2018 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _RD_SENSORS_H
 #define _RD_SENSORS_H
-
-#include "common.h"
 
 /*
  ***************************************************************************
@@ -24,6 +22,9 @@ struct stats_pwr_fan {
 };
 
 #define STATS_PWR_FAN_SIZE     (sizeof(struct stats_pwr_fan))
+#define STATS_PWR_FAN_ULL	2
+#define STATS_PWR_FAN_UL	0
+#define STATS_PWR_FAN_U		0
 
 /*
  * Structure for device temperature statistics.
@@ -36,6 +37,9 @@ struct stats_pwr_temp {
 };
 
 #define STATS_PWR_TEMP_SIZE    (sizeof(struct stats_pwr_temp))
+#define STATS_PWR_TEMP_ULL	3
+#define STATS_PWR_TEMP_UL	0
+#define STATS_PWR_TEMP_U	0
 
 /*
  * Structure for voltage inputs statistics.
@@ -48,6 +52,9 @@ struct stats_pwr_in {
 };
 
 #define STATS_PWR_IN_SIZE	(sizeof(struct stats_pwr_in))
+#define STATS_PWR_IN_ULL	3
+#define STATS_PWR_IN_UL		0
+#define STATS_PWR_IN_U		0
 
 /*
  ***************************************************************************
@@ -55,12 +62,12 @@ struct stats_pwr_in {
  ***************************************************************************
  */
 
-void read_fan
-	(struct stats_pwr_fan *, int);
-void read_temp
-	(struct stats_pwr_temp *, int);
-void read_in
-	(struct stats_pwr_in *, int);
+__nr_t read_fan
+	(struct stats_pwr_fan *, __nr_t);
+__nr_t read_temp
+	(struct stats_pwr_temp *, __nr_t);
+__nr_t read_in
+	(struct stats_pwr_in *, __nr_t);
 
 /*
  ***************************************************************************
@@ -68,11 +75,11 @@ void read_in
  ***************************************************************************
  */
 
-int get_fan_nr
+__nr_t get_fan_nr
 	(void);
-int get_temp_nr
+__nr_t get_temp_nr
 	(void);
-int get_in_nr
+__nr_t get_in_nr
 	(void);
 
 #endif /* _RD_SENSORS_H */

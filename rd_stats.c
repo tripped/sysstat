@@ -1,6 +1,6 @@
 /*
  * rd_stats.c: Read system statistics
- * (C) 1999-2017 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2018 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -32,7 +32,6 @@
 
 #include "common.h"
 #include "rd_stats.h"
-#include "ioconf.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -44,26 +43,33 @@
 
 /*
  ***************************************************************************
- * Read CPU statistics and machine uptime.
+ * Read CPU statistics.
+ * Remember that this function is used by several sysstat commands!
  *
  * IN:
- * @st_cpu	Structure where stats will be saved.
- * @nbr		Total number of CPU (including cpu "all").
+ * @st_cpu	Buffer where structures containing stats will be saved.
+ * @nr_alloc	Total number of structures allocated. Value is >= 1.
  *
  * OUT:
- * @st_cpu	Structure with statistics.
- * @uptime	Machine uptime multiplied by the number of processors.
- * @uptime0	Machine uptime. Filled only if previously set to zero.
+ * @st_cpu	Buffer with statistics.
+ *
+ * RETURNS:
+ * Highest CPU number(*) for which statistics have been read.
+ * 1 means CPU "all", 2 means CPU 0, 3 means CPU 1, etc.
+ * Or -1 if the buffer was too small and needs to be reallocated.
+ *
+ * (*)This doesn't account for all processors in the machine in the case
+ * where some CPU are offline and located at the end of the list.
  ***************************************************************************
  */
-void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
-		   unsigned long long *uptime, unsigned long long *uptime0)
+__nr_t read_stat_cpu(struct stats_cpu *st_cpu, __nr_t nr_alloc)
 {
 	FILE *fp;
 	struct stats_cpu *st_cpu_i;
 	struct stats_cpu sc;
 	char line[8192];
-	int proc_nb;
+	int proc_nr;
+	__nr_t cpu_read = 0;
 
 	if ((fp = fopen(STAT, "r")) == NULL) {
 		fprintf(stderr, _("Cannot open %s: %s\n"), STAT, strerror(errno));
@@ -97,93 +103,82 @@ void read_stat_cpu(struct stats_cpu *st_cpu, int nbr,
 			       &st_cpu->cpu_guest,
 			       &st_cpu->cpu_guest_nice);
 
-			/*
-			 * Compute the uptime of the system in jiffies (1/100ths of a second
-			 * if HZ=100).
-			 * Machine uptime is multiplied by the number of processors here.
-			 *
-			 * NB: Don't add cpu_guest/cpu_guest_nice because cpu_user/cpu_nice
-			 * already include them.
-			 */
-			*uptime = st_cpu->cpu_user + st_cpu->cpu_nice    +
-				st_cpu->cpu_sys    + st_cpu->cpu_idle    +
-				st_cpu->cpu_iowait + st_cpu->cpu_hardirq +
-				st_cpu->cpu_steal  + st_cpu->cpu_softirq;
+			if (!cpu_read) {
+				cpu_read = 1;
+			}
+
+			if (nr_alloc == 1)
+				/* We just want to read stats for CPU "all" */
+				break;
 		}
 
 		else if (!strncmp(line, "cpu", 3)) {
-			if (nbr > 1) {
-				/* All the fields don't necessarily exist */
-				memset(&sc, 0, STATS_CPU_SIZE);
-				/*
-				 * Read the number of jiffies spent in the different modes
-				 * (user, nice, etc) for current proc.
-				 * This is done only on SMP machines.
-				 */
-				sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
-				       &proc_nb,
-				       &sc.cpu_user,
-				       &sc.cpu_nice,
-				       &sc.cpu_sys,
-				       &sc.cpu_idle,
-				       &sc.cpu_iowait,
-				       &sc.cpu_hardirq,
-				       &sc.cpu_softirq,
-				       &sc.cpu_steal,
-				       &sc.cpu_guest,
-				       &sc.cpu_guest_nice);
+			/* All the fields don't necessarily exist */
+			memset(&sc, 0, STATS_CPU_SIZE);
+			/*
+			 * Read the number of jiffies spent in the different modes
+			 * (user, nice, etc) for current proc.
+			 * This is done only on SMP machines.
+			 */
+			sscanf(line + 3, "%d %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
+			       &proc_nr,
+			       &sc.cpu_user,
+			       &sc.cpu_nice,
+			       &sc.cpu_sys,
+			       &sc.cpu_idle,
+			       &sc.cpu_iowait,
+			       &sc.cpu_hardirq,
+			       &sc.cpu_softirq,
+			       &sc.cpu_steal,
+			       &sc.cpu_guest,
+			       &sc.cpu_guest_nice);
 
-				if (proc_nb < (nbr - 1)) {
-					st_cpu_i = st_cpu + proc_nb + 1;
-					*st_cpu_i = sc;
-				}
-				/*
-				 * else additional CPUs have been dynamically registered
-				 * in /proc/stat.
-				 */
+			if (proc_nr + 2 > nr_alloc) {
+				cpu_read = -1;
+				break;
+			}
 
-				if (!proc_nb && !*uptime0) {
-					/*
-					 * Compute uptime reduced to one proc using proc#0.
-					 * Done if /proc/uptime was unavailable.
-					 *
-					 * NB: Don't add cpu_guest/cpu_guest_nice because cpu_user/cpu_nice
-					 * already include them.
-					 */
-					*uptime0 = sc.cpu_user + sc.cpu_nice  +
-						sc.cpu_sys     + sc.cpu_idle  +
-						sc.cpu_iowait  + sc.cpu_steal +
-						sc.cpu_hardirq + sc.cpu_softirq;
-				}
+			st_cpu_i = st_cpu + proc_nr + 1;
+			*st_cpu_i = sc;
+
+			if (proc_nr + 2 > cpu_read) {
+				cpu_read = proc_nr + 2;
 			}
 		}
 	}
 
 	fclose(fp);
+	return cpu_read;
 }
 
 /*
  ***************************************************************************
  * Read interrupts statistics from /proc/stat.
+ * Remember that this function is used by several sysstat commands!
  *
  * IN:
  * @st_irq	Structure where stats will be saved.
- * @nbr		Number of interrupts to read, including the total number
- *		of interrupts.
+ * @nr_alloc	Number of structures allocated. Value is >= 1.
  *
  * OUT:
  * @st_irq	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of interrupts read, or -1 if the buffer was too small and
+ * needs to be reallocated.
  ***************************************************************************
  */
-void read_stat_irq(struct stats_irq *st_irq, int nbr)
+__nr_t read_stat_irq(struct stats_irq *st_irq, __nr_t nr_alloc)
 {
 	FILE *fp;
 	struct stats_irq *st_irq_i;
 	char line[8192];
 	int i, pos;
+	unsigned long long irq_nr;
+	__nr_t irq_read = 0;
 
 	if ((fp = fopen(STAT, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -192,15 +187,34 @@ void read_stat_irq(struct stats_irq *st_irq, int nbr)
 			sscanf(line + 5, "%llu", &st_irq->irq_nr);
 			pos = strcspn(line + 5, " ") + 5;
 
-			for (i = 1; i < nbr; i++) {
-				st_irq_i = st_irq + i;
-				sscanf(line + pos, " %llu", &st_irq_i->irq_nr);
-				pos += strcspn(line + pos + 1, " ") + 1;
+			irq_read++;
+			if (nr_alloc == 1)
+				/* We just want to read the total number of interrupts */
+				break;
+
+			do {
+				i = sscanf(line + pos, " %llu", &irq_nr);
+				if (i < 1)
+					break;
+
+				if (irq_read + 1 > nr_alloc) {
+					irq_read = -1;
+					break;
+				}
+				st_irq_i = st_irq + irq_read++;
+				st_irq_i->irq_nr = irq_nr;
+
+				i = strcspn(line + pos + 1, " ");
+				pos += i + 1;
 			}
+			while ((i > 0) && (pos < (sizeof(line) - 1)));
+
+			break;
 		}
 	}
 
 	fclose(fp);
+	return irq_read;
 }
 
 /*
@@ -212,89 +226,93 @@ void read_stat_irq(struct stats_irq *st_irq, int nbr)
  *
  * OUT:
  * @st_memory	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_meminfo(struct stats_memory *st_memory)
+__nr_t read_meminfo(struct stats_memory *st_memory)
 {
 	FILE *fp;
 	char line[128];
 
 	if ((fp = fopen(MEMINFO, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
 		if (!strncmp(line, "MemTotal:", 9)) {
 			/* Read the total amount of memory in kB */
-			sscanf(line + 9, "%lu", &st_memory->tlmkb);
+			sscanf(line + 9, "%llu", &st_memory->tlmkb);
 		}
 		else if (!strncmp(line, "MemFree:", 8)) {
 			/* Read the amount of free memory in kB */
-			sscanf(line + 8, "%lu", &st_memory->frmkb);
+			sscanf(line + 8, "%llu", &st_memory->frmkb);
 		}
 		else if (!strncmp(line, "MemAvailable:", 13)) {
 			/* Read the amount of available memory in kB */
-			sscanf(line + 13, "%lu", &st_memory->availablekb);
+			sscanf(line + 13, "%llu", &st_memory->availablekb);
 		}
 		else if (!strncmp(line, "Buffers:", 8)) {
 			/* Read the amount of buffered memory in kB */
-			sscanf(line + 8, "%lu", &st_memory->bufkb);
+			sscanf(line + 8, "%llu", &st_memory->bufkb);
 		}
 		else if (!strncmp(line, "Cached:", 7)) {
 			/* Read the amount of cached memory in kB */
-			sscanf(line + 7, "%lu", &st_memory->camkb);
+			sscanf(line + 7, "%llu", &st_memory->camkb);
 		}
 		else if (!strncmp(line, "SwapCached:", 11)) {
 			/* Read the amount of cached swap in kB */
-			sscanf(line + 11, "%lu", &st_memory->caskb);
+			sscanf(line + 11, "%llu", &st_memory->caskb);
 		}
 		else if (!strncmp(line, "Active:", 7)) {
 			/* Read the amount of active memory in kB */
-			sscanf(line + 7, "%lu", &st_memory->activekb);
+			sscanf(line + 7, "%llu", &st_memory->activekb);
 		}
 		else if (!strncmp(line, "Inactive:", 9)) {
 			/* Read the amount of inactive memory in kB */
-			sscanf(line + 9, "%lu", &st_memory->inactkb);
+			sscanf(line + 9, "%llu", &st_memory->inactkb);
 		}
 		else if (!strncmp(line, "SwapTotal:", 10)) {
 			/* Read the total amount of swap memory in kB */
-			sscanf(line + 10, "%lu", &st_memory->tlskb);
+			sscanf(line + 10, "%llu", &st_memory->tlskb);
 		}
 		else if (!strncmp(line, "SwapFree:", 9)) {
 			/* Read the amount of free swap memory in kB */
-			sscanf(line + 9, "%lu", &st_memory->frskb);
+			sscanf(line + 9, "%llu", &st_memory->frskb);
 		}
 		else if (!strncmp(line, "Dirty:", 6)) {
 			/* Read the amount of dirty memory in kB */
-			sscanf(line + 6, "%lu", &st_memory->dirtykb);
+			sscanf(line + 6, "%llu", &st_memory->dirtykb);
 		}
 		else if (!strncmp(line, "Committed_AS:", 13)) {
 			/* Read the amount of commited memory in kB */
-			sscanf(line + 13, "%lu", &st_memory->comkb);
+			sscanf(line + 13, "%llu", &st_memory->comkb);
 		}
 		else if (!strncmp(line, "AnonPages:", 10)) {
 			/* Read the amount of pages mapped into userspace page tables in kB */
-			sscanf(line + 10, "%lu", &st_memory->anonpgkb);
+			sscanf(line + 10, "%llu", &st_memory->anonpgkb);
 		}
 		else if (!strncmp(line, "Slab:", 5)) {
 			/* Read the amount of in-kernel data structures cache in kB */
-			sscanf(line + 5, "%lu", &st_memory->slabkb);
+			sscanf(line + 5, "%llu", &st_memory->slabkb);
 		}
 		else if (!strncmp(line, "KernelStack:", 12)) {
 			/* Read the kernel stack utilization in kB */
-			sscanf(line + 12, "%lu", &st_memory->kstackkb);
+			sscanf(line + 12, "%llu", &st_memory->kstackkb);
 		}
 		else if (!strncmp(line, "PageTables:", 11)) {
 			/* Read the amount of memory dedicated to the lowest level of page tables in kB */
-			sscanf(line + 11, "%lu", &st_memory->pgtblkb);
+			sscanf(line + 11, "%llu", &st_memory->pgtblkb);
 		}
 		else if (!strncmp(line, "VmallocUsed:", 12)) {
 			/* Read the amount of vmalloc area which is used in kB */
-			sscanf(line + 12, "%lu", &st_memory->vmusedkb);
+			sscanf(line + 12, "%llu", &st_memory->vmusedkb);
 		}
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -302,29 +320,141 @@ void read_meminfo(struct stats_memory *st_memory)
  * Read machine uptime, independently of the number of processors.
  *
  * OUT:
- * @uptime	Uptime value in jiffies.
+ * @uptime	Uptime value in hundredths of a second.
  ***************************************************************************
  */
 void read_uptime(unsigned long long *uptime)
 {
-	FILE *fp;
+	FILE *fp = NULL;
 	char line[128];
 	unsigned long up_sec, up_cent;
+	int err = FALSE;
 
-	if ((fp = fopen(UPTIME, "r")) == NULL)
-		return;
-
-	if (fgets(line, sizeof(line), fp) == NULL) {
-		fclose(fp);
-		return;
+	if ((fp = fopen(UPTIME, "r")) == NULL) {
+		err = TRUE;
+	}
+	else if (fgets(line, sizeof(line), fp) == NULL) {
+		err = TRUE;
+	}
+	else if (sscanf(line, "%lu.%lu", &up_sec, &up_cent) == 2) {
+		*uptime = (unsigned long long) up_sec * 100 +
+			  (unsigned long long) up_cent;
+	}
+	else {
+		err = TRUE;
 	}
 
-	sscanf(line, "%lu.%lu", &up_sec, &up_cent);
-	*uptime = (unsigned long long) up_sec * HZ +
-	          (unsigned long long) up_cent * HZ / 100;
+	if (fp != NULL) {
+		fclose(fp);
+	}
+	if (err) {
+		fprintf(stderr, _("Cannot read %s\n"), UPTIME);
+		exit(2);
+	}
+}
 
-	fclose(fp);
+/*
+ ***************************************************************************
+ * Compute "extended" device statistics (service time, etc.).
+ *
+ * IN:
+ * @sdc		Structure with current device statistics.
+ * @sdp		Structure with previous device statistics.
+ * @itv		Interval of time in 1/100th of a second.
+ *
+ * OUT:
+ * @xds		Structure with extended statistics.
+ ***************************************************************************
+*/
+void compute_ext_disk_stats(struct stats_disk *sdc, struct stats_disk *sdp,
+			    unsigned long long itv, struct ext_disk_stats *xds)
+{
+	double tput
+		= ((double) (sdc->nr_ios - sdp->nr_ios)) * 100 / itv;
 
+	xds->util  = S_VALUE(sdp->tot_ticks, sdc->tot_ticks, itv);
+	xds->svctm = tput ? xds->util / tput : 0.0;
+	/*
+	 * Kernel gives ticks already in milliseconds for all platforms
+	 * => no need for further scaling.
+	 */
+	xds->await = (sdc->nr_ios - sdp->nr_ios) ?
+		((sdc->rd_ticks - sdp->rd_ticks) + (sdc->wr_ticks - sdp->wr_ticks)) /
+		((double) (sdc->nr_ios - sdp->nr_ios)) : 0.0;
+	xds->arqsz = (sdc->nr_ios - sdp->nr_ios) ?
+		((sdc->rd_sect - sdp->rd_sect) + (sdc->wr_sect - sdp->wr_sect)) /
+		((double) (sdc->nr_ios - sdp->nr_ios)) : 0.0;
+}
+
+/*
+ ***************************************************************************
+ * Since ticks may vary slightly from CPU to CPU, we'll want
+ * to recalculate itv based on this CPU's tick count, rather
+ * than that reported by the "cpu" line. Otherwise we
+ * occasionally end up with slightly skewed figures, with
+ * the skew being greater as the time interval grows shorter.
+ *
+ * IN:
+ * @scc	Current sample statistics for current CPU.
+ * @scp	Previous sample statistics for current CPU.
+ *
+ * RETURNS:
+ * Interval of time based on current CPU, expressed in jiffies.
+ ***************************************************************************
+ */
+unsigned long long get_per_cpu_interval(struct stats_cpu *scc,
+					struct stats_cpu *scp)
+{
+	unsigned long long ishift = 0LL;
+
+	if ((scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest)) {
+		/*
+		 * Sometimes the nr of jiffies spent in guest mode given by the guest
+		 * counter in /proc/stat is slightly higher than that included in
+		 * the user counter. Update the interval value accordingly.
+		 */
+		ishift += (scp->cpu_user - scp->cpu_guest) -
+		          (scc->cpu_user - scc->cpu_guest);
+	}
+	if ((scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice)) {
+		/*
+		 * Idem for nr of jiffies spent in guest_nice mode.
+		 */
+		ishift += (scp->cpu_nice - scp->cpu_guest_nice) -
+		          (scc->cpu_nice - scc->cpu_guest_nice);
+	}
+
+	/*
+	 * Workaround for CPU coming back online: With recent kernels
+	 * some fields (user, nice, system) restart from their previous value,
+	 * whereas others (idle, iowait) restart from zero.
+	 * For the latter we need to set their previous value to zero to
+	 * avoid getting an interval value < 0.
+	 * (I don't know how the other fields like hardirq, steal... behave).
+	 * Don't assume the CPU has come back from offline state if previous
+	 * value was greater than ULLONG_MAX - 0x7ffff (the counter probably
+	 * overflew).
+	 */
+	if ((scc->cpu_idle < scp->cpu_idle) && (scp->cpu_idle < (ULLONG_MAX - 0x7ffff))) {
+		scp->cpu_idle = 0;
+	}
+	if ((scc->cpu_iowait < scp->cpu_iowait) && (scp->cpu_iowait < (ULLONG_MAX - 0x7ffff))) {
+		scp->cpu_iowait = 0;
+	}
+
+	/*
+	 * Don't take cpu_guest and cpu_guest_nice into account
+	 * because cpu_user and cpu_nice already include them.
+	 */
+	return ((scc->cpu_user    + scc->cpu_nice   +
+		 scc->cpu_sys     + scc->cpu_iowait +
+		 scc->cpu_idle    + scc->cpu_steal  +
+		 scc->cpu_hardirq + scc->cpu_softirq) -
+		(scp->cpu_user    + scp->cpu_nice   +
+		 scp->cpu_sys     + scp->cpu_iowait +
+		 scp->cpu_idle    + scp->cpu_steal  +
+		 scp->cpu_hardirq + scp->cpu_softirq) +
+		 ishift);
 }
 
 #ifdef SOURCE_SADC
@@ -376,15 +506,18 @@ void oct2chr(char *str)
  *
  * OUT:
  * @st_pcsw	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_stat_pcsw(struct stats_pcsw *st_pcsw)
+__nr_t read_stat_pcsw(struct stats_pcsw *st_pcsw)
 {
 	FILE *fp;
 	char line[8192];
 
 	if ((fp = fopen(STAT, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -400,6 +533,7 @@ void read_stat_pcsw(struct stats_pcsw *st_pcsw)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -411,20 +545,23 @@ void read_stat_pcsw(struct stats_pcsw *st_pcsw)
  *
  * OUT:
  * @st_queue	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_loadavg(struct stats_queue *st_queue)
+__nr_t read_loadavg(struct stats_queue *st_queue)
 {
 	FILE *fp;
 	char line[8192];
-	int load_tmp[3];
+	unsigned int load_tmp[3];
 	int rc;
 
 	if ((fp = fopen(LOADAVG, "r")) == NULL)
-		return;
+		return 0;
 
 	/* Read load averages and queue length */
-	rc = fscanf(fp, "%d.%u %d.%u %d.%u %lu/%u %*d\n",
+	rc = fscanf(fp, "%u.%u %u.%u %u.%u %llu/%llu %*d\n",
 		    &load_tmp[0], &st_queue->load_avg_1,
 		    &load_tmp[1], &st_queue->load_avg_5,
 		    &load_tmp[2], &st_queue->load_avg_15,
@@ -434,7 +571,7 @@ void read_loadavg(struct stats_queue *st_queue)
 	fclose(fp);
 
 	if (rc < 8)
-		return;
+		return 0;
 
 	st_queue->load_avg_1  += load_tmp[0] * 100;
 	st_queue->load_avg_5  += load_tmp[1] * 100;
@@ -447,18 +584,19 @@ void read_loadavg(struct stats_queue *st_queue)
 
 	/* Read nr of tasks blocked from /proc/stat */
 	if ((fp = fopen(STAT, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
 		if (!strncmp(line, "procs_blocked ", 14)) {
 			/* Read number of processes blocked */
-			sscanf(line + 14, "%lu", &st_queue->procs_blocked);
+			sscanf(line + 14, "%llu", &st_queue->procs_blocked);
 			break;
 		}
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -470,15 +608,18 @@ void read_loadavg(struct stats_queue *st_queue)
  *
  * OUT:
  * @st_swap	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_vmstat_swap(struct stats_swap *st_swap)
+__nr_t read_vmstat_swap(struct stats_swap *st_swap)
 {
 	FILE *fp;
 	char line[128];
 
 	if ((fp = fopen(VMSTAT, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -493,6 +634,7 @@ void read_vmstat_swap(struct stats_swap *st_swap)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -504,16 +646,19 @@ void read_vmstat_swap(struct stats_swap *st_swap)
  *
  * OUT:
  * @st_paging	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_vmstat_paging(struct stats_paging *st_paging)
+__nr_t read_vmstat_paging(struct stats_paging *st_paging)
 {
 	FILE *fp;
 	char line[128];
 	unsigned long pgtmp;
 
 	if ((fp = fopen(VMSTAT, "r")) == NULL)
-		return;
+		return 0;
 
 	st_paging->pgsteal = 0;
 	st_paging->pgscan_kswapd = st_paging->pgscan_direct = 0;
@@ -558,6 +703,7 @@ void read_vmstat_paging(struct stats_paging *st_paging)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -569,18 +715,21 @@ void read_vmstat_paging(struct stats_paging *st_paging)
  *
  * OUT:
  * @st_io	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_diskstats_io(struct stats_io *st_io)
+__nr_t read_diskstats_io(struct stats_io *st_io)
 {
 	FILE *fp;
-	char line[256];
+	char line[1024];
 	char dev_name[MAX_NAME_LEN];
 	unsigned int major, minor;
 	unsigned long rd_ios, wr_ios, rd_sec, wr_sec;
 
 	if ((fp = fopen(DISKSTATS, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -603,6 +752,7 @@ void read_diskstats_io(struct stats_io *st_io)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -611,28 +761,33 @@ void read_diskstats_io(struct stats_io *st_io)
  *
  * IN:
  * @st_disk	Structure where stats will be saved.
- * @nbr		Maximum number of block devices.
+ * @nr_alloc	Total number of structures allocated. Value is >= 1.
  * @read_part	True if disks *and* partitions should be read; False if only
  * 		disks are read.
  *
  * OUT:
  * @st_disk	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of block devices read, or -1 if the buffer was too small and
+ * needs to be reallocated.
  ***************************************************************************
  */
-void read_diskstats_disk(struct stats_disk *st_disk, int nbr, int read_part)
+__nr_t read_diskstats_disk(struct stats_disk *st_disk, __nr_t nr_alloc,
+			   int read_part)
 {
 	FILE *fp;
-	char line[256];
+	char line[1024];
 	char dev_name[MAX_NAME_LEN];
-	int dsk = 0;
 	struct stats_disk *st_disk_i;
 	unsigned int major, minor, rd_ticks, wr_ticks, tot_ticks, rq_ticks;
 	unsigned long rd_ios, wr_ios, rd_sec, wr_sec;
+	__nr_t dsk_read = 0;
 
 	if ((fp = fopen(DISKSTATS, "r")) == NULL)
-		return;
+		return 0;
 
-	while ((fgets(line, sizeof(line), fp) != NULL) && (dsk < nbr)) {
+	while (fgets(line, sizeof(line), fp) != NULL) {
 
 		if (sscanf(line, "%u %u %s %lu %*u %lu %u %lu %*u %lu"
 			   " %u %*u %u %u",
@@ -644,7 +799,13 @@ void read_diskstats_disk(struct stats_disk *st_disk, int nbr, int read_part)
 				/* Unused device: Ignore it */
 				continue;
 			if (read_part || is_device(dev_name, ACCEPT_VIRTUAL_DEVICES)) {
-				st_disk_i = st_disk + dsk++;
+
+				if (dsk_read + 1 > nr_alloc) {
+					dsk_read = -1;
+					break;
+				}
+
+				st_disk_i = st_disk + dsk_read++;
 				st_disk_i->major     = major;
 				st_disk_i->minor     = minor;
 				st_disk_i->nr_ios    = (unsigned long long) rd_ios + (unsigned long long) wr_ios;
@@ -659,6 +820,7 @@ void read_diskstats_disk(struct stats_disk *st_disk, int nbr, int read_part)
 	}
 
 	fclose(fp);
+	return dsk_read;
 }
 
 /*
@@ -667,33 +829,39 @@ void read_diskstats_disk(struct stats_disk *st_disk, int nbr, int read_part)
  *
  * IN:
  * @st_serial	Structure where stats will be saved.
- * @nbr		Maximum number of serial lines.
+ * @nr_alloc	Total number of structures allocated. Value is >= 1.
  *
  * OUT:
  * @st_serial	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of serial lines read, or -1 if the buffer was too small and
+ * needs to be reallocated.
  ***************************************************************************
  */
-void read_tty_driver_serial(struct stats_serial *st_serial, int nbr)
+__nr_t read_tty_driver_serial(struct stats_serial *st_serial, __nr_t nr_alloc)
 {
 	FILE *fp;
 	struct stats_serial *st_serial_i;
-	int sl = 0;
 	char line[256];
 	char *p;
+	__nr_t sl_read = 0;
 
 	if ((fp = fopen(SERIAL, "r")) == NULL)
-		return;
+		return 0;
 
-	while ((fgets(line, sizeof(line), fp) != NULL) && (sl < nbr)) {
+	while (fgets(line, sizeof(line), fp) != NULL ) {
 
 		if ((p = strstr(line, "tx:")) != NULL) {
-			st_serial_i = st_serial + sl;
+
+			if (sl_read + 1 > nr_alloc) {
+				sl_read = -1;
+				break;
+			}
+
+			st_serial_i = st_serial + sl_read++;
+			/* Read serial line number */
 			sscanf(line, "%u", &st_serial_i->line);
-			/*
-			 * A value of 0 means an unused structure.
-			 * So increment it to make sure it is not zero.
-			 */
-			(st_serial_i->line)++;
 			/*
 			 * Read the number of chars transmitted and received by
 			 * current serial line.
@@ -714,12 +882,11 @@ void read_tty_driver_serial(struct stats_serial *st_serial, int nbr)
 			if ((p = strstr(line, "oe:")) != NULL) {
 				sscanf(p + 3, "%u", &st_serial_i->overrun);
 			}
-
-			sl++;
 		}
 	}
 
 	fclose(fp);
+	return sl_read;
 }
 
 /*
@@ -731,17 +898,20 @@ void read_tty_driver_serial(struct stats_serial *st_serial, int nbr)
  *
  * OUT:
  * @st_ktables	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 (always success).
  ***************************************************************************
  */
-void read_kernel_tables(struct stats_ktables *st_ktables)
+__nr_t read_kernel_tables(struct stats_ktables *st_ktables)
 {
 	FILE *fp;
-	unsigned int parm;
+	unsigned long long parm;
 	int rc = 0;
 
 	/* Open /proc/sys/fs/dentry-state file */
 	if ((fp = fopen(FDENTRY_STATE, "r")) != NULL) {
-		rc = fscanf(fp, "%*d %u",
+		rc = fscanf(fp, "%*d %llu",
 			    &st_ktables->dentry_stat);
 		fclose(fp);
 		if (rc == 0) {
@@ -751,7 +921,7 @@ void read_kernel_tables(struct stats_ktables *st_ktables)
 
 	/* Open /proc/sys/fs/file-nr file */
 	if ((fp = fopen(FFILE_NR, "r")) != NULL) {
-		rc = fscanf(fp, "%u %u",
+		rc = fscanf(fp, "%llu %llu",
 			    &st_ktables->file_used, &parm);
 		fclose(fp);
 		/*
@@ -768,7 +938,7 @@ void read_kernel_tables(struct stats_ktables *st_ktables)
 
 	/* Open /proc/sys/fs/inode-state file */
 	if ((fp = fopen(FINODE_STATE, "r")) != NULL) {
-		rc = fscanf(fp, "%u %u",
+		rc = fscanf(fp, "%llu %llu",
 			    &st_ktables->inode_used, &parm);
 		fclose(fp);
 		/*
@@ -785,13 +955,15 @@ void read_kernel_tables(struct stats_ktables *st_ktables)
 
 	/* Open /proc/sys/kernel/pty/nr file */
 	if ((fp = fopen(PTY_NR, "r")) != NULL) {
-		rc = fscanf(fp, "%u",
+		rc = fscanf(fp, "%llu",
 			    &st_ktables->pty_nr);
 		fclose(fp);
 		if (rc == 0) {
 			st_ktables->pty_nr = 0;
 		}
 	}
+
+	return 1;
 }
 
 /*
@@ -800,32 +972,39 @@ void read_kernel_tables(struct stats_ktables *st_ktables)
  *
  * IN:
  * @st_net_dev	Structure where stats will be saved.
- * @nbr		Maximum number of network interfaces.
+ * @nr_alloc	Total number of structures allocated. Value is >= 1.
  *
  * OUT:
  * @st_net_dev	Structure with statistics.
  *
  * RETURNS:
- * Number of interfaces for which stats have been read.
+ * Number of interfaces read, or -1 if the buffer was too small and
+ * needs to be reallocated.
  ***************************************************************************
  */
-int read_net_dev(struct stats_net_dev *st_net_dev, int nbr)
+__nr_t read_net_dev(struct stats_net_dev *st_net_dev, __nr_t nr_alloc)
 {
 	FILE *fp;
 	struct stats_net_dev *st_net_dev_i;
 	char line[256];
 	char iface[MAX_IFACE_LEN];
-	int dev = 0;
+	__nr_t dev_read = 0;
 	int pos;
 
 	if ((fp = fopen(NET_DEV, "r")) == NULL)
 		return 0;
 
-	while ((fgets(line, sizeof(line), fp) != NULL) && (dev < nbr)) {
+	while (fgets(line, sizeof(line), fp) != NULL) {
 
 		pos = strcspn(line, ":");
 		if (pos < strlen(line)) {
-			st_net_dev_i = st_net_dev + dev;
+
+			if (dev_read + 1 > nr_alloc) {
+				dev_read = -1;
+				break;
+			}
+
+			st_net_dev_i = st_net_dev + dev_read++;
 			strncpy(iface, line, MINIMUM(pos, MAX_IFACE_LEN - 1));
 			iface[MINIMUM(pos, MAX_IFACE_LEN - 1)] = '\0';
 			sscanf(iface, "%s", st_net_dev_i->interface); /* Skip heading spaces */
@@ -838,13 +1017,11 @@ int read_net_dev(struct stats_net_dev *st_net_dev, int nbr)
 			       &st_net_dev_i->tx_bytes,
 			       &st_net_dev_i->tx_packets,
 			       &st_net_dev_i->tx_compressed);
-			dev++;
 		}
 	}
 
 	fclose(fp);
-
-	return dev;
+	return dev_read;
 }
 
 /*
@@ -853,7 +1030,7 @@ int read_net_dev(struct stats_net_dev *st_net_dev, int nbr)
  *
  * IN:
  * @st_net_dev	Structure where stats will be saved.
- * @nbr		Real number of network interfaces available.
+ * @nbr		Number of network interfaces to read.
  *
  * OUT:
  * @st_net_dev	Structure with statistics.
@@ -918,29 +1095,39 @@ void read_if_info(struct stats_net_dev *st_net_dev, int nbr)
  *
  * IN:
  * @st_net_edev	Structure where stats will be saved.
- * @nbr		Maximum number of network interfaces.
+ * @nr_alloc	Total number of structures allocated. Value is >= 1.
  *
  * OUT:
  * @st_net_edev	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of interfaces read, or -1 if the buffer was too small and
+ * needs to be reallocated.
  ***************************************************************************
  */
-void read_net_edev(struct stats_net_edev *st_net_edev, int nbr)
+__nr_t read_net_edev(struct stats_net_edev *st_net_edev, __nr_t nr_alloc)
 {
 	FILE *fp;
 	struct stats_net_edev *st_net_edev_i;
 	static char line[256];
 	char iface[MAX_IFACE_LEN];
-	int dev = 0;
+	__nr_t dev_read = 0;
 	int pos;
 
 	if ((fp = fopen(NET_DEV, "r")) == NULL)
-		return;
+		return 0;
 
-	while ((fgets(line, sizeof(line), fp) != NULL) && (dev < nbr)) {
+	while (fgets(line, sizeof(line), fp) != NULL) {
 
 		pos = strcspn(line, ":");
 		if (pos < strlen(line)) {
-			st_net_edev_i = st_net_edev + dev;
+
+			if (dev_read + 1 > nr_alloc) {
+				dev_read = -1;
+				break;
+			}
+
+			st_net_edev_i = st_net_edev + dev_read++;
 			strncpy(iface, line, MINIMUM(pos, MAX_IFACE_LEN - 1));
 			iface[MINIMUM(pos, MAX_IFACE_LEN - 1)] = '\0';
 			sscanf(iface, "%s", st_net_edev_i->interface); /* Skip heading spaces */
@@ -955,11 +1142,11 @@ void read_net_edev(struct stats_net_edev *st_net_edev, int nbr)
 			       &st_net_edev_i->tx_fifo_errors,
 			       &st_net_edev_i->collisions,
 			       &st_net_edev_i->tx_carrier_errors);
-			dev++;
 		}
 	}
 
 	fclose(fp);
+	return dev_read;
 }
 
 /*
@@ -971,16 +1158,19 @@ void read_net_edev(struct stats_net_edev *st_net_edev, int nbr)
  *
  * OUT:
  * @st_net_nfs	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_nfs(struct stats_net_nfs *st_net_nfs)
+__nr_t read_net_nfs(struct stats_net_nfs *st_net_nfs)
 {
 	FILE *fp;
 	char line[256];
 	unsigned int getattcnt = 0, accesscnt = 0, readcnt = 0, writecnt = 0;
 
 	if ((fp = fopen(NET_RPC_NFS, "r")) == NULL)
-		return;
+		return 0;
 
 	memset(st_net_nfs, 0, STATS_NET_NFS_SIZE);
 
@@ -1012,6 +1202,7 @@ void read_net_nfs(struct stats_net_nfs *st_net_nfs)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1023,16 +1214,19 @@ void read_net_nfs(struct stats_net_nfs *st_net_nfs)
  *
  * OUT:
  * @st_net_nfsd	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_nfsd(struct stats_net_nfsd *st_net_nfsd)
+__nr_t read_net_nfsd(struct stats_net_nfsd *st_net_nfsd)
 {
 	FILE *fp;
 	char line[256];
 	unsigned int getattcnt = 0, accesscnt = 0, readcnt = 0, writecnt = 0;
 
 	if ((fp = fopen(NET_RPC_NFSD, "r")) == NULL)
-		return;
+		return 0;
 
 	memset(st_net_nfsd, 0, STATS_NET_NFSD_SIZE);
 
@@ -1076,6 +1270,7 @@ void read_net_nfsd(struct stats_net_nfsd *st_net_nfsd)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1087,16 +1282,19 @@ void read_net_nfsd(struct stats_net_nfsd *st_net_nfsd)
  *
  * OUT:
  * @st_net_sock	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_sock(struct stats_net_sock *st_net_sock)
+__nr_t read_net_sock(struct stats_net_sock *st_net_sock)
 {
 	FILE *fp;
 	char line[96];
 	char *p;
 
 	if ((fp = fopen(NET_SOCKSTAT, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1126,6 +1324,7 @@ void read_net_sock(struct stats_net_sock *st_net_sock)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1137,16 +1336,19 @@ void read_net_sock(struct stats_net_sock *st_net_sock)
  *
  * OUT:
  * @st_net_ip	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_ip(struct stats_net_ip *st_net_ip)
+__nr_t read_net_ip(struct stats_net_ip *st_net_ip)
 {
 	FILE *fp;
 	char line[1024];
 	int sw = FALSE;
 
 	if ((fp = fopen(NET_SNMP, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1172,6 +1374,7 @@ void read_net_ip(struct stats_net_ip *st_net_ip)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1183,16 +1386,19 @@ void read_net_ip(struct stats_net_ip *st_net_ip)
  *
  * OUT:
  * @st_net_eip	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_eip(struct stats_net_eip *st_net_eip)
+__nr_t read_net_eip(struct stats_net_eip *st_net_eip)
 {
 	FILE *fp;
 	char line[1024];
 	int sw = FALSE;
 
 	if ((fp = fopen(NET_SNMP, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1218,6 +1424,7 @@ void read_net_eip(struct stats_net_eip *st_net_eip)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1229,9 +1436,12 @@ void read_net_eip(struct stats_net_eip *st_net_eip)
  *
  * OUT:
  * @st_net_icmp	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_icmp(struct stats_net_icmp *st_net_icmp)
+__nr_t read_net_icmp(struct stats_net_icmp *st_net_icmp)
 {
 	FILE *fp;
 	char line[1024];
@@ -1239,7 +1449,7 @@ void read_net_icmp(struct stats_net_icmp *st_net_icmp)
 	int sw = FALSE;
 
 	if ((fp = fopen(NET_SNMP, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1290,6 +1500,7 @@ void read_net_icmp(struct stats_net_icmp *st_net_icmp)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1301,16 +1512,19 @@ void read_net_icmp(struct stats_net_icmp *st_net_icmp)
  *
  * OUT:
  * @st_net_eicmp	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_eicmp(struct stats_net_eicmp *st_net_eicmp)
+__nr_t read_net_eicmp(struct stats_net_eicmp *st_net_eicmp)
 {
 	FILE *fp;
 	char line[1024];
 	int sw = FALSE;
 
 	if ((fp = fopen(NET_SNMP, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1340,6 +1554,7 @@ void read_net_eicmp(struct stats_net_eicmp *st_net_eicmp)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1351,16 +1566,19 @@ void read_net_eicmp(struct stats_net_eicmp *st_net_eicmp)
  *
  * OUT:
  * @st_net_tcp	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_tcp(struct stats_net_tcp *st_net_tcp)
+__nr_t read_net_tcp(struct stats_net_tcp *st_net_tcp)
 {
 	FILE *fp;
 	char line[1024];
 	int sw = FALSE;
 
 	if ((fp = fopen(NET_SNMP, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1382,6 +1600,7 @@ void read_net_tcp(struct stats_net_tcp *st_net_tcp)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1393,16 +1612,19 @@ void read_net_tcp(struct stats_net_tcp *st_net_tcp)
  *
  * OUT:
  * @st_net_etcp	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_etcp(struct stats_net_etcp *st_net_etcp)
+__nr_t read_net_etcp(struct stats_net_etcp *st_net_etcp)
 {
 	FILE *fp;
 	char line[1024];
 	int sw = FALSE;
 
 	if ((fp = fopen(NET_SNMP, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1425,6 +1647,7 @@ void read_net_etcp(struct stats_net_etcp *st_net_etcp)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1436,16 +1659,19 @@ void read_net_etcp(struct stats_net_etcp *st_net_etcp)
  *
  * OUT:
  * @st_net_udp	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_udp(struct stats_net_udp *st_net_udp)
+__nr_t read_net_udp(struct stats_net_udp *st_net_udp)
 {
 	FILE *fp;
 	char line[1024];
 	int sw = FALSE;
 
 	if ((fp = fopen(NET_SNMP, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1466,6 +1692,7 @@ void read_net_udp(struct stats_net_udp *st_net_udp)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1477,15 +1704,18 @@ void read_net_udp(struct stats_net_udp *st_net_udp)
  *
  * OUT:
  * @st_net_sock6	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_sock6(struct stats_net_sock6 *st_net_sock6)
+__nr_t read_net_sock6(struct stats_net_sock6 *st_net_sock6)
 {
 	FILE *fp;
 	char line[96];
 
 	if ((fp = fopen(NET_SOCKSTAT6, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1508,6 +1738,7 @@ void read_net_sock6(struct stats_net_sock6 *st_net_sock6)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1519,15 +1750,18 @@ void read_net_sock6(struct stats_net_sock6 *st_net_sock6)
  *
  * OUT:
  * @st_net_ip6	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_ip6(struct stats_net_ip6 *st_net_ip6)
+__nr_t read_net_ip6(struct stats_net_ip6 *st_net_ip6)
 {
 	FILE *fp;
 	char line[128];
 
 	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1564,6 +1798,7 @@ void read_net_ip6(struct stats_net_ip6 *st_net_ip6)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1575,15 +1810,18 @@ void read_net_ip6(struct stats_net_ip6 *st_net_ip6)
  *
  * OUT:
  * @st_net_eip6	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_eip6(struct stats_net_eip6 *st_net_eip6)
+__nr_t read_net_eip6(struct stats_net_eip6 *st_net_eip6)
 {
 	FILE *fp;
 	char line[128];
 
 	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1623,6 +1861,7 @@ void read_net_eip6(struct stats_net_eip6 *st_net_eip6)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1634,15 +1873,18 @@ void read_net_eip6(struct stats_net_eip6 *st_net_eip6)
  *
  * OUT:
  * @st_net_icmp6	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_icmp6(struct stats_net_icmp6 *st_net_icmp6)
+__nr_t read_net_icmp6(struct stats_net_icmp6 *st_net_icmp6)
 {
 	FILE *fp;
 	char line[128];
 
 	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1700,6 +1942,7 @@ void read_net_icmp6(struct stats_net_icmp6 *st_net_icmp6)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1711,15 +1954,18 @@ void read_net_icmp6(struct stats_net_icmp6 *st_net_icmp6)
  *
  * OUT:
  * @st_net_eicmp6	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_eicmp6(struct stats_net_eicmp6 *st_net_eicmp6)
+__nr_t read_net_eicmp6(struct stats_net_eicmp6 *st_net_eicmp6)
 {
 	FILE *fp;
 	char line[128];
 
 	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1759,6 +2005,7 @@ void read_net_eicmp6(struct stats_net_eicmp6 *st_net_eicmp6)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1770,15 +2017,18 @@ void read_net_eicmp6(struct stats_net_eicmp6 *st_net_eicmp6)
  *
  * OUT:
  * @st_net_udp6	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_net_udp6(struct stats_net_udp6 *st_net_udp6)
+__nr_t read_net_udp6(struct stats_net_udp6 *st_net_udp6)
 {
 	FILE *fp;
 	char line[128];
 
 	if ((fp = fopen(NET_SNMP6, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1797,6 +2047,7 @@ void read_net_udp6(struct stats_net_udp6 *st_net_udp6)
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*
@@ -1805,29 +2056,40 @@ void read_net_udp6(struct stats_net_udp6 *st_net_udp6)
  *
  * IN:
  * @st_pwr_cpufreq	Structure where stats will be saved.
- * @nbr			Total number of CPU (including cpu "all").
+ * @nr_alloc		Total number of structures allocated. Value is >= 1.
  *
  * OUT:
  * @st_pwr_cpufreq	Structure with statistics.
+ *
+ * RETURNS:
+ * Highest CPU number for which statistics have been read.
+ * 1 means CPU "all", 2 means CPU 0, 3 means CPU 1, etc.
+ * Or -1 if the buffer was too small and needs to be reallocated.
  ***************************************************************************
  */
-void read_cpuinfo(struct stats_pwr_cpufreq *st_pwr_cpufreq, int nbr)
+__nr_t read_cpuinfo(struct stats_pwr_cpufreq *st_pwr_cpufreq, __nr_t nr_alloc)
 {
 	FILE *fp;
 	struct stats_pwr_cpufreq *st_pwr_cpufreq_i;
 	char line[1024];
 	int nr = 0;
-	unsigned int proc_nb = 0, ifreq, dfreq;
+	__nr_t cpu_read = 1;	/* For CPU "all" */
+	unsigned int proc_nr = 0, ifreq, dfreq;
 
 	if ((fp = fopen(CPUINFO, "r")) == NULL)
-		return;
+		return 0;
 
 	st_pwr_cpufreq->cpufreq = 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
 		if (!strncmp(line, "processor\t", 10)) {
-			sscanf(strchr(line, ':') + 1, "%u", &proc_nb);
+			sscanf(strchr(line, ':') + 1, "%u", &proc_nr);
+
+			if (proc_nr + 2 > nr_alloc) {
+				cpu_read = -1;
+				break;
+			}
 		}
 
 		/* Entry in /proc/cpuinfo is different between Intel and Power architectures */
@@ -1835,24 +2097,16 @@ void read_cpuinfo(struct stats_pwr_cpufreq *st_pwr_cpufreq, int nbr)
 			 !strncmp(line, "clock\t", 6)) {
 			sscanf(strchr(line, ':') + 1, "%u.%u", &ifreq, &dfreq);
 
-			if (proc_nb < (nbr - 1)) {
-				/* Save current CPU frequency */
-				st_pwr_cpufreq_i = st_pwr_cpufreq + proc_nb + 1;
-				st_pwr_cpufreq_i->cpufreq = ifreq * 100 + dfreq / 10;
+			/* Save current CPU frequency */
+			st_pwr_cpufreq_i = st_pwr_cpufreq + proc_nr + 1;
+			st_pwr_cpufreq_i->cpufreq = ifreq * 100 + dfreq / 10;
 
-				/* Also save it to compute an average CPU frequency */
-				st_pwr_cpufreq->cpufreq += st_pwr_cpufreq_i->cpufreq;
-				nr++;
-			}
-			else if (!proc_nb && (nbr == 1)) {
-				/*
-				 * We are reading freq for "Processor 0" and we have a machine
-				 * with only one processor and not an SMP kernel, with /sys not mounted
-				 * (the nr of proc has been counted using /proc/stat and there was
-				 * only one line with global CPU stats here).
-				 * This is a very specific case, I must admit...
-				 */
-				st_pwr_cpufreq->cpufreq = ifreq * 100 + dfreq / 10;
+			/* Also save it to compute an average CPU frequency */
+			st_pwr_cpufreq->cpufreq += st_pwr_cpufreq_i->cpufreq;
+			nr++;
+
+			if (proc_nr + 2 > cpu_read) {
+				cpu_read = proc_nr + 2;
 			}
 		}
 	}
@@ -1863,6 +2117,7 @@ void read_cpuinfo(struct stats_pwr_cpufreq *st_pwr_cpufreq, int nbr)
 		/* Compute average CPU frequency for this machine */
 		st_pwr_cpufreq->cpufreq /= nr;
 	}
+	return cpu_read;
 }
 
 /*
@@ -1874,26 +2129,29 @@ void read_cpuinfo(struct stats_pwr_cpufreq *st_pwr_cpufreq, int nbr)
  *
  * OUT:
  * @st_huge	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_meminfo_huge(struct stats_huge *st_huge)
+__nr_t read_meminfo_huge(struct stats_huge *st_huge)
 {
 	FILE *fp;
 	char line[128];
 	unsigned long szhkb = 0;
 
 	if ((fp = fopen(MEMINFO, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
 		if (!strncmp(line, "HugePages_Total:", 16)) {
 			/* Read the total number of huge pages */
-			sscanf(line + 16, "%lu", &st_huge->tlhkb);
+			sscanf(line + 16, "%llu", &st_huge->tlhkb);
 		}
 		else if (!strncmp(line, "HugePages_Free:", 15)) {
 			/* Read the number of free huge pages */
-			sscanf(line + 15, "%lu", &st_huge->frhkb);
+			sscanf(line + 15, "%llu", &st_huge->frhkb);
 		}
 		else if (!strncmp(line, "Hugepagesize:", 13)) {
 			/* Read the default size of a huge page in kB */
@@ -1906,6 +2164,7 @@ void read_meminfo_huge(struct stats_huge *st_huge)
 	/* We want huge pages stats in kB and not expressed in a number of pages */
 	st_huge->tlhkb *= szhkb;
 	st_huge->frhkb *= szhkb;
+	return 1;
 }
 
 /*
@@ -1919,9 +2178,12 @@ void read_meminfo_huge(struct stats_huge *st_huge)
  *
  * OUT:
  * @st_pwr_wghfreq	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 on success, 0 otherwise.
  ***************************************************************************
  */
-void read_time_in_state(struct stats_pwr_wghfreq *st_pwr_wghfreq, int cpu_nr, int nbr)
+int read_time_in_state(struct stats_pwr_wghfreq *st_pwr_wghfreq, int cpu_nr, int nbr)
 {
 	FILE *fp;
 	struct stats_pwr_wghfreq *st_pwr_wghfreq_j;
@@ -1934,7 +2196,7 @@ void read_time_in_state(struct stats_pwr_wghfreq *st_pwr_wghfreq, int cpu_nr, in
 	snprintf(filename, MAX_PF_NAME, "%s/cpu%d/%s",
 		 SYSFS_DEVCPU, cpu_nr, SYSFS_TIME_IN_STATE);
 	if ((fp = fopen(filename, "r")) == NULL)
-		return;
+		return 0;
 
 	while (fgets(line, sizeof(line), fp) != NULL) {
 
@@ -1950,6 +2212,67 @@ void read_time_in_state(struct stats_pwr_wghfreq *st_pwr_wghfreq, int cpu_nr, in
 	}
 
 	fclose(fp);
+	return 1;
+}
+
+/*
+ ***************************************************************************
+ * Read weighted CPU frequency statistics.
+ *
+ * IN:
+ * @st_pwr_wghfreq	Structure where stats will be saved.
+ * @nr_alloc		Total number of structures allocated. Value is >= 0.
+ * @nr2			Number of sub-items allocated per structure.
+ *
+ * OUT:
+ * @st_pwr_wghfreq	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of CPU for which statistics have been read.
+ * 1 means CPU "all", 2 means CPU "all" and 0, etc.
+ * Or -1 if the buffer was to small and needs to be reallocated.
+ ***************************************************************************
+ */
+__nr_t read_cpu_wghfreq(struct stats_pwr_wghfreq *st_pwr_wghfreq, __nr_t nr_alloc,
+			__nr_t nr2)
+{
+	__nr_t cpu_read = 0;
+	int j;
+	struct stats_pwr_wghfreq *st_pwr_wghfreq_i, *st_pwr_wghfreq_j, *st_pwr_wghfreq_all_j;
+
+	do {
+		if (cpu_read + 2 > nr_alloc)
+			return -1;
+
+		/* Read current CPU time-in-state data */
+		st_pwr_wghfreq_i = st_pwr_wghfreq + (cpu_read + 1) * nr2;
+		if (!read_time_in_state(st_pwr_wghfreq_i, cpu_read, nr2))
+			break;
+
+		/* Also save data for CPU 'all' */
+		for (j = 0; j < nr2; j++) {
+			st_pwr_wghfreq_j     = st_pwr_wghfreq_i + j;	/* CPU #cpu, state #j */
+			st_pwr_wghfreq_all_j = st_pwr_wghfreq   + j;	/* CPU #all, state #j */
+			if (!cpu_read) {
+				/* Assume that possible frequencies are the same for all CPUs */
+				st_pwr_wghfreq_all_j->freq = st_pwr_wghfreq_j->freq;
+			}
+			st_pwr_wghfreq_all_j->time_in_state += st_pwr_wghfreq_j->time_in_state;
+		}
+		cpu_read++;
+	}
+	while (1);
+
+	if (cpu_read > 0) {
+		for (j = 0; j < nr2; j++) {
+			st_pwr_wghfreq_all_j = st_pwr_wghfreq + j;	/* CPU #all, state #j */
+			st_pwr_wghfreq_all_j->time_in_state /= cpu_read;
+		}
+
+		return cpu_read + 1; /* For CPU "all" */
+	}
+
+	return 0;
 }
 
 /*
@@ -2045,40 +2368,46 @@ void read_usb_stats(struct stats_pwr_usb *st_pwr_usb, char *usb_device)
  *
  * IN:
  * @st_pwr_usb		Structure where stats will be saved.
- * @nbr			Total number of USB devices.
+ * @nr_alloc		Total number of structures allocated. Value is >= 0.
  *
  * OUT:
  * @st_pwr_usb		Structure with statistics.
+ *
+ * RETURNS:
+ * Number of USB devices read, or -1 if the buffer was too small and
+ * needs to be reallocated.
  ***************************************************************************
  */
-void read_bus_usb_dev(struct stats_pwr_usb *st_pwr_usb, int nbr)
+__nr_t read_bus_usb_dev(struct stats_pwr_usb *st_pwr_usb, __nr_t nr_alloc)
 {
 	DIR *dir;
 	struct dirent *drd;
-	struct stats_pwr_usb *st_pwr_usb_j;
-	int j = 0;
+	struct stats_pwr_usb *st_pwr_usb_i;
+	__nr_t usb_read = 0;
 
 	/* Open relevant /sys directory */
 	if ((dir = opendir(SYSFS_USBDEV)) == NULL)
-		return;
+		return 0;
 
 	/* Get current file entry */
 	while ((drd = readdir(dir)) != NULL) {
 
 		if (isdigit(drd->d_name[0]) && !strchr(drd->d_name, ':')) {
-			if (j < nbr) {
-				/* Read current USB device data */
-				st_pwr_usb_j = st_pwr_usb + j;
-				read_usb_stats(st_pwr_usb_j, drd->d_name);
-				j++;
-			}
-			else
+
+			if (usb_read + 1 > nr_alloc) {
+				usb_read = -1;
 				break;
+			}
+
+			/* Read current USB device data */
+			st_pwr_usb_i = st_pwr_usb + usb_read++;
+			read_usb_stats(st_pwr_usb_i, drd->d_name);
 		}
 	}
 
 	/* Close directory */
 	closedir(dir);
+	return usb_read;
 }
 
 /*
@@ -2087,25 +2416,30 @@ void read_bus_usb_dev(struct stats_pwr_usb *st_pwr_usb, int nbr)
  *
  * IN:
  * @st_filesystem	Structure where stats will be saved.
- * @nbr			Total number of filesystems.
+ * @nr_alloc		Total number of structures allocated. Value is >= 0.
  *
  * OUT:
  * @st_filesystem	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of filesystems read, or -1 if the buffer was too small and
+ * needs to be reallocated.
  ***************************************************************************
  */
-void read_filesystem(struct stats_filesystem *st_filesystem, int nbr)
+__nr_t read_filesystem(struct stats_filesystem *st_filesystem, __nr_t nr_alloc)
 {
 	FILE *fp;
 	char line[512], fs_name[128], mountp[256];
-	int fs = 0, skip = 0, skip_next = 0;
+	int skip = 0, skip_next = 0;
 	char *pos = 0;
+	__nr_t fs_read = 0;
 	struct stats_filesystem *st_filesystem_i;
 	struct statvfs buf;
 
 	if ((fp = fopen(MTAB, "r")) == NULL)
-		return;
+		return 0;
 
-	while ((fgets(line, sizeof(line), fp) != NULL) && (fs < nbr)) {
+	while (fgets(line, sizeof(line), fp) != NULL) {
 		/*
 		 * Ignore line if the preceding line did not contain '\n'.
 		 * (Some very long lines may be found for instance when
@@ -2145,7 +2479,12 @@ void read_filesystem(struct stats_filesystem *st_filesystem, int nbr)
 			if ((statvfs(mountp, &buf) < 0) || (!buf.f_blocks))
 				continue;
 
-			st_filesystem_i = st_filesystem + fs++;
+			if (fs_read + 1 > nr_alloc) {
+				fs_read = -1;
+				break;
+			}
+
+			st_filesystem_i = st_filesystem + fs_read++;
 			st_filesystem_i->f_blocks = (unsigned long long) buf.f_blocks * (unsigned long long) buf.f_frsize;
 			st_filesystem_i->f_bfree  = (unsigned long long) buf.f_bfree * (unsigned long long) buf.f_frsize;
 			st_filesystem_i->f_bavail = (unsigned long long) buf.f_bavail * (unsigned long long) buf.f_frsize;
@@ -2159,6 +2498,7 @@ void read_filesystem(struct stats_filesystem *st_filesystem, int nbr)
 	}
 
 	fclose(fp);
+	return fs_read;
 }
 
 /*
@@ -2167,35 +2507,44 @@ void read_filesystem(struct stats_filesystem *st_filesystem, int nbr)
  *
  * IN:
  * @st_fc	Structure where stats will be saved.
- * @nbr		Total number of HBAs.
+ * @nr_alloc	Total number of structures allocated. Value is >= 0.
  *
  * OUT:
  * @st_fc	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of FC hosts read, or -1 if the buffer was too small and needs to
+ * be reallocated.
  ***************************************************************************
  */
-void read_fchost(struct stats_fchost *st_fc, int nbr)
+__nr_t read_fchost(struct stats_fchost *st_fc, __nr_t nr_alloc)
 {
 	DIR *dir;
 	FILE *fp;
 	struct dirent *drd;
 	struct stats_fchost *st_fc_i;
-	int fch = 0;
+	__nr_t fch_read = 0;
 	char fcstat_filename[MAX_PF_NAME];
 	char line[256];
 	unsigned long rx_frames, tx_frames, rx_words, tx_words;
 
 	/* Each host, if present, will have its own hostX entry within SYSFS_FCHOST */
 	if ((dir = opendir(SYSFS_FCHOST)) == NULL)
-		return; /* No FC hosts */
+		return 0; /* No FC hosts */
 
 	/*
 	 * Read each of the counters via sysfs, where they are
 	 * returned as hex values (e.g. 0x72400).
 	 */
-	while (((drd = readdir(dir)) != NULL) && (fch < nbr)) {
+	while ((drd = readdir(dir)) != NULL) {
 		rx_frames = tx_frames = rx_words = tx_words = 0;
 
 		if (!strncmp(drd->d_name, "host", 4)) {
+
+			if (fch_read + 1 > nr_alloc) {
+				fch_read = -1;
+				break;
+			}
 
 			snprintf(fcstat_filename, MAX_PF_NAME, FC_RX_FRAMES,
 				 SYSFS_FCHOST, drd->d_name);
@@ -2233,7 +2582,7 @@ void read_fchost(struct stats_fchost *st_fc, int nbr)
 				fclose(fp);
 			}
 
-			st_fc_i = st_fc + fch++;
+			st_fc_i = st_fc + fch_read++;
 			st_fc_i->f_rxframes = rx_frames;
 			st_fc_i->f_txframes = tx_frames;
 			st_fc_i->f_rxwords  = rx_words;
@@ -2241,9 +2590,10 @@ void read_fchost(struct stats_fchost *st_fc, int nbr)
 			strncpy(st_fc_i->fchost_name, drd->d_name, MAX_FCH_LEN);
 			st_fc_i->fchost_name[MAX_FCH_LEN - 1] = '\0';
 		}
-
 	}
+
 	closedir(dir);
+	return fch_read;
 }
 
 /*
@@ -2252,48 +2602,48 @@ void read_fchost(struct stats_fchost *st_fc, int nbr)
  *
  * IN:
  * @st_softnet	Structure where stats will be saved.
- * @nbr		Total number of CPU (including cpu "all").
+ * @nr_alloc	Total number of structures allocated. Value is >= 0.
+ * @online_cpu_bitmap
+ *		Bitmap listing online CPU.
  *
  * OUT:
  * @st_softnet	Structure with statistics.
+ *
+ * RETURNS:
+ * 1 if stats have been sucessfully read, or 0 otherwise.
  ***************************************************************************
  */
-void read_softnet(struct stats_softnet *st_softnet, int nbr)
+int read_softnet(struct stats_softnet *st_softnet, __nr_t nr_alloc,
+		  unsigned char online_cpu_bitmap[])
 {
 	FILE *fp;
 	struct stats_softnet *st_softnet_i;
 	char line[1024];
-	unsigned int proc_nb = 1;
+	int cpu;
 
 	/* Open /proc/net/softnet_stat file */
 	if ((fp = fopen(NET_SOFTNET, "r")) == NULL)
-		return;
+		return 0;
 
-	/*
-	 * Init a structure that will contain the values for CPU "all".
-	 * CPU "all" doesn't exist in /proc/net/softnet_stat file, so
-	 * we compute its values as the sum of the values of each CPU.
-	 */
-	memset(st_softnet, 0, sizeof(struct stats_softnet));
+	for (cpu = 1; cpu < nr_alloc; cpu++) {
+		if (!(online_cpu_bitmap[(cpu - 1) >> 3] & (1 << ((cpu - 1) & 0x07))))
+			/* CPU is offline */
+			continue;
 
-	while ((fgets(line, sizeof(line), fp) != NULL) && (proc_nb < nbr)) {
+		if (fgets(line, sizeof(line), fp) == NULL)
+			break;
 
-		st_softnet_i = st_softnet + proc_nb++;
+		st_softnet_i = st_softnet + cpu;
 		sscanf(line, "%x %x %x %*x %*x %*x %*x %*x %*x %x %x",
 		       &st_softnet_i->processed,
 		       &st_softnet_i->dropped,
 		       &st_softnet_i->time_squeeze,
 		       &st_softnet_i->received_rps,
 		       &st_softnet_i->flow_limit);
-
-		st_softnet->processed += st_softnet_i->processed;
-		st_softnet->dropped += st_softnet_i->dropped;
-		st_softnet->time_squeeze += st_softnet_i->time_squeeze;
-		st_softnet->received_rps += st_softnet_i->received_rps;
-		st_softnet->flow_limit += st_softnet_i->flow_limit;
 	}
 
 	fclose(fp);
+	return 1;
 }
 
 /*------------------ END: FUNCTIONS USED BY SADC ONLY ---------------------*/

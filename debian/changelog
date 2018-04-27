@@ -1,3 +1,9 @@
+sysstat (11.7.3-2) unstable; urgency=medium
+
+  * The same upstream version but with a 2 at the end
+
+ -- Trip Volpe <trip@qumulo.com>  Fri, 27 Apr 2018 19:01:09 +0000
+
 sysstat (11.7.3-1) unstable; urgency=medium
 
   * New upstream version

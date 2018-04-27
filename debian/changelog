@@ -1,3 +1,9 @@
+sysstat (11.7.3-1) unstable; urgency=medium
+
+  * New upstream version
+
+ -- Trip Volpe <trip@qumulo.com>  Fri, 27 Apr 2018 18:46:51 +0000
+
 sysstat (11.6.1-1) unstable; urgency=medium
 
   * New upstream version (closes: #875656, #883863).

@@ -1,6 +1,6 @@
 /*
  * sar, sadc, sadf, mpstat and iostat common routines.
- * (C) 1999-2017 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2018 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -35,8 +35,6 @@
 
 #include "version.h"
 #include "common.h"
-#include "ioconf.h"
-#include "rd_stats.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -50,7 +48,7 @@
 char units[] = {'s', 'B', 'k', 'M', 'G', 'T', 'P', '?'};
 
 /* Number of ticks per second */
-unsigned int hz;
+unsigned long hz;
 /* Number of bit shifts to convert pages to kB */
 unsigned int kb_shift;
 
@@ -170,6 +168,113 @@ time_t get_time(struct tm *rectime, int d_off)
 		return get_localtime(rectime, d_off);
 }
 
+#ifdef USE_NLS
+/*
+ ***************************************************************************
+ * Init National Language Support.
+ ***************************************************************************
+ */
+void init_nls(void)
+{
+	setlocale(LC_MESSAGES, "");
+	setlocale(LC_CTYPE, "");
+	setlocale(LC_TIME, "");
+	setlocale(LC_NUMERIC, "");
+
+	bindtextdomain(PACKAGE, LOCALEDIR);
+	textdomain(PACKAGE);
+}
+#endif
+
+/*
+ ***************************************************************************
+ * Test whether given name is a device or a partition, using sysfs.
+ * This is more straightforward that using ioc_iswhole() function from
+ * ioconf.c which should be used only with kernels that don't have sysfs.
+ *
+ * IN:
+ * @name		Device or partition name.
+ * @allow_virtual	TRUE if virtual devices are also accepted.
+ *			The device is assumed to be virtual if no
+ *			/sys/block/<device>/device link exists.
+ *
+ * RETURNS:
+ * TRUE if @name is not a partition.
+ ***************************************************************************
+ */
+int is_device(char *name, int allow_virtual)
+{
+	char syspath[PATH_MAX];
+	char *slash;
+
+	/* Some devices may have a slash in their name (eg. cciss/c0d0...) */
+	while ((slash = strchr(name, '/'))) {
+		*slash = '!';
+	}
+	snprintf(syspath, sizeof(syspath), "%s/%s%s", SYSFS_BLOCK, name,
+		 allow_virtual ? "" : "/device");
+
+	return !(access(syspath, F_OK));
+}
+
+/*
+ ***************************************************************************
+ * Get page shift in kB.
+ ***************************************************************************
+ */
+void get_kb_shift(void)
+{
+	int shift = 0;
+	long size;
+
+	/* One can also use getpagesize() to get the size of a page */
+	if ((size = sysconf(_SC_PAGESIZE)) == -1) {
+		perror("sysconf");
+	}
+
+	size >>= 10;	/* Assume that a page has a minimum size of 1 kB */
+
+	while (size > 1) {
+		shift++;
+		size >>= 1;
+	}
+
+	kb_shift = (unsigned int) shift;
+}
+
+/*
+ ***************************************************************************
+ * Get number of clock ticks per second.
+ ***************************************************************************
+ */
+void get_HZ(void)
+{
+	long ticks;
+
+	if ((ticks = sysconf(_SC_CLK_TCK)) == -1) {
+		perror("sysconf");
+	}
+
+	hz = (unsigned long) ticks;
+}
+
+/*
+ ***************************************************************************
+ * Unhandled situation: Panic and exit. Should never happen.
+ *
+ * IN:
+ * @function	Function name where situation occured.
+ * @error_code	Error code.
+ ***************************************************************************
+ */
+void sysstat_panic(const char *function, int error_code)
+{
+	fprintf(stderr, "sysstat: %s[%d]: Internal error...\n",
+		function, error_code);
+	exit(1);
+}
+
+#ifndef SOURCE_SADC
 /*
  ***************************************************************************
  * Count number of comma-separated values in arguments list. For example,
@@ -495,24 +600,6 @@ int print_gal_header(struct tm *rectime, char *sysname, char *release,
 	return rc;
 }
 
-#ifdef USE_NLS
-/*
- ***************************************************************************
- * Init National Language Support.
- ***************************************************************************
- */
-void init_nls(void)
-{
-	setlocale(LC_MESSAGES, "");
-	setlocale(LC_CTYPE, "");
-	setlocale(LC_TIME, "");
-	setlocale(LC_NUMERIC, "");
-
-	bindtextdomain(PACKAGE, LOCALEDIR);
-	textdomain(PACKAGE);
-}
-#endif
-
 /*
  ***************************************************************************
  * Get number of rows for current window.
@@ -576,78 +663,6 @@ char *device_name(char *name)
 
 /*
  ***************************************************************************
- * Test whether given name is a device or a partition, using sysfs.
- * This is more straightforward that using ioc_iswhole() function from
- * ioconf.c which should be used only with kernels that don't have sysfs.
- *
- * IN:
- * @name		Device or partition name.
- * @allow_virtual	TRUE if virtual devices are also accepted.
- *			The device is assumed to be virtual if no
- *			/sys/block/<device>/device link exists.
- *
- * RETURNS:
- * TRUE if @name is not a partition.
- ***************************************************************************
- */
-int is_device(char *name, int allow_virtual)
-{
-	char syspath[PATH_MAX];
-	char *slash;
-
-	/* Some devices may have a slash in their name (eg. cciss/c0d0...) */
-	while ((slash = strchr(name, '/'))) {
-		*slash = '!';
-	}
-	snprintf(syspath, sizeof(syspath), "%s/%s%s", SYSFS_BLOCK, name,
-		 allow_virtual ? "" : "/device");
-
-	return !(access(syspath, F_OK));
-}
-
-/*
- ***************************************************************************
- * Get page shift in kB.
- ***************************************************************************
- */
-void get_kb_shift(void)
-{
-	int shift = 0;
-	long size;
-
-	/* One can also use getpagesize() to get the size of a page */
-	if ((size = sysconf(_SC_PAGESIZE)) == -1) {
-		perror("sysconf");
-	}
-
-	size >>= 10;	/* Assume that a page has a minimum size of 1 kB */
-
-	while (size > 1) {
-		shift++;
-		size >>= 1;
-	}
-
-	kb_shift = (unsigned int) shift;
-}
-
-/*
- ***************************************************************************
- * Get number of clock ticks per second.
- ***************************************************************************
- */
-void get_HZ(void)
-{
-	long ticks;
-
-	if ((ticks = sysconf(_SC_CLK_TCK)) == -1) {
-		perror("sysconf");
-	}
-
-	hz = (unsigned int) ticks;
-}
-
-/*
- ***************************************************************************
  * Workaround for CPU counters read from /proc/stat: Dyn-tick kernels
  * have a race issue that can make those counters go backward.
  ***************************************************************************
@@ -666,11 +681,11 @@ double ll_sp_value(unsigned long long value1, unsigned long long value2,
  * Compute time interval.
  *
  * IN:
- * @prev_uptime	Previous uptime value in jiffies.
- * @curr_uptime	Current uptime value in jiffies.
+ * @prev_uptime	Previous uptime value (in jiffies or 1/100th of a second).
+ * @curr_uptime	Current uptime value (in jiffies or 1/100th of a second).
  *
  * RETURNS:
- * Interval of time in jiffies.
+ * Interval of time in jiffies or 1/100th of a second.
  ***************************************************************************
  */
 unsigned long long get_interval(unsigned long long prev_uptime,
@@ -686,75 +701,6 @@ unsigned long long get_interval(unsigned long long prev_uptime,
 	}
 
 	return itv;
-}
-
-/*
- ***************************************************************************
- * Since ticks may vary slightly from CPU to CPU, we'll want
- * to recalculate itv based on this CPU's tick count, rather
- * than that reported by the "cpu" line. Otherwise we
- * occasionally end up with slightly skewed figures, with
- * the skew being greater as the time interval grows shorter.
- *
- * IN:
- * @scc	Current sample statistics for current CPU.
- * @scp	Previous sample statistics for current CPU.
- *
- * RETURNS:
- * Interval of time based on current CPU.
- ***************************************************************************
- */
-unsigned long long get_per_cpu_interval(struct stats_cpu *scc,
-					struct stats_cpu *scp)
-{
-	unsigned long long ishift = 0LL;
-
-	if ((scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest)) {
-		/*
-		 * Sometimes the nr of jiffies spent in guest mode given by the guest
-		 * counter in /proc/stat is slightly higher than that included in
-		 * the user counter. Update the interval value accordingly.
-		 */
-		ishift += (scp->cpu_user - scp->cpu_guest) -
-		          (scc->cpu_user - scc->cpu_guest);
-	}
-	if ((scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice)) {
-		/*
-		 * Idem for nr of jiffies spent in guest_nice mode.
-		 */
-		ishift += (scp->cpu_nice - scp->cpu_guest_nice) -
-		          (scc->cpu_nice - scc->cpu_guest_nice);
-	}
-
-	/*
-	 * Don't take cpu_guest and cpu_guest_nice into account
-	 * because cpu_user and cpu_nice already include them.
-	 */
-	return ((scc->cpu_user    + scc->cpu_nice   +
-		 scc->cpu_sys     + scc->cpu_iowait +
-		 scc->cpu_idle    + scc->cpu_steal  +
-		 scc->cpu_hardirq + scc->cpu_softirq) -
-		(scp->cpu_user    + scp->cpu_nice   +
-		 scp->cpu_sys     + scp->cpu_iowait +
-		 scp->cpu_idle    + scp->cpu_steal  +
-		 scp->cpu_hardirq + scp->cpu_softirq) +
-		 ishift);
-}
-
-/*
- ***************************************************************************
- * Unhandled situation: Panic and exit. Should never happen.
- *
- * IN:
- * @function	Function name where situation occured.
- * @error_code	Error code.
- ***************************************************************************
- */
-void sysstat_panic(const char *function, int error_code)
-{
-	fprintf(stderr, "sysstat: %s[%d]: Internal error...\n",
-		function, error_code);
-	exit(1);
 }
 
 /*
@@ -785,39 +731,6 @@ int count_bits(void *ptr, int size)
 	}
 
 	return nr;
-}
-
-/*
- ***************************************************************************
- * Compute "extended" device statistics (service time, etc.).
- *
- * IN:
- * @sdc		Structure with current device statistics.
- * @sdp		Structure with previous device statistics.
- * @itv		Interval of time in jiffies.
- *
- * OUT:
- * @xds		Structure with extended statistics.
- ***************************************************************************
-*/
-void compute_ext_disk_stats(struct stats_disk *sdc, struct stats_disk *sdp,
-			    unsigned long long itv, struct ext_disk_stats *xds)
-{
-	double tput
-		= ((double) (sdc->nr_ios - sdp->nr_ios)) * HZ / itv;
-
-	xds->util  = S_VALUE(sdp->tot_ticks, sdc->tot_ticks, itv);
-	xds->svctm = tput ? xds->util / tput : 0.0;
-	/*
-	 * Kernel gives ticks already in milliseconds for all platforms
-	 * => no need for further scaling.
-	 */
-	xds->await = (sdc->nr_ios - sdp->nr_ios) ?
-		((sdc->rd_ticks - sdp->rd_ticks) + (sdc->wr_ticks - sdp->wr_ticks)) /
-		((double) (sdc->nr_ios - sdp->nr_ios)) : 0.0;
-	xds->arqsz = (sdc->nr_ios - sdp->nr_ios) ?
-		((sdc->rd_sect - sdp->rd_sect) + (sdc->wr_sect - sdp->wr_sect)) /
-		((double) (sdc->nr_ios - sdp->nr_ios)) : 0.0;
 }
 
 /*
@@ -1491,3 +1404,4 @@ int parse_values(char *strargv, unsigned char bitmap[], int max_val, const char 
 
 	return 0;
 }
+#endif /* SOURCE_SADC undefined */

@@ -1,6 +1,6 @@
 /*
  * sysstat: System performance tools for Linux
- * (C) 1999-2017 by Sebastien Godard (sysstat <at> orange.fr)
+ * (C) 1999-2018 by Sebastien Godard (sysstat <at> orange.fr)
  */
 
 #ifndef _COMMON_H
@@ -12,13 +12,12 @@
 #include <time.h>
 #include <sched.h>	/* For __CPU_SETSIZE */
 #include <limits.h>
+#include <stdlib.h>
 
 #ifdef HAVE_SYS_SYSMACROS_H
 /* Needed on some non-glibc environments */
 #include <sys/sysmacros.h>
 #endif
-
-#include "rd_stats.h"
 
 /*
  ***************************************************************************
@@ -55,7 +54,7 @@
 #endif
 
 /* Maximum number of interrupts */
-#define NR_IRQS		1024
+#define NR_IRQS		4096
 
 /* Size of /proc/interrupts line, CPU data excluded */
 #define INTERRUPTS_LINE	128
@@ -143,14 +142,11 @@
 /*
  * Macros used to display statistics values.
  *
- * NB: Define SP_VALUE() to normalize to %;
- * HZ is 1024 on IA64 and % should be normalized to 100.
- * SP_VALUE_100() will not output value bigger than 100; this is needed for some
- * corner cases, should be used with care.
  */
-#define S_VALUE(m,n,p)		(((double) ((n) - (m))) / (p) * HZ)
+/* With S_VALUE macro, the interval of time (@p) is given in 1/100th of a second */
+#define S_VALUE(m,n,p)		(((double) ((n) - (m))) / (p) * 100)
+/* Define SP_VALUE() to normalize to % */
 #define SP_VALUE(m,n,p)		(((double) ((n) - (m))) / (p) * 100)
-#define SP_VALUE_100(m,n,p)	MINIMUM((((double) ((n) - (m))) / (p) * 100), 100.0)
 
 /*
  * Under very special circumstances, STDOUT may become unavailable.
@@ -169,7 +165,7 @@
 
 /* Number of ticks per second */
 #define HZ		hz
-extern unsigned int hz;
+extern unsigned long hz;
 
 /* Number of bit shifts to convert pages to kB */
 extern unsigned int kb_shift;
@@ -229,10 +225,24 @@ struct ext_disk_stats {
  * Functions prototypes
  ***************************************************************************
  */
+void print_version
+	(void);
+void get_HZ
+	(void);
+void get_kb_shift
+	(void);
+time_t get_localtime
+	(struct tm *, int);
+time_t get_time
+	(struct tm *, int);
+void init_nls
+	(void);
+int is_device
+	(char *, int);
+void sysstat_panic
+	(const char *, int);
 
-void compute_ext_disk_stats
-	(struct stats_disk *, struct stats_disk *, unsigned long long,
-	 struct ext_disk_stats *);
+#ifndef SOURCE_SADC
 int count_bits
 	(void *, int);
 int count_csvalues
@@ -251,20 +261,10 @@ void cprintf_x
 	(int, int, ...);
 char *device_name
 	(char *);
-void get_HZ
-	(void);
 unsigned int get_devmap_major
 	(void);
 unsigned long long get_interval
 	(unsigned long long, unsigned long long);
-void get_kb_shift
-	(void);
-time_t get_localtime
-	(struct tm *, int);
-time_t get_time
-	(struct tm *, int);
-unsigned long long get_per_cpu_interval
-	(struct stats_cpu *, struct stats_cpu *);
 char *get_persistent_name_from_pretty
 	(char *);
 char *get_persistent_type_dir
@@ -277,10 +277,6 @@ int get_win_height
 	(void);
 void init_colors
 	(void);
-void init_nls
-	(void);
-int is_device
-	(char *, int);
 double ll_sp_value
 	(unsigned long long, unsigned long long, unsigned long long);
 int is_iso_time_fmt
@@ -289,17 +285,14 @@ int parse_values
 	(char *, unsigned char[], int, const char *);
 int print_gal_header
 	(struct tm *, char *, char *, char *, char *, int, int);
-void print_version
-	(void);
 int set_report_date
 	(struct tm *, char[], int);
 char *strtolower
 	(char *);
-void sysstat_panic
-	(const char *, int);
 void xprintf
 	(int, const char *, ...);
 void xprintf0
 	(int, const char *, ...);
 
+#endif /* SOURCE_SADC undefined */
 #endif  /* _COMMON_H */

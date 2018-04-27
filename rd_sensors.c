@@ -1,6 +1,6 @@
 /*
  * rd_sensors.c: Read sensors statistics
- * (C) 1999-2017 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2018 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "rd_stats.h"
 #include "rd_sensors.h"
 
 #ifdef USE_NLS
@@ -43,16 +44,20 @@
  *
  * IN:
  * @st_pwr_fan	Structure where stats will be saved.
- * @nbr		Total number of fans.
+ * @nr_alloc	Total number of structures allocated. Value is >= 1.
  *
  * OUT:
  * @st_pwr_fan Structure with statistics.
+ *
+ * RETURNS:
+ * Number of fans read, or -1 if the buffer was too small and needs to be
+ * reallocated.
  ***************************************************************************
  */
-void read_fan(struct stats_pwr_fan *st_pwr_fan, int nbr)
+__nr_t read_fan(struct stats_pwr_fan *st_pwr_fan, __nr_t nr_alloc)
 {
 #ifdef HAVE_SENSORS
-	int count = 0;
+	__nr_t fan_read = 0;
 	const sensors_chip_name *chip;
 	const sensors_feature *feature;
 	const sensors_subfeature *sub;
@@ -65,9 +70,11 @@ void read_fan(struct stats_pwr_fan *st_pwr_fan, int nbr)
 	while ((chip = sensors_get_detected_chips(NULL, &chip_nr))) {
 		i = 0;
 		while ((feature = sensors_get_features(chip, &i))) {
-			if ((feature->type == SENSORS_FEATURE_FAN) && (count < nbr)) {
+			if (feature->type == SENSORS_FEATURE_FAN) {
 				j = 0;
-				st_pwr_fan_i = st_pwr_fan + count;
+				if (fan_read + 1 > nr_alloc)
+					return -1;
+				st_pwr_fan_i = st_pwr_fan + fan_read++;
 				sensors_snprintf_chip_name(st_pwr_fan_i->device, MAX_SENSORS_DEV_LEN, chip);
 
 				while ((sub = sensors_get_all_subfeatures(chip, feature, &j))) {
@@ -83,10 +90,13 @@ void read_fan(struct stats_pwr_fan *st_pwr_fan, int nbr)
 						}
 					}
 				}
-				count++;
 			}
 		}
 	}
+
+	return fan_read;
+#else
+	return 0;
 #endif /* HAVE_SENSORS */
 }
 
@@ -96,16 +106,20 @@ void read_fan(struct stats_pwr_fan *st_pwr_fan, int nbr)
  *
  * IN:
  * @st_pwr_temp	Structure where stats will be saved.
- * @nbr		Total number of fans.
+ * @nr_alloc	Total number of structures allocated. Value is >= 1.
  *
  * OUT:
  * @st_pwr_temp	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of devices read, or -1 if the buffer was too small and needs to be
+ * reallocated.
  ***************************************************************************
  */
-void read_temp(struct stats_pwr_temp *st_pwr_temp, int nbr)
+__nr_t read_temp(struct stats_pwr_temp *st_pwr_temp, __nr_t nr_alloc)
 {
 #ifdef HAVE_SENSORS
-	int count = 0;
+	__nr_t temp_read = 0;
 	const sensors_chip_name *chip;
 	const sensors_feature *feature;
 	const sensors_subfeature *sub;
@@ -118,9 +132,11 @@ void read_temp(struct stats_pwr_temp *st_pwr_temp, int nbr)
 	while ((chip = sensors_get_detected_chips(NULL, &chip_nr))) {
 		i = 0;
 		while ((feature = sensors_get_features(chip, &i))) {
-			if ((feature->type == SENSORS_FEATURE_TEMP) && (count < nbr)) {
+			if (feature->type == SENSORS_FEATURE_TEMP) {
 				j = 0;
-				st_pwr_temp_i = st_pwr_temp + count;
+				if (temp_read + 1 > nr_alloc)
+					return -1;
+				st_pwr_temp_i = st_pwr_temp + temp_read++;
 				sensors_snprintf_chip_name(st_pwr_temp_i->device, MAX_SENSORS_DEV_LEN, chip);
 
 				while ((sub = sensors_get_all_subfeatures(chip, feature, &j))) {
@@ -141,10 +157,13 @@ void read_temp(struct stats_pwr_temp *st_pwr_temp, int nbr)
 						}
 					}
 				}
-				count++;
 			}
 		}
 	}
+
+	return temp_read;
+#else
+	return 0;
 #endif /* HAVE_SENSORS */
 }
 
@@ -154,16 +173,20 @@ void read_temp(struct stats_pwr_temp *st_pwr_temp, int nbr)
  *
  * IN:
  * @st_pwr_in	Structure where stats will be saved.
- * @nbr		Total number of voltage inputs.
+ * @nr_alloc	Total number of structures allocated. Value is >= 1.
  *
  * OUT:
  * @st_pwr_in	Structure with statistics.
+ *
+ * RETURNS:
+ * Number of devices read, or -1 if the buffer was too small and needs to be
+ * reallocated.
  ***************************************************************************
  */
-void read_in(struct stats_pwr_in *st_pwr_in, int nbr)
+__nr_t read_in(struct stats_pwr_in *st_pwr_in, __nr_t nr_alloc)
 {
 #ifdef HAVE_SENSORS
-	int count = 0;
+	__nr_t in_read = 0;
 	const sensors_chip_name *chip;
 	const sensors_feature *feature;
 	const sensors_subfeature *sub;
@@ -176,9 +199,11 @@ void read_in(struct stats_pwr_in *st_pwr_in, int nbr)
 	while ((chip = sensors_get_detected_chips(NULL, &chip_nr))) {
 		i = 0;
 		while ((feature = sensors_get_features(chip, &i))) {
-			if ((feature->type == SENSORS_FEATURE_IN) && (count < nbr)) {
+			if (feature->type == SENSORS_FEATURE_IN) {
 				j = 0;
-				st_pwr_in_i = st_pwr_in + count;
+				if (in_read + 1 > nr_alloc)
+					return -1;
+				st_pwr_in_i = st_pwr_in + in_read++;
 				sensors_snprintf_chip_name(st_pwr_in_i->device, MAX_SENSORS_DEV_LEN, chip);
 
 				while ((sub = sensors_get_all_subfeatures(chip, feature, &j))) {
@@ -199,10 +224,13 @@ void read_in(struct stats_pwr_in *st_pwr_in, int nbr)
 						}
 					}
 				}
-				count++;
 			}
 		}
 	}
+
+	return in_read;
+#else
+	return 0;
 #endif /* HAVE_SENSORS */
 }
 
@@ -218,8 +246,8 @@ void read_in(struct stats_pwr_in *st_pwr_in, int nbr)
  * Number of sensors.
  ***************************************************************************
  */
-int get_sensors_nr(sensors_feature_type type) {
-	int count = 0;
+__nr_t get_sensors_nr(sensors_feature_type type) {
+	__nr_t count = 0;
 	const sensors_chip_name *chip;
 	const sensors_feature *feature;
 	int chip_nr = 0;
@@ -246,7 +274,7 @@ int get_sensors_nr(sensors_feature_type type) {
  * Number of fans.
  ***************************************************************************
  */
-int get_fan_nr(void)
+__nr_t get_fan_nr(void)
 {
 #ifdef HAVE_SENSORS
 	return get_sensors_nr(SENSORS_FEATURE_FAN);
@@ -263,7 +291,7 @@ int get_fan_nr(void)
  * Number of temperature sensors.
  ***************************************************************************
  */
-int get_temp_nr(void)
+__nr_t get_temp_nr(void)
 {
 #ifdef HAVE_SENSORS
 	return get_sensors_nr(SENSORS_FEATURE_TEMP);
@@ -281,7 +309,7 @@ int get_temp_nr(void)
  * Number of voltage inputs.
  ***************************************************************************
  */
-int get_in_nr(void)
+__nr_t get_in_nr(void)
 {
 #ifdef HAVE_SENSORS
 	return get_sensors_nr(SENSORS_FEATURE_IN);

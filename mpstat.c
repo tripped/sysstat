@@ -1,6 +1,6 @@
 /*
  * mpstat: per-processor statistics
- * (C) 2000-2017 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 2000-2018 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -48,8 +48,7 @@
 char *sccsid(void) { return (SCCSID); }
 #endif
 
-unsigned long long uptime[3] = {0, 0, 0};
-unsigned long long uptime0[3] = {0, 0, 0};
+unsigned long long uptime_cs[3] = {0, 0, 0};
 
 /* NOTE: Use array of _char_ for bitmaps to avoid endianness problems...*/
 unsigned char *cpu_bitmap;	/* Bit 0: Global; Bit 1: 1st proc; etc. */
@@ -74,7 +73,9 @@ struct stats_irqcpu *st_softirqcpu[3];
 
 /*
  * Number of CPU per node, e.g.:
- * cpu_per_node[0]: nr of CPU for node 0..
+ * cpu_per_node[0]: total nr of CPU (this is node "all")
+ * cpu_per_node[1]: nr of CPU for node 0
+ * etc.
  */
 int *cpu_per_node;
 
@@ -104,6 +105,7 @@ int cpu_nr = 0;
  * Highest NUMA node number found on the machine.
  * A value of 0 means node 0 (one node).
  * A value of -1 means no nodes found.
+ * We have: node_nr < cpu_nr (see get_node_placement() function).
  */
 int node_nr = -1;
 
@@ -130,7 +132,7 @@ void usage(char *progname)
 
 	fprintf(stderr, _("Options are:\n"
 			  "[ -A ] [ -n ] [ -u ] [ -V ] [ -I { SUM | CPU | SCPU | ALL } ]\n"
-			  "[ -N { <node_list> | ALL } ] [ -o JSON ] [ -P { <cpu_list> | ON | ALL } ]\n"));
+			  "[ -N { <node_list> | ALL } ] [ -o JSON ] [ -P { <cpu_list> | ALL } ]\n"));
 	exit(1);
 }
 
@@ -285,9 +287,12 @@ int get_node_placement(int cpu_nr, int cpu_per_node[], int cpu2node[])
 	int cpu, node, node_nr = -1;
 
 	/* Init number of CPU per node */
-	memset(cpu_per_node, 0, sizeof(int) * cpu_nr);
+	memset(cpu_per_node, 0, sizeof(int) * (cpu_nr + 1));
 	/* CPU belongs to no node by default */
 	memset(cpu2node, -1, sizeof(int) * cpu_nr);
+
+	/* This is node "all" */
+	cpu_per_node[0] = cpu_nr;
 
 	for (cpu = 0; cpu < cpu_nr; cpu++) {
 		snprintf(line, MAX_PF_NAME, "%s/cpu%d", SYSFS_DEVCPU, cpu);
@@ -307,7 +312,7 @@ int get_node_placement(int cpu_nr, int cpu_per_node[], int cpu2node[])
 					closedir(dir);
 					return -1;
 				}
-				cpu_per_node[node]++;
+				cpu_per_node[node + 1]++;
 				cpu2node[cpu] = node;
 				if (node > node_nr) {
 					node_nr = node;
@@ -329,33 +334,195 @@ int get_node_placement(int cpu_nr, int cpu_per_node[], int cpu2node[])
  * Compute node statistics: Split CPU statistics among nodes.
  *
  * IN:
- * @st_cpu	Array where current CPU stats have been read.
+ * @src		Structure containing CPU stats to add.
+ *
+ * OUT:
+ * @dest	Structure containing global CPU stats.
+ ***************************************************************************
+ */
+void add_cpu_stats(struct stats_cpu *dest, struct stats_cpu *src)
+{
+	dest->cpu_user       += src->cpu_user;
+	dest->cpu_nice       += src->cpu_nice;
+	dest->cpu_sys        += src->cpu_sys;
+	dest->cpu_idle       += src->cpu_idle;
+	dest->cpu_iowait     += src->cpu_iowait;
+	dest->cpu_hardirq    += src->cpu_hardirq;
+	dest->cpu_softirq    += src->cpu_softirq;
+	dest->cpu_steal      += src->cpu_steal;
+	dest->cpu_guest      += src->cpu_guest;
+	dest->cpu_guest_nice += src->cpu_guest_nice;
+}
+
+/*
+ ***************************************************************************
+ * Compute node statistics: Split CPU statistics among nodes.
+ *
+ * IN:
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
  *
  * OUT:
  * @st_node	Array where CPU stats for each node have been saved.
  ***************************************************************************
  */
-void set_node_cpu_stats(struct stats_cpu *st_node, struct stats_cpu *st_cpu)
+void set_node_cpu_stats(int prev, int curr)
 {
 	int cpu;
-	struct stats_cpu *st_cpu_i, *st_node_i;
+	unsigned long long tot_jiffies_p;
+	struct stats_cpu *scp, *scc, *snp, *snc;
+	struct stats_cpu *scc_all = st_cpu[curr];
+	struct stats_cpu *scp_all = st_cpu[prev];
+	struct stats_cpu *snc_all = st_node[curr];
+	struct stats_cpu *snp_all = st_node[prev];
 
+	/* Reset structures */
+	memset(st_node[prev], 0, STATS_CPU_SIZE * (cpu_nr + 1));
+	memset(st_node[curr], 0, STATS_CPU_SIZE * (cpu_nr + 1));
+
+	/* Node 'all' is the same as CPU 'all' */
+	*snp_all = *scp_all;
+	*snc_all = *scc_all;
+
+	/* Individual nodes */
 	for (cpu = 0; cpu < cpu_nr; cpu++) {
-		/* Don't store stats for node 'all'. They are the same as CPU 'all' */
-		st_cpu_i = st_cpu + cpu + 1;
-		st_node_i = st_node + cpu2node[cpu] + 1;
+		scc = st_cpu[curr] + cpu + 1;
+		scp = st_cpu[prev] + cpu + 1;
+		snp = st_node[prev] + cpu2node[cpu] + 1;
+		snc = st_node[curr] + cpu2node[cpu] + 1;
 
-		st_node_i->cpu_user += st_cpu_i->cpu_user;
-		st_node_i->cpu_nice += st_cpu_i->cpu_nice;
-		st_node_i->cpu_sys += st_cpu_i->cpu_sys;
-		st_node_i->cpu_idle += st_cpu_i->cpu_idle;
-		st_node_i->cpu_iowait += st_cpu_i->cpu_iowait;
-		st_node_i->cpu_hardirq += st_cpu_i->cpu_hardirq;
-		st_node_i->cpu_softirq += st_cpu_i->cpu_softirq;
-		st_node_i->cpu_steal += st_cpu_i->cpu_steal;
-		st_node_i->cpu_guest += st_cpu_i->cpu_guest;
-		st_node_i->cpu_guest_nice += st_cpu_i->cpu_guest_nice;
+
+		tot_jiffies_p = scp->cpu_user + scp->cpu_nice +
+				scp->cpu_sys + scp->cpu_idle +
+				scp->cpu_iowait + scp->cpu_hardirq +
+				scp->cpu_steal + scp->cpu_softirq;
+		if ((tot_jiffies_p == 0) && (interval != 0))
+			/*
+			 * CPU has just come back online with no ref from
+			 * previous iteration: Skip it.
+			 */
+			continue;
+
+		add_cpu_stats(snp, scp);
+		add_cpu_stats(snc, scc);
 	}
+}
+
+/*
+ ***************************************************************************
+ * Compute global CPU statistics as the sum of individual CPU ones, and
+ * calculate interval for global CPU.
+ * Also identify offline CPU.
+ *
+ * IN:
+ * @prev	Index in array where stats used as reference are.
+ * @curr	Index in array for current sample statistics.
+ * @offline_cpu_bitmap
+ *		CPU bitmap for offline CPU.
+ *
+ * OUT:
+ * @offline_cpu_bitmap
+ *		CPU bitmap with offline CPU.
+ *
+ * RETURNS:
+ * Interval for global CPU.
+ ***************************************************************************
+ */
+unsigned long long get_global_cpu_mpstats(int prev, int curr,
+					  unsigned char offline_cpu_bitmap[])
+{
+	int i;
+	unsigned long long tot_jiffies_c, tot_jiffies_p;
+	unsigned long long deltot_jiffies = 0;
+	struct stats_cpu *scc, *scp;
+	struct stats_cpu *scc_all = st_cpu[curr];
+	struct stats_cpu *scp_all = st_cpu[prev];
+
+	/*
+	 * For UP machines we keep the values read from global CPU line in /proc/stat.
+	 * Also look for offline CPU: They won't be displayed, and some of their values may
+	 * have to be modified.
+	 */
+	if (cpu_nr > 1) {
+		memset(scc_all, 0, sizeof(struct stats_cpu));
+		memset(scp_all, 0, sizeof(struct stats_cpu));
+	}
+	else {
+		/* This is a UP machine */
+		return get_per_cpu_interval(st_cpu[curr], st_cpu[prev]);
+	}
+
+	for (i = 1; i <= cpu_nr; i++) {
+
+		scc = st_cpu[curr] + i;
+		scp = st_cpu[prev] + i;
+
+		/*
+		 * Compute the total number of jiffies spent by current processor.
+		 * NB: Don't add cpu_guest/cpu_guest_nice because cpu_user/cpu_nice
+		 * already include them.
+		 */
+		tot_jiffies_c = scc->cpu_user + scc->cpu_nice +
+				scc->cpu_sys + scc->cpu_idle +
+				scc->cpu_iowait + scc->cpu_hardirq +
+				scc->cpu_steal + scc->cpu_softirq;
+		tot_jiffies_p = scp->cpu_user + scp->cpu_nice +
+				scp->cpu_sys + scp->cpu_idle +
+				scp->cpu_iowait + scp->cpu_hardirq +
+				scp->cpu_steal + scp->cpu_softirq;
+
+		/*
+		 * If the CPU is offline then it is omited from /proc/stat:
+		 * All the fields couldn't have been read and the sum of them is zero.
+		 */
+		if (tot_jiffies_c == 0) {
+			/*
+			 * CPU is currently offline.
+			 * Set current struct fields (which have been set to zero)
+			 * to values from previous iteration. Hence their values won't
+			 * jump from zero when the CPU comes back online.
+			 * Note that this workaround no longer fully applies with recent kernels,
+			 * as I have noticed that when a CPU comes back online, some fields
+			 * restart from their previous value (e.g. user, nice, system)
+			 * whereas others restart from zero (idle, iowait)! To deal with this,
+			 * the get_per_cpu_interval() function will set these previous values
+			 * to zero if necessary.
+			 */
+			*scc = *scp;
+
+			/*
+			 * Mark CPU as offline to not display it
+			 * (and thus it will not be confused with a tickless CPU).
+			 */
+			offline_cpu_bitmap[i >> 3] |= 1 << (i & 0x07);
+		}
+
+		if ((tot_jiffies_p == 0) && (interval != 0)) {
+			/*
+			 * CPU has just come back online.
+			 * Unfortunately, no reference values are available
+			 * from a previous iteration, probably because it was
+			 * already offline when the first sample has been taken.
+			 * So don't display that CPU to prevent "jump-from-zero"
+			 * output syndrome, and don't take it into account for CPU "all".
+			 * NB: Test for interval != 0 to make sure we don't want stats
+			 * since boot time.
+			 */
+			offline_cpu_bitmap[i >> 3] |= 1 << (i & 0x07);
+			continue;
+		}
+
+		/*
+		 * Get interval for current CPU and add it to global CPU.
+		 * Note: Previous idle and iowait values (saved in scp) may be modified here.
+		 */
+		deltot_jiffies += get_per_cpu_interval(scc, scp);
+
+		add_cpu_stats(scc_all, scc);
+		add_cpu_stats(scp_all, scp);
+	}
+
+	return deltot_jiffies;
 }
 
 /*
@@ -364,7 +531,8 @@ void set_node_cpu_stats(struct stats_cpu *st_node, struct stats_cpu *st_cpu)
  *
  * IN:
  * @dis		TRUE if a header line must be printed.
- * @g_itv	Interval value in jiffies multiplied by the number of CPU.
+ * @deltot_jiffies
+ *		Number of jiffies spent on the interval by all processors.
  * @prev	Position in array where statistics used	as reference are.
  *		Stats used as reference may be the previous ones read, or
  *		the very first ones when calculating the average.
@@ -375,14 +543,15 @@ void set_node_cpu_stats(struct stats_cpu *st_node, struct stats_cpu *st_cpu)
  * @curr_string	String displayed at the beginning of current sample stats.
  * 		This is the timestamp of the current sample, or "Average"
  * 		when displaying average stats.
+ * @offline_cpu_bitmap
+ *		CPU bitmap for offline CPU.
  ***************************************************************************
  */
-void write_plain_cpu_stats(int dis, unsigned long long g_itv, int prev, int curr,
-			   char *prev_string, char *curr_string)
+void write_plain_cpu_stats(int dis, unsigned long long deltot_jiffies, int prev, int curr,
+			   char *prev_string, char *curr_string, unsigned char offline_cpu_bitmap[])
 {
+	int i;
 	struct stats_cpu *scc, *scp;
-	unsigned long long pc_itv;
-	int cpu;
 
 	if (dis) {
 		printf("\n%-11s  CPU    %%usr   %%nice    %%sys %%iowait    %%irq   "
@@ -390,139 +559,73 @@ void write_plain_cpu_stats(int dis, unsigned long long g_itv, int prev, int curr
 		       prev_string);
 	}
 
-	/* Check if we want global stats among all proc */
-	if (*cpu_bitmap & 1) {
-
-		printf("%-11s", curr_string);
-		cprintf_in(IS_STR, " %s", " all", 0);
-
-		cprintf_pc(NO_UNIT, 10, 7, 2,
-			   (st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest) <
-			   (st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest) ?
-			   0.0 :
-			   ll_sp_value(st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest,
-				       st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest,
-				       g_itv),
-			   (st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice) <
-			   (st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice) ?
-			   0.0 :
-			   ll_sp_value(st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice,
-				       st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_sys,
-				       st_cpu[curr]->cpu_sys,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_iowait,
-				       st_cpu[curr]->cpu_iowait,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_hardirq,
-				       st_cpu[curr]->cpu_hardirq,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_softirq,
-				       st_cpu[curr]->cpu_softirq,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_steal,
-				       st_cpu[curr]->cpu_steal,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_guest,
-				       st_cpu[curr]->cpu_guest,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_guest_nice,
-				       st_cpu[curr]->cpu_guest_nice,
-				       g_itv),
-			   (st_cpu[curr]->cpu_idle < st_cpu[prev]->cpu_idle) ?
-			   0.0 :
-			   ll_sp_value(st_cpu[prev]->cpu_idle,
-				       st_cpu[curr]->cpu_idle,
-				       g_itv));
-		printf("\n");
-	}
-
-	for (cpu = 1; cpu <= cpu_nr; cpu++) {
-
-		scc = st_cpu[curr] + cpu;
-		scp = st_cpu[prev] + cpu;
+	/*
+	 * Now display CPU statistics (including CPU "all"),
+	 * except for offline CPU or CPU that the user doesn't want to see.
+	 */
+	for (i = 0; i <= cpu_nr; i++) {
 
 		/* Check if we want stats about this proc */
-		if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
+		if (!(*(cpu_bitmap + (i >> 3)) & (1 << (i & 0x07))) ||
+		    offline_cpu_bitmap[i >> 3] & (1 << (i & 0x07)))
 			continue;
 
-		/*
-		 * If the CPU is offline then it is omited from /proc/stat
-		 * and the sum of all values is zero.
-		 * (Remember that guest/guest_nice times are already included in
-		 * user/nice modes.)
-		 */
-		if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
-		     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
-		     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
-
-			if (!DISPLAY_ONLINE_CPU(flags)) {
-				printf("%-11s", curr_string);
-				cprintf_in(IS_INT, " %4d", "", cpu - 1);
-				cprintf_pc(NO_UNIT, 10, 7, 2,
-					   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-				printf("\n");
-			}
-			continue;
-		}
+		scc = st_cpu[curr] + i;
+		scp = st_cpu[prev] + i;
 
 		printf("%-11s", curr_string);
-		cprintf_in(IS_INT, " %4d", "", cpu - 1);
 
-		/* Recalculate itv for current proc */
-		pc_itv = get_per_cpu_interval(scc, scp);
-
-		if (!pc_itv) {
-			/*
-			 * If the CPU is tickless then there is no change in CPU values
-			 * but the sum of values is not zero.
-			 */
-			cprintf_pc(NO_UNIT, 10, 7, 2,
-				   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0);
-			printf("\n");
+		if (i == 0) {
+			/* This is CPU "all" */
+			cprintf_in(IS_STR, " %s", " all", 0);
 		}
-
 		else {
-			cprintf_pc(NO_UNIT, 10, 7, 2,
-				   (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
-				   0.0 :
-				   ll_sp_value(scp->cpu_user - scp->cpu_guest,
-					       scc->cpu_user - scc->cpu_guest,
-					       pc_itv),
-				   (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
-				   0.0 :
-				   ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
-					       scc->cpu_nice - scc->cpu_guest_nice,
-					       pc_itv),
-				   ll_sp_value(scp->cpu_sys,
-					       scc->cpu_sys,
-					       pc_itv),
-				   ll_sp_value(scp->cpu_iowait,
-					       scc->cpu_iowait,
-					       pc_itv),
-				   ll_sp_value(scp->cpu_hardirq,
-					       scc->cpu_hardirq,
-					       pc_itv),
-				   ll_sp_value(scp->cpu_softirq,
-					       scc->cpu_softirq,
-					       pc_itv),
-				   ll_sp_value(scp->cpu_steal,
-					       scc->cpu_steal,
-					       pc_itv),
-				   ll_sp_value(scp->cpu_guest,
-					       scc->cpu_guest,
-					       pc_itv),
-				   ll_sp_value(scp->cpu_guest_nice,
-					       scc->cpu_guest_nice,
-					       pc_itv),
-				   (scc->cpu_idle < scp->cpu_idle) ?
-				   0.0 :
-				   ll_sp_value(scp->cpu_idle,
-					       scc->cpu_idle,
-					       pc_itv));
-			printf("\n");
+			cprintf_in(IS_INT, " %4d", "", i - 1);
+
+			/* Recalculate itv for current proc */
+			deltot_jiffies = get_per_cpu_interval(scc, scp);
+
+			if (!deltot_jiffies) {
+				/*
+				 * If the CPU is tickless then there is no change in CPU values
+				 * but the sum of values is not zero.
+				 */
+				cprintf_pc(NO_UNIT, 10, 7, 2,
+					   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0);
+				printf("\n");
+
+				continue;
+			}
 		}
+
+		cprintf_pc(NO_UNIT, 10, 7, 2,
+			   (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
+			   0.0 :
+			   ll_sp_value(scp->cpu_user - scp->cpu_guest,
+				       scc->cpu_user - scc->cpu_guest, deltot_jiffies),
+			   (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
+			   0.0 :
+			   ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
+				       scc->cpu_nice - scc->cpu_guest_nice, deltot_jiffies),
+			   ll_sp_value(scp->cpu_sys,
+				       scc->cpu_sys, deltot_jiffies),
+			   ll_sp_value(scp->cpu_iowait,
+				       scc->cpu_iowait, deltot_jiffies),
+			   ll_sp_value(scp->cpu_hardirq,
+				       scc->cpu_hardirq, deltot_jiffies),
+			   ll_sp_value(scp->cpu_softirq,
+				       scc->cpu_softirq, deltot_jiffies),
+			   ll_sp_value(scp->cpu_steal,
+				       scc->cpu_steal, deltot_jiffies),
+			   ll_sp_value(scp->cpu_guest,
+				       scc->cpu_guest, deltot_jiffies),
+			   ll_sp_value(scp->cpu_guest_nice,
+				       scc->cpu_guest_nice, deltot_jiffies),
+			   (scc->cpu_idle < scp->cpu_idle) ?
+			   0.0 :
+			   ll_sp_value(scp->cpu_idle,
+				       scc->cpu_idle, deltot_jiffies));
+		printf("\n");
 	}
 }
 
@@ -532,157 +635,93 @@ void write_plain_cpu_stats(int dis, unsigned long long g_itv, int prev, int curr
  *
  * IN:
  * @tab		Number of tabs to print.
- * @g_itv	Interval value in jiffies multiplied by the number of CPU.
+ * @deltot_jiffies
+ *		Number of jiffies spent on the interval by all processors.
  * @prev	Position in array where statistics used	as reference are.
  *		Stats used as reference may be the previous ones read, or
  *		the very first ones when calculating the average.
  * @curr	Position in array where current statistics will be saved.
+ * @offline_cpu_bitmap
+ *		CPU bitmap for offline CPU.
  ***************************************************************************
  */
-void write_json_cpu_stats(int tab, unsigned long long g_itv, int prev, int curr)
+void write_json_cpu_stats(int tab, unsigned long long deltot_jiffies, int prev, int curr,
+			  unsigned char offline_cpu_bitmap[])
 {
+	int i, next = FALSE;
 	struct stats_cpu *scc, *scp;
-	unsigned long long pc_itv;
-	int cpu, next = FALSE;
 
 	xprintf(tab++, "\"cpu-load\": [");
 
-	/* Check if we want global stats among all proc */
-	if (*cpu_bitmap & 1) {
-
-		next = TRUE;
-		xprintf0(tab, "{\"cpu\": \"all\", \"usr\": %.2f, \"nice\": %.2f, \"sys\": %.2f, "
-			      "\"iowait\": %.2f, \"irq\": %.2f, \"soft\": %.2f, \"steal\": %.2f, "
-			      "\"guest\": %.2f, \"gnice\": %.2f, \"idle\": %.2f}",
-			 (st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest) <
-			 (st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest) ?
-			 0.0 :
-			 ll_sp_value(st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest,
-				     st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest,
-				     g_itv),
-			 (st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice) <
-			 (st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice) ?
-			 0.0 :
-			 ll_sp_value(st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice,
-				     st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_sys,
-				     st_cpu[curr]->cpu_sys,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_iowait,
-				     st_cpu[curr]->cpu_iowait,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_hardirq,
-				     st_cpu[curr]->cpu_hardirq,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_softirq,
-				     st_cpu[curr]->cpu_softirq,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_steal,
-				     st_cpu[curr]->cpu_steal,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_guest,
-				     st_cpu[curr]->cpu_guest,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_guest_nice,
-				     st_cpu[curr]->cpu_guest_nice,
-				     g_itv),
-			 (st_cpu[curr]->cpu_idle < st_cpu[prev]->cpu_idle) ?
-			 0.0 :
-			 ll_sp_value(st_cpu[prev]->cpu_idle,
-				     st_cpu[curr]->cpu_idle,
-				     g_itv));
-	}
-
-	for (cpu = 1; cpu <= cpu_nr; cpu++) {
-
-		scc = st_cpu[curr] + cpu;
-		scp = st_cpu[prev] + cpu;
+	/*
+	 * Now display CPU statistics (including CPU "all"),
+	 * except for offline CPU or CPU that the user doesn't want to see.
+	 */
+	for (i = 0; i <= cpu_nr; i++) {
 
 		/* Check if we want stats about this proc */
-		if (!(*(cpu_bitmap + (cpu >> 3)) & (1 << (cpu & 0x07))))
+		if (!(*(cpu_bitmap + (i >> 3)) & (1 << (i & 0x07))) ||
+		    offline_cpu_bitmap[i >> 3] & (1 << (i & 0x07)))
 			continue;
+
+		scc = st_cpu[curr] + i;
+		scp = st_cpu[prev] + i;
 
 		if (next) {
 			printf(",\n");
 		}
 		next = TRUE;
 
-		/*
-		 * If the CPU is offline then it is omited from /proc/stat
-		 * and the sum of all values is zero.
-		 * (Remember that guest/guest_nice times are already included in
-		 * user/nice modes.)
-		 */
-		if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
-		     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
-		     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
+		if (i != 0) {
+			/* Recalculate itv for current proc */
+			deltot_jiffies = get_per_cpu_interval(scc, scp);
 
-			if (!DISPLAY_ONLINE_CPU(flags)) {
+			if (!deltot_jiffies) {
+				/*
+				 * If the CPU is tickless then there is no change in CPU values
+				 * but the sum of values is not zero.
+				 */
 				xprintf0(tab, "{\"cpu\": \"%d\", \"usr\": 0.00, \"nice\": 0.00, "
-					      "\"sys\": 0.00, \"iowait\": 0.00, \"irq\": 0.00, "
-					      "\"soft\": 0.00, \"steal\": 0.00, \"guest\": 0.00, "
-					      "\"gnice\": 0.00, \"idle\": 0.00}", cpu - 1);
+					 "\"sys\": 0.00, \"iowait\": 0.00, \"irq\": 0.00, "
+					 "\"soft\": 0.00, \"steal\": 0.00, \"guest\": 0.00, "
+					 "\"gnice\": 0.00, \"idle\": 100.00}", i - 1);
+				printf("\n");
+
+				continue;
 			}
-			continue;
 		}
 
-		/* Recalculate itv for current proc */
-		pc_itv = get_per_cpu_interval(scc, scp);
-
-		if (!pc_itv) {
-			/*
-			 * If the CPU is tickless then there is no change in CPU values
-			 * but the sum of values is not zero.
-			 */
-			xprintf0(tab, "{\"cpu\": \"%d\", \"usr\": 0.00, \"nice\": 0.00, "
-				      "\"sys\": 0.00, \"iowait\": 0.00, \"irq\": 0.00, "
-				      "\"soft\": 0.00, \"steal\": 0.00, \"guest\": 0.00, "
-				      "\"gnice\": 0.00, \"idle\": 100.00}", cpu - 1);
-		}
-
-		else {
-			xprintf0(tab, "{\"cpu\": \"%d\", \"usr\": %.2f, \"nice\": %.2f, \"sys\": %.2f, "
-				      "\"iowait\": %.2f, \"irq\": %.2f, \"soft\": %.2f, \"steal\": %.2f, "
-				      "\"guest\": %.2f, \"gnice\": %.2f, \"idle\": %.2f}", cpu - 1,
-				 (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
-				 0.0 :
-				 ll_sp_value(scp->cpu_user - scp->cpu_guest,
-					     scc->cpu_user - scc->cpu_guest,
-					     pc_itv),
-				 (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
-				 0.0 :
-				 ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
-					     scc->cpu_nice - scc->cpu_guest_nice,
-					     pc_itv),
-				 ll_sp_value(scp->cpu_sys,
-					     scc->cpu_sys,
-					     pc_itv),
-				 ll_sp_value(scp->cpu_iowait,
-					     scc->cpu_iowait,
-					     pc_itv),
-				 ll_sp_value(scp->cpu_hardirq,
-					     scc->cpu_hardirq,
-					     pc_itv),
-				 ll_sp_value(scp->cpu_softirq,
-					     scc->cpu_softirq,
-					     pc_itv),
-				 ll_sp_value(scp->cpu_steal,
-					     scc->cpu_steal,
-					     pc_itv),
-				 ll_sp_value(scp->cpu_guest,
-					     scc->cpu_guest,
-					     pc_itv),
-				 ll_sp_value(scp->cpu_guest_nice,
-					     scc->cpu_guest_nice,
-					     pc_itv),
-				 (scc->cpu_idle < scp->cpu_idle) ?
-				 0.0 :
-				 ll_sp_value(scp->cpu_idle,
-					     scc->cpu_idle,
-					     pc_itv));
-		}
+		xprintf0(tab, "{\"cpu\": \"%d\", \"usr\": %.2f, \"nice\": %.2f, \"sys\": %.2f, "
+			 "\"iowait\": %.2f, \"irq\": %.2f, \"soft\": %.2f, \"steal\": %.2f, "
+			 "\"guest\": %.2f, \"gnice\": %.2f, \"idle\": %.2f}", i - 1,
+			 (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
+			 0.0 :
+			 ll_sp_value(scp->cpu_user - scp->cpu_guest,
+				     scc->cpu_user - scc->cpu_guest, deltot_jiffies),
+			 (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
+			 0.0 :
+			 ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
+				     scc->cpu_nice - scc->cpu_guest_nice, deltot_jiffies),
+			 ll_sp_value(scp->cpu_sys,
+				     scc->cpu_sys, deltot_jiffies),
+			 ll_sp_value(scp->cpu_iowait,
+				     scc->cpu_iowait, deltot_jiffies),
+			 ll_sp_value(scp->cpu_hardirq,
+				     scc->cpu_hardirq, deltot_jiffies),
+			 ll_sp_value(scp->cpu_softirq,
+				     scc->cpu_softirq, deltot_jiffies),
+			 ll_sp_value(scp->cpu_steal,
+				     scc->cpu_steal, deltot_jiffies),
+			 ll_sp_value(scp->cpu_guest,
+				     scc->cpu_guest, deltot_jiffies),
+			 ll_sp_value(scp->cpu_guest_nice,
+				     scc->cpu_guest_nice, deltot_jiffies),
+			 (scc->cpu_idle < scp->cpu_idle) ?
+			 0.0 :
+			 ll_sp_value(scp->cpu_idle,
+				     scc->cpu_idle, deltot_jiffies));
 	}
+
 	printf("\n");
 	xprintf0(--tab, "]");
 }
@@ -693,7 +732,8 @@ void write_json_cpu_stats(int tab, unsigned long long g_itv, int prev, int curr)
  *
  * IN:
  * @dis		TRUE if a header line must be printed.
- * @g_itv	Interval value in jiffies multiplied by the number of CPU.
+ * @deltot_jiffies
+ *		Number of jiffies spent on the interval by all processors.
  * @prev	Position in array where statistics used	as reference are.
  *		Stats used as reference may be the previous ones read, or
  *		the very first ones when calculating the average.
@@ -707,20 +747,30 @@ void write_json_cpu_stats(int tab, unsigned long long g_itv, int prev, int curr)
  * @tab		Number of tabs to print (JSON format only).
  * @next	TRUE is a previous activity has been displayed (JSON format
  * 		only).
+ * @offline_cpu_bitmap
+ *		CPU bitmap for offline CPU.
  ***************************************************************************
  */
-void write_cpu_stats(int dis, unsigned long long g_itv, int prev, int curr,
-		     char *prev_string, char *curr_string, int tab, int *next)
+void write_cpu_stats(int dis, unsigned long long deltot_jiffies, int prev, int curr,
+		     char *prev_string, char *curr_string, int tab, int *next,
+		     unsigned char offline_cpu_bitmap[])
 {
+	if (!deltot_jiffies) {
+		/* CPU "all" cannot be tickless */
+		deltot_jiffies = 1;
+	}
+
 	if (DISPLAY_JSON_OUTPUT(flags)) {
 		if (*next) {
 			printf(",\n");
 		}
 		*next = TRUE;
-		write_json_cpu_stats(tab, g_itv, prev, curr);
+		write_json_cpu_stats(tab, deltot_jiffies, prev, curr,
+				     offline_cpu_bitmap);
 	}
 	else {
-		write_plain_cpu_stats(dis, g_itv, prev, curr, prev_string, curr_string);
+		write_plain_cpu_stats(dis, deltot_jiffies, prev, curr,
+				      prev_string, curr_string, offline_cpu_bitmap);
 	}
 }
 
@@ -730,8 +780,8 @@ void write_cpu_stats(int dis, unsigned long long g_itv, int prev, int curr,
  *
  * IN:
  * @dis		TRUE if a header line must be printed.
- * @g_itv	Interval value in jiffies multiplied by the number of CPU.
- * @itv		Interval value.
+ * @deltot_jiffies
+ *		Number of jiffies spent on the interval by all processors.
  * @prev	Position in array where statistics used	as reference are.
  *		Stats used as reference may be the previous ones read, or
  *		the very first ones when calculating the average.
@@ -744,11 +794,11 @@ void write_cpu_stats(int dis, unsigned long long g_itv, int prev, int curr,
  * 		when displaying average stats.
  ***************************************************************************
  */
-void write_plain_node_stats(int dis, unsigned long long g_itv, unsigned long long itv,
+void write_plain_node_stats(int dis, unsigned long long deltot_jiffies,
 			    int prev, int curr, char *prev_string, char *curr_string)
 {
-	struct stats_cpu *snc, *snp;
-	int node;
+	struct stats_cpu *snc, *snp, *scc, *scp;
+	int cpu, node;
 
 	if (dis) {
 		printf("\n%-11s NODE    %%usr   %%nice    %%sys %%iowait    %%irq   "
@@ -756,64 +806,13 @@ void write_plain_node_stats(int dis, unsigned long long g_itv, unsigned long lon
 		       prev_string);
 	}
 
-	/*
-	 * Check if we want global stats among all nodes.
-	 * Stats are the same as global CPU stats among all processors.
-	 */
-	if (*node_bitmap & 1) {
+	for (node = 0; node <= node_nr + 1; node++) {
 
-		printf("%-11s", curr_string);
-		cprintf_in(IS_STR, " %s", " all", 0);
-
-		cprintf_pc(NO_UNIT, 10, 7, 2,
-			   (st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest) <
-			   (st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest) ?
-			   0.0 :
-			   ll_sp_value(st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest,
-				       st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest,
-				       g_itv),
-			   (st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice) <
-			   (st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice) ?
-			   0.0 :
-			   ll_sp_value(st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice,
-				       st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_sys,
-				       st_cpu[curr]->cpu_sys,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_iowait,
-				       st_cpu[curr]->cpu_iowait,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_hardirq,
-				       st_cpu[curr]->cpu_hardirq,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_softirq,
-				       st_cpu[curr]->cpu_softirq,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_steal,
-				       st_cpu[curr]->cpu_steal,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_guest,
-				       st_cpu[curr]->cpu_guest,
-				       g_itv),
-			   ll_sp_value(st_cpu[prev]->cpu_guest_nice,
-				       st_cpu[curr]->cpu_guest_nice,
-				       g_itv),
-			   (st_cpu[curr]->cpu_idle < st_cpu[prev]->cpu_idle) ?
-			   0.0 :
-			   ll_sp_value(st_cpu[prev]->cpu_idle,
-				       st_cpu[curr]->cpu_idle,
-				       g_itv));
-		printf("\n");
-	}
-
-	for (node = 0; node <= node_nr; node++) {
-
-		snc = st_node[curr] + node + 1;
-		snp = st_node[prev] + node + 1;
+		snc = st_node[curr] + node;
+		snp = st_node[prev] + node;
 
 		/* Check if we want stats about this node */
-		if (!(*(node_bitmap + ((node + 1) >> 3)) & (1 << ((node + 1) & 0x07))))
+		if (!(*(node_bitmap + (node >> 3)) & (1 << (node & 0x07))))
 			continue;
 
 		if (!cpu_per_node[node])
@@ -821,45 +820,66 @@ void write_plain_node_stats(int dis, unsigned long long g_itv, unsigned long lon
 			continue;
 
 		printf("%-11s", curr_string);
-		cprintf_in(IS_INT, " %4d", "", node);
+		if (node == 0) {
+			/* This is node "all", i.e. CPU "all" */
+			cprintf_in(IS_STR, " %s", " all", 0);
+		}
+		else {
+			cprintf_in(IS_INT, " %4d", "", node - 1);
+
+			/* Recalculate interval for current node */
+			deltot_jiffies = 0;
+			for (cpu = 1; cpu <= cpu_nr; cpu++) {
+				scc = st_cpu[curr] + cpu;
+				scp = st_cpu[prev] + cpu;
+
+				if ((scp->cpu_user + scp->cpu_nice + scp->cpu_sys +
+				     scp->cpu_idle + scp->cpu_iowait + scp->cpu_hardirq +
+				     scp->cpu_steal + scp->cpu_softirq == 0) && (interval != 0))
+					continue;
+
+				if (cpu2node[cpu - 1] == node - 1) {
+					deltot_jiffies += get_per_cpu_interval(scc, scp);
+				}
+			}
+
+			if (!deltot_jiffies) {
+				/* All CPU in node are tickless and/or offline */
+				cprintf_pc(NO_UNIT, 10, 7, 2,
+					   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0);
+				printf("\n");
+
+				continue;
+			}
+		}
 
 		cprintf_pc(NO_UNIT, 10, 7, 2,
 			   (snc->cpu_user - snc->cpu_guest) < (snp->cpu_user - snp->cpu_guest) ?
 			   0.0 :
 			   ll_sp_value(snp->cpu_user - snp->cpu_guest,
-				       snc->cpu_user - snc->cpu_guest,
-				       itv * cpu_per_node[node]),
+				       snc->cpu_user - snc->cpu_guest, deltot_jiffies),
 			   (snc->cpu_nice - snc->cpu_guest_nice) < (snp->cpu_nice - snp->cpu_guest_nice) ?
 			   0.0 :
 			   ll_sp_value(snp->cpu_nice - snp->cpu_guest_nice,
-				       snc->cpu_nice - snc->cpu_guest_nice,
-				       itv * cpu_per_node[node]),
+				       snc->cpu_nice - snc->cpu_guest_nice, deltot_jiffies),
 			   ll_sp_value(snp->cpu_sys,
-				       snc->cpu_sys,
-				       itv * cpu_per_node[node]),
+				       snc->cpu_sys, deltot_jiffies),
 			   ll_sp_value(snp->cpu_iowait,
-				       snc->cpu_iowait,
-				       itv * cpu_per_node[node]),
+				       snc->cpu_iowait, deltot_jiffies),
 			   ll_sp_value(snp->cpu_hardirq,
-				       snc->cpu_hardirq,
-				       itv * cpu_per_node[node]),
+				       snc->cpu_hardirq, deltot_jiffies),
 			   ll_sp_value(snp->cpu_softirq,
-				       snc->cpu_softirq,
-				       itv * cpu_per_node[node]),
+				       snc->cpu_softirq, deltot_jiffies),
 			   ll_sp_value(snp->cpu_steal,
-				       snc->cpu_steal,
-				       itv * cpu_per_node[node]),
+				       snc->cpu_steal, deltot_jiffies),
 			   ll_sp_value(snp->cpu_guest,
-				       snc->cpu_guest,
-				       itv * cpu_per_node[node]),
+				       snc->cpu_guest, deltot_jiffies),
 			   ll_sp_value(snp->cpu_guest_nice,
-				       snc->cpu_guest_nice,
-				       itv * cpu_per_node[node]),
+				       snc->cpu_guest_nice, deltot_jiffies),
 			   (snc->cpu_idle < snp->cpu_idle) ?
 			   0.0 :
 			   ll_sp_value(snp->cpu_idle,
-				       snc->cpu_idle,
-				       itv * cpu_per_node[node]));
+				       snc->cpu_idle, deltot_jiffies));
 		printf("\n");
 	}
 }
@@ -870,76 +890,30 @@ void write_plain_node_stats(int dis, unsigned long long g_itv, unsigned long lon
  *
  * IN:
  * @tab		Number of tabs to print.
- * @g_itv	Interval value in jiffies multiplied by the number of CPU.
- * @itv		Interval value.
+ * @deltot_jiffies
+ *		Number of jiffies spent on the interval by all processors.
  * @prev	Position in array where statistics used	as reference are.
  *		Stats used as reference may be the previous ones read, or
  *		the very first ones when calculating the average.
  * @curr	Position in array where current statistics will be saved.
  ***************************************************************************
  */
-void write_json_node_stats(int tab, unsigned long long g_itv, unsigned long long itv,
+void write_json_node_stats(int tab, unsigned long long deltot_jiffies,
 			   int prev, int curr)
 {
-	struct stats_cpu *snc, *snp;
-	int node, next = FALSE;
+	struct stats_cpu *snc, *snp, *scc, *scp;
+	int cpu, node, next = FALSE;
+	char node_name[16];
 
 	xprintf(tab++, "\"node-load\": [");
 
-	/* Check if we want global stats among all nodes */
-	if (*node_bitmap & 1) {
+	for (node = 0; node <= node_nr + 1; node++) {
 
-		next = TRUE;
-		xprintf0(tab, "{\"node\": \"all\", \"usr\": %.2f, \"nice\": %.2f, \"sys\": %.2f, "
-			      "\"iowait\": %.2f, \"irq\": %.2f, \"soft\": %.2f, \"steal\": %.2f, "
-			      "\"guest\": %.2f, \"gnice\": %.2f, \"idle\": %.2f}",
-			 (st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest) <
-			 (st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest) ?
-			 0.0 :
-			 ll_sp_value(st_cpu[prev]->cpu_user - st_cpu[prev]->cpu_guest,
-				     st_cpu[curr]->cpu_user - st_cpu[curr]->cpu_guest,
-				     g_itv),
-			 (st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice) <
-			 (st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice) ?
-			 0.0 :
-			 ll_sp_value(st_cpu[prev]->cpu_nice - st_cpu[prev]->cpu_guest_nice,
-				     st_cpu[curr]->cpu_nice - st_cpu[curr]->cpu_guest_nice,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_sys,
-				     st_cpu[curr]->cpu_sys,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_iowait,
-				     st_cpu[curr]->cpu_iowait,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_hardirq,
-				     st_cpu[curr]->cpu_hardirq,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_softirq,
-				     st_cpu[curr]->cpu_softirq,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_steal,
-				     st_cpu[curr]->cpu_steal,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_guest,
-				     st_cpu[curr]->cpu_guest,
-				     g_itv),
-			 ll_sp_value(st_cpu[prev]->cpu_guest_nice,
-				     st_cpu[curr]->cpu_guest_nice,
-				     g_itv),
-			 (st_cpu[curr]->cpu_idle < st_cpu[prev]->cpu_idle) ?
-			 0.0 :
-			 ll_sp_value(st_cpu[prev]->cpu_idle,
-				     st_cpu[curr]->cpu_idle,
-				     g_itv));
-	}
-
-	for (node = 0; node <= node_nr; node++) {
-
-		snc = st_node[curr] + node + 1;
-		snp = st_node[prev] + node + 1;
+		snc = st_node[curr] + node;
+		snp = st_node[prev] + node;
 
 		/* Check if we want stats about this node */
-		if (!(*(node_bitmap + ((node + 1) >> 3)) & (1 << ((node + 1) & 0x07))))
+		if (!(*(node_bitmap + (node >> 3)) & (1 << (node & 0x07))))
 			continue;
 
 		if (!cpu_per_node[node])
@@ -951,45 +925,69 @@ void write_json_node_stats(int tab, unsigned long long g_itv, unsigned long long
 		}
 		next = TRUE;
 
-		xprintf0(tab, "{\"node\": \"%d\", \"usr\": %.2f, \"nice\": %.2f, \"sys\": %.2f, "
+		if (node == 0) {
+			/* This is node "all", i.e. CPU "all" */
+			strcpy(node_name, "all");
+		}
+		else {
+			snprintf(node_name, 16, "%d", node - 1);
+			node_name[15] = '\0';
+
+			/* Recalculate interval for current node */
+			deltot_jiffies = 0;
+			for (cpu = 1; cpu <= cpu_nr; cpu++) {
+				scc = st_cpu[curr] + cpu;
+				scp = st_cpu[prev] + cpu;
+
+				if ((scp->cpu_user + scp->cpu_nice + scp->cpu_sys +
+				     scp->cpu_idle + scp->cpu_iowait + scp->cpu_hardirq +
+				     scp->cpu_steal + scp->cpu_softirq == 0) && (interval != 0))
+					continue;
+
+				if (cpu2node[cpu - 1] == node - 1) {
+					deltot_jiffies += get_per_cpu_interval(scc, scp);
+				}
+			}
+
+			if (!deltot_jiffies) {
+				/* All CPU in node are tickless and/or offline */
+				xprintf0(tab, "{\"node\": \"%d\", \"usr\": 0.00, \"nice\": 0.00, \"sys\": 0.00, "
+			      "\"iowait\": 0.00, \"irq\": 0.00, \"soft\": 0.00, \"steal\": 0.00, "
+			      "\"guest\": 0.00, \"gnice\": 0.00, \"idle\": 100.00}", node - 1);
+
+				continue;
+			}
+		}
+
+		xprintf0(tab, "{\"node\": \"%s\", \"usr\": %.2f, \"nice\": %.2f, \"sys\": %.2f, "
 			      "\"iowait\": %.2f, \"irq\": %.2f, \"soft\": %.2f, \"steal\": %.2f, "
-			      "\"guest\": %.2f, \"gnice\": %.2f, \"idle\": %.2f}", node,
+			      "\"guest\": %.2f, \"gnice\": %.2f, \"idle\": %.2f}", node_name,
 			 (snc->cpu_user - snc->cpu_guest) < (snp->cpu_user - snp->cpu_guest) ?
 			 0.0 :
 			 ll_sp_value(snp->cpu_user - snp->cpu_guest,
-				     snc->cpu_user - snc->cpu_guest,
-				     itv * cpu_per_node[node]),
+				     snc->cpu_user - snc->cpu_guest, deltot_jiffies),
 			 (snc->cpu_nice - snc->cpu_guest_nice) < (snp->cpu_nice - snp->cpu_guest_nice) ?
 			 0.0 :
 			 ll_sp_value(snp->cpu_nice - snp->cpu_guest_nice,
-				     snc->cpu_nice - snc->cpu_guest_nice,
-				     itv * cpu_per_node[node]),
+				     snc->cpu_nice - snc->cpu_guest_nice, deltot_jiffies),
 			 ll_sp_value(snp->cpu_sys,
-				     snc->cpu_sys,
-				     itv * cpu_per_node[node]),
+				     snc->cpu_sys, deltot_jiffies),
 			 ll_sp_value(snp->cpu_iowait,
-				     snc->cpu_iowait,
-				     itv * cpu_per_node[node]),
+				     snc->cpu_iowait, deltot_jiffies),
 			 ll_sp_value(snp->cpu_hardirq,
-				     snc->cpu_hardirq,
-				     itv * cpu_per_node[node]),
+				     snc->cpu_hardirq, deltot_jiffies),
 			 ll_sp_value(snp->cpu_softirq,
-				     snc->cpu_softirq,
-				     itv * cpu_per_node[node]),
+				     snc->cpu_softirq, deltot_jiffies),
 			 ll_sp_value(snp->cpu_steal,
-				     snc->cpu_steal,
-				     itv * cpu_per_node[node]),
+				     snc->cpu_steal, deltot_jiffies),
 			 ll_sp_value(snp->cpu_guest,
-				     snc->cpu_guest,
-				     itv * cpu_per_node[node]),
+				     snc->cpu_guest, deltot_jiffies),
 			 ll_sp_value(snp->cpu_guest_nice,
-				     snc->cpu_guest_nice,
-				     itv * cpu_per_node[node]),
+				     snc->cpu_guest_nice, deltot_jiffies),
 			 (snc->cpu_idle < snp->cpu_idle) ?
 			 0.0 :
 			 ll_sp_value(snp->cpu_idle,
-				     snc->cpu_idle,
-				     itv * cpu_per_node[node]));
+				     snc->cpu_idle, deltot_jiffies));
 	}
 	printf("\n");
 	xprintf0(--tab, "]");
@@ -1001,8 +999,8 @@ void write_json_node_stats(int tab, unsigned long long g_itv, unsigned long long
  *
  * IN:
  * @dis		TRUE if a header line must be printed.
- * @g_itv	Interval value in jiffies multiplied by the number of CPU.
- * @itv		Interval value.
+ * @deltot_jiffies
+ *		Number of jiffies spent on the interval by all processors.
  * @prev	Position in array where statistics used	as reference are.
  *		Stats used as reference may be the previous ones read, or
  *		the very first ones when calculating the average.
@@ -1018,19 +1016,24 @@ void write_json_node_stats(int tab, unsigned long long g_itv, unsigned long long
  * 		only).
  ***************************************************************************
  */
-void write_node_stats(int dis, unsigned long long g_itv, unsigned long long itv,
-		      int prev, int curr, char *prev_string, char *curr_string,
-		      int tab, int *next)
+void write_node_stats(int dis, unsigned long long deltot_jiffies, int prev, int curr,
+		      char *prev_string, char *curr_string, int tab, int *next)
 {
+	if (!deltot_jiffies) {
+		/* CPU "all" cannot be tickless */
+		deltot_jiffies = 1;
+	}
+
 	if (DISPLAY_JSON_OUTPUT(flags)) {
 		if (*next) {
 			printf(",\n");
 		}
 		*next = TRUE;
-		write_json_node_stats(tab, g_itv, itv, prev, curr);
+		write_json_node_stats(tab, deltot_jiffies, prev, curr);
 	}
 	else {
-		write_plain_node_stats(dis, g_itv, itv, prev, curr, prev_string, curr_string);
+		write_plain_node_stats(dis, deltot_jiffies, prev, curr,
+				       prev_string, curr_string);
 	}
 }
 
@@ -1091,17 +1094,6 @@ void write_plain_isumcpu_stats(int dis, unsigned long long itv, int prev, int cu
 		     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
 
 			/* This is an offline CPU */
-
-			if (!DISPLAY_ONLINE_CPU(flags)) {
-				/*
-				 * Display offline CPU if requested by the user.
-				 * Value displayed is 0.00.
-				 */
-				printf("%-11s", curr_string);
-				cprintf_in(IS_INT, " %4d", "", cpu - 1);
-				cprintf_f(NO_UNIT, 1, 9, 2, 0.0);
-				printf("\n");
-			}
 			continue;
 		}
 
@@ -1177,15 +1169,6 @@ void write_json_isumcpu_stats(int tab, unsigned long long itv, int prev, int cur
 		     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
 
 			/* This is an offline CPU */
-
-			if (!DISPLAY_ONLINE_CPU(flags)) {
-				/*
-				 * Display offline CPU if requested by the user.
-				 * Value displayed is 0.00.
-				 */
-				xprintf0(tab, "{\"cpu\": \"%d\", \"intr\": 0.00}",
-					 cpu - 1);
-			}
 			continue;
 		}
 
@@ -1340,13 +1323,9 @@ void write_plain_irqcpu_stats(struct stats_irqcpu *st_ic[], int ic_nr, int dis,
 
 		if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
 		     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
-		     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
-
+		     scc->cpu_hardirq + scc->cpu_softirq) == 0)
 			/* Offline CPU found */
-
-			if (DISPLAY_ONLINE_CPU(flags))
-				continue;
-		}
+			continue;
 
 		printf("%-11s", curr_string);
 		cprintf_in(IS_INT, "  %3d", "", cpu - 1);
@@ -1444,13 +1423,9 @@ void write_json_irqcpu_stats(int tab, struct stats_irqcpu *st_ic[], int ic_nr,
 
 		if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
 		     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
-		     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
-
+		     scc->cpu_hardirq + scc->cpu_softirq) == 0)
 			/* Offline CPU found */
-
-			if (DISPLAY_ONLINE_CPU(flags))
-				continue;
-		}
+			continue;
 
 		if (nextcpu) {
 			printf(",\n");
@@ -1582,39 +1557,38 @@ void write_irqcpu_stats(struct stats_irqcpu *st_ic[], int ic_nr, int dis,
 void write_stats_core(int prev, int curr, int dis,
 		      char *prev_string, char *curr_string)
 {
-	struct stats_cpu *scc, *scp;
-	unsigned long long itv, g_itv;
-	int cpu, tab = 4, next = FALSE;
+	unsigned long long itv, deltot_jiffies = 1;
+	int tab = 4, next = FALSE;
+	unsigned char offline_cpu_bitmap[BITMAP_SIZE(NR_CPUS)] = {0};
 
 	/* Test stdout */
 	TEST_STDOUT(STDOUT_FILENO);
+
+	/*
+	 * Compute CPU "all" as sum of all individual CPU (on SMP machines)
+	 * and look for offline CPU.
+	 */
+	deltot_jiffies = get_global_cpu_mpstats(prev, curr, offline_cpu_bitmap);
 
 	if (DISPLAY_JSON_OUTPUT(flags)) {
 		xprintf(tab++, "{");
 		xprintf(tab, "\"timestamp\": \"%s\",", curr_string);
 	}
 
-	/* Compute time interval */
-	g_itv = get_interval(uptime[prev], uptime[curr]);
-
-	/* Reduce interval value to one processor */
-	if (cpu_nr > 1) {
-		itv = get_interval(uptime0[prev], uptime0[curr]);
-	}
-	else {
-		itv = g_itv;
-	}
+	/* Get time interval */
+	itv = get_interval(uptime_cs[prev], uptime_cs[curr]);
 
 	/* Print CPU stats */
 	if (DISPLAY_CPU(actflags)) {
-		write_cpu_stats(dis, g_itv, prev, curr, prev_string, curr_string,
-				tab, &next);
+		write_cpu_stats(dis, deltot_jiffies, prev, curr,
+				prev_string, curr_string, tab, &next, offline_cpu_bitmap);
 	}
 
 	/* Print node CPU stats */
 	if (DISPLAY_NODE(actflags)) {
-		write_node_stats(dis, g_itv, itv, prev, curr, prev_string, curr_string,
-				 tab, &next);
+		set_node_cpu_stats(prev, curr);
+		write_node_stats(dis, deltot_jiffies, prev, curr, prev_string,
+				 curr_string, tab, &next);
 	}
 
 	/* Print total number of interrupts per processor */
@@ -1636,25 +1610,6 @@ void write_stats_core(int prev, int curr, int dis,
 	if (DISPLAY_JSON_OUTPUT(flags)) {
 		printf("\n");
 		xprintf0(--tab, "}");
-	}
-
-	/* Fix CPU counter values for every offline CPU */
-	for (cpu = 1; cpu <= cpu_nr; cpu++) {
-
-		scc = st_cpu[curr] + cpu;
-		scp = st_cpu[prev] + cpu;
-
-		if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
-		     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
-		     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
-			/*
-			 * Offline CPU found.
-			 * Set current struct fields (which have been set to zero)
-			 * to values from previous iteration. Hence their values won't
-			 * jump from zero when the CPU comes back online.
-			 */
-			*scc = *scp;
-		}
 	}
 }
 
@@ -1823,25 +1778,39 @@ void read_interrupts_stat(char *file, struct stats_irqcpu *st_ic[], int ic_nr, i
 void rw_mpstat_loop(int dis_hdr, int rows)
 {
 	struct stats_cpu *scc;
-	int cpu;
+	int i;
 	int curr = 1, dis = 1;
 	unsigned long lines = rows;
 
 	/* Dont buffer data if redirected to a pipe */
 	setbuf(stdout, NULL);
 
-	/* Read uptime and CPU stats */
+	/* Read system uptime and CPU stats */
+	read_uptime(&(uptime_cs[0]));
+	read_stat_cpu(st_cpu[0], cpu_nr + 1);
+
+	/*
+	 * Calculate global CPU stats as the sum of individual ones.
+	 * Done only on SMP machines. On UP machines, we keep the values
+	 * read from /proc/stat for global CPU stats.
+	 */
 	if (cpu_nr > 1) {
-		/*
-		 * Init uptime0. So if /proc/uptime cannot fill it,
-		 * this will be done by /proc/stat.
-		 */
-		uptime0[0] = 0;
-		read_uptime(&(uptime0[0]));
-	}
-	read_stat_cpu(st_cpu[0], cpu_nr + 1, &(uptime[0]), &(uptime0[0]));
-	if (DISPLAY_NODE(actflags)) {
-		set_node_cpu_stats(st_node[0], st_cpu[0]);
+		memset(st_cpu[0], 0, STATS_CPU_SIZE);
+
+		for (i = 1; i <= cpu_nr; i++) {
+			scc = st_cpu[0] + i;
+
+			st_cpu[0]->cpu_user += scc->cpu_user;
+			st_cpu[0]->cpu_nice += scc->cpu_nice;
+			st_cpu[0]->cpu_sys += scc->cpu_sys;
+			st_cpu[0]->cpu_idle += scc->cpu_idle;
+			st_cpu[0]->cpu_iowait += scc->cpu_iowait;
+			st_cpu[0]->cpu_hardirq += scc->cpu_hardirq;
+			st_cpu[0]->cpu_steal += scc->cpu_steal;
+			st_cpu[0]->cpu_softirq += scc->cpu_softirq;
+			st_cpu[0]->cpu_guest += scc->cpu_guest;
+			st_cpu[0]->cpu_guest_nice += scc->cpu_guest_nice;
+		}
 	}
 
 	/*
@@ -1889,8 +1858,7 @@ void rw_mpstat_loop(int dis_hdr, int rows)
 
 	/* Save the first stats collected. Will be used to compute the average */
 	mp_tstamp[2] = mp_tstamp[0];
-	uptime[2] = uptime[0];
-	uptime0[2] = uptime0[0];
+	uptime_cs[2] = uptime_cs[0];
 	memcpy(st_cpu[2], st_cpu[0], STATS_CPU_SIZE * (cpu_nr + 1));
 	memcpy(st_node[2], st_node[0], STATS_CPU_SIZE * (cpu_nr + 1));
 	memcpy(st_irq[2], st_irq[0], STATS_IRQ_SIZE * (cpu_nr + 1));
@@ -1920,25 +1888,14 @@ void rw_mpstat_loop(int dis_hdr, int rows)
 		 * if corresponding processor is disabled (offline). We set them to zero
 		 * to be able to distinguish between offline and tickless CPUs.
 		 */
-		for (cpu = 1; cpu <= cpu_nr; cpu++) {
-			scc = st_cpu[curr] + cpu;
-			memset(scc, 0, STATS_CPU_SIZE);
-			scc = st_node[curr] + cpu;
-			memset(scc, 0, STATS_CPU_SIZE);
-		}
+		memset(st_cpu[curr], 0, STATS_CPU_SIZE * (cpu_nr + 1));
 
 		/* Get time */
 		get_localtime(&(mp_tstamp[curr]), 0);
 
 		/* Read uptime and CPU stats */
-		if (cpu_nr > 1) {
-			uptime0[curr] = 0;
-			read_uptime(&(uptime0[curr]));
-		}
-		read_stat_cpu(st_cpu[curr], cpu_nr + 1, &(uptime[curr]), &(uptime0[curr]));
-		if (DISPLAY_NODE(actflags)) {
-			set_node_cpu_stats(st_node[curr], st_cpu[curr]);
-		}
+		read_uptime(&(uptime_cs[curr]));
+		read_stat_cpu(st_cpu[curr], cpu_nr + 1);
 
 		/* Read total number of interrupts received among all CPU */
 		if (DISPLAY_IRQ_SUM(actflags)) {
@@ -2104,12 +2061,7 @@ int main(int argc, char **argv)
 			flags |= F_P_OPTION;
 			dis_hdr = 9;
 
-			if (!strcmp(argv[opt], K_ON)) {
-				/* Display stats for all online CPU */
-				flags |= F_P_ON;
-				memset(cpu_bitmap, ~0, BITMAP_SIZE(cpu_nr));
-			}
-			else if (parse_values(argv[opt], cpu_bitmap, cpu_nr, K_LOWERALL)) {
+			if (parse_values(argv[opt], cpu_bitmap, cpu_nr, K_LOWERALL)) {
 				usage(argv[0]);
 			}
 		}

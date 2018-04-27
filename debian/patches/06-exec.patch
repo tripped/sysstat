@@ -1,5 +1,5 @@
-From: Robert Luberda <robert@debian.org>
-Date: Tue, 23 Mar 2010 22:04:47 +0100
+From: Trip Volpe <trip.volpe@gmail.com>
+Date: Fri, 27 Apr 2018 13:52:26 -0700
 Subject: Remove call to execvp()
 
 Merge the following change from Ubuntu:
@@ -10,13 +10,13 @@ Merge the following change from Ubuntu:
  1 file changed, 1 deletion(-)
 
 diff --git a/sar.c b/sar.c
-index f8a1e54..f3bc958 100644
+index c0c85ab..53496bb 100644
 --- a/sar.c
 +++ b/sar.c
-@@ -1483,7 +1483,6 @@ int main(int argc, char **argv)
- 
- 		/* Call now the data collector */
- 		execv(SADC_PATH, args);
+@@ -1587,7 +1587,6 @@ int main(int argc, char **argv)
+ #ifdef DEBUG
+ 		fprintf(stderr, "%s: 2.sadc: %s\n", __FUNCTION__, SADC);
+ #endif
 -		execvp(SADC, args);
  		/*
  		 * Note: Don't use execl/execlp since we don't have a fixed number of

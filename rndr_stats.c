@@ -1,6 +1,6 @@
 /*
  * rndr_stats.c: Funtions used by sadf to display statistics in selected format.
- * (C) 1999-2017 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2018 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -91,7 +91,7 @@ static Cons *cons(tcons t, ...)
  *	     pptxt - printf-format text required for ppc output (may be null)
  *	     dbtxt - printf-format text required for db output (may be null)
  *	     mid - pptxt/dbtxt format args as a Cons.
- *	     luval - %lu printable arg (PT_USEINT must be set)
+ *	     lluval - %llu printable arg (PT_USEINT must be set)
  *	     dval  - %.2f printable arg (used unless PT_USEINT is set)
  *	     sval - %s printable arg (PT_USESTR must be set)
  *
@@ -102,7 +102,7 @@ static Cons *cons(tcons t, ...)
  ***************************************************************************
  */
 static void render(int isdb, char *pre, int rflags, const char *pptxt,
-		   const char *dbtxt, Cons *mid, unsigned long int luval,
+		   const char *dbtxt, Cons *mid, unsigned long long lluval,
 		   double dval, char *sval)
 {
 	static int newline = 1;
@@ -138,7 +138,7 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
 	}
 
 	if (rflags & PT_USEINT) {
-		printf("%s%lu", seps[isdb], luval);
+		printf("%s%llu", seps[isdb], lluval);
 	}
 	else if (rflags & PT_USESTR) {
 		printf("%s%s", seps[isdb], sval);
@@ -163,162 +163,169 @@ static void render(int isdb, char *pre, int rflags, const char *pptxt,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @g_itv	Interval of time in jiffies multiplied by the number
- *		of processors.
+ * @itv		Interval of time in 1/100th of a second (independent of the
+ *		number of processors). Unused here.
  ***************************************************************************
  */
 __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
-				 int curr, unsigned long long g_itv)
+				 int curr, unsigned long long itv)
 {
-	int i, cpu_offline;
+	int i;
+	unsigned long long deltot_jiffies = 1;
 	struct stats_cpu *scc, *scp;
+	unsigned char offline_cpu_bitmap[BITMAP_SIZE(NR_CPUS)] = {0};
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	/* @nr[curr] cannot normally be greater than @nr_ini */
+	if (a->nr[curr] > a->nr_ini) {
+		a->nr_ini = a->nr[curr];
+	}
+
+	/*
+	 * Compute CPU "all" as sum of all individual CPU (on SMP machines)
+	 * and look for offline CPU.
+	 */
+	if (a->nr_ini > 1) {
+		deltot_jiffies = get_global_cpu_statistics(a, !curr, curr,
+							   flags, offline_cpu_bitmap);
+	}
+
+	for (i = 0; (i < a->nr_ini) && (i < a->bitmap->b_size + 1); i++) {
+
+		/* Should current CPU (including CPU "all") be displayed? */
+		if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) ||
+		    offline_cpu_bitmap[i >> 3] & (1 << (i & 0x07)))
+			/* Don't display CPU */
+			continue;
 
 		scc = (struct stats_cpu *) ((char *) a->buf[curr]  + i * a->msize);
 		scp = (struct stats_cpu *) ((char *) a->buf[!curr] + i * a->msize);
 
-		/* Should current CPU (including CPU "all") be displayed? */
-		if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
-			/* No */
-			continue;
-
-		if (!i) {
+		if (i == 0) {
 			/* This is CPU "all" */
+			if (a->nr_ini == 1) {
+				/*
+				 * This is a UP machine. In this case
+				 * interval has still not been calculated.
+				 */
+				deltot_jiffies = get_per_cpu_interval(scc, scp);
+			}
+			if (!deltot_jiffies) {
+				/* CPU "all" cannot be tickless */
+				deltot_jiffies = 1;
+			}
+
 			if (DISPLAY_CPU_DEF(a->opt_flags)) {
 				render(isdb, pre,
 				       PT_NOFLAG,	/* that's zero but you know what it means */
-				       "all\t%%user",	/* all ppctext is used as format, thus '%%' */
+				       "all\t%user",	/* ppctext */
 				       "-1",		/* look! dbtext */
 				       NULL,		/* no args */
 				       NOVAL,		/* another 0, named for readability */
-				       ll_sp_value(scp->cpu_user, scc->cpu_user, g_itv),
+				       ll_sp_value(scp->cpu_user, scc->cpu_user, deltot_jiffies),
 				       NULL);		/* No string arg */
 			}
 			else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
-				       "all\t%%usr", "-1", NULL,
+				       "all\t%usr", "-1", NULL,
 				       NOVAL,
 				       (scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest) ?
 				       0.0 :
 				       ll_sp_value(scp->cpu_user - scp->cpu_guest,
 						   scc->cpu_user - scc->cpu_guest,
-						   g_itv),
+						   deltot_jiffies),
 				       NULL);
 			}
 
 			if (DISPLAY_CPU_DEF(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
-				       "all\t%%nice", NULL, NULL,
+				       "all\t%nice", NULL, NULL,
 				       NOVAL,
-				       ll_sp_value(scp->cpu_nice, scc->cpu_nice, g_itv),
+				       ll_sp_value(scp->cpu_nice, scc->cpu_nice, deltot_jiffies),
 				       NULL);
 			}
 			else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
-				       "all\t%%nice", NULL, NULL,
+				       "all\t%nice", NULL, NULL,
 				       NOVAL,
 				       (scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice) ?
 				       0.0 :
 				       ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
 						   scc->cpu_nice - scc->cpu_guest_nice,
-						   g_itv),
+						   deltot_jiffies),
 				       NULL);
 			}
 
 			if (DISPLAY_CPU_DEF(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
-				       "all\t%%system", NULL, NULL,
+				       "all\t%system", NULL, NULL,
 				       NOVAL,
 				       ll_sp_value(scp->cpu_sys + scp->cpu_hardirq + scp->cpu_softirq,
 						   scc->cpu_sys + scc->cpu_hardirq + scc->cpu_softirq,
-						   g_itv),
+						   deltot_jiffies),
 				       NULL);
 			}
 			else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
-				       "all\t%%sys", NULL, NULL,
+				       "all\t%sys", NULL, NULL,
 				       NOVAL,
-				       ll_sp_value(scp->cpu_sys, scc->cpu_sys, g_itv),
+				       ll_sp_value(scp->cpu_sys, scc->cpu_sys, deltot_jiffies),
 				       NULL);
 			}
 
 			render(isdb, pre, PT_NOFLAG,
-			       "all\t%%iowait", NULL, NULL,
+			       "all\t%iowait", NULL, NULL,
 			       NOVAL,
-			       ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, g_itv),
+			       ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, deltot_jiffies),
 			       NULL);
 
 			render(isdb, pre, PT_NOFLAG,
-			       "all\t%%steal", NULL, NULL,
+			       "all\t%steal", NULL, NULL,
 			       NOVAL,
-			       ll_sp_value(scp->cpu_steal, scc->cpu_steal, g_itv),
+			       ll_sp_value(scp->cpu_steal, scc->cpu_steal, deltot_jiffies),
 			       NULL);
 
 			if (DISPLAY_CPU_ALL(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
-				       "all\t%%irq", NULL, NULL,
+				       "all\t%irq", NULL, NULL,
 				       NOVAL,
-				       ll_sp_value(scp->cpu_hardirq, scc->cpu_hardirq, g_itv),
+				       ll_sp_value(scp->cpu_hardirq, scc->cpu_hardirq, deltot_jiffies),
 				       NULL);
 
 				render(isdb, pre, PT_NOFLAG,
-				       "all\t%%soft", NULL, NULL,
+				       "all\t%soft", NULL, NULL,
 				       NOVAL,
-				       ll_sp_value(scp->cpu_softirq, scc->cpu_softirq, g_itv),
+				       ll_sp_value(scp->cpu_softirq, scc->cpu_softirq, deltot_jiffies),
 				       NULL);
 
 				render(isdb, pre, PT_NOFLAG,
-				       "all\t%%guest", NULL, NULL,
+				       "all\t%guest", NULL, NULL,
 				       NOVAL,
-				       ll_sp_value(scp->cpu_guest, scc->cpu_guest, g_itv),
+				       ll_sp_value(scp->cpu_guest, scc->cpu_guest, deltot_jiffies),
 				       NULL);
 
 				render(isdb, pre, PT_NOFLAG,
-				       "all\t%%gnice", NULL, NULL,
+				       "all\t%gnice", NULL, NULL,
 				       NOVAL,
-				       ll_sp_value(scp->cpu_guest_nice, scc->cpu_guest_nice, g_itv),
+				       ll_sp_value(scp->cpu_guest_nice, scc->cpu_guest_nice, deltot_jiffies),
 				       NULL);
 			}
 
 			render(isdb, pre, pt_newlin,
-			       "all\t%%idle", NULL, NULL,
+			       "all\t%idle", NULL, NULL,
 			       NOVAL,
 			       (scc->cpu_idle < scp->cpu_idle) ?
 			       0.0 :
-			       ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv),
+			       ll_sp_value(scp->cpu_idle, scc->cpu_idle, deltot_jiffies),
 			       NULL);
 		}
 		else {
 			/*
-			 * If the CPU is offline then it is omited from /proc/stat:
-			 * All the fields couldn't have been read and the sum of them is zero.
-			 * (Remember that guest/guest_nice times are already included in
-			 * user/nice modes.)
+			 * Recalculate itv for current proc.
+			 * If the result is 0, then current CPU is a tickless one.
 			 */
-			if ((scc->cpu_user    + scc->cpu_nice + scc->cpu_sys   +
-			     scc->cpu_iowait  + scc->cpu_idle + scc->cpu_steal +
-			     scc->cpu_hardirq + scc->cpu_softirq) == 0) {
-				/*
-				 * Set current struct fields (which have been set to zero)
-				 * to values from previous iteration. Hence their values won't
-				 * jump from zero when the CPU comes back online.
-				 */
-				*scc = *scp;
-
-				g_itv = 0;
-				cpu_offline = TRUE;
-			}
-			else {
-				/*
-				 * Recalculate itv for current proc.
-				 * If the result is 0, then current CPU is a tickless one.
-				 */
-				g_itv = get_per_cpu_interval(scc, scp);
-				cpu_offline = FALSE;
-			}
+			deltot_jiffies = get_per_cpu_interval(scc, scp);
 
 			if (DISPLAY_CPU_DEF(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
@@ -326,20 +333,20 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 				       "%d",			/* db text with format char */
 				       cons(iv, i - 1, NOVAL),	/* how we pass format args  */
 				       NOVAL,
-				       !g_itv ?
-				       0.0 :			/* CPU is offline or tickless */
-				       ll_sp_value(scp->cpu_user, scc->cpu_user, g_itv),
+				       !deltot_jiffies ?
+				       0.0 :			/* CPU is tickless */
+				       ll_sp_value(scp->cpu_user, scc->cpu_user, deltot_jiffies),
 				       NULL);
 			}
 			else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
 				       "cpu%d\t%%usr", "%d", cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       (!g_itv ||
+				       (!deltot_jiffies ||
 				       ((scc->cpu_user - scc->cpu_guest) < (scp->cpu_user - scp->cpu_guest))) ?
 				       0.0 :
 				       ll_sp_value(scp->cpu_user - scp->cpu_guest,
-						   scc->cpu_user - scc->cpu_guest, g_itv),
+						   scc->cpu_user - scc->cpu_guest, deltot_jiffies),
 				       NULL);
 			}
 
@@ -347,20 +354,20 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 				render(isdb, pre, PT_NOFLAG,
 				       "cpu%d\t%%nice", NULL, cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       !g_itv ?
+				       !deltot_jiffies ?
 				       0.0 :
-				       ll_sp_value(scp->cpu_nice, scc->cpu_nice, g_itv),
+				       ll_sp_value(scp->cpu_nice, scc->cpu_nice, deltot_jiffies),
 				       NULL);
 			}
 			else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
 				       "cpu%d\t%%nice", NULL, cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       (!g_itv ||
+				       (!deltot_jiffies ||
 				       ((scc->cpu_nice - scc->cpu_guest_nice) < (scp->cpu_nice - scp->cpu_guest_nice))) ?
 				       0.0 :
 				       ll_sp_value(scp->cpu_nice - scp->cpu_guest_nice,
-						   scc->cpu_nice - scc->cpu_guest_nice, g_itv),
+						   scc->cpu_nice - scc->cpu_guest_nice, deltot_jiffies),
 				       NULL);
 			}
 
@@ -368,80 +375,79 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 				render(isdb, pre, PT_NOFLAG,
 				       "cpu%d\t%%system", NULL, cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       !g_itv ?
+				       !deltot_jiffies ?
 				       0.0 :
 				       ll_sp_value(scp->cpu_sys + scp->cpu_hardirq + scp->cpu_softirq,
 						   scc->cpu_sys + scc->cpu_hardirq + scc->cpu_softirq,
-						   g_itv),
+						   deltot_jiffies),
 				       NULL);
 			}
 			else if (DISPLAY_CPU_ALL(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
 				       "cpu%d\t%%sys", NULL, cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       !g_itv ?
+				       !deltot_jiffies ?
 				       0.0 :
-				       ll_sp_value(scp->cpu_sys, scc->cpu_sys, g_itv),
+				       ll_sp_value(scp->cpu_sys, scc->cpu_sys, deltot_jiffies),
 				       NULL);
 			}
 
 			render(isdb, pre, PT_NOFLAG,
 			       "cpu%d\t%%iowait", NULL, cons(iv, i - 1, NOVAL),
 			       NOVAL,
-			       !g_itv ?
+			       !deltot_jiffies ?
 			       0.0 :
-			       ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, g_itv),
+			       ll_sp_value(scp->cpu_iowait, scc->cpu_iowait, deltot_jiffies),
 			       NULL);
 
 			render(isdb, pre, PT_NOFLAG,
 			       "cpu%d\t%%steal", NULL, cons(iv, i - 1, NOVAL),
 			       NOVAL,
-			       !g_itv ?
+			       !deltot_jiffies ?
 			       0.0 :
-			       ll_sp_value(scp->cpu_steal, scc->cpu_steal, g_itv),
+			       ll_sp_value(scp->cpu_steal, scc->cpu_steal, deltot_jiffies),
 			       NULL);
 
 			if (DISPLAY_CPU_ALL(a->opt_flags)) {
 				render(isdb, pre, PT_NOFLAG,
 				       "cpu%d\t%%irq", NULL, cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       !g_itv ?
+				       !deltot_jiffies ?
 				       0.0 :
-				       ll_sp_value(scp->cpu_hardirq, scc->cpu_hardirq, g_itv),
+				       ll_sp_value(scp->cpu_hardirq, scc->cpu_hardirq, deltot_jiffies),
 				       NULL);
 
 				render(isdb, pre, PT_NOFLAG,
 				       "cpu%d\t%%soft", NULL, cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       !g_itv ?
+				       !deltot_jiffies ?
 				       0.0 :
-				       ll_sp_value(scp->cpu_softirq, scc->cpu_softirq, g_itv),
+				       ll_sp_value(scp->cpu_softirq, scc->cpu_softirq, deltot_jiffies),
 				       NULL);
 
 				render(isdb, pre, PT_NOFLAG,
 				       "cpu%d\t%%guest", NULL, cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       !g_itv ?
+				       !deltot_jiffies ?
 				       0.0 :
-				       ll_sp_value(scp->cpu_guest, scc->cpu_guest, g_itv),
+				       ll_sp_value(scp->cpu_guest, scc->cpu_guest, deltot_jiffies),
 				       NULL);
 
 				render(isdb, pre, PT_NOFLAG,
 				       "cpu%d\t%%gnice", NULL, cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       !g_itv ?
+				       !deltot_jiffies ?
 				       0.0 :
-				       ll_sp_value(scp->cpu_guest_nice, scc->cpu_guest_nice, g_itv),
+				       ll_sp_value(scp->cpu_guest_nice, scc->cpu_guest_nice, deltot_jiffies),
 				       NULL);
 			}
 
-			if (!g_itv) {
-				/* CPU is offline or tickless */
+			if (!deltot_jiffies) {
+				/* CPU is tickless */
 				render(isdb, pre, pt_newlin,
 				       "cpu%d\t%%idle", NULL, cons(iv, i - 1, NOVAL),
 				       NOVAL,
-				       cpu_offline ?
-				       0.0 : 100.0,
+				       100.0,
 				       NULL);
 			}
 			else {
@@ -450,7 +456,7 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
 				       NOVAL,
 				       (scc->cpu_idle < scp->cpu_idle) ?
 				       0.0 :
-				       ll_sp_value(scp->cpu_idle, scc->cpu_idle, g_itv),
+				       ll_sp_value(scp->cpu_idle, scc->cpu_idle, deltot_jiffies),
 				       NULL);
 			}
 		}
@@ -466,7 +472,7 @@ __print_funct_t render_cpu_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_pcsw_stats(struct activity *a, int isdb, char *pre,
@@ -506,7 +512,7 @@ __print_funct_t render_pcsw_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_irq_stats(struct activity *a, int isdb, char *pre,
@@ -517,7 +523,7 @@ __print_funct_t render_irq_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr[curr]) && (i < a->bitmap->b_size + 1); i++) {
 
 		sic = (struct stats_irq *) ((char *) a->buf[curr]  + i * a->msize);
 		sip = (struct stats_irq *) ((char *) a->buf[!curr] + i * a->msize);
@@ -554,7 +560,7 @@ __print_funct_t render_irq_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_swap_stats(struct activity *a, int isdb, char *pre,
@@ -587,7 +593,7 @@ __print_funct_t render_swap_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_paging_stats(struct activity *a, int isdb, char *pre,
@@ -648,7 +654,7 @@ __print_funct_t render_paging_stats(struct activity *a, int isdb, char *pre,
 	       NULL);
 
 	render(isdb, pre, pt_newlin,
-	       "-\t%%vmeff", NULL, NULL,
+	       "-\t%vmeff", NULL, NULL,
 	       NOVAL,
 	       (spc->pgscan_kswapd + spc->pgscan_direct -
 		spp->pgscan_kswapd - spp->pgscan_direct) ?
@@ -667,7 +673,7 @@ __print_funct_t render_paging_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_io_stats(struct activity *a, int isdb, char *pre,
@@ -730,7 +736,7 @@ __print_funct_t render_io_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_memory_stats(struct activity *a, int isdb, char *pre,
@@ -757,7 +763,7 @@ __print_funct_t render_memory_stats(struct activity *a, int isdb, char *pre,
 		       smc->tlmkb - smc->frmkb, DNOVAL, NULL);
 
 		render(isdb, pre, PT_NOFLAG,
-		       "-\t%%memused", NULL, NULL, NOVAL,
+		       "-\t%memused", NULL, NULL, NOVAL,
 		       smc->tlmkb ?
 		       SP_VALUE(smc->frmkb, smc->tlmkb, smc->tlmkb) :
 		       0.0, NULL);
@@ -775,7 +781,7 @@ __print_funct_t render_memory_stats(struct activity *a, int isdb, char *pre,
 		       smc->comkb, DNOVAL, NULL);
 
 		render(isdb, pre, PT_NOFLAG,
-		       "-\t%%commit", NULL, NULL, NOVAL,
+		       "-\t%commit", NULL, NULL, NOVAL,
 		       (smc->tlmkb + smc->tlskb) ?
 		       SP_VALUE(0, smc->comkb, smc->tlmkb + smc->tlskb) :
 		       0.0, NULL);
@@ -827,7 +833,7 @@ __print_funct_t render_memory_stats(struct activity *a, int isdb, char *pre,
 		       smc->tlskb - smc->frskb, DNOVAL, NULL);
 
 		render(isdb, pre, PT_NOFLAG,
-		       "-\t%%swpused", NULL, NULL, NOVAL,
+		       "-\t%swpused", NULL, NULL, NOVAL,
 		       smc->tlskb ?
 		       SP_VALUE(smc->frskb, smc->tlskb, smc->tlskb) :
 		       0.0, NULL);
@@ -837,7 +843,7 @@ __print_funct_t render_memory_stats(struct activity *a, int isdb, char *pre,
 		       smc->caskb, DNOVAL, NULL);
 
 		render(isdb, pre, pt_newlin,
-		       "-\t%%swpcad", NULL, NULL, NOVAL,
+		       "-\t%swpcad", NULL, NULL, NOVAL,
 		       (smc->tlskb - smc->frskb) ?
 		       SP_VALUE(0, smc->caskb, smc->tlskb - smc->frskb) :
 		       0.0, NULL);
@@ -853,7 +859,7 @@ __print_funct_t render_memory_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_ktables_stats(struct activity *a, int isdb, char *pre,
@@ -890,7 +896,7 @@ __print_funct_t render_ktables_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_queue_stats(struct activity *a, int isdb, char *pre,
@@ -941,68 +947,90 @@ __print_funct_t render_queue_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_serial_stats(struct activity *a, int isdb, char *pre,
 				    int curr, unsigned long long itv)
 {
-	int i;
+	int i, j, j0, found;
 	struct stats_serial *ssc, *ssp;
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < a->nr[curr]; i++) {
 
-		ssc = (struct stats_serial *) ((char *) a->buf[curr]  + i * a->msize);
-		ssp = (struct stats_serial *) ((char *) a->buf[!curr] + i * a->msize);
+		found = FALSE;
 
-		if (ssc->line == 0)
+		if (a->nr[!curr] > 0) {
+			ssc = (struct stats_serial *) ((char *) a->buf[curr]  + i * a->msize);
+
+			/* Look for corresponding serial line in previous iteration */
+			j = i;
+
+			if (j >= a->nr[!curr]) {
+				j = a->nr[!curr] - 1;
+			}
+
+			j0 = j;
+
+			do {
+				ssp = (struct stats_serial *) ((char *) a->buf[!curr] + j * a->msize);
+				if (ssc->line == ssp->line) {
+					found = TRUE;
+					break;
+				}
+				if (++j >= a->nr[!curr]) {
+					j = 0;
+				}
+			}
+			while (j != j0);
+		}
+
+		if (!found)
 			continue;
 
-		if (ssc->line == ssp->line) {
-			render(isdb, pre, PT_NOFLAG,
-			       "ttyS%d\trcvin/s", "%d",
-			       cons(iv, ssc->line - 1, NOVAL),
-			       NOVAL,
-			       S_VALUE(ssp->rx, ssc->rx, itv),
-			       NULL);
+		render(isdb, pre, PT_NOFLAG,
+		       "ttyS%d\trcvin/s", "%d",
+		       cons(iv, ssc->line, NOVAL),
+		       NOVAL,
+		       S_VALUE(ssp->rx, ssc->rx, itv),
+		       NULL);
 
-			render(isdb, pre, PT_NOFLAG,
-			       "ttyS%d\txmtin/s", "%d",
-			       cons(iv, ssc->line - 1, NOVAL),
-			       NOVAL,
-			       S_VALUE(ssp->tx, ssc->tx, itv),
-			       NULL);
+		render(isdb, pre, PT_NOFLAG,
+		       "ttyS%d\txmtin/s", NULL,
+		       cons(iv, ssc->line, NOVAL),
+		       NOVAL,
+		       S_VALUE(ssp->tx, ssc->tx, itv),
+		       NULL);
 
-			render(isdb, pre, PT_NOFLAG,
-			       "ttyS%d\tframerr/s", "%d",
-			       cons(iv, ssc->line - 1, NOVAL),
-			       NOVAL,
-			       S_VALUE(ssp->frame, ssc->frame, itv),
-			       NULL);
+		render(isdb, pre, PT_NOFLAG,
+		       "ttyS%d\tframerr/s", NULL,
+		       cons(iv, ssc->line, NOVAL),
+		       NOVAL,
+		       S_VALUE(ssp->frame, ssc->frame, itv),
+		       NULL);
 
-			render(isdb, pre, PT_NOFLAG,
-			       "ttyS%d\tprtyerr/s", "%d",
-			       cons(iv, ssc->line - 1, NOVAL),
-			       NOVAL,
-			       S_VALUE(ssp->parity, ssc->parity, itv),
-			       NULL);
+		render(isdb, pre, PT_NOFLAG,
+		       "ttyS%d\tprtyerr/s", NULL,
+		       cons(iv, ssc->line, NOVAL),
+		       NOVAL,
+		       S_VALUE(ssp->parity, ssc->parity, itv),
+		       NULL);
 
-			render(isdb, pre, PT_NOFLAG,
-			       "ttyS%d\tbrk/s", "%d",
-			       cons(iv, ssc->line - 1, NOVAL),
-			       NOVAL,
-			       S_VALUE(ssp->brk, ssc->brk, itv),
-			       NULL);
+		render(isdb, pre, PT_NOFLAG,
+		       "ttyS%d\tbrk/s", NULL,
+		       cons(iv, ssc->line, NOVAL),
+		       NOVAL,
+		       S_VALUE(ssp->brk, ssc->brk, itv),
+		       NULL);
 
-			render(isdb, pre, pt_newlin,
-			       "ttyS%d\tovrun/s", "%d",
-			       cons(iv, ssc->line - 1, NOVAL),
-			       NOVAL,
-			       S_VALUE(ssp->overrun, ssc->overrun, itv),
-			       NULL);
-		}
+		render(isdb, pre, pt_newlin,
+		       "ttyS%d\tovrun/s", NULL,
+		       cons(iv, ssc->line, NOVAL),
+		       NOVAL,
+		       S_VALUE(ssp->overrun, ssc->overrun, itv),
+		       NULL);
 	}
 }
 
@@ -1015,7 +1043,7 @@ __print_funct_t render_serial_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_disk_stats(struct activity *a, int isdb, char *pre,
@@ -1030,12 +1058,9 @@ __print_funct_t render_disk_stats(struct activity *a, int isdb, char *pre,
 
 	memset(&sdpzero, 0, STATS_DISK_SIZE);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < a->nr[curr]; i++) {
 
 		sdc = (struct stats_disk *) ((char *) a->buf[curr] + i * a->msize);
-
-		if (!(sdc->major + sdc->minor))
-			continue;
 
 		j = check_disk_reg(a, curr, !curr, i);
 		if (j < 0) {
@@ -1137,7 +1162,7 @@ __print_funct_t render_disk_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_dev_stats(struct activity *a, int isdb, char *pre,
@@ -1151,12 +1176,9 @@ __print_funct_t render_net_dev_stats(struct activity *a, int isdb, char *pre,
 
 	memset(&sndzero, 0, STATS_NET_DEV_SIZE);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < a->nr[curr]; i++) {
 
 		sndc = (struct stats_net_dev *) ((char *) a->buf[curr] + i * a->msize);
-
-		if (!strcmp(sndc->interface, ""))
-			break;
 
 		j = check_net_dev_reg(a, curr, !curr, i);
 		if (j < 0) {
@@ -1237,7 +1259,7 @@ __print_funct_t render_net_dev_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_edev_stats(struct activity *a, int isdb, char *pre,
@@ -1250,12 +1272,9 @@ __print_funct_t render_net_edev_stats(struct activity *a, int isdb, char *pre,
 
 	memset(&snedzero, 0, STATS_NET_EDEV_SIZE);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < a->nr[curr]; i++) {
 
 		snedc = (struct stats_net_edev *) ((char *) a->buf[curr] + i * a->msize);
-
-		if (!strcmp(snedc->interface, ""))
-			break;
 
 		j = check_net_edev_reg(a, curr, !curr, i);
 		if (j < 0) {
@@ -1340,7 +1359,7 @@ __print_funct_t render_net_edev_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_nfs_stats(struct activity *a, int isdb, char *pre,
@@ -1398,7 +1417,7 @@ __print_funct_t render_net_nfs_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_nfsd_stats(struct activity *a, int isdb, char *pre,
@@ -1486,7 +1505,7 @@ __print_funct_t render_net_nfsd_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_sock_stats(struct activity *a, int isdb, char *pre,
@@ -1499,27 +1518,27 @@ __print_funct_t render_net_sock_stats(struct activity *a, int isdb, char *pre,
 
 	render(isdb, pre, PT_USEINT,
 	       "-\ttotsck", NULL, NULL,
-	       snsc->sock_inuse, DNOVAL, NULL);
+	       (unsigned long long) snsc->sock_inuse, DNOVAL, NULL);
 
 	render(isdb, pre, PT_USEINT,
 	       "-\ttcpsck", NULL, NULL,
-	       snsc->tcp_inuse, DNOVAL, NULL);
+	       (unsigned long long) snsc->tcp_inuse, DNOVAL, NULL);
 
 	render(isdb, pre, PT_USEINT,
 	       "-\tudpsck",  NULL, NULL,
-	       snsc->udp_inuse, DNOVAL, NULL);
+	       (unsigned long long) snsc->udp_inuse, DNOVAL, NULL);
 
 	render(isdb, pre, PT_USEINT,
 	       "-\trawsck", NULL, NULL,
-	       snsc->raw_inuse, DNOVAL, NULL);
+	       (unsigned long long) snsc->raw_inuse, DNOVAL, NULL);
 
 	render(isdb, pre, PT_USEINT,
 	       "-\tip-frag", NULL, NULL,
-	       snsc->frag_inuse, DNOVAL, NULL);
+	       (unsigned long long) snsc->frag_inuse, DNOVAL, NULL);
 
 	render(isdb, pre, PT_USEINT | pt_newlin,
 	       "-\ttcp-tw", NULL, NULL,
-	       snsc->tcp_tw, DNOVAL, NULL);
+	       (unsigned long long) snsc->tcp_tw, DNOVAL, NULL);
 }
 
 /*
@@ -1531,7 +1550,7 @@ __print_funct_t render_net_sock_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_ip_stats(struct activity *a, int isdb, char *pre,
@@ -1601,7 +1620,7 @@ __print_funct_t render_net_ip_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_eip_stats(struct activity *a, int isdb, char *pre,
@@ -1671,7 +1690,7 @@ __print_funct_t render_net_eip_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_icmp_stats(struct activity *a, int isdb, char *pre,
@@ -1777,7 +1796,7 @@ __print_funct_t render_net_icmp_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_eicmp_stats(struct activity *a, int isdb, char *pre,
@@ -1871,7 +1890,7 @@ __print_funct_t render_net_eicmp_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_tcp_stats(struct activity *a, int isdb, char *pre,
@@ -1917,7 +1936,7 @@ __print_funct_t render_net_tcp_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_etcp_stats(struct activity *a, int isdb, char *pre,
@@ -1969,7 +1988,7 @@ __print_funct_t render_net_etcp_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_udp_stats(struct activity *a, int isdb, char *pre,
@@ -2015,7 +2034,7 @@ __print_funct_t render_net_udp_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_sock6_stats(struct activity *a, int isdb, char *pre,
@@ -2028,19 +2047,19 @@ __print_funct_t render_net_sock6_stats(struct activity *a, int isdb, char *pre,
 
 	render(isdb, pre, PT_USEINT,
 	       "-\ttcp6sck", NULL, NULL,
-	       snsc->tcp6_inuse, DNOVAL, NULL);
+	       (unsigned long long) snsc->tcp6_inuse, DNOVAL, NULL);
 
 	render(isdb, pre, PT_USEINT,
 	       "-\tudp6sck",  NULL, NULL,
-	       snsc->udp6_inuse, DNOVAL, NULL);
+	       (unsigned long long) snsc->udp6_inuse, DNOVAL, NULL);
 
 	render(isdb, pre, PT_USEINT,
 	       "-\traw6sck", NULL, NULL,
-	       snsc->raw6_inuse, DNOVAL, NULL);
+	       (unsigned long long) snsc->raw6_inuse, DNOVAL, NULL);
 
 	render(isdb, pre, PT_USEINT | pt_newlin,
 	       "-\tip6-frag", NULL, NULL,
-	       snsc->frag6_inuse, DNOVAL, NULL);
+	       (unsigned long long) snsc->frag6_inuse, DNOVAL, NULL);
 }
 
 /*
@@ -2052,7 +2071,7 @@ __print_funct_t render_net_sock6_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_ip6_stats(struct activity *a, int isdb, char *pre,
@@ -2134,7 +2153,7 @@ __print_funct_t render_net_ip6_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_eip6_stats(struct activity *a, int isdb, char *pre,
@@ -2222,7 +2241,7 @@ __print_funct_t render_net_eip6_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_icmp6_stats(struct activity *a, int isdb, char *pre,
@@ -2346,7 +2365,7 @@ __print_funct_t render_net_icmp6_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_eicmp6_stats(struct activity *a, int isdb, char *pre,
@@ -2434,7 +2453,7 @@ __print_funct_t render_net_eicmp6_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_net_udp6_stats(struct activity *a, int isdb, char *pre,
@@ -2480,7 +2499,7 @@ __print_funct_t render_net_udp6_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_pwr_cpufreq_stats(struct activity *a, int isdb, char *pre,
@@ -2491,30 +2510,35 @@ __print_funct_t render_pwr_cpufreq_stats(struct activity *a, int isdb, char *pre
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr[curr]) && (i < a->bitmap->b_size + 1); i++) {
 
 		spc = (struct stats_pwr_cpufreq *) ((char *) a->buf[curr] + i * a->msize);
 
-		/* Should current CPU (including CPU "all") be displayed? */
-		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
+		if (!spc->cpufreq)
+			/* This CPU is offline: Don't display it */
+			continue;
 
-			if (!i) {
-				/* This is CPU "all" */
-				render(isdb, pre, pt_newlin,
-				       "all\tMHz",
-				       "-1", NULL,
-				       NOVAL,
-				       ((double) spc->cpufreq) / 100,
-				       NULL);
-			}
-			else {
-				render(isdb, pre, pt_newlin,
-				       "cpu%d\tMHz",
-				       "%d", cons(iv, i - 1, NOVAL),
-				       NOVAL,
-				       ((double) spc->cpufreq) / 100,
-				       NULL);
-			}
+		/* Should current CPU (including CPU "all") be displayed? */
+		if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
+			/* No */
+			continue;
+
+		if (!i) {
+			/* This is CPU "all" */
+			render(isdb, pre, pt_newlin,
+			       "all\tMHz",
+			       "-1", NULL,
+			       NOVAL,
+			       ((double) spc->cpufreq) / 100,
+			       NULL);
+		}
+		else {
+			render(isdb, pre, pt_newlin,
+			       "cpu%d\tMHz",
+			       "%d", cons(iv, i - 1, NOVAL),
+			       NOVAL,
+			       ((double) spc->cpufreq) / 100,
+			       NULL);
 		}
 	}
 }
@@ -2528,7 +2552,7 @@ __print_funct_t render_pwr_cpufreq_stats(struct activity *a, int isdb, char *pre
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_pwr_fan_stats(struct activity *a, int isdb, char *pre,
@@ -2539,7 +2563,7 @@ __print_funct_t render_pwr_fan_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < a->nr[curr]; i++) {
 		spc = (struct stats_pwr_fan *) ((char *) a->buf[curr] + i * a->msize);
 
 		render(isdb, pre, PT_USESTR,
@@ -2577,7 +2601,7 @@ __print_funct_t render_pwr_fan_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_pwr_temp_stats(struct activity *a, int isdb, char *pre,
@@ -2588,7 +2612,7 @@ __print_funct_t render_pwr_temp_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < a->nr[curr]; i++) {
 		spc = (struct stats_pwr_temp *) ((char *) a->buf[curr] + i * a->msize);
 
 		render(isdb, pre, PT_USESTR,
@@ -2628,7 +2652,7 @@ __print_funct_t render_pwr_temp_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_pwr_in_stats(struct activity *a, int isdb, char *pre,
@@ -2639,7 +2663,7 @@ __print_funct_t render_pwr_in_stats(struct activity *a, int isdb, char *pre,
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < a->nr[curr]; i++) {
 		spc = (struct stats_pwr_in *) ((char *) a->buf[curr] + i * a->msize);
 
 		render(isdb, pre, PT_USESTR,
@@ -2679,7 +2703,7 @@ __print_funct_t render_pwr_in_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_huge_stats(struct activity *a, int isdb, char *pre,
@@ -2699,7 +2723,7 @@ __print_funct_t render_huge_stats(struct activity *a, int isdb, char *pre,
 	       smc->tlhkb - smc->frhkb, DNOVAL, NULL);
 
 	render(isdb, pre, pt_newlin,
-	       "-\t%%hugused", NULL, NULL, NOVAL,
+	       "-\t%hugused", NULL, NULL, NOVAL,
 	       smc->tlhkb ?
 	       SP_VALUE(smc->frhkb, smc->tlhkb, smc->tlhkb) :
 	       0.0, NULL);
@@ -2714,7 +2738,7 @@ __print_funct_t render_huge_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_pwr_wghfreq_stats(struct activity *a, int isdb, char *pre,
@@ -2726,47 +2750,47 @@ __print_funct_t render_pwr_wghfreq_stats(struct activity *a, int isdb, char *pre
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	for (i = 0; (i < a->nr[curr]) && (i < a->bitmap->b_size + 1); i++) {
 
 		spc = (struct stats_pwr_wghfreq *) ((char *) a->buf[curr]  + i * a->msize * a->nr2);
 		spp = (struct stats_pwr_wghfreq *) ((char *) a->buf[!curr] + i * a->msize * a->nr2);
 
 		/* Should current CPU (including CPU "all") be displayed? */
-		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
+		if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))))
+			/* No */
+			continue;
 
-			/* Yes... */
-			tisfreq = 0;
-			tis = 0;
+		tisfreq = 0;
+		tis = 0;
 
-			for (k = 0; k < a->nr2; k++) {
+		for (k = 0; k < a->nr2; k++) {
 
-				spc_k = (struct stats_pwr_wghfreq *) ((char *) spc + k * a->msize);
-				if (!spc_k->freq)
-					break;
-				spp_k = (struct stats_pwr_wghfreq *) ((char *) spp + k * a->msize);
+			spc_k = (struct stats_pwr_wghfreq *) ((char *) spc + k * a->msize);
+			if (!spc_k->freq)
+				break;
+			spp_k = (struct stats_pwr_wghfreq *) ((char *) spp + k * a->msize);
 
-				tisfreq += (spc_k->freq / 1000) *
-				           (spc_k->time_in_state - spp_k->time_in_state);
-				tis     += (spc_k->time_in_state - spp_k->time_in_state);
-			}
+			tisfreq += (spc_k->freq / 1000) *
+			           (spc_k->time_in_state - spp_k->time_in_state);
+			tis     += (spc_k->time_in_state - spp_k->time_in_state);
+		}
 
-			if (!i) {
-				/* This is CPU "all" */
-				render(isdb, pre, pt_newlin,
-				       "all\twghMHz",
-				       "-1", NULL,
-				       NOVAL,
-				       tis ? ((double) tisfreq) / tis : 0.0,
-				       NULL);
-			}
-			else {
-				render(isdb, pre, pt_newlin,
-				       "cpu%d\twghMHz",
-				       "%d", cons(iv, i - 1, NOVAL),
-				       NOVAL,
-				       tis ? ((double) tisfreq) / tis : 0.0,
-				       NULL);
-			}
+		if (!i) {
+			/* This is CPU "all" */
+			render(isdb, pre, pt_newlin,
+			       "all\twghMHz",
+			       "-1", NULL,
+			       NOVAL,
+			       tis ? ((double) tisfreq) / tis : 0.0,
+			       NULL);
+		}
+		else {
+			render(isdb, pre, pt_newlin,
+			       "cpu%d\twghMHz",
+			       "%d", cons(iv, i - 1, NOVAL),
+			       NOVAL,
+			       tis ? ((double) tisfreq) / tis : 0.0,
+			       NULL);
 		}
 	}
 }
@@ -2780,7 +2804,7 @@ __print_funct_t render_pwr_wghfreq_stats(struct activity *a, int isdb, char *pre
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_pwr_usb_stats(struct activity *a, int isdb, char *pre,
@@ -2790,12 +2814,8 @@ __print_funct_t render_pwr_usb_stats(struct activity *a, int isdb, char *pre,
 	struct stats_pwr_usb *suc;
 	char id[9];
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < a->nr[curr]; i++) {
 		suc = (struct stats_pwr_usb *) ((char *) a->buf[curr] + i * a->msize);
-
-		if (!suc->bus_nr)
-			/* Bus#0 doesn't exist: We are at the end of the list */
-			break;
 
 		sprintf(id, "%x", suc->vendor_id);
 		render(isdb, pre, PT_USESTR,
@@ -2819,7 +2839,7 @@ __print_funct_t render_pwr_usb_stats(struct activity *a, int isdb, char *pre,
 		       "bus%d\tmaxpower",
 		       NULL,
 		       cons(iv, suc->bus_nr, NOVAL),
-		       suc->bmaxpower << 1,
+		       (unsigned long long) (suc->bmaxpower << 1),
 		       NOVAL,
 		       NULL);
 
@@ -2851,7 +2871,7 @@ __print_funct_t render_pwr_usb_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
@@ -2860,12 +2880,8 @@ __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
 	int i;
 	struct stats_filesystem *sfc;
 
-	for (i = 0; i < a->nr; i++) {
+	for (i = 0; i < a->nr[curr]; i++) {
 		sfc = (struct stats_filesystem *) ((char *) a->buf[curr] + i * a->msize);
-
-		if (!sfc->f_blocks)
-			/* Size of filesystem is zero: We are at the end of the list */
-			break;
 
 		render(isdb, pre, PT_USERND,
 		       "%s\tMBfsfree",
@@ -2938,22 +2954,46 @@ __print_funct_t render_filesystem_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_fchost_stats(struct activity *a, int isdb, char *pre,
 				    int curr, unsigned long long itv)
 {
-	int i;
+	int i, j, j0, found;
 	struct stats_fchost *sfcc, *sfcp;
 
-	for (i = 0; i < a->nr; i++) {
-		sfcc = (struct stats_fchost *) ((char *) a->buf[curr] + i * a->msize);
-		sfcp = (struct stats_fchost *) ((char *) a->buf[!curr] + i * a->msize);
+	for (i = 0; i < a->nr[curr]; i++) {
 
-		if (!sfcc->fchost_name[0])
-			/* We are at the end of the list */
-			break;
+		found = FALSE;
+
+		if (a->nr[!curr] > 0) {
+			sfcc = (struct stats_fchost *) ((char *) a->buf[curr] + i * a->msize);
+
+			/* Look for corresponding structure in previous iteration */
+			j = i;
+
+			if (j >= a->nr[!curr]) {
+				j = a->nr[!curr] - 1;
+			}
+
+			j0 = j;
+
+			do {
+				sfcp = (struct stats_fchost *) ((char *) a->buf[!curr] + j * a->msize);
+				if (!strcmp(sfcc->fchost_name, sfcp->fchost_name)) {
+					found = TRUE;
+					break;
+				}
+				if (++j >= a->nr[!curr]) {
+					j = 0;
+				}
+			}
+			while (j != j0);
+		}
+
+		if (!found)
+			continue;
 
 		render(isdb, pre, PT_NOFLAG ,
 		       "%s\tfch_rxf/s",
@@ -2993,7 +3033,7 @@ __print_funct_t render_fchost_stats(struct activity *a, int isdb, char *pre,
  * @isdb	Flag, true if db printing, false if ppc printing.
  * @pre		Prefix string for output entries
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time in jiffies.
+ * @itv		Interval of time in 1/100th of a second.
  ***************************************************************************
  */
 __print_funct_t render_softnet_stats(struct activity *a, int isdb, char *pre,
@@ -3001,19 +3041,19 @@ __print_funct_t render_softnet_stats(struct activity *a, int isdb, char *pre,
 {
 	int i;
 	struct stats_softnet *ssnc, *ssnp;
+	unsigned char offline_cpu_bitmap[BITMAP_SIZE(NR_CPUS)] = {0};
 	int pt_newlin
 		= (DISPLAY_HORIZONTALLY(flags) ? PT_NOFLAG : PT_NEWLIN);
 
-	for (i = 0; (i < a->nr) && (i < a->bitmap->b_size + 1); i++) {
+	/* @nr[curr] cannot normally be greater than @nr_ini */
+	if (a->nr[curr] > a->nr_ini) {
+		a->nr_ini = a->nr[curr];
+	}
 
-		/*
-		 * The size of a->buf[...] CPU structure may be different from the default
-		 * sizeof(struct stats_pwr_cpufreq) value if data have been read from a file!
-		 * That's why we don't use a syntax like:
-		 * ssnc = (struct stats_softnet *) a->buf[...] + i;
-                 */
-                ssnc = (struct stats_softnet *) ((char *) a->buf[curr] + i * a->msize);
-                ssnp = (struct stats_softnet *) ((char *) a->buf[!curr] + i * a->msize);
+	/* Compute statistics for CPU "all" */
+	get_global_soft_statistics(a, !curr, curr, flags, offline_cpu_bitmap);
+
+	for (i = 0; (i < a->nr_ini) && (i < a->bitmap->b_size + 1); i++) {
 
 		/*
 		 * Note: a->nr is in [1, NR_CPUS + 1].
@@ -3022,83 +3062,92 @@ __print_funct_t render_softnet_stats(struct activity *a, int isdb, char *pre,
 		 * used by sadc to create a file, and the version of sysstat
 		 * used by sar to read it...
 		 */
+		if (!(a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) ||
+		    offline_cpu_bitmap[i >> 3] & (1 << (i & 0x07)))
+			/* No */
+			continue;
 
-		/* Should current CPU (including CPU "all") be displayed? */
-		if (a->bitmap->b_array[i >> 3] & (1 << (i & 0x07))) {
+		/*
+		 * The size of a->buf[...] CPU structure may be different from the default
+		 * sizeof(struct stats_pwr_cpufreq) value if data have been read from a file!
+		 * That's why we don't use a syntax like:
+		 * ssnc = (struct stats_softnet *) a->buf[...] + i;
+                 */
+                ssnc = (struct stats_softnet *) ((char *) a->buf[curr]  + i * a->msize);
+                ssnp = (struct stats_softnet *) ((char *) a->buf[!curr] + i * a->msize);
 
-			if (!i) {
-				/* This is CPU "all" */
-				render(isdb, pre, PT_NOFLAG,
-				       "all\ttotal/s",
-				       "-1", NULL,
-				       NOVAL,
-				       S_VALUE(ssnp->processed, ssnc->processed, itv),
-				       NULL);
+		if (!i) {
+			/* This is CPU "all" */
+			render(isdb, pre, PT_NOFLAG,
+			       "all\ttotal/s",
+			       "-1", NULL,
+			       NOVAL,
+			       S_VALUE(ssnp->processed, ssnc->processed, itv),
+			       NULL);
 
-				render(isdb, pre, PT_NOFLAG,
-				       "all\tdropd/s",
-				       NULL, NULL,
-				       NOVAL,
-				       S_VALUE(ssnp->dropped, ssnc->dropped, itv),
-				       NULL);
+			render(isdb, pre, PT_NOFLAG,
+			       "all\tdropd/s",
+			       NULL, NULL,
+			       NOVAL,
+			       S_VALUE(ssnp->dropped, ssnc->dropped, itv),
+			       NULL);
 
-				render(isdb, pre, PT_NOFLAG,
-				       "all\tsqueezd/s",
-				       NULL, NULL,
-				       NOVAL,
-				       S_VALUE(ssnp->time_squeeze, ssnc->time_squeeze, itv),
-				       NULL);
+			render(isdb, pre, PT_NOFLAG,
+			       "all\tsqueezd/s",
+			       NULL, NULL,
+			       NOVAL,
+			       S_VALUE(ssnp->time_squeeze, ssnc->time_squeeze, itv),
+			       NULL);
 
-				render(isdb, pre, PT_NOFLAG,
-				       "all\trx_rps/s",
-				       NULL, NULL,
-				       NOVAL,
-				       S_VALUE(ssnp->received_rps, ssnc->received_rps, itv),
-				       NULL);
+			render(isdb, pre, PT_NOFLAG,
+			       "all\trx_rps/s",
+			       NULL, NULL,
+			       NOVAL,
+			       S_VALUE(ssnp->received_rps, ssnc->received_rps, itv),
+			       NULL);
 
-				render(isdb, pre, pt_newlin,
-				       "all\tflw_lim/s",
-				       NULL, NULL,
-				       NOVAL,
-				       S_VALUE(ssnp->flow_limit, ssnc->flow_limit, itv),
-				       NULL);
-			}
-			else {
-				render(isdb, pre, PT_NOFLAG,
-				       "cpu%d\ttotal/s",
-				       "%d", cons(iv, i - 1, NOVAL),
-				       NOVAL,
-				       S_VALUE(ssnp->processed, ssnc->processed, itv),
-				       NULL);
+			render(isdb, pre, pt_newlin,
+			       "all\tflw_lim/s",
+			       NULL, NULL,
+			       NOVAL,
+			       S_VALUE(ssnp->flow_limit, ssnc->flow_limit, itv),
+			       NULL);
+		}
+		else {
+			render(isdb, pre, PT_NOFLAG,
+			       "cpu%d\ttotal/s",
+			       "%d", cons(iv, i - 1, NOVAL),
+			       NOVAL,
+			       S_VALUE(ssnp->processed, ssnc->processed, itv),
+			       NULL);
 
-				render(isdb, pre, PT_NOFLAG,
-				       "cpu%d\tdropd/s",
-				       NULL, cons(iv, i - 1, NOVAL),
-				       NOVAL,
-				       S_VALUE(ssnp->dropped, ssnc->dropped, itv),
-				       NULL);
+			render(isdb, pre, PT_NOFLAG,
+			       "cpu%d\tdropd/s",
+			       NULL, cons(iv, i - 1, NOVAL),
+			       NOVAL,
+			       S_VALUE(ssnp->dropped, ssnc->dropped, itv),
+			       NULL);
 
-				render(isdb, pre, PT_NOFLAG,
-				       "cpu%d\tsqueezd/s",
-				       NULL, cons(iv, i - 1, NOVAL),
-				       NOVAL,
-				       S_VALUE(ssnp->time_squeeze, ssnc->time_squeeze, itv),
-				       NULL);
+			render(isdb, pre, PT_NOFLAG,
+			       "cpu%d\tsqueezd/s",
+			       NULL, cons(iv, i - 1, NOVAL),
+			       NOVAL,
+			       S_VALUE(ssnp->time_squeeze, ssnc->time_squeeze, itv),
+			       NULL);
 
-				render(isdb, pre, PT_NOFLAG,
-				       "cpu%d\trx_rps/s",
-				       NULL, cons(iv, i - 1, NOVAL),
-				       NOVAL,
-				       S_VALUE(ssnp->received_rps, ssnc->received_rps, itv),
-				       NULL);
+			render(isdb, pre, PT_NOFLAG,
+			       "cpu%d\trx_rps/s",
+			       NULL, cons(iv, i - 1, NOVAL),
+			       NOVAL,
+			       S_VALUE(ssnp->received_rps, ssnc->received_rps, itv),
+			       NULL);
 
-				render(isdb, pre, pt_newlin,
-				       "cpu%d\tflw_lim/s",
-				       NULL, cons(iv, i - 1, NOVAL),
-				       NOVAL,
-				       S_VALUE(ssnp->flow_limit, ssnc->flow_limit, itv),
-				       NULL);
-			}
+			render(isdb, pre, pt_newlin,
+			       "cpu%d\tflw_lim/s",
+			       NULL, cons(iv, i - 1, NOVAL),
+			       NOVAL,
+			       S_VALUE(ssnp->flow_limit, ssnc->flow_limit, itv),
+			       NULL);
 		}
 	}
 }

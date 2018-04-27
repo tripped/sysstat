@@ -1,6 +1,6 @@
 /*
  * sysstat - sa_wrap.c: Functions used in activity.c
- * (C) 1999-2017 by Sebastien GODARD (sysstat <at> orange.fr)
+ * (C) 1999-2018 by Sebastien GODARD (sysstat <at> orange.fr)
  *
  ***************************************************************************
  * This program is free software; you can redistribute it and/or modify it *
@@ -23,12 +23,35 @@
 #include <string.h>
 
 #include "sa.h"
-#include "rd_stats.h"
 #include "count.h"
-#include "rd_sensors.h"
 
 extern unsigned int flags;
 extern struct record_header record_hdr;
+
+/*
+ ***************************************************************************
+ * Reallocate buffer where statistics will be saved. The new size is the
+ * double of the original one.
+ * This is typically called when we find that current buffer is too small
+ * to save all the data.
+ *
+ * IN:
+ * @a	Activity structure.
+ *
+ * RETURNS:
+ * New pointer address on buffer.
+ ***************************************************************************
+ */
+void *reallocate_buffer(struct activity *a)
+{
+	SREALLOC(a->_buf0, void,
+		 (size_t) a->msize * (size_t) a->nr_allocated * 2);	/* a->nr2 value is 1 */
+	memset(a->_buf0, 0, (size_t) a->msize * (size_t) a->nr_allocated * 2);
+
+	a->nr_allocated *= 2;	/* NB: nr_allocated > 0 */
+
+	return a->_buf0;
+}
 
 /*
  ***************************************************************************
@@ -45,9 +68,20 @@ __read_funct_t wrap_read_stat_cpu(struct activity *a)
 {
 	struct stats_cpu *st_cpu
 		= (struct stats_cpu *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read CPU statistics */
-	read_stat_cpu(st_cpu, a->nr, &record_hdr.uptime, &record_hdr.uptime0);
+	do {
+		nr_read = read_stat_cpu(st_cpu, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_cpu = (struct stats_cpu *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -89,9 +123,20 @@ __read_funct_t wrap_read_stat_irq(struct activity *a)
 {
 	struct stats_irq *st_irq
 		= (struct stats_irq *) a->_buf0;
+	__nr_t nr_read;
 
 	/* Read interrupts stats */
-	read_stat_irq(st_irq, a->nr);
+	do {
+		nr_read = read_stat_irq(st_irq, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_irq = (struct stats_irq *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -221,9 +266,21 @@ __read_funct_t wrap_read_disk(struct activity *a)
 {
 	struct stats_disk *st_disk
 		= (struct stats_disk *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read stats from /proc/diskstats */
-	read_diskstats_disk(st_disk, a->nr, COLLECT_PARTITIONS(a->opt_flags));
+	do {
+		nr_read = read_diskstats_disk(st_disk, a->nr_allocated,
+					      COLLECT_PARTITIONS(a->opt_flags));
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_disk = (struct stats_disk *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -243,9 +300,20 @@ __read_funct_t wrap_read_tty_driver_serial(struct activity *a)
 {
 	struct stats_serial *st_serial
 		= (struct stats_serial *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read serial lines stats */
-	read_tty_driver_serial(st_serial, a->nr);
+	do {
+		nr_read = read_tty_driver_serial(st_serial, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_serial = (struct stats_serial *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -287,16 +355,27 @@ __read_funct_t wrap_read_net_dev(struct activity *a)
 {
 	struct stats_net_dev *st_net_dev
 		= (struct stats_net_dev *) a->_buf0;
-	int dev;
+	__nr_t nr_read = 0;
 
 	/* Read network interfaces stats */
-	dev = read_net_dev(st_net_dev, a->nr);
-	if (!dev)
+	do {
+		nr_read = read_net_dev(st_net_dev, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_net_dev = (struct stats_net_dev *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
+
+	if (!nr_read)
 		/* No data read. Exit */
 		return;
 
 	/* Read duplex and speed info for each interface */
-	read_if_info(st_net_dev, dev);
+	read_if_info(st_net_dev, nr_read);
 
 	return;
 }
@@ -316,9 +395,20 @@ __read_funct_t wrap_read_net_edev(struct activity *a)
 {
 	struct stats_net_edev *st_net_edev
 		= (struct stats_net_edev *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read network interfaces errors stats */
-	read_net_edev(st_net_edev, a->nr);
+	do {
+		nr_read = read_net_edev(st_net_edev, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_net_edev = (struct stats_net_edev *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -690,9 +780,20 @@ __read_funct_t wrap_read_cpuinfo(struct activity *a)
 {
 	struct stats_pwr_cpufreq *st_pwr_cpufreq
 		= (struct stats_pwr_cpufreq *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read CPU frequency stats */
-	read_cpuinfo(st_pwr_cpufreq, a->nr);
+	do {
+		nr_read = read_cpuinfo(st_pwr_cpufreq, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_pwr_cpufreq = (struct stats_pwr_cpufreq *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -712,9 +813,20 @@ __read_funct_t wrap_read_fan(struct activity *a)
 {
 	struct stats_pwr_fan *st_pwr_fan
 		= (struct stats_pwr_fan *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read fan stats */
-	read_fan(st_pwr_fan, a->nr);
+	do {
+		nr_read = read_fan(st_pwr_fan, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_pwr_fan = (struct stats_pwr_fan *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -734,9 +846,20 @@ __read_funct_t wrap_read_temp(struct activity *a)
 {
 	struct stats_pwr_temp *st_pwr_temp
 		= (struct stats_pwr_temp *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read temperature stats */
-	read_temp(st_pwr_temp, a->nr);
+	do {
+		nr_read = read_temp(st_pwr_temp, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_pwr_temp = (struct stats_pwr_temp *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -756,9 +879,20 @@ __read_funct_t wrap_read_in(struct activity *a)
 {
 	struct stats_pwr_in *st_pwr_in
 		= (struct stats_pwr_in *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read voltage input stats */
-	read_in(st_pwr_in, a->nr);
+	do {
+		nr_read = read_in(st_pwr_in, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_pwr_in = (struct stats_pwr_in *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -796,42 +930,31 @@ __read_funct_t wrap_read_meminfo_huge(struct activity *a)
  * @a	Activity structure with statistics.
  ***************************************************************************
  */
-__read_funct_t wrap_read_time_in_state(struct activity *a)
+__read_funct_t wrap_read_cpu_wghfreq(struct activity *a)
 {
-	__nr_t	cpu = 0;
-	int j;
 	struct stats_pwr_wghfreq *st_pwr_wghfreq
 		= (struct stats_pwr_wghfreq *) a->_buf0;
-	struct stats_pwr_wghfreq *st_pwr_wghfreq_i, *st_pwr_wghfreq_j, *st_pwr_wghfreq_all_j;
+	__nr_t	nr_read = 0;
 
-	while (cpu < (a->nr - 1)) {
-		/* Read current CPU time-in-state data */
-		st_pwr_wghfreq_i = st_pwr_wghfreq + (cpu + 1) * a->nr2;
-		read_time_in_state(st_pwr_wghfreq_i, cpu, a->nr2);
+	/* Read weighted CPU frequency statistics */
+	do {
+		nr_read = read_cpu_wghfreq(st_pwr_wghfreq, a->nr_allocated, a->nr2);
 
-		/* Also save data for CPU 'all' */
-		for (j = 0; j < a->nr2; j++) {
-			st_pwr_wghfreq_j     = st_pwr_wghfreq_i + j;	/* CPU #cpu, state #j */
-			st_pwr_wghfreq_all_j = st_pwr_wghfreq   + j;	/* CPU #all, state #j */
-			if (!cpu) {
-				/* Assume that possible frequencies are the same for all CPUs */
-				st_pwr_wghfreq_all_j->freq = st_pwr_wghfreq_j->freq;
-			}
-			st_pwr_wghfreq_all_j->time_in_state += st_pwr_wghfreq_j->time_in_state;
-		}
-		cpu++;
-	}
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			SREALLOC(a->_buf0, void,
+				 (size_t) a->msize * (size_t) a->nr2 * (size_t) a->nr_allocated * 2);
+			memset(a->_buf0, 0,
+			       (size_t) a->msize * (size_t) a->nr2 * (size_t) a->nr_allocated * 2);
 
-	/* Special processing for non SMP kernels: Only CPU 'all' is available */
-	if (a->nr == 1) {
-		read_time_in_state(st_pwr_wghfreq, 0, a->nr2);
-	}
-	else {
-		for (j = 0; j < a->nr2; j++) {
-			st_pwr_wghfreq_all_j = st_pwr_wghfreq + j;	/* CPU #all, state #j */
-			st_pwr_wghfreq_all_j->time_in_state /= (a->nr - 1);
+			/* NB: nr_allocated > 0 */
+			a->nr_allocated *= 2;
+			st_pwr_wghfreq = (struct stats_pwr_wghfreq *) a->_buf0;
 		}
 	}
+	while(nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -851,9 +974,20 @@ __read_funct_t wrap_read_bus_usb_dev(struct activity *a)
 {
 	struct stats_pwr_usb *st_pwr_usb
 		= (struct stats_pwr_usb *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read USB devices stats */
-	read_bus_usb_dev(st_pwr_usb, a->nr);
+	do {
+		nr_read = read_bus_usb_dev(st_pwr_usb, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_pwr_usb = (struct stats_pwr_usb *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -873,9 +1007,20 @@ __read_funct_t wrap_read_filesystem(struct activity *a)
 {
 	struct stats_filesystem *st_filesystem
 		= (struct stats_filesystem *) a->_buf0;
+	__nr_t nr_read = 0;
 
 	/* Read filesystems from /etc/mtab */
-	read_filesystem(st_filesystem, a->nr);
+	do {
+		nr_read = read_filesystem(st_filesystem, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_filesystem = (struct stats_filesystem *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -895,10 +1040,69 @@ __read_funct_t wrap_read_fchost(struct activity *a)
 {
 	struct stats_fchost *st_fc
 		= (struct stats_fchost *) a->_buf0;
+	__nr_t nr_read = 0;
 
-	read_fchost(st_fc, a->nr);
+	/* Read FC hosts statistics */
+	do {
+		nr_read = read_fchost(st_fc, a->nr_allocated);
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_fc = (struct stats_fchost *) reallocate_buffer(a);
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
+}
+
+/*
+ ***************************************************************************
+ * Look for online CPU and fill corresponding bitmap.
+ *
+ * IN:
+ * @bitmap_size	Size of the CPU bitmap.
+ *
+ * OUT:
+ * @online_cpu_bitmap
+ *		CPU bitmap which has been filled.
+ *
+ * RETURNS:
+ * Number of CPU for which statistics have to be be read.
+ * 1 means CPU "all", 2 means CPU "all" and CPU 0, etc.
+ * Or -1 if the buffer was too small and needs to be reallocated.
+ ***************************************************************************
+ */
+int get_online_cpu_list(unsigned char online_cpu_bitmap[], int bitmap_size)
+{
+	FILE *fp;
+	char line[8192];
+	int proc_nr = -2;
+
+	if ((fp = fopen(STAT, "r")) == NULL)
+		return 0;
+
+	while (fgets(line, sizeof(line), fp) != NULL) {
+
+		if (!strncmp(line, "cpu ", 4))
+			continue;
+
+		if (!strncmp(line, "cpu", 3)) {
+			sscanf(line + 3, "%d", &proc_nr);
+
+			if ((proc_nr + 1 > bitmap_size) || (proc_nr < 0)) {
+				fclose(fp);
+				/* Return -1 or 0 */
+				return ((proc_nr >= 0) * -1);
+			}
+			online_cpu_bitmap[proc_nr >> 3] |= 1 << (proc_nr & 0x07);
+		}
+	}
+
+	fclose(fp);
+	return proc_nr + 2;
 }
 
 /*
@@ -916,9 +1120,42 @@ __read_funct_t wrap_read_softnet(struct activity *a)
 {
 	struct stats_softnet *st_softnet
 		= (struct stats_softnet *) a->_buf0;
+	__nr_t nr_read = 0;
+	static unsigned char *online_cpu_bitmap = NULL;
+	static int bitmap_size = 0;
 
 	/* Read softnet stats */
-	read_softnet(st_softnet, a->nr);
+	do {
+		/* Allocate bitmap for online CPU */
+		if (bitmap_size < a->nr_allocated) {
+			if ((online_cpu_bitmap = (unsigned char *) realloc(online_cpu_bitmap,
+									   BITMAP_SIZE(a->nr_allocated))) == NULL) {
+				nr_read = 0;
+				break;
+			}
+			bitmap_size = a->nr_allocated;
+		}
+		memset(online_cpu_bitmap, 0, BITMAP_SIZE(a->nr_allocated));
+
+		/* Get online CPU list */
+		nr_read = get_online_cpu_list(online_cpu_bitmap, bitmap_size);
+		if (!nr_read)
+			break;
+
+		if (nr_read < 0) {
+			/* Buffer needs to be reallocated */
+			st_softnet = (struct stats_softnet *) reallocate_buffer(a);
+		}
+		else {
+			if (!read_softnet(st_softnet, a->nr_allocated, online_cpu_bitmap)) {
+				/* File /proc/net/softnet doesn't exist */
+				nr_read = 0;
+			}
+		}
+	}
+	while (nr_read < 0);
+
+	a->_nr0 = nr_read;
 
 	return;
 }
@@ -956,8 +1193,8 @@ __nr_t wrap_get_irq_nr(struct activity *a)
  * @a	Activity structure.
  *
  * RETURNS:
- * Number of serial lines supporting tx/rx accouting + a pre-allocation
- * constant. Number cannot exceed MAX_NR_SERIAL_LINES.
+ * Number of serial lines supporting tx/rx accouting.
+ * Number cannot exceed MAX_NR_SERIAL_LINES.
  ***************************************************************************
  */
 __nr_t wrap_get_serial_nr(struct activity *a)
@@ -965,10 +1202,10 @@ __nr_t wrap_get_serial_nr(struct activity *a)
 	__nr_t n = 0;
 
 	if ((n = get_serial_nr()) > 0) {
-		if ((n + NR_SERIAL_PREALLOC) > MAX_NR_SERIAL_LINES)
+		if (n > MAX_NR_SERIAL_LINES)
 			return MAX_NR_SERIAL_LINES;
 		else
-			return n + NR_SERIAL_PREALLOC;
+			return n;
 	}
 
 	return 0;
@@ -983,8 +1220,7 @@ __nr_t wrap_get_serial_nr(struct activity *a)
  * @a	Activity structure.
  *
  * RETURNS:
- * Number of network interfaces + a pre-allocation constant. Number cannot
- * exceed MAX_NR_IFACES.
+ * Number of network interfaces. Number cannot exceed MAX_NR_IFACES.
  ***************************************************************************
  */
 __nr_t wrap_get_iface_nr(struct activity *a)
@@ -992,10 +1228,10 @@ __nr_t wrap_get_iface_nr(struct activity *a)
 	__nr_t n = 0;
 
 	if ((n = get_iface_nr()) > 0) {
-		if ((n + NR_IFACE_PREALLOC) > MAX_NR_IFACES)
+		if (n > MAX_NR_IFACES)
 			return MAX_NR_IFACES;
 		else
-			return n + NR_IFACE_PREALLOC;
+			return n;
 	}
 
 	return 0;
@@ -1010,8 +1246,8 @@ __nr_t wrap_get_iface_nr(struct activity *a)
  *
  * RETURNS:
  * Number of structures (value in [1, NR_CPUS + 1]).
- * 1 means that there is only one proc and non SMP kernel.
- * 2 means one proc and SMP kernel.
+ * 1 means that there is only one proc and non SMP kernel (CPU "all").
+ * 2 means one proc and SMP kernel (CPU "all" and CPU 0).
  * Etc.
  ***************************************************************************
  */
@@ -1030,8 +1266,7 @@ __nr_t wrap_get_cpu_nr(struct activity *a)
  * @a	Activity structure.
  *
  * RETURNS:
- * Number of devices + a pre-allocation constant. Number cannot exceed
- * MAX_NR_DISKS.
+ * Number of devices. Number cannot exceed MAX_NR_DISKS.
  ***************************************************************************
  */
 __nr_t wrap_get_disk_nr(struct activity *a)
@@ -1040,10 +1275,10 @@ __nr_t wrap_get_disk_nr(struct activity *a)
 	unsigned int f = COLLECT_PARTITIONS(a->opt_flags);
 
 	if ((n = get_disk_nr(f)) > 0) {
-		if ((n + NR_DISK_PREALLOC) > MAX_NR_DISKS)
+		if (n > MAX_NR_DISKS)
 			return MAX_NR_DISKS;
 		else
-			return n + NR_DISK_PREALLOC;
+			return n;
 	}
 
 	return 0;
@@ -1120,7 +1355,7 @@ __nr_t wrap_get_in_nr(struct activity *a)
  * @a   Activity structure.
  *
  * RETURNS:
- * Number of CPU frequencies + a pre-allocation constant.
+ * Number of CPU frequencies.
  ***************************************************************************
  */
 __nr_t wrap_get_freq_nr(struct activity *a)
@@ -1128,7 +1363,7 @@ __nr_t wrap_get_freq_nr(struct activity *a)
 	__nr_t n = 0;
 
 	if ((n = get_freq_nr()) > 0)
-		return n + NR_FREQ_PREALLOC;
+		return n;
 
 	return 0;
 }
@@ -1141,20 +1376,18 @@ __nr_t wrap_get_freq_nr(struct activity *a)
  * @a	Activity structure.
  *
  * RETURNS:
- * Number of USB devices + a pre-allocation constant. Number cannot exceed
- * MAX_NR_USB.
+ * Number of USB devices. Number cannot exceed MAX_NR_USB.
  ***************************************************************************
  */
 __nr_t wrap_get_usb_nr(struct activity *a)
 {
 	__nr_t n = 0;
 
-	if ((n = get_usb_nr()) >= 0) {
-		/* Return a positive number even if no USB devices have been found */
-		if ((n + NR_USB_PREALLOC) > MAX_NR_USB)
+	if ((n = get_usb_nr()) > 0) {
+		if (n > MAX_NR_USB)
 			return MAX_NR_USB;
 		else
-			return n + NR_USB_PREALLOC;
+			return n;
 	}
 
 	return 0;
@@ -1169,8 +1402,7 @@ __nr_t wrap_get_usb_nr(struct activity *a)
  * @a	Activity structure.
  *
  * RETURNS:
- * Number of filesystems + a pre-allocation constant. Number cannot exceed
- * MAX_NR_FS.
+ * Number of filesystems. Number cannot exceed MAX_NR_FS.
  ***************************************************************************
  */
 __nr_t wrap_get_filesystem_nr(struct activity *a)
@@ -1178,10 +1410,10 @@ __nr_t wrap_get_filesystem_nr(struct activity *a)
 	__nr_t n = 0;
 
 	if ((n = get_filesystem_nr()) > 0) {
-		if ((n + NR_FILESYSTEM_PREALLOC) > MAX_NR_FS)
+		if (n > MAX_NR_FS)
 			return MAX_NR_FS;
 		else
-			return n + NR_FILESYSTEM_PREALLOC;
+			return n;
 	}
 
 	return 0;
@@ -1195,20 +1427,18 @@ __nr_t wrap_get_filesystem_nr(struct activity *a)
  * @a	Activity structure.
  *
  * RETURNS:
- * Number of FC hosts + a pre-allocation constant. Number cannot exceed
- * MAX_NR_FCHOSTS.
+ * Number of FC hosts. Number cannot exceed MAX_NR_FCHOSTS.
  ***************************************************************************
  */
 __nr_t wrap_get_fchost_nr(struct activity *a)
 {
 	__nr_t n = 0;
 
-	if ((n = get_fchost_nr()) >= 0) {
-		/* Return a positive number even if no FC hosts have been found */
-		if ((n + NR_FCHOST_PREALLOC) > MAX_NR_FCHOSTS)
+	if ((n = get_fchost_nr()) > 0) {
+		if (n > MAX_NR_FCHOSTS)
 			return MAX_NR_FCHOSTS;
 		else
-			return n + NR_FCHOST_PREALLOC;
+			return n;
 	}
 
 	return 0;

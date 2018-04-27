@@ -30,8 +30,8 @@
 
 #include "version.h"
 #include "cifsiostat.h"
+#include "rd_stats.h"
 #include "count.h"
-#include "common.h"
 
 #ifdef USE_NLS
 #include <locale.h>
@@ -46,7 +46,7 @@
 char *sccsid(void) { return (SCCSID); }
 #endif
 
-unsigned long long uptime0[2] = {0, 0};
+unsigned long long uptime_cs[2] = {0, 0};
 struct cifs_stats *st_cifs[2];
 struct io_hdr_stats *st_hdr_cifs;
 
@@ -398,7 +398,9 @@ void read_cifs_stat(int curr)
  */
 void write_cifs_stat_header(int *fctr)
 {
-	printf("Filesystem:           ");
+	if (!DISPLAY_HUMAN_READ(flags)) {
+		printf("Filesystem            ");
+	}
 	if (DISPLAY_KILOBYTES(flags)) {
 		printf("        rkB/s        wkB/s");
 		*fctr = 1024;
@@ -411,7 +413,11 @@ void write_cifs_stat_header(int *fctr)
 		printf("         rB/s         wB/s");
 		*fctr = 1;
 	}
-	printf("    rops/s    wops/s         fo/s         fc/s         fd/s\n");
+	printf("    rops/s    wops/s         fo/s         fc/s         fd/s");
+	if (DISPLAY_HUMAN_READ(flags)) {
+		printf(" Filesystem");
+	}
+	printf("\n");
 }
 
 /*
@@ -420,7 +426,7 @@ void write_cifs_stat_header(int *fctr)
  *
  * IN:
  * @curr	Index in array for current sample statistics.
- * @itv		Interval of time.
+ * @itv		Interval of time (in 1/100th of a second).
  * @fctr	Conversion factor.
  * @shi		Structures describing the CIFS filesystems.
  * @ioi		Current sample statistics.
@@ -433,11 +439,7 @@ void write_cifs_stat(int curr, unsigned long long itv, int fctr,
 {
 	double rbytes, wbytes;
 
-	if (DISPLAY_HUMAN_READ(flags)) {
-		cprintf_in(IS_STR, "%-22s\n", shi->name, 0);
-		printf("%22s", "");
-	}
-	else {
+	if (!DISPLAY_HUMAN_READ(flags)) {
 		cprintf_in(IS_STR, "%-22s", shi->name, 0);
 	}
 
@@ -457,6 +459,9 @@ void write_cifs_stat(int curr, unsigned long long itv, int fctr,
 		  S_VALUE(ionj->fopens, ioni->fopens, itv),
 		  S_VALUE(ionj->fcloses, ioni->fcloses, itv),
 		  S_VALUE(ionj->fdeletes, ioni->fdeletes, itv));
+	if (DISPLAY_HUMAN_READ(flags)) {
+		cprintf_in(IS_STR, " %s", shi->name, 0);
+	}
 	printf("\n");
 }
 
@@ -496,7 +501,7 @@ void write_stats(int curr, struct tm *rectime)
 	}
 
 	/* Interval of time, reduced to one processor */
-	itv = get_interval(uptime0[!curr], uptime0[curr]);
+	itv = get_interval(uptime_cs[!curr], uptime_cs[curr]);
 
 	shi = st_hdr_cifs;
 
@@ -543,12 +548,8 @@ void rw_io_stat_loop(long int count, struct tm *rectime)
 	setbuf(stdout, NULL);
 
 	do {
-		/* Read system uptime (reduced to one processor) */
-		uptime0[curr] = 0;
-		read_uptime(&(uptime0[curr]));
-		if (!uptime0[curr])
-			/* Cannot read system uptime (/proc/uptime doesn't exist) */
-			exit(2);
+		/* Read system uptime in 1/100th of a second */
+		read_uptime(&(uptime_cs[curr]));
 
 		/* Read CIFS stats */
 		read_cifs_stat(curr);
@@ -592,9 +593,6 @@ int main(int argc, char **argv)
 
 	/* Init color strings */
 	init_colors();
-
-	/* Get HZ */
-	get_HZ();
 
 	/* Process args... */
 	while (opt < argc) {
